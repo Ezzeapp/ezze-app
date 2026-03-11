@@ -111,8 +111,10 @@ export function useCreateService() {
     mutationFn: async (
       data: Omit<Service, 'id' | 'master' | 'created' | 'updated' | 'collectionId' | 'collectionName' | 'expand'>
     ) => {
-      const { _imageFile, ...rest } = data as any
-      let payload = { ...rest, master_id: user!.id }
+      const { _imageFile, category, ...rest } = data as any
+      // Map PocketBase 'category' field → Supabase 'category_id' FK
+      const categoryId = category && category !== '__none__' ? category : null
+      let payload = { ...rest, master_id: user!.id, category_id: categoryId }
 
       if (_imageFile instanceof File) {
         // Image path will be set after we have the ID — insert first, then update
@@ -151,8 +153,12 @@ export function useUpdateService() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<Service> & { _imageFile?: File } }) => {
-      const { _imageFile, ...rest } = data as any
-      let payload = { ...rest }
+      const { _imageFile, category, ...rest } = data as any
+      // Map PocketBase 'category' field → Supabase 'category_id' FK
+      const categoryPatch = category !== undefined
+        ? { category_id: (category && category !== '__none__') ? category : null }
+        : {}
+      let payload = { ...rest, ...categoryPatch }
 
       if (_imageFile instanceof File) {
         const imagePath = await uploadFile('services', `${user!.id}/${id}`, _imageFile)

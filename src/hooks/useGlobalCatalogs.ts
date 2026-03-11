@@ -16,7 +16,6 @@ export function useGlobalServices(search = '') {
         .from('global_services')
         .select('*')
         .order('category')
-        .order('order')
         .order('name')
       if (search) {
         query = query.or(`name.ilike.%${search}%,category.ilike.%${search}%`)
@@ -87,7 +86,6 @@ export function useGlobalProducts(search = '') {
         .from('global_products')
         .select('*')
         .order('category')
-        .order('order')
         .order('name')
       if (search) {
         query = query.or(`name.ilike.%${search}%,category.ilike.%${search}%`)
