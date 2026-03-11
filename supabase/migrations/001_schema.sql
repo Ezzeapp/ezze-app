@@ -1138,3 +1138,24 @@ INSERT INTO public.global_products (name, category) VALUES
   ('Воск для депиляции',  'Эпиляция'),
   ('Сахарная паста',      'Эпиляция')
 ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- ACTIVITY TYPES (глобальные категории деятельности)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.activity_types (
+  id      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name    TEXT NOT NULL,
+  icon    TEXT,
+  "order" INT DEFAULT 0
+);
+ALTER TABLE public.activity_types ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "activity_types_public_read" ON public.activity_types FOR SELECT USING (true);
+
+-- ============================================================
+-- ДОПОЛНИТЕЛЬНЫЕ КОЛОНКИ master_profiles
+-- (добавляются после создания зависимых таблиц)
+-- ============================================================
+ALTER TABLE public.master_profiles
+  ADD COLUMN IF NOT EXISTS booking_theme  TEXT DEFAULT 'blue',
+  ADD COLUMN IF NOT EXISTS activity_type  UUID REFERENCES public.activity_types(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS specialty      UUID REFERENCES public.specialties(id) ON DELETE SET NULL;
