@@ -1,0 +1,272 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { uploadFile } from '@/lib/storage'
+import { useAuth } from '@/contexts/AuthContext'
+import type { Team, TeamMember, TeamRole } from '@/types'
+
+export const TEAM_KEY = 'team'
+export const TEAM_MEMBERS_KEY = 'team_members'
+
+// ── Моя команда + роль ───────────────────────────────────────────────────────
+
+export interface MyTeamResult {
+  team: Team | null
+  role: TeamRole
+  isOwner: boolean
+  isMember: boolean
+}
+
+export function useMyTeam() {
+  const { user } = useAuth()
+
+  return useQuery({
+    queryKey: [TEAM_KEY, user?.id],
+    queryFn: async (): Promise<MyTeamResult> => {
+      if (!user) return { team: null, role: null, isOwner: false, isMember: false }
+
+      // 1. Проверяем — является ли пользователь владельцем команды
+      const { data: ownedTeam } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('owner_id', user.id)
+        .maybeSingle()
+
+      if (ownedTeam) {
+        return { team: ownedTeam as Team, role: 'owner', isOwner: true, isMember: false }
+      }
+
+      // 2. Проверяем — является ли участником команды
+      const { data: membership } = await supabase
+        .from('team_members')
+        .select('*, team:teams(*)')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (membership) {
+        const team = (membership as any).team ?? null
+        return { team, role: 'member', isOwner: false, isMember: true }
+      }
+
+      return { team: null, role: null, isOwner: false, isMember: false }
+    },
+    enabled: !!user,
+    staleTime: 5 * 60_000, // 5 минут кэш
+  })
+}
+
+// ── Команда по slug (публичная, без auth) ────────────────────────────────────
+
+export function useTeamBySlug(slug: string) {
+  return useQuery({
+    queryKey: [TEAM_KEY, 'slug', slug],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('teams')
+        .select('*, owner:users(*)')
+        .eq('slug', slug)
+        .eq('is_public', true)
+        .maybeSingle()
+      return (data as Team | null) ?? null
+    },
+    enabled: !!slug,
+    staleTime: 5 * 60_000,
+  })
+}
+
+// ── Участники команды (публичный, для страницы записи команды) ───────────────
+
+export function usePublicTeamMembers(teamId: string) {
+  return useQuery({
+    queryKey: ['public_team_members', teamId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('*, user:users(*)')
+        .eq('team_id', teamId)
+        .eq('status', 'active')
+        .order('joined_at')
+      if (error) throw error
+      return (data ?? []) as TeamMember[]
+    },
+    enabled: !!teamId,
+    staleTime: 2 * 60_000,
+  })
+}
+
+// ── Участники команды (для владельца) ────────────────────────────────────────
+
+export function useTeamMembers(teamId: string) {
+  return useQuery({
+    queryKey: [TEAM_MEMBERS_KEY, teamId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('*, user:users(*)')
+        .eq('team_id', teamId)
+        .neq('status', 'removed')
+        .order('joined_at')
+      if (error) throw error
+      return (data ?? []) as TeamMember[]
+    },
+    enabled: !!teamId,
+    staleTime: 5 * 60_000,
+  })
+}
+
+// ── Создать команду ──────────────────────────────────────────────────────────
+
+export function useCreateTeam() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+
+  return useMutation({
+    mutationFn: async (data: { name: string; slug: string; description?: string }) => {
+      const { data: team, error } = await supabase
+        .from('teams')
+        .insert({
+          ...data,
+          owner_id: user!.id,
+          is_public: false,
+          currency: 'RUB',
+        })
+        .select()
+        .single()
+      if (error) throw error
+      return team as Team
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [TEAM_KEY] })
+    },
+  })
+}
+
+// ── Обновить настройки команды ───────────────────────────────────────────────
+
+export function useUpdateTeam() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Team> & { logoFile?: File } }) => {
+      const { logoFile, ...rest } = data as any
+
+      if (logoFile) {
+        await uploadFile('teams', `${id}/logo`, logoFile)
+      }
+
+      const { data: team, error } = await supabase
+        .from('teams')
+        .update(rest)
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      return team as Team
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [TEAM_KEY] })
+    },
+  })
+}
+
+// ── Пауза / снятие паузы участника (владелец) ────────────────────────────────
+
+export function useTogglePauseTeamMember() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ memberId, currentStatus }: { memberId: string; currentStatus: string }) => {
+      const { data, error } = await supabase
+        .from('team_members')
+        .update({ status: currentStatus === 'paused' ? 'active' : 'paused' })
+        .eq('id', memberId)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [TEAM_MEMBERS_KEY] })
+    },
+  })
+}
+
+// ── Удалить участника (владелец) ─────────────────────────────────────────────
+
+export function useRemoveTeamMember() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (memberId: string) => {
+      const { data, error } = await supabase
+        .from('team_members')
+        .update({ status: 'removed' })
+        .eq('id', memberId)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [TEAM_MEMBERS_KEY] })
+    },
+  })
+}
+
+// ── Удалить команду (владелец) ───────────────────────────────────────────────
+
+export function useDeleteTeam() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (teamId: string) => {
+      // Удаляем всех участников команды
+      await supabase.from('team_members').delete().eq('team_id', teamId)
+
+      // Удаляем все инвайты
+      await supabase.from('team_invites').delete().eq('team_id', teamId)
+
+      // Удаляем саму команду
+      const { error } = await supabase.from('teams').delete().eq('id', teamId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [TEAM_KEY] })
+      queryClient.invalidateQueries({ queryKey: [TEAM_MEMBERS_KEY] })
+    },
+  })
+}
+
+// ── Покинуть команду (участник) ──────────────────────────────────────────────
+
+export function useLeaveTeam() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+
+  return useMutation({
+    mutationFn: async () => {
+      // Находим свою запись участника
+      const { data: membership, error: findErr } = await supabase
+        .from('team_members')
+        .select('id')
+        .eq('user_id', user!.id)
+        .eq('status', 'active')
+        .maybeSingle()
+      if (findErr) throw findErr
+      if (!membership) throw new Error('membership_not_found')
+
+      const { data, error } = await supabase
+        .from('team_members')
+        .update({ status: 'removed' })
+        .eq('id', membership.id)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [TEAM_KEY] })
+      queryClient.invalidateQueries({ queryKey: [TEAM_MEMBERS_KEY] })
+    },
+  })
+}

@@ -1,0 +1,78 @@
+import { Outlet } from 'react-router-dom'
+import { Sidebar } from './Sidebar'
+import { TopBar } from './TopBar'
+import { BottomNav } from './BottomNav'
+import { useAuth } from '@/contexts/AuthContext'
+import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
+import { useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
+import { initMiniApp, isTelegramMiniApp } from '@/lib/telegramWebApp'
+
+const inTelegram = isTelegramMiniApp()
+
+export function AppLayout() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+
+  // Expand to full screen if opened inside Telegram Mini App + track safe area insets
+  useEffect(() => {
+    if (!isTelegramMiniApp()) return
+    const tg = window.Telegram!.WebApp
+
+    const applyInsets = () => {
+      const top = (tg.safeAreaInset?.top ?? 0) + (tg.contentSafeAreaInset?.top ?? 0)
+      document.documentElement.style.setProperty('--app-tg-top-inset', `${top}px`)
+    }
+
+    initMiniApp()
+    applyInsets()
+    tg.onEvent?.('safeAreaChanged', applyInsets)
+    tg.onEvent?.('contentSafeAreaChanged', applyInsets)
+    return () => {
+      tg.offEvent?.('safeAreaChanged', applyInsets)
+      tg.offEvent?.('contentSafeAreaChanged', applyInsets)
+    }
+  }, [])
+
+  // Use user-specific localStorage key so different accounts don't share the flag
+  const lsKey = user ? `ezze_onboarded_${user.id}` : null
+  const [onboardingDone, setOnboardingDone] = useState(() =>
+    lsKey ? localStorage.getItem(lsKey) === '1' : false
+  )
+
+  // Show onboarding if: user exists, not previously onboarded in DB, and not dismissed this session
+  const showOnboarding = !onboardingDone && user && user.onboarded !== true
+
+  const handleOnboardingComplete = () => {
+    if (lsKey) localStorage.setItem(lsKey, '1')
+    setOnboardingDone(true)
+    queryClient.invalidateQueries({ queryKey: ['master_profile'] })
+  }
+
+  return (
+    <div className="flex h-dvh overflow-hidden bg-background">
+      {/* Desktop Sidebar — только lg+ */}
+      <aside className="hidden lg:flex lg:w-60 lg:flex-col lg:fixed lg:inset-y-0">
+        <Sidebar />
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex flex-1 flex-col overflow-hidden lg:pl-60">
+        <TopBar />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">
+          {/* pb-20 на мобиле — отступ под нижнюю панель; pt-safe в Telegram — под нотч */}
+          <div className="container max-w-6xl mx-auto px-3 py-4 pb-20 lg:px-6 lg:py-6 lg:pb-6">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+
+      {/* Нижняя навигация — только на мобиле (lg:hidden внутри компонента) */}
+      <BottomNav />
+
+      {showOnboarding && (
+        <OnboardingWizard open={true} onComplete={handleOnboardingComplete} />
+      )}
+    </div>
+  )
+}

@@ -1,0 +1,1780 @@
+import { useState, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+import { Search, Clock, X, Percent, User, UserPlus, CalendarCheck, ChevronLeft, ChevronRight, Copy, ArrowRightLeft, Plus, CreditCard, StickyNote, Repeat, Info, Printer } from 'lucide-react'
+import dayjs from 'dayjs'
+import isoWeek from 'dayjs/plugin/isoWeek'
+import pb from '@/lib/pocketbase'
+
+dayjs.extend(isoWeek)
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { formatCurrency, formatDuration, parseTimeToMinutes, minutesToTime } from '@/lib/utils'
+import { useCurrency, useCurrencySymbol } from '@/hooks/useCurrency'
+import { useSchedule, useScheduleBreaks } from '@/hooks/useSchedule'
+import { useCreateClient } from '@/hooks/useClients'
+import { useClientStats } from '@/hooks/useClientStats'
+import { useAuth } from '@/contexts/AuthContext'
+import { useFeature } from '@/hooks/useFeatureFlags'
+import { useDraft } from '@/hooks/useDraft'
+import { toast } from '@/components/shared/Toaster'
+import { printReceipt } from '@/lib/printReceipt'
+import type { Appointment, Service, Client, Schedule, ScheduleBreak } from '@/types'
+
+// Тип данных черновика новой записи
+interface AppointmentDraft {
+  serviceIds: string[]
+  date: string
+  time: string
+  clientId: string | null
+  isGuest: boolean
+  guestName: string
+  guestPhone: string
+  priceInput: string
+  notes: string
+  discount: number
+  customDiscount: string
+  paymentMethod: string
+}
+
+// Стабильный пустой массив — чтобы не вызывать бесконечный цикл useEffect
+const EMPTY_BREAKS: ScheduleBreak[] = []
+
+// ── Типы ────────────────────────────────────────────────────────────────────
+
+export interface AppointmentFormData {
+  service: string
+  services: Service[]   // все выбранные услуги (для appointment_services)
+  date: string
+  start_time: string
+  end_time: string
+  client: string
+  client_name: string
+  client_phone: string
+  price: number | undefined
+  notes: string
+  status: 'scheduled' | 'done' | 'cancelled' | 'no_show'
+  notify_telegram: boolean
+  recurring: boolean
+  recurring_weeks: number
+  discount: number
+  payment_method?: 'cash' | 'card' | 'transfer' | 'other'
+}
+
+interface Props {
+  open: boolean
+  onClose: () => void
+  editAppt: Appointment | null
+  defaultDate: string
+  defaultTime: string
+  services: Service[]
+  clients: Client[]
+  onSubmit: (data: AppointmentFormData) => Promise<void>
+  onDelete?: () => void
+  onDuplicate?: () => void
+  duplicateFrom?: Appointment | null
+  isLoading: boolean
+  hasTelegram: boolean
+  initialStep?: 0 | 1 | 2 | 3
+}
+
+// ── Хелперы слотов ───────────────────────────────────────────────────────────
+
+const DOW_MAP: Record<number, string> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' }
+
+type BusyReason = 'break' | 'appointment' | 'outOfBounds' | null
+interface SlotInfo { time: string; busy: boolean; reason: BusyReason }
+
+async function computeSlots(
+  date: string,
+  duration: number,        // 0 = показать все слоты без проверки "влезет ли"
+  schedule: Schedule | null,
+  breaks: ScheduleBreak[],
+  masterId: string,
+  excludeApptId?: string,
+): Promise<SlotInfo[]> {
+  if (!schedule || !date) return []
+
+  const dow = dayjs(date).day()
+  const key = DOW_MAP[dow]
+  const enabled = schedule[`${key}_enabled` as keyof Schedule] as boolean
+  if (!enabled) return []
+
+  const startStr = schedule[`${key}_start` as keyof Schedule] as string
+  const endStr   = schedule[`${key}_end`   as keyof Schedule] as string
+  const slotDur  = schedule.slot_duration || 30
+
+  const start = parseTimeToMinutes(startStr)
+  const end   = parseTimeToMinutes(endStr)
+  const dur   = duration > 0 ? duration : slotDur  // если услуга не выбрана — проверяем на slotDur
+
+  const times: number[] = []
+  for (let t = start; t + slotDur <= end; t += slotDur) times.push(t)
+
+  const dayBreaks = breaks.filter(b => b.day_of_week === dow)
+
+  let appts: Appointment[] = []
+  try {
+    let filter = `master="${masterId}" && date="${date}" && status!="cancelled"`
+    if (excludeApptId) filter += ` && id!="${excludeApptId}"`
+    appts = await pb.collection('appointments').getFullList<Appointment>({ filter })
+  } catch { /* ignore */ }
+
+  return times.map(t => {
+    const breakBusy = dayBreaks.some(b => {
+      const bs = parseTimeToMinutes(b.start_time)
+      const be = parseTimeToMinutes(b.end_time)
+      return t >= bs && t < be
+    })
+    const apptBusy = appts.some(a => {
+      const as_ = parseTimeToMinutes(a.start_time)
+      const ae  = parseTimeToMinutes(a.end_time)
+      return t < ae && t + dur > as_
+    })
+    const outOfBounds = t + dur > end
+    const busy = breakBusy || apptBusy || outOfBounds
+    const reason: BusyReason = breakBusy ? 'break' : apptBusy ? 'appointment' : outOfBounds ? 'outOfBounds' : null
+    return { time: minutesToTime(t), busy, reason }
+  })
+}
+
+const DISCOUNT_PRESETS = [5, 10, 15, 20]
+
+// ── Компонент ────────────────────────────────────────────────────────────────
+
+export function AppointmentDialog({
+  open, onClose, editAppt, defaultDate, defaultTime,
+  services, clients, onSubmit, onDelete, onDuplicate, duplicateFrom, isLoading, hasTelegram,
+  initialStep,
+}: Props) {
+  const { t, i18n } = useTranslation()
+  const currency = useCurrency()
+  const currencySymbol = useCurrencySymbol()
+  const { user } = useAuth()
+  const { data: schedule } = useSchedule()
+  const { data: breaksData } = useScheduleBreaks()
+  const breaks = breaksData ?? EMPTY_BREAKS
+  const createClient = useCreateClient()
+
+  // ── Черновик ──────────────────────────────────────────────────────────────
+  const draftKey = `appt_draft_${user?.id || 'anon'}`
+  const draft = useDraft<AppointmentDraft>(draftKey)
+  const [showDraftBanner, setShowDraftBanner] = useState(false)
+
+  // ── Feature flags ──────────────────────────────────────────────────────────
+  const showNotes     = useFeature('appointment_notes')
+  const showRecurring = useFeature('appointment_recurring')
+
+  // ── Услуги ────────────────────────────────────────────────────────────────
+  const [svcSearch, setSvcSearch] = useState('')
+  const closeSvcDropdown = () => setSvcSearch('')
+
+  const [selectedSvcs, setSelectedSvcs] = useState<Service[]>([])
+  const [svcBlockedWarning, setSvcBlockedWarning] = useState<string | null>(null)
+
+  const toggleSvc = (svc: Service) => {
+    setSvcBlockedWarning(null)
+    setSelectedSvcs(prev => {
+      const exists = prev.find(s => s.id === svc.id)
+      if (exists) {
+        return prev.filter(s => s.id !== svc.id)
+      }
+
+      // Проверяем: если время уже выбрано — влезет ли новая услуга?
+      if (selectedTime && selectedDate && slots.length > 0) {
+        const newDuration = prev.reduce((s, x) => s + x.duration_min, 0) + svc.duration_min
+        const chosenSlot = slots.find(s => s.time === selectedTime)
+        // Пересчитываем: занят ли слот с новой длительностью
+        // Проверяем через уже посчитанные слоты — если текущий слот с новой dur будет busy
+        // Делаем проверку напрямую по данным из slots (t + newDur > end или пересечение)
+        // Используем schedule из хука — берём из существующего слота
+        // Простая проверка: смотрим есть ли свободный слот начиная с selectedTime с длиной newDuration
+        const startMin = parseTimeToMinutes(selectedTime)
+        const endMin = startMin + newDuration
+        // Проверяем реальные блокировщики (запись/перерыв), outOfBounds не считаем
+        const blockedInRange = slots.some(s => {
+          if (!s.busy || s.reason === 'outOfBounds') return false
+          const t = parseTimeToMinutes(s.time)
+          return t >= startMin && t < endMin
+        })
+        // Конец дня берём напрямую из расписания
+        const schedKey = DOW_MAP[dayjs(selectedDate).day()]
+        const dayEndStr = schedule ? schedule[`${schedKey}_end` as keyof Schedule] as string : ''
+        const dayEndMin = dayEndStr ? parseTimeToMinutes(dayEndStr) : 0
+        const outOfBounds = dayEndMin > 0 && endMin > dayEndMin
+
+        if (blockedInRange || outOfBounds) {
+          setSvcBlockedWarning(
+            t('appointments.slotReasonAppointment', { dur: formatDuration(newDuration, t) })
+          )
+          return prev // не добавляем
+        }
+      }
+
+      return [...prev, svc]
+    })
+  }
+
+  const totalDuration = useMemo(
+    () => selectedSvcs.reduce((s, svc) => s + svc.duration_min, 0),
+    [selectedSvcs]
+  )
+  const totalBasePrice = useMemo(
+    () => selectedSvcs.reduce((s, svc) => s + (svc.price || 0), 0),
+    [selectedSvcs]
+  )
+
+  // ── Дата / слоты ──────────────────────────────────────────────────────────
+  const [selectedDate, setSelectedDate] = useState(defaultDate || dayjs().format('YYYY-MM-DD'))
+  const [slots, setSlots] = useState<SlotInfo[]>([])
+  const [slotsLoading, setSlotsLoading] = useState(false)
+  const [selectedTime, setSelectedTime] = useState(defaultTime || '')
+  // Неделя для пикера дат: начало недели (Пн) содержащей выбранную дату
+  const [weekStart, setWeekStart] = useState(() =>
+    dayjs(defaultDate || dayjs()).startOf('isoWeek')
+  )
+
+  // ── Клиент ────────────────────────────────────────────────────────────────
+  const [clientSearch, setClientSearch] = useState('')
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [isGuest, setIsGuest] = useState(true)
+  const [guestName, setGuestName] = useState('')
+  const [guestPhone, setGuestPhone] = useState('')
+  const [showNewClient, setShowNewClient] = useState(false)
+  const [newFirstName, setNewFirstName] = useState('')
+  const [newLastName, setNewLastName]   = useState('')
+  const [newPhone, setNewPhone]         = useState('')
+  const [newEmail, setNewEmail]         = useState('')
+  const [savingClient, setSavingClient] = useState(false)
+  const clientFullName = selectedClient
+    ? `${selectedClient.first_name} ${selectedClient.last_name || ''}`.trim()
+    : ''
+  const { data: clientStats } = useClientStats(selectedClient?.id ?? '', clientFullName || undefined)
+
+  // ── Финансы ───────────────────────────────────────────────────────────────
+  const [priceInput, setPriceInput]         = useState('')
+  const [discount, setDiscount]             = useState(0)
+  const [customDiscount, setCustomDiscount] = useState('')
+  const [surcharge, setSurcharge]           = useState(0)   // надбавка % (срочность)
+  const [customSurcharge, setCustomSurcharge] = useState('')
+  const [adjustMode, setAdjustMode]         = useState<'discount' | 'surcharge'>('discount')
+  const [paymentMethod, setPaymentMethod]   = useState<'cash' | 'card' | 'transfer' | 'other' | ''>('')
+
+  // ── Прочее ────────────────────────────────────────────────────────────────
+  const [notes, setNotes]               = useState('')
+  const [status, setStatus]             = useState<AppointmentFormData['status']>('scheduled')
+  const [notifyTg, setNotifyTg]         = useState(false)
+  const [recurring, setRecurring]       = useState(false)
+  const [recurringWeeks, setRecurringWeeks] = useState(4)
+  const [isReschedule, setIsReschedule] = useState(false)
+
+  // ── UI-раскрытие секций на шаге 4 ─────────────────────────────────────────
+  const [activeSection4, setActiveSection4] = useState<'discount' | 'payment' | 'notes' | 'recurring' | null>(null)
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!open) return
+    setMobileStep(initialStep ?? 0)
+    if (editAppt) {
+      // Восстанавливаем услуги: 1) из appointment_services (новый формат)
+      //   2) из notes-префикса "[Услуга, ...]\n" (legacy)  3) из editAppt.service (fallback)
+      const apptSvcsExpand = editAppt.expand?.['appointment_services(appointment)'] as Array<{ service: string; sort_order?: number }> | undefined
+      let restoredSvcs: Service[] = []
+      if (apptSvcsExpand && apptSvcsExpand.length > 0) {
+        const sorted = [...apptSvcsExpand].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        restoredSvcs = sorted.map(as => services.find(s => s.id === as.service)).filter(Boolean) as Service[]
+      }
+      if (restoredSvcs.length === 0) {
+        // Legacy: notes-префикс
+        const multiMatch = (editAppt.notes || '').match(/^\[(.+)\]\n?/)
+        if (multiMatch) {
+          const names = multiMatch[1].split(', ').map(n => n.trim().replace(/×\d+$/, ''))
+          restoredSvcs = names.map(name => services.find(s => s.name === name)).filter(Boolean) as Service[]
+        }
+      }
+      if (restoredSvcs.length === 0) {
+        const primary = services.find(s => s.id === editAppt.service)
+        if (primary) restoredSvcs = [primary]
+      }
+      // Убираем notes-префикс из заметок
+      const cleanNotes = (editAppt.notes || '').replace(/^\[.+\]\n?/, '')
+      setSelectedSvcs(restoredSvcs)
+      setSelectedDate(editAppt.date)
+      setSelectedTime(editAppt.start_time)
+      setIsReschedule(false)
+      setNotes(cleanNotes)
+      setStatus(editAppt.status)
+      // editAppt.price хранит finalPrice (с учётом скидки/надбавки).
+      // Восстанавливаем basePrice обратным пересчётом, чтобы скидка не применялась дважды.
+      const saved = editAppt.discount ?? 0
+      const presets = [5, 10, 15]
+      if (saved < 0) {
+        const pct = Math.abs(saved)
+        setAdjustMode('discount')
+        if (presets.includes(pct)) { setDiscount(pct); setCustomDiscount('') }
+        else { setDiscount(0); setCustomDiscount(String(pct)) }
+        setSurcharge(0); setCustomSurcharge('')
+      } else if (saved > 0) {
+        setAdjustMode('surcharge')
+        if (presets.includes(saved)) { setSurcharge(saved); setCustomSurcharge('') }
+        else { setSurcharge(0); setCustomSurcharge(String(saved)) }
+        setDiscount(0); setCustomDiscount('')
+      } else {
+        setDiscount(0); setCustomDiscount(''); setSurcharge(0); setCustomSurcharge(''); setAdjustMode('discount')
+      }
+      setPaymentMethod((editAppt.payment_method || '') as any)
+      setActiveSection4(null)
+      // Обратный пересчёт базовой цены из finalPrice: basePrice = finalPrice / (1 + saved/100)
+      if (editAppt.price !== undefined) {
+        const adjustment = saved !== 0 ? (1 + saved / 100) : 1
+        const restoredBase = adjustment !== 0 ? Math.round(editAppt.price / adjustment) : editAppt.price
+        setPriceInput(String(restoredBase))
+      } else {
+        setPriceInput('')
+      }
+      if (editAppt.client) {
+        const c = clients.find(c => c.id === editAppt.client) || null
+        setSelectedClient(c); setIsGuest(false)
+      } else {
+        setSelectedClient(null); setIsGuest(true)
+        setGuestName(editAppt.client_name || '')
+        setGuestPhone(editAppt.client_phone || '')
+      }
+    } else if (duplicateFrom) {
+      // Дублирование — восстанавливаем услуги/клиента/цену из оригинала
+      const dupApptSvcs = duplicateFrom.expand?.['appointment_services(appointment)'] as Array<{ service: string; sort_order?: number }> | undefined
+      let dupSvcs: Service[] = []
+      if (dupApptSvcs && dupApptSvcs.length > 0) {
+        const sorted = [...dupApptSvcs].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        dupSvcs = sorted.map(as => services.find(s => s.id === as.service)).filter(Boolean) as Service[]
+      }
+      if (dupSvcs.length === 0) {
+        const multiMatch = (duplicateFrom.notes || '').match(/^\[(.+)\]\n?/)
+        if (multiMatch) {
+          const names = multiMatch[1].split(', ').map(n => n.trim().replace(/×\d+$/, ''))
+          dupSvcs = names.map(name => services.find(s => s.name === name)).filter(Boolean) as Service[]
+        }
+      }
+      if (dupSvcs.length === 0) {
+        const primary = services.find(s => s.id === duplicateFrom.service)
+        if (primary) dupSvcs = [primary]
+      }
+      const dupNotes = (duplicateFrom.notes || '').replace(/^\[.+\]\n?/, '')
+      setSelectedSvcs(dupSvcs); setSvcSearch('')
+      const initDate = defaultDate || dayjs().format('YYYY-MM-DD')
+      setSelectedDate(initDate)
+      setSelectedTime('')  // время не копируем — нужно выбрать новое
+      setWeekStart(dayjs(initDate).startOf('isoWeek'))
+      setNotes(dupNotes); setStatus('scheduled')
+      setPriceInput(duplicateFrom.price !== undefined ? String(duplicateFrom.price) : '')
+      setDiscount(0); setCustomDiscount(''); setSurcharge(0); setCustomSurcharge(''); setAdjustMode('discount')
+      setPaymentMethod('')
+      if (duplicateFrom.client) {
+        const c = clients.find(c => c.id === duplicateFrom.client) || null
+        setSelectedClient(c); setIsGuest(false)
+      } else {
+        setSelectedClient(null); setIsGuest(true)
+        setGuestName(duplicateFrom.client_name || '')
+        setGuestPhone(duplicateFrom.client_phone || '')
+      }
+      setClientSearch(''); setShowNewClient(false)
+      setNewFirstName(''); setNewLastName(''); setNewPhone(''); setNewEmail('')
+      setNotifyTg(false); setRecurring(false); setRecurringWeeks(4)
+      setIsReschedule(false)
+      setActiveSection4(null)
+      setSlots([])
+    } else {
+      setSelectedSvcs([]); setSvcSearch('')
+      const initDate = defaultDate || dayjs().format('YYYY-MM-DD')
+      setSelectedDate(initDate)
+      setSelectedTime(defaultTime || '')
+      setWeekStart(dayjs(initDate).startOf('isoWeek'))
+      setNotes(''); setStatus('scheduled')
+      setPriceInput(''); setDiscount(0); setCustomDiscount(''); setSurcharge(0); setCustomSurcharge(''); setAdjustMode('discount')
+      setPaymentMethod('')
+      setSelectedClient(null); setIsGuest(true)
+      setGuestName(''); setGuestPhone('')
+      setClientSearch(''); setShowNewClient(false)
+      setNewFirstName(''); setNewLastName(''); setNewPhone(''); setNewEmail('')
+      setNotifyTg(false); setRecurring(false); setRecurringWeeks(4)
+      setIsReschedule(false)
+      setActiveSection4(null)
+      setSlots([])
+      // Проверяем черновик (только для новых записей)
+      if (draft.exists()) setShowDraftBanner(true)
+      else setShowDraftBanner(false)
+    }
+  }, [open])
+
+  // Авто-сохранение черновика (только для новых записей)
+  useEffect(() => {
+    if (!open || editAppt || duplicateFrom || showDraftBanner) return
+    if (selectedSvcs.length === 0 && !guestName && !guestPhone && !selectedClient) return
+    draft.save({
+      serviceIds: selectedSvcs.map(s => s.id),
+      date: selectedDate,
+      time: selectedTime,
+      clientId: selectedClient?.id || null,
+      isGuest,
+      guestName, guestPhone,
+      priceInput, notes,
+      discount, customDiscount,
+      paymentMethod,
+    })
+  }, [open, selectedSvcs, selectedDate, selectedTime, selectedClient, isGuest, guestName, guestPhone, priceInput, notes, discount, customDiscount, paymentMethod])
+
+  // Восстановить черновик
+  const handleRestoreDraft = () => {
+    const saved = draft.load()
+    if (!saved) { setShowDraftBanner(false); return }
+    const restoredSvcs = saved.serviceIds
+      .map(id => services.find(s => s.id === id))
+      .filter(Boolean) as Service[]
+    setSelectedSvcs(restoredSvcs)
+    if (saved.date) { setSelectedDate(saved.date); setWeekStart(dayjs(saved.date).startOf('isoWeek')) }
+    if (saved.time) setSelectedTime(saved.time)
+    setIsGuest(saved.isGuest)
+    setGuestName(saved.guestName || '')
+    setGuestPhone(saved.guestPhone || '')
+    if (!saved.isGuest && saved.clientId) {
+      const c = clients.find(c => c.id === saved.clientId) || null
+      setSelectedClient(c)
+    }
+    setPriceInput(saved.priceInput || '')
+    setNotes(saved.notes || '')
+    setDiscount(saved.discount || 0)
+    setCustomDiscount(saved.customDiscount || '')
+    setPaymentMethod((saved.paymentMethod || '') as any)
+    setShowDraftBanner(false)
+  }
+
+  const handleDiscardDraft = () => {
+    draft.clear()
+    setShowDraftBanner(false)
+  }
+
+  // Авто-цена из услуг (обновляем при смене набора) — только для новых записей
+  useEffect(() => {
+    if (editAppt || duplicateFrom) return
+    setPriceInput(totalBasePrice > 0 ? String(totalBasePrice) : '')
+  }, [selectedSvcs.map(s => s.id).join(',')])
+
+  // Слоты: грузим сразу при выборе даты, даже без услуги
+  useEffect(() => {
+    if (!selectedDate || !user?.id) { setSlots([]); return }
+    setSlotsLoading(true)
+    computeSlots(selectedDate, totalDuration, schedule || null, breaks, user.id, editAppt?.id)
+      .then(s => {
+        setSlots(s)
+        setSlotsLoading(false)
+        // Автовыбор первого свободного слота только при редактировании
+        // (при новой записи — мастер выбирает слот вручную)
+        if (editAppt) {
+          // ничего не меняем — время уже установлено из editAppt
+        }
+      })
+  }, [selectedDate, totalDuration, schedule, breaks, user?.id])
+
+  // Доступные даты (60 дней, только рабочие)
+  const availableDates = useMemo(() => {
+    return Array.from({ length: 60 }, (_, i) => {
+      const d = dayjs().add(i, 'day')
+      if (!schedule) return d.format('YYYY-MM-DD')
+      const key = DOW_MAP[d.day()]
+      return schedule[`${key}_enabled` as keyof Schedule] ? d.format('YYYY-MM-DD') : null
+    }).filter(Boolean) as string[]
+  }, [schedule])
+
+  // Если сегодня выходной — автоматически переключаемся на первый рабочий день
+  // и синхронизируем неделю
+  useEffect(() => {
+    if (!open || editAppt || !schedule || availableDates.length === 0) return
+    setSelectedDate(prev => {
+      if (availableDates.includes(prev)) return prev
+      const first = availableDates[0]
+      // Переключаем неделю к первой рабочей дате
+      setWeekStart(dayjs(first).startOf('isoWeek'))
+      return first
+    })
+  }, [open, availableDates])
+
+
+  // Поиск услуг
+  const filteredSvcs = useMemo(() => {
+    const q = svcSearch.toLowerCase().trim()
+    const active = services.filter(s => s.is_active)
+    if (!q) return active
+    return active.filter(s =>
+      s.name.toLowerCase().includes(q) || (s.description || '').toLowerCase().includes(q)
+    )
+  }, [services, svcSearch])
+
+  // Поиск клиентов
+  const filteredClients = useMemo(() => {
+    const q = clientSearch.toLowerCase().trim()
+    if (!q) return []
+    return clients.filter(c =>
+      `${c.first_name} ${c.last_name || ''}`.toLowerCase().includes(q) ||
+      (c.phone || '').includes(q) ||
+      (c.email || '').toLowerCase().includes(q)
+    ).slice(0, 8)
+  }, [clients, clientSearch])
+
+  // Итоговая цена
+  const basePrice = parseFloat(priceInput) || 0
+  const effectiveDiscount = discount > 0 ? discount : (parseFloat(customDiscount) || 0)
+  const effectiveSurcharge = surcharge > 0 ? surcharge : (parseFloat(customSurcharge) || 0)
+  // Скидка и надбавка не суммируются — применяется только одно (surcharge приоритетнее)
+  const netAdjustment = effectiveSurcharge > 0 ? effectiveSurcharge : -effectiveDiscount
+  const finalPrice = basePrice > 0 ? Math.round(basePrice * (1 + netAdjustment / 100)) : 0
+
+  // Добавление нового клиента
+  const handleAddClient = async () => {
+    if (!newFirstName.trim()) return
+    setSavingClient(true)
+    try {
+      const c = await createClient.mutateAsync({
+        first_name: newFirstName.trim(), last_name: newLastName.trim(),
+        phone: newPhone.trim(), email: newEmail.trim(),
+      } as any)
+      setSelectedClient(c); setIsGuest(false); setShowNewClient(false)
+      setNewFirstName(''); setNewLastName(''); setNewPhone(''); setNewEmail('')
+      toast.success(t('clients.created'))
+    } catch { toast.error(t('common.saveError')) }
+    finally { setSavingClient(false) }
+  }
+
+  // Submit
+  const handleSubmit = async () => {
+    if (selectedSvcs.length === 0 || !selectedDate || !selectedTime) return
+    const startMin = parseTimeToMinutes(selectedTime)
+    const endTime  = minutesToTime(startMin + (totalDuration || 30))
+    await onSubmit({
+      service: selectedSvcs[0].id,
+      services: selectedSvcs,          // все услуги → для appointment_services
+      date: selectedDate, start_time: selectedTime, end_time: endTime,
+      client: isGuest ? '' : (selectedClient?.id || ''),
+      client_name: isGuest ? guestName : '',
+      client_phone: isGuest ? guestPhone : '',
+      price: basePrice > 0 ? finalPrice : undefined,
+      notes,                           // чистые заметки, без префикса
+      status, notify_telegram: notifyTg,
+      recurring, recurring_weeks: recurringWeeks,
+      discount: netAdjustment,
+      payment_method: paymentMethod || undefined,
+    })
+    // Успешно сохранено — очищаем черновик
+    if (!editAppt) draft.clear()
+  }
+
+  const canSave = selectedSvcs.length > 0 && !!selectedDate && !!selectedTime
+
+  // Мобильный квиз: шаги 0=Дата, 1=Время, 2=Услуга, 3=Детали
+  const [mobileStep, setMobileStep] = useState(0)
+  const [stepDir, setStepDir] = useState<'forward' | 'back'>('forward')
+  const MOBILE_STEPS = 4
+
+  // Отображение клиента в итоговой строке
+  const clientLabel = selectedClient
+    ? `${selectedClient.first_name} ${selectedClient.last_name || ''}`.trim()
+    : guestName || t('appointments.guestClient')
+
+  // ── Рендер ────────────────────────────────────────────────────────────────
+
+  // ── Блок УСЛУГИ (переиспользуется в обоих колонках) ───────────────────────
+  // При новой записи услуги заблокированы до выбора времени
+  const svcsLocked = !editAppt && !duplicateFrom && !selectedTime
+
+  const servicesBlock = (
+    <section className="relative">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-2">
+        {t('appointments.service')}
+        {selectedSvcs.length > 0 && (
+          <span className="bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+            {selectedSvcs.length}
+          </span>
+        )}
+      </p>
+      {/* Поиск + дропдаун */}
+      <div className="relative z-20 mb-2">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none z-10" />
+        <Input
+          className="pl-9 pr-9 h-9 text-sm"
+          placeholder={t('booking.searchServices')}
+          value={svcSearch}
+          onChange={e => setSvcSearch(e.target.value)}
+        />
+        {svcSearch && (
+          <button type="button" onClick={closeSvcDropdown}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+        {/* Дропдаун — absolute под инпутом, z-20 поверх всего */}
+        {svcSearch && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-xl shadow-lg z-50 max-h-[220px] overflow-y-auto">
+            {filteredSvcs.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-3">{t('booking.noServices')}</p>
+            )}
+            {filteredSvcs.map(svc => {
+              const isSel = !!selectedSvcs.find(s => s.id === svc.id)
+              const wouldBlock = !isSel && !!selectedTime && !!selectedDate && slots.length > 0 && (() => {
+                const newDuration = selectedSvcs.reduce((s, x) => s + x.duration_min, 0) + svc.duration_min
+                const startMin = parseTimeToMinutes(selectedTime)
+                const endMin = startMin + newDuration
+                const blockedInRange = slots.some(s => {
+                  if (!s.busy || s.reason === 'outOfBounds') return false
+                  const t = parseTimeToMinutes(s.time)
+                  return t >= startMin && t < endMin
+                })
+                const schedKey = DOW_MAP[dayjs(selectedDate).day()]
+                const dayEndStr = schedule ? schedule[`${schedKey}_end` as keyof Schedule] as string : ''
+                const dayEndMin = dayEndStr ? parseTimeToMinutes(dayEndStr) : 0
+                return blockedInRange || (dayEndMin > 0 && endMin > dayEndMin)
+              })()
+              return (
+                <button
+                  key={svc.id}
+                  type="button"
+                  onPointerDown={e => {
+                    e.preventDefault()
+                    if (!wouldBlock && !svcsLocked) {
+                      toggleSvc(svc)
+                      closeSvcDropdown()
+                    }
+                  }}
+                  className={`w-full text-left px-3 py-2.5 flex items-center gap-3 border-b last:border-b-0 transition-colors
+                    ${isSel ? 'bg-primary/8' : (wouldBlock || svcsLocked) ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/60'}`}
+                >
+                  {svc.expand?.category?.color && (
+                    <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: svc.expand.category.color }} />
+                  )}
+                  <span className="flex-1 text-sm font-medium truncate">{svc.name}</span>
+                  <div className="text-right shrink-0 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1 justify-end">
+                      <Clock className="h-3 w-3" />{formatDuration(svc.duration_min, t)}
+                    </div>
+                    {svc.price > 0 && <div className="font-semibold text-foreground mt-0.5">{formatCurrency(svc.price, currency, i18n.language)}</div>}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {svcBlockedWarning && (
+        <div className="flex items-start gap-2 mt-1.5 px-2 py-1.5 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
+          <span className="text-amber-500 mt-0.5 shrink-0">⚠️</span>
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            {svcBlockedWarning} — {t('appointments.changeTimeOrService')}
+          </p>
+        </div>
+      )}
+      {selectedSvcs.length > 0 && (
+        <div className="mt-2 pt-2 border-t space-y-1.5">
+          {selectedSvcs.map((svc, idx) => (
+            <div key={svc.id}
+              className="flex items-center gap-2 bg-muted/50 rounded-lg px-2.5 py-1.5">
+              {/* Номер */}
+              <span className="text-xs text-muted-foreground shrink-0 w-4">{idx + 1}.</span>
+              {/* Название */}
+              <span className="text-xs font-medium text-primary flex-1 truncate">{svc.name}</span>
+              {/* Цена */}
+              {svc.price > 0 && (
+                <span className="text-[11px] text-muted-foreground shrink-0">
+                  {formatCurrency(svc.price, currency, i18n.language)}
+                </span>
+              )}
+              {/* Удалить */}
+              <button type="button" onClick={() => toggleSvc(svc)}
+                className="text-muted-foreground hover:text-destructive transition-colors ml-0.5 shrink-0">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+          {selectedSvcs.length > 0 && (
+            <div className="flex items-center justify-between px-1 pt-0.5">
+              <span className="text-sm font-semibold text-foreground">{t('appointments.total')}:</span>
+              <span className="text-sm font-semibold text-foreground">{formatDuration(totalDuration, t)}{totalBasePrice > 0 && ` · ${formatCurrency(totalBasePrice, currency, i18n.language)}`}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Подсказка: выберите время сначала */}
+      {svcsLocked && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground py-4 justify-center">
+          <Clock className="h-4 w-4 shrink-0" />
+          <span>{t('appointments.selectTimeFirst')}</span>
+        </div>
+      )}
+    </section>
+  )
+
+  // ── Блок КЛИЕНТ ───────────────────────────────────────────────────────────
+  const clientBlock = (
+    <section>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {t('appointments.client')}
+        </p>
+        {!showNewClient && (
+          <button type="button"
+            onClick={() => { setShowNewClient(true); setSelectedClient(null); setIsGuest(false) }}
+            className="text-xs text-primary hover:underline flex items-center gap-1">
+            <UserPlus className="h-3 w-3" />{t('appointments.newClient')}
+          </button>
+        )}
+      </div>
+      {showNewClient ? (
+        <div className="border rounded-xl p-3 space-y-2 bg-muted/30">
+          <p className="text-sm font-medium">{t('appointments.newClientTitle')}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <Input className="h-8 text-sm col-span-2" placeholder={`${t('clients.firstName')} *`}
+              value={newFirstName} onChange={e => setNewFirstName(e.target.value)} autoFocus />
+            <Input className="h-8 text-sm" placeholder={t('clients.phone')}
+              value={newPhone} onChange={e => setNewPhone(e.target.value)} />
+            <Input className="h-8 text-sm" placeholder={t('clients.email')}
+              value={newEmail} onChange={e => setNewEmail(e.target.value)} />
+          </div>
+          <div className="flex gap-2">
+            <Button type="button" size="sm" className="h-7 text-xs"
+              loading={savingClient} disabled={!newFirstName.trim()} onClick={handleAddClient}>
+              {t('common.save')}
+            </Button>
+            <Button type="button" size="sm" variant="ghost" className="h-7 text-xs"
+              onClick={() => { setShowNewClient(false); setIsGuest(true) }}>
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </div>
+      ) : selectedClient ? (
+        <div className="border rounded-xl bg-primary/5 border-primary/20 overflow-hidden">
+          {/* Основная строка клиента */}
+          <div className="flex items-center gap-3 px-3 py-2.5">
+            <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0 text-primary font-semibold text-sm">
+              {selectedClient.first_name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{selectedClient.first_name} {selectedClient.last_name || ''}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedClient.phone && (
+                  <a href={`tel:${selectedClient.phone}`}
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    onClick={e => e.stopPropagation()}>
+                    {selectedClient.phone}
+                  </a>
+                )}
+                {selectedClient.source && (
+                  <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+                    {selectedClient.source}
+                  </span>
+                )}
+              </div>
+            </div>
+            <button type="button"
+              onClick={() => { setSelectedClient(null); setIsGuest(true); setClientSearch('') }}
+              className="text-muted-foreground hover:text-destructive transition-colors shrink-0">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {/* Мини-статистика */}
+          {clientStats ? (
+            <div className="border-t border-primary/10 px-3 py-1.5 flex items-center gap-3 text-[11px] text-muted-foreground bg-background/40 flex-wrap">
+              <span>
+                {t('clients.statsVisits')}: <span className="font-semibold text-foreground">{clientStats.totalVisits}</span>
+              </span>
+              {clientStats.totalSpent > 0 && (
+                <span>
+                  {t('clients.statsSpent')}: <span className="font-semibold text-foreground">{formatCurrency(clientStats.totalSpent, currency, i18n.language)}</span>
+                </span>
+              )}
+              {clientStats.lastVisit ? (
+                <span className="ml-auto">
+                  {t('clients.statsLastVisit')}: <span className="font-semibold text-foreground">{dayjs(clientStats.lastVisit).format('D MMM')}</span>
+                </span>
+              ) : (
+                <span className="ml-auto italic">{t('clients.statsNoVisits')}</span>
+              )}
+            </div>
+          ) : (
+            <div className="border-t border-primary/10 px-3 py-1.5 text-[11px] text-muted-foreground bg-background/40 animate-pulse">
+              {t('common.loading')}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input className="pl-9 h-9 text-sm" placeholder={t('clients.search')}
+              value={clientSearch} onChange={e => setClientSearch(e.target.value)} />
+          </div>
+          {filteredClients.length > 0 && (
+            <div className="border rounded-xl overflow-hidden divide-y shadow-sm">
+              {filteredClients.map(c => (
+                <button key={c.id} type="button"
+                  onClick={() => { setSelectedClient(c); setIsGuest(false); setClientSearch('') }}
+                  className="w-full text-left px-3 py-2 hover:bg-muted/60 transition-colors flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center shrink-0 text-xs font-medium">
+                    {c.first_name.charAt(0)}
+                  </div>
+                  <span className="text-sm font-medium">{c.first_name} {c.last_name || ''}</span>
+                  {c.phone && <span className="text-xs text-muted-foreground ml-auto">{c.phone}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+          {clientSearch.trim() && filteredClients.length === 0 && (
+            <p className="text-xs text-muted-foreground px-1">{t('clients.empty')}</p>
+          )}
+        </div>
+      )}
+    </section>
+  )
+
+  // ── Блок ЦЕНА ─────────────────────────────────────────────────────────────
+  const PRESETS = adjustMode === 'discount' ? [5, 10, 15] : [5, 10, 15]
+  const activePreset = adjustMode === 'discount' ? effectiveDiscount : effectiveSurcharge
+  const customAdjust = adjustMode === 'discount' ? customDiscount : customSurcharge
+
+  const handleModeSwitch = (mode: 'discount' | 'surcharge') => {
+    setAdjustMode(mode)
+    setDiscount(0); setCustomDiscount(''); setSurcharge(0); setCustomSurcharge('')
+  }
+  const handlePresetClick = (p: number) => {
+    if (adjustMode === 'discount') {
+      setDiscount(discount === p ? 0 : p); setCustomDiscount('')
+    } else {
+      setSurcharge(surcharge === p ? 0 : p); setCustomSurcharge('')
+    }
+  }
+  const handleCustomChange = (val: string) => {
+    if (adjustMode === 'discount') { setCustomDiscount(val); setDiscount(0) }
+    else { setCustomSurcharge(val); setSurcharge(0) }
+  }
+
+  // ── Блок ДАТА + ВРЕМЯ ─────────────────────────────────────────────────────
+  // 7 дней текущей недели
+  const weekDays = Array.from({ length: 7 }, (_, i) => weekStart.add(i, 'day'))
+  const todayStr = dayjs().format('YYYY-MM-DD')
+
+  const dateTimeBlock = (
+    <>
+      {/* ДАТА */}
+      <section>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t('appointments.date')}
+            {selectedDate && (
+              <span className="ml-2 font-normal normal-case text-foreground/70">
+                {dayjs(selectedDate).format('D MMM, dddd')}
+              </span>
+            )}
+            {isReschedule && (
+              <span className="ml-2 font-normal normal-case text-amber-600 dark:text-amber-400 text-[11px]">
+                — {t('appointments.rescheduleMode')}
+              </span>
+            )}
+          </p>
+          {/* Навигация по неделям */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setWeekStart(w => w.subtract(1, 'week'))}
+              disabled={weekStart.isBefore(dayjs().startOf('isoWeek'))}
+              className="h-6 w-6 rounded-md border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <span className="text-[11px] text-muted-foreground min-w-[90px] text-center">
+              {weekStart.format('D MMM')} — {weekStart.add(6, 'day').format('D MMM')}
+            </span>
+            <button
+              type="button"
+              onClick={() => setWeekStart(w => w.add(1, 'week'))}
+              className="h-6 w-6 rounded-md border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Недельная сетка 7 дней */}
+        <div className="grid grid-cols-7 gap-1">
+          {weekDays.map(day => {
+            const dateStr    = day.format('YYYY-MM-DD')
+            const isActive   = selectedDate === dateStr
+            const isToday    = dateStr === todayStr
+            const isPast     = day.isBefore(dayjs(), 'day')
+            const isWeekend  = day.day() === 0 || day.day() === 6
+            const isDayOff   = (() => {
+              if (!schedule) return false
+              const key = DOW_MAP[day.day()]
+              return !(schedule[`${key}_enabled` as keyof Schedule] as boolean)
+            })()
+            const disabled = isPast || isDayOff
+
+            return (
+              <button
+                key={dateStr}
+                type="button"
+                disabled={disabled}
+                onClick={() => {
+                  if (disabled) return
+                  setSelectedDate(dateStr)
+                  setSelectedTime('')
+                  setSvcBlockedWarning(null)
+                }}
+                className={`flex flex-col items-center py-2 rounded-xl border-2 text-center transition-all
+                  ${isActive
+                    ? 'border-primary bg-primary text-primary-foreground shadow-md scale-105'
+                    : disabled
+                      ? 'border-border bg-muted/30 opacity-35 cursor-not-allowed'
+                      : isToday
+                        ? 'border-primary/40 hover:border-primary/70'
+                        : isWeekend
+                          ? 'border-red-200 hover:border-red-400'
+                          : 'border-border hover:border-primary/50'
+                  }`}
+              >
+                <div className={`text-[9px] font-bold uppercase leading-tight
+                  ${isActive ? 'text-primary-foreground/70'
+                    : isWeekend && !disabled ? 'text-red-500 dark:text-red-400'
+                    : 'text-muted-foreground'}`}>
+                  {day.format('dd')}
+                </div>
+                <div className={`font-bold text-sm leading-tight
+                  ${isActive ? 'text-primary-foreground'
+                    : isToday && !isActive ? 'text-primary'
+                    : isWeekend && !disabled ? 'text-red-500 dark:text-red-400'
+                    : ''}`}>
+                  {day.format('D')}
+                </div>
+                <div className={`text-[9px] leading-tight
+                  ${isActive ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
+                  {day.format('MMM')}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* ВРЕМЯ */}
+      <section>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-2">
+          {t('appointments.time')}
+          {selectedSvcs.length === 0 && (
+            <span className="font-normal normal-case text-muted-foreground/60 text-[11px]">
+              — {t('appointments.selectSvcForAccuracy')}
+            </span>
+          )}
+          {totalDuration > 0 && (
+            <span className="font-normal normal-case text-muted-foreground">· {formatDuration(totalDuration, t)}</span>
+          )}
+          {slotsLoading && (
+            <span className="ml-auto">
+              <div className="h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </span>
+          )}
+        </p>
+        {/* Оборачиваем в relative-контейнер — спиннер поверх, контент не прыгает */}
+        <div className={`relative transition-opacity duration-150 ${slotsLoading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+        {slots.length === 0 && !slotsLoading ? (
+          <p className="text-sm text-muted-foreground italic py-1">{t('schedule.dayOff')}</p>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded border-2 border-primary bg-primary/10 inline-block" />
+                {t('booking.slotFree')}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded border border-border bg-muted inline-block" />
+                {t('booking.slotBusy')}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+              {slots.map(slot => {
+                const isChosen = selectedTime === slot.time
+                const isDisabled = slot.busy
+                return (
+                  <button
+                    key={slot.time}
+                    type="button"
+                    onClick={() => {
+                      if (isDisabled) return
+                      setSelectedTime(slot.time)
+                      setSvcBlockedWarning(null)
+                    }}
+                    className={`py-2 rounded-lg border text-xs font-medium transition-all
+                      ${isDisabled
+                        ? 'border-border bg-muted/40 text-muted-foreground/40 cursor-not-allowed line-through'
+                        : isChosen
+                          ? 'border-primary bg-primary text-primary-foreground shadow-sm scale-105'
+                          : 'border-border hover:border-primary/60 hover:bg-primary/5 active:scale-95'
+                      }`}
+                  >
+                    {slot.time}
+                  </button>
+                )
+              })}
+            </div>
+            {(() => {
+              const allBusy = slots.every(s => s.busy)
+              if (allBusy) return (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 px-0.5">
+                  {t('appointments.allSlotsBusy')}
+                </p>
+              )
+              const nextFree = selectedTime
+                ? (slots.find(s => !s.busy && s.time > selectedTime) ?? null)
+                : slots.find(s => !s.busy) ?? null
+              if (nextFree) return (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <p className="text-xs text-muted-foreground">
+                    {selectedTime ? t('appointments.nextFree') : t('appointments.nearestFree')}:
+                  </p>
+                  <button type="button" onClick={() => setSelectedTime(nextFree.time)}
+                    className="text-xs font-semibold text-primary hover:underline">
+                    {nextFree.time}
+                  </button>
+                </div>
+              )
+              return null
+            })()}
+          </>
+        )}
+        </div>{/* конец relative-контейнера */}
+      </section>
+    </>
+  )
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      {/* Мобиле: полноэкранный снизу вверх. Десктоп: центрированный диалог */}
+      <DialogContent
+        mobileFullscreen
+        className="w-full p-0 overflow-hidden flex flex-col sm:max-w-2xl lg:max-w-4xl sm:h-[90vh] sm:max-h-[90vh] lg:h-[65vh] lg:max-h-[65vh]"
+      >
+
+        {/* Заголовок */}
+        <DialogHeader className="px-5 pt-4 pb-3 border-b shrink-0">
+          <DialogTitle className="flex items-center gap-3">
+            {editAppt ? t('appointments.edit') : t('appointments.add')}
+            {canSave && (
+              <span className="hidden lg:flex items-center gap-2 text-xs font-normal text-muted-foreground ml-auto pr-6">
+                <CalendarCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+                {dayjs(selectedDate).format('D MMM')} · {selectedTime}
+                {totalDuration > 0 && (
+                  <span className="text-muted-foreground/60">→ {minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)}</span>
+                )}
+                {finalPrice > 0 && (
+                  <Badge variant="secondary" className="text-xs font-semibold ml-1">{formatCurrency(finalPrice, currency, i18n.language)}</Badge>
+                )}
+              </span>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+
+        {/* ── Баннер восстановления черновика ─────────────────────── */}
+        {showDraftBanner && !editAppt && !duplicateFrom && (
+          <div className="flex items-center justify-between gap-3 px-5 py-2.5 bg-amber-50 dark:bg-amber-950 border-b border-amber-200 dark:border-amber-800 shrink-0">
+            <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">{t('draft.found')}</p>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleDiscardDraft}>
+                {t('draft.discard')}
+              </Button>
+              <Button size="sm" className="h-7 text-xs" onClick={handleRestoreDraft}>
+                {t('draft.restore')}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Общий контент (заметки, статус, telegram/повтор) ─────── */}
+        {/* Выносим в переменную чтобы не дублировать */}
+        {(() => {
+          // ── Шаги квиза для мобайла ───────────────────────────────
+          const stepLabels = [
+            `${t('appointments.date')} / ${t('appointments.time')}`,
+            t('appointments.service'),
+            t('appointments.client'),
+            t('appointments.total'),
+          ]
+
+          // Кастомные блоки только для нужного шага
+          const mobileStepCanNext: boolean[] = [
+            !!selectedDate && !!selectedTime, // шаг 0: дата И время
+            selectedSvcs.length > 0,          // шаг 1: услуга
+            true,                             // шаг 2: клиент (опционально)
+            true,                             // шаг 3: итого (всегда можно сохранить)
+          ]
+
+          return (
+            <>
+              {/* ── МОБАЙЛ (< lg) ─── квиз ───────────────────────── */}
+              <div className="lg:hidden flex-1 flex flex-col min-h-0">
+                {/* Прогресс-бар — компактный */}
+                <div className="shrink-0 px-5 pt-3 pb-2">
+                  <div className="flex items-center">
+                    {stepLabels.map((_, i) => (
+                      <div key={i} className={`flex items-center ${i < stepLabels.length - 1 ? 'flex-1' : ''}`}>
+                        <button
+                          type="button"
+                          onClick={() => { if (i < mobileStep || mobileStepCanNext.slice(0, i).every(Boolean)) setMobileStep(i) }}
+                          className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center shrink-0 transition-all ${
+                            i === mobileStep
+                              ? 'bg-primary text-primary-foreground scale-110'
+                              : i < mobileStep
+                                ? 'bg-primary/20 text-primary'
+                                : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {i + 1}
+                        </button>
+                        {i < stepLabels.length - 1 && (
+                          <div className={`flex-1 h-0.5 mx-1 rounded-full transition-colors ${i < mobileStep ? 'bg-primary/40' : 'bg-muted'}`} />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Название текущего шага */}
+                  <p className="text-xs font-semibold text-primary mt-1.5">{stepLabels[mobileStep]}</p>
+                </div>
+
+                {/* Контент шага */}
+                <div key={mobileStep} className={`flex-1 overflow-y-auto px-5 pb-3 space-y-4 ${stepDir === 'forward' ? 'animate-slide-from-right' : 'animate-slide-from-left'}`}>
+                  {/* Шаг 0 — Дата + Время (объединены) */}
+                  {mobileStep === 0 && (
+                    <>
+                      <section>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            {t('appointments.date')}
+                            {selectedDate && (
+                              <span className="ml-2 font-normal normal-case text-foreground/70">
+                                {dayjs(selectedDate).format('D MMM, dddd')}
+                              </span>
+                            )}
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <button type="button"
+                              onClick={() => setWeekStart(w => w.subtract(1, 'week'))}
+                              disabled={weekStart.isBefore(dayjs().startOf('isoWeek'))}
+                              className="h-6 w-6 rounded-md border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                              <ChevronLeft className="h-3.5 w-3.5" />
+                            </button>
+                            <span className="text-[11px] text-muted-foreground min-w-[90px] text-center">
+                              {weekStart.format('D MMM')} — {weekStart.add(6, 'day').format('D MMM')}
+                            </span>
+                            <button type="button"
+                              onClick={() => setWeekStart(w => w.add(1, 'week'))}
+                              className="h-6 w-6 rounded-md border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors">
+                              <ChevronRight className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-7 gap-1">
+                          {Array.from({ length: 7 }, (_, i) => weekStart.add(i, 'day')).map(day => {
+                            const dateStr = day.format('YYYY-MM-DD')
+                            const isActive = selectedDate === dateStr
+                            const isToday = dateStr === dayjs().format('YYYY-MM-DD')
+                            const isPast = day.isBefore(dayjs(), 'day')
+                            const isWeekend = day.day() === 0 || day.day() === 6
+                            const isDayOff = schedule ? !(schedule[`${DOW_MAP[day.day()]}_enabled` as keyof Schedule] as boolean) : false
+                            const disabled = isPast || isDayOff
+                            return (
+                              <button key={dateStr} type="button" disabled={disabled}
+                                onClick={() => { if (disabled) return; setSelectedDate(dateStr); setSelectedTime(''); setSvcBlockedWarning(null) }}
+                                className={`flex flex-col items-center py-2 rounded-xl border-2 text-center transition-all
+                                  ${isActive ? 'border-primary bg-primary text-primary-foreground shadow-md scale-105'
+                                    : disabled ? 'border-border bg-muted/30 opacity-35 cursor-not-allowed'
+                                    : isToday ? 'border-primary/40 hover:border-primary/70'
+                                    : isWeekend ? 'border-red-200 hover:border-red-400'
+                                    : 'border-border hover:border-primary/50'}`}>
+                                <div className={`text-[9px] font-bold uppercase leading-tight ${isActive ? 'text-primary-foreground/70' : isWeekend && !disabled ? 'text-red-500' : 'text-muted-foreground'}`}>{day.format('dd')}</div>
+                                <div className={`font-bold text-sm leading-tight ${isActive ? 'text-primary-foreground' : isToday && !isActive ? 'text-primary' : isWeekend && !disabled ? 'text-red-500' : ''}`}>{day.format('D')}</div>
+                                <div className={`text-[9px] leading-tight ${isActive ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>{day.format('MMM')}</div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </section>
+
+                      <section>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-2">
+                          {t('appointments.time')}
+                          {selectedSvcs.length === 0 && <span className="font-normal normal-case text-muted-foreground/60 text-[11px]">— {t('appointments.selectSvcForAccuracy')}</span>}
+                          {totalDuration > 0 && <span className="font-normal normal-case text-muted-foreground">· {formatDuration(totalDuration, t)}</span>}
+                          {slotsLoading && <span className="ml-auto"><div className="h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></span>}
+                        </p>
+                        <div className={`relative transition-opacity duration-150 ${slotsLoading ? 'opacity-40 pointer-events-none' : ''}`}>
+                          {slots.length === 0 && !slotsLoading ? (
+                            <p className="text-sm text-muted-foreground italic py-1">{t('schedule.dayOff')}</p>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-3 mb-2 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded border-2 border-primary bg-primary/10 inline-block" />{t('booking.slotFree')}</span>
+                                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded border border-border bg-muted inline-block" />{t('booking.slotBusy')}</span>
+                              </div>
+                              <div className="grid grid-cols-4 gap-1.5">
+                                {slots.map(slot => {
+                                  const isChosen = selectedTime === slot.time
+                                  const isDisabled = slot.busy
+                                  return (
+                                    <button key={slot.time} type="button"
+                                      onClick={() => {
+                                        if (isDisabled) return;
+                                        setSelectedTime(slot.time);
+                                        setSvcBlockedWarning(null);
+                                        if (!editAppt && mobileStep === 0) {
+                                          setStepDir('forward');
+                                          setTimeout(() => setMobileStep(1), 300);
+                                        }
+                                      }}
+                                      className={`py-2 rounded-lg border text-xs font-medium transition-all
+                                        ${isDisabled ? 'border-border bg-muted/40 text-muted-foreground/40 cursor-not-allowed line-through'
+                                          : isChosen ? 'border-primary bg-primary text-primary-foreground shadow-sm scale-105'
+                                          : 'border-border hover:border-primary/60 hover:bg-primary/5 active:scale-95'}`}>
+                                      {slot.time}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                              {(() => {
+                                const allBusy = slots.every(s => s.busy)
+                                if (allBusy) return <p className="text-xs text-amber-600 mt-1.5">{t('appointments.allSlotsBusy')}</p>
+                                const nextFree = selectedTime ? slots.find(s => !s.busy && s.time > selectedTime) : slots.find(s => !s.busy)
+                                if (nextFree) return (
+                                  <div className="flex items-center gap-2 mt-1.5">
+                                    <p className="text-xs text-muted-foreground">{selectedTime ? t('appointments.nextFree') : t('appointments.nearestFree')}:</p>
+                                    <button type="button" onClick={() => {
+                                      setSelectedTime(nextFree.time);
+                                      if (!editAppt && mobileStep === 0) {
+                                        setStepDir('forward');
+                                        setTimeout(() => setMobileStep(1), 300);
+                                      }
+                                    }} className="text-xs font-semibold text-primary hover:underline">{nextFree.time}</button>
+                                  </div>
+                                )
+                                return null
+                              })()}
+                            </>
+                          )}
+                        </div>
+                      </section>
+                    </>
+                  )}
+
+                  {/* Шаг 1 — Услуга */}
+                  {mobileStep === 1 && servicesBlock}
+
+                  {/* Шаг 2 — Клиент */}
+                  {mobileStep === 2 && clientBlock}
+
+                  {/* Шаг 3 — Итого */}
+                  {mobileStep === 3 && (
+                    <>
+                      {/* Сводка */}
+                      <div className="rounded-xl border bg-muted/30 p-3 space-y-1.5">
+                        <div className="flex items-center gap-2 text-xs">
+                          <CalendarCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <span className="font-medium text-foreground">{dayjs(selectedDate).format('D MMM, dddd')}</span>
+                          <span className="text-muted-foreground">·</span>
+                          <span>{selectedTime}</span>
+                          {totalDuration > 0 && (
+                            <span className="text-muted-foreground/70">→ {minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)}</span>
+                          )}
+                        </div>
+                        {selectedSvcs.length > 0 && (
+                          <div className="space-y-0.5 pt-0.5">
+                            {selectedSvcs.map(svc => (
+                              <div key={svc.id} className="flex items-center justify-between text-xs">
+                                <span className="text-foreground">{svc.name}</span>
+                                {svc.price > 0 && <span className="text-muted-foreground">{formatCurrency(svc.price, currency, i18n.language)}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-xs font-medium pt-1 border-t">
+                          <span className="text-muted-foreground">{clientLabel}</span>
+                          <div className="flex items-center gap-2">
+                            {finalPrice > 0
+                              ? <span className="text-primary">{formatCurrency(finalPrice, currency, i18n.language)}</span>
+                              : totalBasePrice > 0 && <span>{formatCurrency(totalBasePrice, currency, i18n.language)}</span>
+                            }
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Цена — всегда видна под карточкой */}
+                      <div className="space-y-1">
+                        <div className="relative">
+                          <Input type="number" min={0} className="h-10 w-full text-base font-medium pr-12"
+                            placeholder={totalBasePrice > 0 ? String(totalBasePrice) : t('appointments.pricePlaceholder')}
+                            value={priceInput} onChange={e => setPriceInput(e.target.value)} />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
+                        </div>
+                        {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
+                          <div className="flex items-center justify-end gap-1.5 px-1">
+                            <span className="text-xs text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
+                            <span className="text-xs">→</span>
+                            <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : 'text-emerald-600'}`}>
+                              {formatCurrency(finalPrice, currency, i18n.language)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Таб-навигация: Скидка | Оплата | Заметки | Повтор */}
+                      {(() => {
+                        const tabs4 = [
+                          {
+                            key: 'discount' as const,
+                            icon: Percent,
+                            label: t('appointments.tabDiscount'),
+                            badge: effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : effectiveDiscount > 0 ? `−${effectiveDiscount}%` : null,
+                          },
+                          {
+                            key: 'payment' as const,
+                            icon: CreditCard,
+                            label: t('appointments.tabPayment'),
+                            badge: paymentMethod
+                              ? ({ cash: t('appointments.paymentCash'), card: t('appointments.paymentCard'), transfer: t('appointments.paymentTransfer'), other: t('appointments.paymentOther') } as Record<string, string>)[paymentMethod] ?? null
+                              : null,
+                          },
+                          ...(showNotes ? [{ key: 'notes' as const, icon: StickyNote, label: t('appointments.tabNote'), badge: notes.trim() ? '·' : null }] : []),
+                          ...(!editAppt && showRecurring ? [{ key: 'recurring' as const, icon: Repeat, label: t('appointments.tabRecurring'), badge: recurring ? '·' : null }] : []),
+                        ]
+                        return (
+                          <>
+                            <div className="grid grid-cols-2 gap-1">
+                              {tabs4.map(tab => {
+                                const Icon = tab.icon
+                                const isActive = activeSection4 === tab.key
+                                return (
+                                  <button key={tab.key} type="button"
+                                    onClick={() => setActiveSection4(isActive ? null : tab.key)}
+                                    className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors text-left ${
+                                      isActive
+                                        ? 'bg-primary/10 text-primary'
+                                        : tab.badge
+                                          ? 'bg-muted/70 text-foreground'
+                                          : 'bg-muted/40 text-muted-foreground hover:bg-muted'
+                                    }`}>
+                                    <Icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                                    <span className="truncate flex-1">{tab.label}</span>
+                                    {tab.badge && (
+                                      <span className={`shrink-0 text-xs font-semibold ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
+                                        {tab.badge}
+                                      </span>
+                                    )}
+                                  </button>
+                                )
+                              })}
+                            </div>
+
+                            {/* Контент активной вкладки */}
+                            {activeSection4 === 'discount' && (
+                              <div className="space-y-2 pt-1">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex rounded-lg border overflow-hidden shrink-0">
+                                    <button type="button" onClick={() => handleModeSwitch('discount')}
+                                      className={`px-3 h-7 text-xs font-medium transition-all border-r ${adjustMode === 'discount' ? 'bg-emerald-500 text-white' : 'bg-background text-muted-foreground hover:text-emerald-600'}`}>
+                                      {t('appointments.discount')}
+                                    </button>
+                                    <button type="button" onClick={() => handleModeSwitch('surcharge')}
+                                      className={`px-3 h-7 text-xs font-medium transition-all ${adjustMode === 'surcharge' ? 'bg-orange-500 text-white' : 'bg-background text-muted-foreground hover:text-orange-500'}`}>
+                                      {t('appointments.surcharge')}
+                                    </button>
+                                  </div>
+                                  <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : effectiveDiscount > 0 ? 'text-emerald-600' : 'text-muted-foreground/40'}`}>
+                                    {effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : effectiveDiscount > 0 ? `−${effectiveDiscount}%` : adjustMode === 'discount' ? '−%' : '+%'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  {PRESETS.map(p => (
+                                    <button key={p} type="button" onClick={() => handlePresetClick(p)}
+                                      className={`h-7 px-2 rounded-lg border text-xs font-medium transition-all flex-1 ${activePreset === p ? adjustMode === 'discount' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-orange-500 border-orange-500 text-white' : adjustMode === 'discount' ? 'border-border hover:border-emerald-400 hover:text-emerald-600' : 'border-border hover:border-orange-400 hover:text-orange-500'}`}>
+                                      {p}%
+                                    </button>
+                                  ))}
+                                  <div className="relative flex-1">
+                                    <Percent className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+                                    <Input type="number" min={0} max={100}
+                                      className="h-7 w-full pr-6 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      placeholder="0" value={customAdjust} onChange={e => handleCustomChange(e.target.value)} />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {activeSection4 === 'payment' && (
+                              <div className="grid grid-cols-2 gap-1 pt-1">
+                                {([
+                                  { key: 'cash',     label: t('appointments.paymentCash') },
+                                  { key: 'card',     label: t('appointments.paymentCard') },
+                                  { key: 'transfer', label: t('appointments.paymentTransfer') },
+                                  { key: 'other',    label: t('appointments.paymentOther') },
+                                ] as const).map(m => (
+                                  <button key={m.key} type="button"
+                                    onClick={() => setPaymentMethod(paymentMethod === m.key ? '' : m.key)}
+                                    className={`py-2 px-3 rounded-lg text-xs font-medium transition-colors ${paymentMethod === m.key ? 'bg-primary/10 text-primary' : 'bg-muted/40 text-muted-foreground hover:bg-muted'}`}>
+                                    {m.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+
+                            {activeSection4 === 'notes' && showNotes && (
+                              <div className="pt-1">
+                                <Textarea rows={3} className="text-sm resize-none min-h-0"
+                                  placeholder={t('booking.commentPlaceholder')}
+                                  value={notes} onChange={e => setNotes(e.target.value)} />
+                              </div>
+                            )}
+
+                            {activeSection4 === 'recurring' && !editAppt && (
+                              <div className="rounded-xl border divide-y overflow-hidden mt-1">
+                                {hasTelegram && (
+                                  <div className="flex items-center justify-between px-4 py-3">
+                                    <p className="text-sm">{t('appointments.notifyTelegram')}</p>
+                                    <Switch checked={notifyTg} onCheckedChange={setNotifyTg} />
+                                  </div>
+                                )}
+                                {showRecurring && (
+                                  <div className="px-4 py-3 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <p className="text-sm font-medium">{t('appointments.recurring')}</p>
+                                        <p className="text-xs text-muted-foreground">{t('appointments.recurringHelp')}</p>
+                                      </div>
+                                      <Switch checked={recurring} onCheckedChange={setRecurring} />
+                                    </div>
+                                    {recurring && (
+                                      <div className="flex items-center gap-3 pt-1">
+                                        <p className="text-sm text-muted-foreground shrink-0">{t('appointments.recurringWeeks')}</p>
+                                        <Input type="number" min={2} max={52} className="w-20 h-8"
+                                          value={recurringWeeks} onChange={e => setRecurringWeeks(Number(e.target.value))} />
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        )
+                      })()}
+                    </>
+                  )}
+                </div>
+
+                {/* Итоговая мини-плашка — если дата+время выбраны */}
+                {selectedDate && selectedTime && mobileStep >= 1 && mobileStep < 3 && (
+                  <div className="shrink-0 mx-5 mb-2 rounded-xl border bg-muted/30 px-3 py-2 flex items-center gap-2 text-xs">
+                    <CalendarCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="font-medium text-foreground">{dayjs(selectedDate).format('D MMM')}</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span>{selectedTime}</span>
+                    {totalDuration > 0 && <span className="text-muted-foreground">→ {minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)}</span>}
+                    {finalPrice > 0 && <span className="ml-auto font-semibold">{formatCurrency(finalPrice, currency, i18n.language)}</span>}
+                  </div>
+                )}
+
+                {/* Мобайл-футер: кнопки Назад / Далее / Сохранить */}
+                <div className="shrink-0 border-t px-5 py-3 flex items-center gap-2">
+                  {mobileStep > 0 ? (
+                    <Button type="button" variant="outline" onClick={() => { setStepDir('back'); setMobileStep(s => s - 1) }} className="gap-1">
+                      <ChevronLeft className="h-4 w-4" />{t('common.back') || 'Назад'}
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
+                  )}
+
+                  {mobileStep < MOBILE_STEPS - 1 ? (
+                    <Button type="button" className="ml-auto gap-1"
+                      disabled={!mobileStepCanNext[mobileStep]}
+                      onClick={() => { setStepDir('forward'); setMobileStep(s => s + 1) }}>
+                      {t('common.next') || 'Далее'}<ChevronRight className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button type="button" className="ml-auto" loading={isLoading} disabled={!canSave} onClick={handleSubmit}>
+                      {t('common.save')}
+                      {finalPrice > 0 && canSave && <Badge variant="secondary" className="ml-2 text-xs font-semibold">{formatCurrency(finalPrice, currency, i18n.language)}</Badge>}
+                      {finalPrice === 0 && totalBasePrice > 0 && canSave && <Badge variant="secondary" className="ml-2 text-xs font-semibold">{formatCurrency(totalBasePrice, currency, i18n.language)}</Badge>}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* ── ДЕСКТОП (lg+) — двухколоночный ──────────────────── */}
+              <div className="hidden lg:flex flex-1 overflow-hidden flex-row min-h-0">
+                {/* Левая колонка — Дата, Время, Услуги (50%) */}
+                <div className="px-5 py-4 space-y-5 border-r" style={{ width: '50%', overflow: svcSearch ? 'visible' : 'auto' }}>
+                  {dateTimeBlock}
+                  {servicesBlock}
+                </div>
+
+                {/* Правая колонка (50%) */}
+                <div className="overflow-y-auto px-5 py-4 flex flex-col gap-4" style={{ width: '50%' }}>
+                  {clientBlock}
+
+                  {/* Цена */}
+                  <section className="pt-1 border-t border-border">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                      {t('appointments.price')}
+                    </p>
+                    <div className="mb-2 relative">
+                      <Input type="number" min={0} className="h-10 w-full text-base font-medium pr-8"
+                        placeholder={totalBasePrice > 0 ? String(totalBasePrice) : t('appointments.pricePlaceholder')}
+                        value={priceInput} onChange={e => setPriceInput(e.target.value)} />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
+                    </div>
+                    {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
+                      <div className="flex items-center gap-2 text-xs mb-1 px-0.5">
+                        <span className="text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
+                        <span className="text-muted-foreground">→</span>
+                        <span className={`font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : 'text-emerald-600'}`}>{formatCurrency(finalPrice, currency, i18n.language)}</span>
+                      </div>
+                    )}
+                  </section>
+
+                  {/* Таб-навигация: Скидка | Оплата | Заметки | Детали */}
+                  {(() => {
+                    const tabs4 = [
+                      {
+                        key: 'discount' as const,
+                        icon: Percent,
+                        label: t('appointments.tabDiscount'),
+                        badge: effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : effectiveDiscount > 0 ? `−${effectiveDiscount}%` : null,
+                      },
+                      {
+                        key: 'payment' as const,
+                        icon: CreditCard,
+                        label: t('appointments.tabPayment'),
+                        badge: paymentMethod
+                          ? ({ cash: t('appointments.paymentCash'), card: t('appointments.paymentCard'), transfer: t('appointments.paymentTransfer'), other: t('appointments.paymentOther') } as Record<string, string>)[paymentMethod] ?? null
+                          : null,
+                      },
+                      ...(showNotes ? [{ key: 'notes' as const, icon: StickyNote, label: t('appointments.tabNote'), badge: notes.trim() ? '·' : null }] : []),
+                      { key: 'recurring' as const, icon: Info, label: t('appointments.tabDetails'), badge: status !== 'scheduled' || recurring || notifyTg ? '·' : null },
+                    ]
+                    return (
+                      <>
+                        <div className="grid grid-cols-2 gap-1">
+                          {tabs4.map(tab => {
+                            const Icon = tab.icon
+                            const isActive = activeSection4 === tab.key
+                            return (
+                              <button key={tab.key} type="button"
+                                onClick={() => setActiveSection4(isActive ? null : tab.key)}
+                                className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors text-left ${
+                                  isActive
+                                    ? 'bg-primary/10 text-primary'
+                                    : tab.badge
+                                      ? 'bg-muted/70 text-foreground'
+                                      : 'bg-muted/40 text-muted-foreground hover:bg-muted'
+                                }`}>
+                                <Icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                                <span className="truncate flex-1">{tab.label}</span>
+                                {tab.badge && (
+                                  <span className={`shrink-0 text-xs font-semibold ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
+                                    {tab.badge}
+                                  </span>
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
+
+                        {activeSection4 === 'discount' && (
+                          <div className="space-y-2 pt-1">
+                            <div className="flex items-center justify-between">
+                              <div className="flex rounded-lg border overflow-hidden shrink-0">
+                                <button type="button" onClick={() => handleModeSwitch('discount')}
+                                  className={`px-3 h-7 text-xs font-medium transition-all border-r ${adjustMode === 'discount' ? 'bg-emerald-500 text-white' : 'bg-background text-muted-foreground hover:text-emerald-600'}`}>
+                                  {t('appointments.discount')}
+                                </button>
+                                <button type="button" onClick={() => handleModeSwitch('surcharge')}
+                                  className={`px-3 h-7 text-xs font-medium transition-all ${adjustMode === 'surcharge' ? 'bg-orange-500 text-white' : 'bg-background text-muted-foreground hover:text-orange-500'}`}>
+                                  {t('appointments.surcharge')}
+                                </button>
+                              </div>
+                              <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : effectiveDiscount > 0 ? 'text-emerald-600' : 'text-muted-foreground/40'}`}>
+                                {effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : effectiveDiscount > 0 ? `−${effectiveDiscount}%` : adjustMode === 'discount' ? '−%' : '+%'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              {PRESETS.map(p => (
+                                <button key={p} type="button" onClick={() => handlePresetClick(p)}
+                                  className={`h-7 px-2 rounded-lg border text-xs font-medium transition-all flex-1 ${activePreset === p ? adjustMode === 'discount' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-orange-500 border-orange-500 text-white' : adjustMode === 'discount' ? 'border-border hover:border-emerald-400 hover:text-emerald-600' : 'border-border hover:border-orange-400 hover:text-orange-500'}`}>
+                                  {p}%
+                                </button>
+                              ))}
+                              <div className="relative flex-1">
+                                <Percent className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+                                <Input type="number" min={0} max={100}
+                                  className="h-7 w-full pr-6 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  placeholder="0" value={customAdjust} onChange={e => handleCustomChange(e.target.value)} />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {activeSection4 === 'payment' && (
+                          <div className="grid grid-cols-2 gap-1 pt-1">
+                            {([
+                              { key: 'cash',     label: t('appointments.paymentCash') },
+                              { key: 'card',     label: t('appointments.paymentCard') },
+                              { key: 'transfer', label: t('appointments.paymentTransfer') },
+                              { key: 'other',    label: t('appointments.paymentOther') },
+                            ] as const).map(m => (
+                              <button key={m.key} type="button"
+                                onClick={() => setPaymentMethod(paymentMethod === m.key ? '' : m.key)}
+                                className={`py-2 px-3 rounded-lg text-xs font-medium transition-colors ${paymentMethod === m.key ? 'bg-primary/10 text-primary' : 'bg-muted/40 text-muted-foreground hover:bg-muted'}`}>
+                                {m.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {activeSection4 === 'notes' && showNotes && (
+                          <div className="pt-1">
+                            <Textarea rows={3} className="text-sm resize-none min-h-0"
+                              placeholder={t('booking.commentPlaceholder')}
+                              value={notes} onChange={e => setNotes(e.target.value)} />
+                          </div>
+                        )}
+
+                        {activeSection4 === 'recurring' && (
+                          <div className="space-y-2 pt-1">
+                            {/* Статус */}
+                            {(() => {
+                              const statuses = editAppt
+                                ? (['scheduled', 'done', 'cancelled', 'no_show'] as const)
+                                : (['scheduled', 'done'] as const)
+                              const dotColor: Record<string, string> = {
+                                scheduled: 'bg-blue-500', done: 'bg-emerald-500', cancelled: 'bg-red-500', no_show: 'bg-orange-500',
+                              }
+                              const activeColor: Record<string, string> = {
+                                scheduled: 'bg-blue-50 text-blue-700 border-blue-400 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-600',
+                                done:      'bg-emerald-50 text-emerald-700 border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-600',
+                                cancelled: 'bg-red-50 text-red-700 border-red-400 dark:bg-red-950/40 dark:text-red-300 dark:border-red-600',
+                                no_show:   'bg-orange-50 text-orange-700 border-orange-400 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-600',
+                              }
+                              return (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {statuses.map(s => (
+                                    <button key={s} type="button" onClick={() => setStatus(s)}
+                                      className={`h-7 px-2.5 rounded-full border text-xs font-medium transition-all flex items-center gap-1.5 ${
+                                        status === s ? activeColor[s] : 'border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground'
+                                      }`}>
+                                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${status === s ? dotColor[s] : 'bg-muted-foreground/40'}`} />
+                                      {t(`appointments.status.${s}`)}
+                                    </button>
+                                  ))}
+                                </div>
+                              )
+                            })()}
+                            {/* Telegram + Повтор */}
+                            {(hasTelegram || (!editAppt && showRecurring)) && (
+                              <div className="rounded-xl border divide-y overflow-hidden">
+                                {hasTelegram && (
+                                  <div className="flex items-center justify-between px-4 py-3">
+                                    <p className="text-sm">{t('appointments.notifyTelegram')}</p>
+                                    <Switch checked={notifyTg} onCheckedChange={setNotifyTg} />
+                                  </div>
+                                )}
+                                {!editAppt && showRecurring && (
+                                  <div className="px-4 py-3 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <p className="text-sm font-medium">{t('appointments.recurring')}</p>
+                                        <p className="text-xs text-muted-foreground">{t('appointments.recurringHelp')}</p>
+                                      </div>
+                                      <Switch checked={recurring} onCheckedChange={setRecurring} />
+                                    </div>
+                                    {recurring && (
+                                      <div className="flex items-center gap-3 pt-1">
+                                        <p className="text-sm text-muted-foreground shrink-0">{t('appointments.recurringWeeks')}</p>
+                                        <Input type="number" min={2} max={52} className="w-20 h-8"
+                                          value={recurringWeeks} onChange={e => setRecurringWeeks(Number(e.target.value))} />
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
+
+                </div>
+              </div>
+
+              {/* ── Десктоп-футер ─────────────────────────────────── */}
+              <div className="hidden lg:flex border-t shrink-0 px-5 py-3 items-center gap-2">
+                {editAppt && onDelete && (
+                  <Button type="button" variant="destructive" size="sm" onClick={onDelete}>{t('common.delete')}</Button>
+                )}
+                {editAppt && onDuplicate && (
+                  <Button type="button" variant="outline" size="sm" onClick={onDuplicate} className="gap-1.5 text-muted-foreground hover:text-foreground">
+                    <Copy className="h-3.5 w-3.5" />{t('appointments.duplicate')}
+                  </Button>
+                )}
+                {editAppt && !isReschedule && (
+                  <Button type="button" variant="outline" size="sm"
+                    onClick={() => { setIsReschedule(true); setSelectedTime('') }}
+                    className="gap-1.5 text-amber-600 hover:text-amber-700 border-amber-200 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20">
+                    <ArrowRightLeft className="h-3.5 w-3.5" />{t('appointments.reschedule')}
+                  </Button>
+                )}
+                {editAppt && isReschedule && (
+                  <Button type="button" variant="outline" size="sm"
+                    onClick={() => { setIsReschedule(false); setSelectedTime(editAppt.start_time) }}
+                    className="gap-1.5 text-muted-foreground">
+                    <X className="h-3.5 w-3.5" />{t('appointments.rescheduleCancel')}
+                  </Button>
+                )}
+                {editAppt && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-muted-foreground"
+                    onClick={() => printReceipt({
+                      appointment: editAppt,
+                      masterName: user?.name || '',
+                      services: selectedSvcs,
+                      currency,
+                    })}
+                  >
+                    <Printer className="h-3.5 w-3.5" />
+                    Чек
+                  </Button>
+                )}
+                <Button type="button" variant="outline" onClick={onClose} className="ml-auto">{t('common.cancel')}</Button>
+                <Button type="button" loading={isLoading} disabled={!canSave} onClick={handleSubmit}>
+                  {t('common.save')}
+                  {finalPrice > 0 && canSave && <Badge variant="secondary" className="ml-2 text-xs font-semibold">{formatCurrency(finalPrice, currency, i18n.language)}</Badge>}
+                </Button>
+              </div>
+            </>
+          )
+        })()}
+
+      </DialogContent>
+    </Dialog>
+  )
+}

@@ -1,0 +1,72 @@
+name: Deploy to VPS (ezze-app Supabase)
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://ezze.site
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      # ── Deploy frontend → ezze.site ──────────────────────────────
+      - name: Deploy frontend to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          source: 'dist/*'
+          target: '/var/www/ezze-app/'
+          strip_components: 1
+
+      # ── Deploy Edge Functions ─────────────────────────────────────
+      - name: Deploy Edge Functions to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          source: 'supabase/functions/*'
+          target: '/app/ezze-app/supabase/functions/'
+          strip_components: 2
+
+      # ── Deploy Telegram bot + restart ────────────────────────────
+      - name: Deploy tg_polling.js to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          source: 'tg_polling.js'
+          target: '/app/ezze-app/'
+
+      - name: Restart Telegram bot service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: systemctl restart ezze-app-tg-bot
+
+      - name: Notify success
+        run: echo "✅ Deployed successfully to https://ezze.site"
