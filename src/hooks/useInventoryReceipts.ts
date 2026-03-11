@@ -14,7 +14,7 @@ export function useInventoryReceipts(itemId?: string) {
       let query = supabase
         .from('inventory_receipts')
         .select('*, inventory_item:inventory_items(*)')
-        .eq('master_id', user!.id)
+        // master filtering is done by RLS via inventory_item_id → inventory_items.master_id
         .order('date', { ascending: false })
 
       if (itemId) {
@@ -44,7 +44,7 @@ export function useCreateReceipt() {
     }) => {
       const { data: receipt, error: receiptErr } = await supabase
         .from('inventory_receipts')
-        .insert({ ...data, master_id: user!.id })
+        .insert({ ...data })
         .select()
         .single()
       if (receiptErr) throw receiptErr
