@@ -16,24 +16,37 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 async function fetchAppUser(userId: string): Promise<AppUser | null> {
+  // public.users has: id, plan, is_admin, onboarded, disabled, language, theme, timezone
+  // email comes from auth.users (via session), name/avatar from master_profiles
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, name, avatar, language, theme, timezone, onboarded, is_admin, plan')
+    .select('id, language, theme, timezone, onboarded, is_admin, plan')
     .eq('id', userId)
     .single()
   if (error || !data) return null
+
+  // Fetch email from auth
+  const { data: authData } = await supabase.auth.getUser()
+  const email = authData?.user?.email ?? ''
+
+  // Fetch name/avatar from master_profiles (optional — may not exist yet)
+  const { data: profile } = await supabase
+    .from('master_profiles')
+    .select('profession, avatar')
+    .eq('user_id', userId)
+    .maybeSingle()
+
   return {
     id: data.id,
-    email: data.email ?? '',
-    name: data.name ?? '',
-    avatar: data.avatar ?? undefined,
+    email,
+    name: profile?.profession ?? '',
+    avatar: profile?.avatar ?? undefined,
     language: data.language ?? undefined,
     theme: data.theme ?? undefined,
     timezone: data.timezone ?? undefined,
     onboarded: data.onboarded ?? false,
     is_admin: data.is_admin ?? false,
     plan: data.plan ?? 'free',
-    // BaseRecord fields — not stored separately in Supabase, use sensible defaults
     collectionId: 'users',
     collectionName: 'users',
     created: '',
