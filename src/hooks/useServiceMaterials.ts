@@ -15,7 +15,7 @@ export function useAllServiceMaterials() {
         .select('*, inventory_item:inventory_items(*), service:services!inner(master_id)')
         .eq('service.master_id', user!.id)
       if (error) throw error
-      return (data ?? []) as ServiceMaterial[]
+      return (data ?? []).map((m: any) => ({ ...m, expand: { inventory_item: m.inventory_item } })) as ServiceMaterial[]
     },
     enabled: !!user,
     staleTime: 5 * 60_000,
@@ -31,7 +31,7 @@ export function useServiceMaterials(serviceId: string) {
         .select('*, inventory_item:inventory_items(*)')
         .eq('service_id', serviceId)
       if (error) throw error
-      return (data ?? []) as ServiceMaterial[]
+      return (data ?? []).map((m: any) => ({ ...m, expand: { inventory_item: m.inventory_item } })) as ServiceMaterial[]
     },
     enabled: !!serviceId,
     staleTime: 5 * 60_000,

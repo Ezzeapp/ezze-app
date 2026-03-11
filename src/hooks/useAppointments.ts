@@ -9,6 +9,36 @@ export const APPOINTMENTS_KEY = 'appointments'
 // ── Select string for all queries ────────────────────────────────────────────
 const APPT_SELECT = '*, client:clients(*), service:services(*), appointment_services(*)'
 
+// ── Normalize Supabase response → PocketBase-compatible shape ─────────────────
+// Exported for use in components that query appointments directly
+// Supabase returns: { master_id, client_id, service_id, client: {...}, service: {...}, appointment_services: [...] }
+// Components expect: { master, client (FK string), service (FK string), expand: { client, service, 'appointment_services(appointment)' } }
+export function normalizeAppointment(raw: any): Appointment {
+  return {
+    ...raw,
+    master: raw.master_id ?? raw.master,
+    client: raw.client_id ?? raw.client ?? '',
+    service: raw.service_id ?? raw.service ?? '',
+    expand: {
+      client: (raw.client && typeof raw.client === 'object') ? raw.client : undefined,
+      service: (raw.service && typeof raw.service === 'object') ? raw.service : undefined,
+      'appointment_services(appointment)': (raw.appointment_services ?? []).map((as: any) => ({
+        ...as,
+        service: as.service_id,
+      })),
+    },
+  }
+}
+
+// ── Normalize write data: PocketBase field names → Supabase column names ──────
+function normalizeWriteData(data: Record<string, any>): Record<string, any> {
+  const { client, service, master, expand, collectionId, collectionName, created, updated, ...rest } = data
+  const out: Record<string, any> = { ...rest }
+  if (client !== undefined && !('client_id' in out)) out.client_id = client || null
+  if (service !== undefined && !('service_id' in out)) out.service_id = service || null
+  return out
+}
+
 // ── Helper: get list of services from appointment record ─────────────────────
 // Priority:
 //   1. appointment_services (new format)
@@ -97,7 +127,7 @@ export function useAppointments(startDate?: string, endDate?: string) {
 
       const { data, error } = await query
       if (error) throw error
-      return (data ?? []) as Appointment[]
+      return (data ?? []).map(normalizeAppointment) as Appointment[]
     },
     enabled: !!user,
     staleTime: 1000 * 60 * 2,
@@ -138,12 +168,12 @@ export function useCreateAppointmentWithServices() {
     }) => {
       const { data: appt, error } = await supabase
         .from('appointments')
-        .insert({ ...data, master_id: user!.id })
-        .select()
+        .insert({ ...normalizeWriteData(data as any), master_id: user!.id })
+        .select(APPT_SELECT)
         .single()
       if (error) throw error
       await upsertAppointmentServices(appt.id, services)
-      return appt as Appointment
+      return normalizeAppointment(appt) as Appointment
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_KEY] })
@@ -168,13 +198,13 @@ export function useUpdateAppointmentWithServices() {
     }) => {
       const { data: appt, error } = await supabase
         .from('appointments')
-        .update(data)
+        .update(normalizeWriteData(data as any))
         .eq('id', id)
-        .select()
+        .select(APPT_SELECT)
         .single()
       if (error) throw error
       await upsertAppointmentServices(id, services)
-      return appt as Appointment
+      return normalizeAppointment(appt) as Appointment
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_KEY] })
@@ -194,11 +224,11 @@ export function useCreateAppointment() {
     ) => {
       const { data: appt, error } = await supabase
         .from('appointments')
-        .insert({ ...data, master_id: user!.id })
-        .select()
+        .insert({ ...normalizeWriteData(data as any), master_id: user!.id })
+        .select(APPT_SELECT)
         .single()
       if (error) throw error
-      return appt as Appointment
+      return normalizeAppointment(appt) as Appointment
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_KEY] })
@@ -214,12 +244,12 @@ export function useUpdateAppointment() {
     mutationFn: async ({ id, data }: { id: string; data: Partial<Appointment> }) => {
       const { data: appt, error } = await supabase
         .from('appointments')
-        .update(data)
+        .update(normalizeWriteData(data as any))
         .eq('id', id)
-        .select()
+        .select(APPT_SELECT)
         .single()
       if (error) throw error
-      return appt as Appointment
+      return normalizeAppointment(appt) as Appointment
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_KEY] })

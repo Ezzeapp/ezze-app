@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { formatCurrency, getFileUrl } from '@/lib/utils'
 import { useCurrency } from '@/hooks/useCurrency'
 import type { Appointment, TeamMember } from '@/types'
+import { normalizeAppointment } from '@/hooks/useAppointments'
 
 // ── Запрос записей всех мастеров за день ─────────────────────────────────────
 
@@ -32,7 +33,7 @@ async function fetchTeamDayAppts(
         .eq('date', date)
         .order('start_time')
         .then(r => r)
-      const appointments = (data ?? []) as unknown as Appointment[]
+      const appointments = (data ?? []).map(normalizeAppointment) as Appointment[]
       return { member, appointments }
     }),
   )

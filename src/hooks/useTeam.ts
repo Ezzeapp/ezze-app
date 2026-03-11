@@ -27,12 +27,13 @@ export function useMyTeam() {
       // 1. Проверяем — является ли пользователь владельцем команды
       const { data: ownedTeam } = await supabase
         .from('teams')
-        .select('*')
+        .select('*, owner:users(*)')
         .eq('owner_id', user.id)
         .maybeSingle()
 
       if (ownedTeam) {
-        return { team: ownedTeam as Team, role: 'owner', isOwner: true, isMember: false }
+        const t = { ...ownedTeam, expand: { owner: (ownedTeam as any).owner } } as Team
+        return { team: t, role: 'owner', isOwner: true, isMember: false }
       }
 
       // 2. Проверяем — является ли участником команды
@@ -67,7 +68,8 @@ export function useTeamBySlug(slug: string) {
         .eq('slug', slug)
         .eq('is_public', true)
         .maybeSingle()
-      return (data as Team | null) ?? null
+      if (!data) return null
+      return { ...data, expand: { owner: (data as any).owner } } as Team
     },
     enabled: !!slug,
     staleTime: 5 * 60_000,
@@ -87,7 +89,7 @@ export function usePublicTeamMembers(teamId: string) {
         .eq('status', 'active')
         .order('joined_at')
       if (error) throw error
-      return (data ?? []) as TeamMember[]
+      return (data ?? []).map((m: any) => ({ ...m, expand: { user: m.user } })) as TeamMember[]
     },
     enabled: !!teamId,
     staleTime: 2 * 60_000,
@@ -107,7 +109,7 @@ export function useTeamMembers(teamId: string) {
         .neq('status', 'removed')
         .order('joined_at')
       if (error) throw error
-      return (data ?? []) as TeamMember[]
+      return (data ?? []).map((m: any) => ({ ...m, expand: { user: m.user } })) as TeamMember[]
     },
     enabled: !!teamId,
     staleTime: 5 * 60_000,
