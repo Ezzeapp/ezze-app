@@ -13,6 +13,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_net";
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.users (
   id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email       TEXT,
   plan        TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'pro', 'enterprise')),
   is_admin    BOOLEAN NOT NULL DEFAULT false,
   onboarded   BOOLEAN NOT NULL DEFAULT false,
@@ -24,11 +25,12 @@ CREATE TABLE IF NOT EXISTS public.users (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Auto-create user record on auth signup
+-- Auto-create user record on auth signup (includes email)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.users (id) VALUES (NEW.id);
+  INSERT INTO public.users (id, email) VALUES (NEW.id, NEW.email)
+    ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

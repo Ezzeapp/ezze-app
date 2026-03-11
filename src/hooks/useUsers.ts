@@ -10,10 +10,19 @@ export function useUsers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('users')
-        .select('id, name, email, avatar, is_admin, plan, onboarded, disabled, created_at')
-        .order('id')
+        .select('id, email, is_admin, plan, onboarded, disabled, created_at, master_profiles(avatar, profession)')
+        .order('created_at', { ascending: false })
       if (error) throw error
-      return data
+      // Normalize: flatten master_profiles join and add name/avatar aliases
+      return (data ?? []).map((u: any) => {
+        const mp = Array.isArray(u.master_profiles) ? u.master_profiles[0] : u.master_profiles
+        return {
+          ...u,
+          name: mp?.profession ?? '',
+          avatar: mp?.avatar ?? null,
+          master_profiles: undefined,
+        }
+      })
     },
     enabled: !!user?.is_admin,
     staleTime: 60_000,

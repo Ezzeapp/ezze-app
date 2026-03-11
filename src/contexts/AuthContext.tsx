@@ -73,27 +73,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     // Listen to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        // Check if user is disabled
-        const { data: userData } = await supabase
-          .from('users')
-          .select('disabled')
-          .eq('id', session.user.id)
-          .single()
+    // NOTE: DB queries inside onAuthStateChange can deadlock in Supabase JS v2.
+    // Use setTimeout(0) to defer async work outside the internal auth queue.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setTimeout(async () => {
+        if (session?.user) {
+          // Check if user is disabled
+          const { data: userData } = await supabase
+            .from('users')
+            .select('disabled')
+            .eq('id', session.user.id)
+            .single()
 
-        if (userData?.disabled) {
-          await supabase.auth.signOut()
-          return
+          if (userData?.disabled) {
+            await supabase.auth.signOut()
+            return
+          }
+          const appUser = await fetchAppUser(session.user.id)
+          setSession(session)
+          setUser(appUser)
+        } else {
+          setSession(session)
+          setUser(null)
         }
-        const appUser = await fetchAppUser(session.user.id)
-        setSession(session)
-        setUser(appUser)
-      } else {
-        setSession(session)
-        setUser(null)
-      }
-      setIsLoading(false)
+        setIsLoading(false)
+      }, 0)
     })
 
     return () => subscription.unsubscribe()
