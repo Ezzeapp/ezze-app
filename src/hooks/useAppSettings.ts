@@ -29,7 +29,7 @@ export function usePlanLimits() {
         .from('app_settings')
         .select('*')
         .eq('key', 'plan_limits')
-        .single()
+        .maybeSingle()
       if (!data) return DEFAULT_PLAN_LIMITS
       try {
         return JSON.parse(data.value) as PlanLimitRow[]
@@ -78,7 +78,7 @@ export function usePlanPrices() {
         .from('app_settings')
         .select('*')
         .eq('key', 'plan_prices')
-        .single()
+        .maybeSingle()
       if (!data) return DEFAULT_PLAN_PRICES
       try {
         return JSON.parse(data.value) as PlanPricesConfig
@@ -251,7 +251,7 @@ export function useEmailConfig() {
         .from('app_settings')
         .select('*')
         .eq('key', 'email_config')
-        .single()
+        .maybeSingle()
       if (!data) return DEFAULT_EMAIL_CONFIG
       try {
         return JSON.parse(data.value) as EmailConfig
