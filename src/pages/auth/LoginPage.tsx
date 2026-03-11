@@ -54,9 +54,16 @@ function TelegramLoginWidget({ onAuth }: { onAuth: (user: Record<string, unknown
 
 export function LoginPage() {
   const { t } = useTranslation()
-  const { login } = useAuth()
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+
+  // Redirect when auth state becomes valid (handles race condition after login)
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard', { replace: true })
+    }
+  }, [isAuthenticated, authLoading, navigate])
   const [tgAuthLoading, setTgAuthLoading] = useState(false)
   const [tgNotFound, setTgNotFound] = useState(false)
 
@@ -113,14 +120,13 @@ export function LoginPage() {
     try {
       setLoading(true)
       await login(values.email, values.password)
-      navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard')
+      // Navigation handled by useEffect above when isAuthenticated becomes true
     } catch (e: any) {
       if (e?.message === 'ACCOUNT_DISABLED') {
         toast.error(t('auth.accountDisabled'))
       } else {
         toast.error(t('auth.loginError'))
       }
-    } finally {
       setLoading(false)
     }
   }

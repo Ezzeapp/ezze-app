@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS public.master_profiles (
   profession            TEXT,
   bio                   TEXT,
   booking_slug          TEXT UNIQUE,
-  is_public             BOOLEAN NOT NULL DEFAULT false,
+  is_public             BOOLEAN NOT NULL DEFAULT true,
   phone                 TEXT,
   city                  TEXT,
   address               TEXT,
@@ -574,17 +574,16 @@ CREATE INDEX IF NOT EXISTS idx_email_log_appointment_id ON public.email_log(appo
 -- ROW LEVEL SECURITY
 -- ============================================================
 
--- SECURITY DEFINER helper — bypasses RLS, prevents infinite recursion
+-- SECURITY DEFINER helpers — bypass RLS, prevent infinite recursion
 CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS boolean
-LANGUAGE sql
-SECURITY DEFINER
-STABLE
-AS $$
-  SELECT COALESCE(
-    (SELECT is_admin FROM public.users WHERE id = auth.uid()),
-    false
-  )
+RETURNS boolean LANGUAGE sql SECURITY DEFINER STABLE AS $$
+  SELECT COALESCE((SELECT is_admin FROM public.users WHERE id = auth.uid()), false)
+$$;
+
+-- Check if current user owns a team (used in team_members + team_invites policies to avoid recursion)
+CREATE OR REPLACE FUNCTION public.is_team_owner(p_team_id uuid)
+RETURNS boolean LANGUAGE sql SECURITY DEFINER STABLE AS $$
+  SELECT COALESCE((SELECT owner_id = auth.uid() FROM public.teams WHERE id = p_team_id), false)
 $$;
 
 -- users
@@ -634,11 +633,28 @@ CREATE POLICY "schedules_public_read" ON public.schedules
 ALTER TABLE public.schedule_breaks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "schedule_breaks_owner" ON public.schedule_breaks
   FOR ALL USING (master_id = auth.uid());
+CREATE POLICY "schedule_breaks_public_read" ON public.schedule_breaks
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.master_profiles mp WHERE mp.user_id = schedule_breaks.master_id AND mp.is_public = true)
+  );
 
 -- appointments
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "appointments_owner" ON public.appointments
   FOR ALL USING (master_id = auth.uid());
+-- Public booking: anon can read appointments for availability check
+CREATE POLICY "appointments_public_read" ON public.appointments
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.master_profiles mp WHERE mp.user_id = appointments.master_id AND mp.is_public = true)
+  );
+-- Public booking: anon can INSERT new appointments
+CREATE POLICY "appointments_public_insert" ON public.appointments
+  FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM public.master_profiles mp WHERE mp.user_id = appointments.master_id AND mp.is_public = true)
+  );
+-- Cancel by token: anon can UPDATE (cancel) their own booking
+CREATE POLICY "appointments_cancel_token" ON public.appointments
+  FOR UPDATE USING (cancel_token IS NOT NULL);
 
 -- appointment_services
 ALTER TABLE public.appointment_services ENABLE ROW LEVEL SECURITY;
@@ -650,6 +666,10 @@ CREATE POLICY "appointment_services_owner" ON public.appointment_services
         AND a.master_id = auth.uid()
     )
   );
+CREATE POLICY "appt_services_public_insert" ON public.appointment_services
+  FOR INSERT WITH CHECK (true);
+CREATE POLICY "appt_services_public_read" ON public.appointment_services
+  FOR SELECT USING (true);
 
 -- inventory_items
 ALTER TABLE public.inventory_items ENABLE ROW LEVEL SECURITY;
@@ -697,26 +717,14 @@ CREATE POLICY "teams_public_read" ON public.teams
 -- team_members
 ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "team_members_owner" ON public.team_members
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.teams t
-      WHERE t.id = team_members.team_id
-        AND t.owner_id = auth.uid()
-    )
-  );
+  FOR ALL USING (public.is_team_owner(team_id));
 CREATE POLICY "team_members_self_read" ON public.team_members
   FOR SELECT USING (user_id = auth.uid());
 
 -- team_invites
 ALTER TABLE public.team_invites ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "team_invites_owner" ON public.team_invites
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.teams t
-      WHERE t.id = team_invites.team_id
-        AND t.owner_id = auth.uid()
-    )
-  );
+  FOR ALL USING (public.is_team_owner(team_id));
 CREATE POLICY "team_invites_public_read" ON public.team_invites
   FOR SELECT USING (is_active = true AND expires_at > NOW());
 
@@ -791,6 +799,10 @@ CREATE POLICY "promo_codes_owner" ON public.promo_codes
 ALTER TABLE public.date_blocks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "date_blocks_owner" ON public.date_blocks
   FOR ALL USING (master_id = auth.uid());
+CREATE POLICY "date_blocks_public_read" ON public.date_blocks
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.master_profiles mp WHERE mp.user_id = date_blocks.master_id AND mp.is_public = true)
+  );
 
 -- copy_snapshots
 ALTER TABLE public.copy_snapshots ENABLE ROW LEVEL SECURITY;

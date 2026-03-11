@@ -40,11 +40,18 @@ type TgFormValues = z.infer<typeof tgSchema>
 
 export function RegisterPage() {
   const { t } = useTranslation()
-  const { register: registerUser } = useAuth()
+  const { register: registerUser, isAuthenticated, isLoading: authLoading } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const inviteCode = searchParams.get('invite')
   const [loading, setLoading] = useState(false)
+
+  // Redirect when auth state becomes valid
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate(inviteCode ? `/join/${inviteCode}` : '/dashboard', { replace: true })
+    }
+  }, [isAuthenticated, authLoading, navigate, inviteCode])
   const { data: appSettings } = useAppSettings()
   const platformName = appSettings?.platform_name ?? 'Ezze'
   const logoUrl = appSettings?.logo_url
@@ -87,12 +94,11 @@ export function RegisterPage() {
     try {
       setLoading(true)
       await registerUser(values.email, values.password, values.name)
-      navigate(inviteCode ? `/join/${inviteCode}` : '/dashboard')
       toast.success(t('auth.registerSuccess'))
+      // Navigation handled by useEffect above when isAuthenticated becomes true
     } catch (e: any) {
       const msg = e?.response?.data?.email?.message || t('auth.registerError')
       toast.error(msg)
-    } finally {
       setLoading(false)
     }
   }
@@ -143,7 +149,7 @@ export function RegisterPage() {
       } catch { /* non-critical */ }
 
       toast.success('Аккаунт создан!')
-      navigate(inviteCode ? `/join/${inviteCode}` : '/dashboard')
+      // Navigation handled by useEffect above when isAuthenticated becomes true
     } catch (e: any) {
       // Если email уже занят — значит аккаунт есть, пробуем войти
       const emailErr = e?.response?.data?.email?.code
