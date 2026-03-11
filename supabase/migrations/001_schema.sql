@@ -574,14 +574,25 @@ CREATE INDEX IF NOT EXISTS idx_email_log_appointment_id ON public.email_log(appo
 -- ROW LEVEL SECURITY
 -- ============================================================
 
+-- SECURITY DEFINER helper — bypasses RLS, prevents infinite recursion
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT COALESCE(
+    (SELECT is_admin FROM public.users WHERE id = auth.uid()),
+    false
+  )
+$$;
+
 -- users
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "users_owner" ON public.users
   FOR ALL USING (id = auth.uid());
 CREATE POLICY "users_admin_read" ON public.users
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.is_admin = true)
-  );
+  FOR SELECT USING (public.is_admin());
 
 -- master_profiles
 ALTER TABLE public.master_profiles ENABLE ROW LEVEL SECURITY;
@@ -715,7 +726,7 @@ CREATE POLICY "feature_flags_owner" ON public.feature_flags
   FOR ALL USING (user_id = auth.uid() OR user_id IS NULL);
 CREATE POLICY "feature_flags_admin" ON public.feature_flags
   FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.is_admin = true)
+    public.is_admin()
   );
 
 -- specialties
@@ -736,7 +747,7 @@ CREATE POLICY "global_services_public_read" ON public.global_services
   FOR SELECT USING (true);
 CREATE POLICY "global_services_admin_write" ON public.global_services
   FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.is_admin = true)
+    public.is_admin()
   );
 
 -- global_products (public read)
@@ -745,7 +756,7 @@ CREATE POLICY "global_products_public_read" ON public.global_products
   FOR SELECT USING (true);
 CREATE POLICY "global_products_admin_write" ON public.global_products
   FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.is_admin = true)
+    public.is_admin()
   );
 
 -- app_settings (public read)
@@ -754,7 +765,7 @@ CREATE POLICY "app_settings_public_read" ON public.app_settings
   FOR SELECT USING (true);
 CREATE POLICY "app_settings_admin_write" ON public.app_settings
   FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.is_admin = true)
+    public.is_admin()
   );
 
 -- notification_settings
@@ -794,14 +805,14 @@ CREATE POLICY "subscriptions_owner" ON public.subscriptions
   FOR ALL USING (user_id = auth.uid());
 CREATE POLICY "subscriptions_admin" ON public.subscriptions
   FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.is_admin = true)
+    public.is_admin()
   );
 
 -- email_log
 ALTER TABLE public.email_log ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "email_log_admin" ON public.email_log
   FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.is_admin = true)
+    public.is_admin()
   );
 
 
