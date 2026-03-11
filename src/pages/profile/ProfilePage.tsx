@@ -157,9 +157,7 @@ export function ProfilePage() {
     if (!profile?.avatar || !profile?.id) return
     setDeletingAvatar(true)
     try {
-      const fd = new FormData()
-      fd.append('avatar', '')
-      await upsert.mutateAsync({ id: profile.id, data: fd })
+      await upsert.mutateAsync({ id: profile.id, data: { _avatarFile: null } })
       toast.success('Фото удалено')
     } catch {
       toast.error(t('common.deleteError'))
@@ -170,17 +168,13 @@ export function ProfilePage() {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      const fd = new FormData()
-      Object.entries(values).forEach(([k, v]) => {
-        if (v !== undefined && v !== null) fd.append(k, String(v))
-      })
-      if (avatarFile) fd.append('avatar', avatarFile)
-      if (activityTypeId) fd.append('activity_type', activityTypeId)
-      if (specialtyId) fd.append('specialty', specialtyId)
-      // Append new portfolio files
-      portfolioFiles.forEach(f => fd.append('portfolio', f))
+      const payload: Record<string, any> = { ...values }
+      if (avatarFile) payload._avatarFile = avatarFile
+      if (activityTypeId) payload.activity_type = activityTypeId
+      if (specialtyId) payload.specialty = specialtyId
+      if (portfolioFiles.length > 0) payload._portfolioFiles = portfolioFiles
 
-      await upsert.mutateAsync({ id: profile?.id, data: fd })
+      await upsert.mutateAsync({ id: profile?.id, data: payload })
       toast.success(t('common.saved'))
       setAvatarFile(null)
       setPortfolioFiles([])
@@ -213,9 +207,8 @@ export function ProfilePage() {
     if (!profile?.id) return
     setPortfolioDeleting(prev => new Set(prev).add(filename))
     try {
-      const fd = new FormData()
-      fd.append('portfolio-', filename)
-      await upsert.mutateAsync({ id: profile.id, data: fd })
+      const newPortfolio = (profile.portfolio ?? []).filter((p: string) => p !== filename)
+      await upsert.mutateAsync({ id: profile.id, data: { portfolio: newPortfolio } })
       toast.success(t('profile.photoDeleted'))
     } catch {
       toast.error(t('common.deleteError'))
