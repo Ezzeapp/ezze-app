@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cn, CURRENCIES, LANG_TO_CURRENCY } from '@/lib/utils'
-import pb from '@/lib/pocketbase'
+import { supabase } from '@/lib/supabase'
 import { SERVICES_SEED } from '@/data/services-seed'
 import { PRODUCTS_SEED } from '@/data/products-seed'
 import { getCategoriesForSpecialty } from '@/data/specialty-category-map'
@@ -175,37 +175,44 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
     const productsToImport = PRODUCTS_SEED.filter((p) => productCategories.includes(p.category))
     if (servicesToImport.length === 0 && productsToImport.length === 0) return
     try {
-      const existingSvcCats = await pb.collection('service_categories').getFullList({ filter: `master="${user!.id}"` })
-      const existingSvcCatNames = new Set((existingSvcCats as any[]).map((c) => c.name.toLowerCase()))
+      const { data: existingSvcCats } = await supabase
+        .from('service_categories').select('id, name').eq('master_id', user!.id)
+      const existingSvcCatNames = new Set((existingSvcCats ?? []).map((c: any) => c.name.toLowerCase()))
       const categoryIdMap: Record<string, string> = {}
-      for (const c of existingSvcCats as any[]) categoryIdMap[c.name.toLowerCase()] = c.id
+      for (const c of (existingSvcCats ?? [])) categoryIdMap[(c as any).name.toLowerCase()] = (c as any).id
       for (const cat of serviceCategories) {
         if (!existingSvcCatNames.has(cat.toLowerCase())) {
           try {
-            const created = await pb.collection('service_categories').create({ name: cat, master: user!.id }) as any
-            categoryIdMap[cat.toLowerCase()] = created.id
+            const { data: created } = await supabase
+              .from('service_categories').insert({ name: cat, master_id: user!.id }).select().single()
+            if (created) categoryIdMap[cat.toLowerCase()] = (created as any).id
           } catch { /* ignore */ }
         }
       }
-      const existingServices = await pb.collection('services').getFullList({ filter: `master="${user!.id}"` })
-      const existingSvcNames = new Set((existingServices as any[]).map((s) => s.name.toLowerCase()))
+      const { data: existingServices } = await supabase
+        .from('services').select('name').eq('master_id', user!.id)
+      const existingSvcNames = new Set((existingServices ?? []).map((s: any) => s.name.toLowerCase()))
       for (const svc of servicesToImport) {
         if (!existingSvcNames.has(svc.name.toLowerCase())) {
           try {
-            await pb.collection('services').create({
-              name: svc.name, duration_min: svc.duration_min || 60, master: user!.id,
-              category: categoryIdMap[svc.category.toLowerCase()] || undefined,
+            await supabase.from('services').insert({
+              name: svc.name, duration_min: svc.duration_min || 60, master_id: user!.id,
+              category_id: categoryIdMap[svc.category.toLowerCase()] || undefined,
               is_active: true, is_bookable: true,
             })
           } catch { /* ignore */ }
         }
       }
-      const existingProducts = await pb.collection('inventory_items').getFullList({ filter: `master="${user!.id}"` })
-      const existingProdNames = new Set((existingProducts as any[]).map((p) => p.name.toLowerCase()))
+      const { data: existingProducts } = await supabase
+        .from('inventory_items').select('name').eq('master_id', user!.id)
+      const existingProdNames = new Set((existingProducts ?? []).map((p: any) => p.name.toLowerCase()))
       for (const prod of productsToImport) {
         if (!existingProdNames.has(prod.name.toLowerCase())) {
           try {
-            await pb.collection('inventory_items').create({ name: prod.name, category: prod.category || undefined, unit: prod.unit || undefined, quantity: 0, master: user!.id })
+            await supabase.from('inventory_items').insert({
+              name: prod.name, category: prod.category || undefined,
+              unit: prod.unit || undefined, quantity: 0, master_id: user!.id,
+            })
           } catch { /* ignore */ }
         }
       }
@@ -213,18 +220,21 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   }
 
   const saveSchedule = async () => {
-    const scheduleData: Record<string, any> = { master: user!.id }
+    const scheduleData: Record<string, any> = { master_id: user!.id }
     for (const day of DAYS) {
       scheduleData[`${day}_enabled`] = week[day].enabled
       scheduleData[`${day}_start`]   = week[day].start
       scheduleData[`${day}_end`]     = week[day].end
     }
     try {
-      const existing = await pb.collection('schedules').getFirstListItem(`master="${user!.id}"`)
-      await pb.collection('schedules').update(existing.id, scheduleData)
-    } catch {
-      await pb.collection('schedules').create({ slot_duration: 30, advance_days: 30, ...scheduleData })
-    }
+      const { data: existing } = await supabase
+        .from('schedules').select('id').eq('master_id', user!.id).maybeSingle()
+      if (existing) {
+        await supabase.from('schedules').update(scheduleData).eq('id', existing.id)
+      } else {
+        await supabase.from('schedules').insert({ slot_duration: 30, advance_days: 30, ...scheduleData })
+      }
+    } catch { /* ignore */ }
   }
 
   const generateSlug = () => {
@@ -233,17 +243,23 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   }
 
   const saveProfile = async (profileData: Record<string, any> | FormData) => {
-    let existing: any = null
-    try { existing = await pb.collection('master_profiles').getFirstListItem(`user="${user!.id}"`) } catch { }
+    const { data: existing } = await supabase
+      .from('master_profiles').select('id').eq('user_id', user!.id).maybeSingle()
     if (existing) {
-      await pb.collection('master_profiles').update(existing.id, profileData)
+      if (profileData instanceof FormData) {
+        const obj: Record<string, any> = {}
+        profileData.forEach((v, k) => { obj[k] = v })
+        await supabase.from('master_profiles').update(obj).eq('id', existing.id)
+      } else {
+        await supabase.from('master_profiles').update(profileData).eq('id', existing.id)
+      }
     } else {
       if (profileData instanceof FormData) {
-        profileData.append('user', user!.id)
-        profileData.append('booking_slug', generateSlug())
-        await pb.collection('master_profiles').create(profileData)
+        const obj: Record<string, any> = { user_id: user!.id, booking_slug: generateSlug() }
+        profileData.forEach((v, k) => { obj[k] = v })
+        await supabase.from('master_profiles').insert(obj)
       } else {
-        await pb.collection('master_profiles').create({ ...profileData, user: user!.id, booking_slug: generateSlug() })
+        await supabase.from('master_profiles').insert({ ...profileData, user_id: user!.id, booking_slug: generateSlug() })
       }
     }
   }
@@ -251,7 +267,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   const handleFinish = async () => {
     setLoading(true)
     try {
-      await pb.collection('users').update(user!.id, { name: name.trim() || user?.name, language, timezone, onboarded: true })
+      await supabase.from('users').update({ name: name.trim() || user?.name, language, timezone, onboarded: true }).eq('id', user!.id)
       if (language !== i18n.language) i18n.changeLanguage(language)
       const profileData: Record<string, any> = {
         profession: profession.trim() || name.trim() || 'Мастер',

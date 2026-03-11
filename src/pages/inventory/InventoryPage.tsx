@@ -252,7 +252,7 @@ export function InventoryPage() {
   const onReceiptSubmit = async (values: ReceiptFormValues) => {
     if (!receiptItem) return
     try {
-      await createReceipt.mutateAsync({ inventory_item: receiptItem.id, ...values })
+      await createReceipt.mutateAsync({ inventory_item_id: receiptItem.id, ...values })
       toast.success(t('inventory.receiptCreated'))
       setReceiptDialogOpen(false)
     } catch {

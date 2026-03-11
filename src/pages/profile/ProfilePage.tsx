@@ -25,8 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { toast } from '@/components/shared/Toaster'
-import { cn, generateSlug } from '@/lib/utils'
-import pb from '@/lib/pocketbase'
+import { cn, generateSlug, getFileUrl } from '@/lib/utils'
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
 import { DataTransferSection } from '@/components/profile/DataTransferSection'
 import { FeatureGate } from '@/components/shared/FeatureGate'
@@ -214,10 +213,8 @@ export function ProfilePage() {
     if (!profile?.id) return
     setPortfolioDeleting(prev => new Set(prev).add(filename))
     try {
-      // PocketBase: to remove a file from a multi-file field send field-=filename
       const fd = new FormData()
       fd.append('portfolio-', filename)
-      await pb.collection('master_profiles').update(profile.id, fd)
       await upsert.mutateAsync({ id: profile.id, data: fd })
       toast.success(t('profile.photoDeleted'))
     } catch {
@@ -239,8 +236,8 @@ export function ProfilePage() {
     )
   }
 
-  const avatarUrl = profile && user
-    ? pb.getFileUrl(profile as any, profile.avatar as any, { thumb: '150x150' })
+  const avatarUrl = profile?.avatar
+    ? getFileUrl('master_profiles', profile.avatar)
     : null
 
   // Prefill object for wizard from current profile data
@@ -443,7 +440,7 @@ export function ProfilePage() {
               <div className="flex flex-wrap gap-2">
                 {/* Saved photos */}
                 {profile?.portfolio?.map((filename) => {
-                  const url = pb.getFileUrl(profile as any, filename as any, { thumb: '200x200' })
+                  const url = getFileUrl('master_profiles', filename)
                   const isDeleting = portfolioDeleting.has(filename)
                   return (
                     <div key={filename} className="relative group">

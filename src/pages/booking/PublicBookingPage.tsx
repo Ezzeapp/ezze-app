@@ -14,7 +14,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
-import { formatCurrency, formatDuration, parseTimeToMinutes, minutesToTime } from '@/lib/utils'
+import { formatCurrency, formatDuration, parseTimeToMinutes, minutesToTime, getFileUrl } from '@/lib/utils'
 import type { MasterProfile, Service, Schedule, ScheduleBreak, Appointment, Review, DateBlock } from '@/types'
 import { isTelegramMiniApp, getTelegramUser, getTelegramUserId, initMiniApp, hapticSuccess, buildClientCabinetLink } from '@/lib/telegramWebApp'
 import { validatePromoCode } from '@/hooks/usePromoCodes'
@@ -753,9 +753,9 @@ export function PublicBookingPage() {
 
   const masterName = master.expand?.user?.name || 'Master'
   const avatarUrl = master.avatar
-    ? pb.getFileUrl(master as any, master.avatar as any, { thumb: '150x150' })
+    ? getFileUrl('master_profiles', master.avatar)
     : master.expand?.user?.avatar
-      ? pb.getFileUrl({ collectionId: 'users', collectionName: 'users', id: master.expand.user.id } as any, master.expand.user.avatar, { thumb: '150x150' })
+      ? getFileUrl('avatars', master.expand.user.avatar)
       : undefined
 
   const advanceDays = schedule?.advance_days || 30
@@ -885,9 +885,9 @@ export function PublicBookingPage() {
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t('booking.portfolio')}</p>
               <div className="grid grid-cols-3 gap-2">
                 {master.portfolio.slice(0, 9).map((filename, i) => {
-                  const imgUrl = pb.getFileUrl(master as any, filename as any, { thumb: '300x300' })
+                  const imgUrl = getFileUrl('portfolio', filename)
                   return (
-                    <a key={i} href={pb.getFileUrl(master as any, filename as any)} target="_blank" rel="noreferrer" className="aspect-square shrink-0 block">
+                    <a key={i} href={getFileUrl('portfolio', filename)} target="_blank" rel="noreferrer" className="aspect-square shrink-0 block">
                       <img src={imgUrl} alt={`Portfolio ${i + 1}`} className="w-full h-full object-cover rounded-xl border hover:opacity-90 transition-opacity" />
                     </a>
                   )
@@ -963,7 +963,7 @@ export function PublicBookingPage() {
                   {tabFiltered.map((svc) => {
                     const isSelected = !!selectedServices.find(s => s.id === svc.id)
                     const imgUrl = svc.image
-                      ? pb.getFileUrl(svc as any, svc.image as any, { thumb: '80x80' })
+                      ? getFileUrl('services', svc.image)
                       : null
                     const priceZero = !svc.price || svc.price === 0
                     const priceMaxPositive = svc.price_max && Number(svc.price_max) > 0

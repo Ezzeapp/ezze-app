@@ -15,7 +15,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from '@/components/shared/Toaster'
 import { PLAN_LABELS, PLAN_COLORS, PLAN_ORDER, type FeaturePlan } from '@/config/features'
-import pb from '@/lib/pocketbase'
+import { getFileUrl } from '@/lib/utils'
 import dayjs from 'dayjs'
 
 interface DeleteTarget {
@@ -109,7 +109,7 @@ export function AdminUsersTab() {
 
   const getAvatarUrl = (u: any) => {
     if (!u.avatar) return ''
-    return pb.getFileUrl(u, u.avatar, { thumb: '64x64' })
+    return getFileUrl('avatars', u.avatar)
   }
 
   const getInitials = (name: string) => {
@@ -126,7 +126,7 @@ export function AdminUsersTab() {
     const thisMonth = dayjs().startOf('month')
     return {
       total: all.length,
-      newThisMonth: all.filter(u => dayjs(u.created).isAfter(thisMonth)).length,
+      newThisMonth: all.filter(u => dayjs((u as any).created_at).isAfter(thisMonth)).length,
       disabled: all.filter(u => !!(u as any).disabled).length,
       byPlan: PLAN_ORDER.reduce<Record<string, number>>((acc, p) => {
         acc[p] = all.filter(u => ((u as any).plan || 'free') === p).length
@@ -180,7 +180,7 @@ export function AdminUsersTab() {
       (u as any).plan || 'free',
       (u as any).is_admin ? 'да' : 'нет',
       (u as any).disabled ? 'да' : 'нет',
-      u.created ? dayjs(u.created).format('DD.MM.YYYY') : '',
+      (u as any).created_at ? dayjs((u as any).created_at).format('DD.MM.YYYY') : '',
     ])
     const csv = [headers, ...rows]
       .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
@@ -404,7 +404,7 @@ export function AdminUsersTab() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground truncate leading-tight">
-                    {u.email} · {dayjs(u.created).format('DD.MM.YYYY')}
+                    {u.email} · {dayjs((u as any).created_at).format('DD.MM.YYYY')}
                   </p>
 
                   {/* Mobile controls row */}

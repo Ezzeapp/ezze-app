@@ -360,7 +360,7 @@ export function NotificationsTab() {
   const { user } = useAuth()
 
   const getSetting = (type: NotifType): NotificationSetting => {
-    return settingsMap?.[type] ?? { ...NOTIF_DEFAULTS[type], master: user?.id ?? '' }
+    return settingsMap?.[type] ?? { ...NOTIF_DEFAULTS[type], master_id: user?.id ?? '' }
   }
 
   const handleToggle = async (type: NotifType, enabled: boolean) => {

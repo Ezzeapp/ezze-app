@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Save, Trash2, AlertTriangle, Copy, Check, ExternalLink, Camera, X } from 'lucide-react'
 import { useUpdateTeam, useDeleteTeam } from '@/hooks/useTeam'
-import { generateSlug, getPbFileUrl } from '@/lib/utils'
+import { generateSlug, getFileUrl } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -76,18 +76,18 @@ export function TeamSettingsTab({ team }: Props) {
     e.preventDefault()
     if (!name.trim() || !slug.trim()) return
     try {
-      const fd = new FormData()
-      fd.append('name', name.trim())
-      fd.append('slug', slug.trim())
-      fd.append('description', description.trim())
-      fd.append('is_public', String(isPublic))
-      if (logoFile) {
-        fd.append('logo', logoFile)
-      } else if (removeLogo) {
-        // Очищаем поле логотипа — пустой Blob
-        fd.append('logo', new File([], ''))
+      const payload: Parameters<typeof updateTeam.mutateAsync>[0]['data'] = {
+        name: name.trim(),
+        slug: slug.trim(),
+        description: description.trim(),
+        is_public: isPublic,
       }
-      await updateTeam.mutateAsync({ id: team.id, data: fd })
+      if (logoFile) {
+        payload.logoFile = logoFile
+      } else if (removeLogo) {
+        (payload as any).logo = null
+      }
+      await updateTeam.mutateAsync({ id: team.id, data: payload })
       toast.success(t('common.saved'))
       setLogoFile(null)
       setRemoveLogo(false)
@@ -118,7 +118,7 @@ export function TeamSettingsTab({ team }: Props) {
 
   // Текущий URL логотипа (из БД или превью нового)
   const currentLogoUrl = logoPreview
-    ?? (team.logo && !removeLogo ? getPbFileUrl(team as any, team.logo, '160x160') : null)
+    ?? (team.logo && !removeLogo ? getFileUrl('teams', team.logo) : null)
 
   return (
     <div className="space-y-4 max-w-xl">

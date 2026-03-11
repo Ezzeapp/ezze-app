@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/shared/Toaster'
-import pb from '@/lib/pocketbase'
+import { getFileUrl } from '@/lib/utils'
 import dayjs from 'dayjs'
 
 interface Props {
@@ -33,7 +33,7 @@ export function AdminUsersDialog({ open, onClose }: Props) {
 
   const getAvatarUrl = (u: any) => {
     if (!u.avatar) return ''
-    return pb.getFileUrl(u, u.avatar, { thumb: '64x64' })
+    return getFileUrl('avatars', u.avatar)
   }
 
   const getInitials = (name: string) => {
@@ -104,7 +104,7 @@ export function AdminUsersDialog({ open, onClose }: Props) {
                   </div>
                   <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                   <p className="text-xs text-muted-foreground">
-                    {dayjs(u.created).format('DD.MM.YYYY')}
+                    {dayjs((u as any).created_at).format('DD.MM.YYYY')}
                   </p>
                 </div>
 

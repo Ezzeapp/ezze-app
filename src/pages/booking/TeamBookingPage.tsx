@@ -5,7 +5,8 @@ import { ChevronRight, Users, Zap } from 'lucide-react'
 import { useTeamBySlug, usePublicTeamMembers } from '@/hooks/useTeam'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
-import pb from '@/lib/pocketbase'
+import { supabase } from '@/lib/supabase'
+import { getFileUrl } from '@/lib/utils'
 import type { MasterProfile } from '@/types'
 
 export function TeamBookingPage() {
@@ -35,12 +36,19 @@ export function TeamBookingPage() {
     const userIds = memberIdsKey.split(',')
 
     setProfilesLoading(true)
-    const filter = `(${userIds.map(id => `user="${id}"`).join(' || ')}) && is_public=true`
-    pb.collection('master_profiles')
-      .getFullList<MasterProfile>({ filter, expand: 'user' })
-      .then(setProfiles)
-      .catch(() => setProfiles([]))
-      .finally(() => setProfilesLoading(false))
+    supabase
+      .from('master_profiles')
+      .select('*, user:users(id, name, avatar, email)')
+      .in('user_id', userIds)
+      .eq('is_public', true)
+      .then(({ data, error }) => {
+        if (error) { setProfiles([]); return }
+        setProfiles((data ?? []) as unknown as MasterProfile[])
+        setProfilesLoading(false)
+      }, () => {
+        setProfiles([])
+        setProfilesLoading(false)
+      })
   }, [memberIdsKey])
 
   const loading = teamLoading || membersLoading || profilesLoading
@@ -68,7 +76,7 @@ export function TeamBookingPage() {
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
               {team?.logo ? (
                 <img
-                  src={pb.getFileUrl(team as any, team.logo, { thumb: '80x80' })}
+                  src={getFileUrl('teams', team.logo)}
                   className="h-16 w-16 object-cover"
                   alt={team.name}
                 />
@@ -121,7 +129,7 @@ export function TeamBookingPage() {
                 '—'
 
               const avatarUrl = profile.avatar
-                ? pb.getFileUrl(profile as any, profile.avatar as any, { thumb: '100x100' })
+                ? getFileUrl('master_profiles', profile.avatar)
                 : undefined
 
               return (

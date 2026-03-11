@@ -301,7 +301,7 @@ export interface TeamMemberStats {
 // ── Reviews ───────────────────────────────────────────────────────────────────
 
 export interface Review extends BaseRecord {
-  master: string          // user ID
+  master_id: string       // user ID
   telegram_id?: string
   client_name?: string
   rating: number          // 1-5

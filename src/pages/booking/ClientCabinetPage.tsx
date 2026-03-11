@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, Zap, Smartphone } from 'lucide-react'
-import pb from '@/lib/pocketbase'
+import { supabase } from '@/lib/supabase'
 import {
   isTelegramMiniApp,
   getTelegramUserId,
@@ -180,31 +180,30 @@ export function ClientCabinetPage() {
 
   const loadAppointments = async (tgId: string) => {
     try {
-      const records = await pb.collection('appointments').getFullList<Appointment>({
-        filter: `telegram_id = "${tgId}"`,
-        sort: '-date,-start_time',
-        expand: 'service,master',
-        // Передаём tgid как query-параметр для PocketBase rule
-        query: { tgid: tgId },
-      } as any)
+      const { data: records, error } = await supabase
+        .from('appointments')
+        .select('*, service:services(name)')
+        .eq('telegram_id', tgId)
+        .order('date', { ascending: false })
+        .order('start_time', { ascending: false })
 
-      // Обогащаем данными о мастере и услуге
+      if (error) throw error
+
       const enriched: AppointmentWithMaster[] = await Promise.all(
-        records.map(async (appt) => {
+        (records ?? []).map(async (appt: any) => {
           let masterName = ''
-          let serviceName = (appt.expand as any)?.service?.name || ''
+          const serviceName = appt.service?.name || ''
 
-          // Получаем имя мастера через профиль
           try {
-            const profile = await pb.collection('master_profiles').getFirstListItem(
-              `user = "${appt.master}"`,
-              { query: { tgid: tgId } } as any
-            )
-            masterName = (profile as any).profession || ''
-            // Пробуем получить имя пользователя
+            const { data: profile } = await supabase
+              .from('master_profiles')
+              .select('profession')
+              .eq('user_id', appt.master_id)
+              .maybeSingle()
+            masterName = profile?.profession || ''
           } catch {}
 
-          return { ...appt, masterName, serviceName }
+          return { ...appt, masterName, serviceName } as AppointmentWithMaster
         })
       )
 

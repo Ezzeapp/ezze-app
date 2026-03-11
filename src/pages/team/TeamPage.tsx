@@ -21,7 +21,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/shared/Toaster'
-import { cn, generateSlug, getPbFileUrl } from '@/lib/utils'
+import { cn, generateSlug, getFileUrl } from '@/lib/utils'
 import { TeamAnalyticsTab } from './TeamAnalyticsTab'
 import { TeamCalendarTab } from './TeamCalendarTab'
 import { TeamSettingsTab } from './TeamSettingsTab'
@@ -465,7 +465,7 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
               {members.map((m: any) => {
                 const u = m.expand?.user
                 const name = u?.name || u?.email || '—'
-                const avatarUrl = u?.avatar ? getPbFileUrl(u, u.avatar) : null
+                const avatarUrl = u?.avatar ? getFileUrl('avatars', u.avatar) : null
                 return (
                   <div
                     key={m.id}

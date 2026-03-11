@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Search, Clock, X, Percent, User, UserPlus, CalendarCheck, ChevronLeft, ChevronRight, Copy, ArrowRightLeft, Plus, CreditCard, StickyNote, Repeat, Info, Printer } from 'lucide-react'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
-import pb from '@/lib/pocketbase'
+import { supabase } from '@/lib/supabase'
 
 dayjs.extend(isoWeek)
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -121,9 +121,15 @@ async function computeSlots(
 
   let appts: Appointment[] = []
   try {
-    let filter = `master="${masterId}" && date="${date}" && status!="cancelled"`
-    if (excludeApptId) filter += ` && id!="${excludeApptId}"`
-    appts = await pb.collection('appointments').getFullList<Appointment>({ filter })
+    let query = supabase
+      .from('appointments')
+      .select('start_time, end_time')
+      .eq('master_id', masterId)
+      .eq('date', date)
+      .neq('status', 'cancelled')
+    if (excludeApptId) query = query.neq('id', excludeApptId)
+    const { data } = await query
+    appts = (data ?? []) as unknown as Appointment[]
   } catch { /* ignore */ }
 
   return times.map(t => {

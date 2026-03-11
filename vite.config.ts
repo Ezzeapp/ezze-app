@@ -34,7 +34,7 @@ export default defineConfig({
           ],
           'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
           'vendor-i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector', 'i18next-http-backend'],
-          'vendor-misc': ['dayjs', 'pocketbase', 'lucide-react'],
+          'vendor-misc': ['dayjs', 'lucide-react'],
         },
       },
     },

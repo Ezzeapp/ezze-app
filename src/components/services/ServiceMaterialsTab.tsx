@@ -57,7 +57,7 @@ export function ServiceMaterialsTab({ serviceId }: Props) {
   const handleAdd = async () => {
     if (!selectedItem) return
     try {
-      await createMaterial.mutateAsync({ service: serviceId, inventory_item: selectedItem, quantity: qty })
+      await createMaterial.mutateAsync({ service_id: serviceId, inventory_item_id: selectedItem, quantity: qty })
       setSelectedItem('')
       setItemSearch('')
       setQty(1)

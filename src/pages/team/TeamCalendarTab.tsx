@@ -3,11 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import dayjs from 'dayjs'
-import pb from '@/lib/pocketbase'
+import { supabase } from '@/lib/supabase'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatCurrency, getPbFileUrl } from '@/lib/utils'
+import { formatCurrency, getFileUrl } from '@/lib/utils'
 import { useCurrency } from '@/hooks/useCurrency'
 import type { Appointment, TeamMember } from '@/types'
 
@@ -24,14 +24,15 @@ async function fetchTeamDayAppts(
 ): Promise<MemberAppts[]> {
   return Promise.all(
     members.map(async (member) => {
-      const appointments = await pb
-        .collection('appointments')
-        .getFullList<Appointment>({
-          filter: `master="${member.user}" && date="${date}"`,
-          sort: 'start_time',
-          expand: 'client,service',
-        })
-        .catch(() => [] as Appointment[])
+      const userId = (member as any).user_id ?? (member as any).user
+      const { data } = await supabase
+        .from('appointments')
+        .select('*, client:clients(id,first_name,last_name), service:services(id,name)')
+        .eq('master_id', userId)
+        .eq('date', date)
+        .order('start_time')
+        .then(r => r)
+      const appointments = (data ?? []) as unknown as Appointment[]
       return { member, appointments }
     }),
   )
@@ -199,7 +200,7 @@ export function TeamCalendarTab({ teamId, members, membersLoading }: Props) {
             const user  = m.expand?.user
             const name  = user?.name || user?.email || m.user
             const count = memberAppts.find(ma => ma.member.user === m.user)?.appointments.length ?? 0
-            const avatarUrl = user?.avatar ? getPbFileUrl(user, user.avatar, '32x32') : null
+            const avatarUrl = user?.avatar ? getFileUrl('avatars', user.avatar) : null
             const isActive  = selectedMemberId === m.user
 
             return (
@@ -246,7 +247,7 @@ export function TeamCalendarTab({ teamId, members, membersLoading }: Props) {
             {combined.map(({ appt, member }) => {
               const user       = member.expand?.user
               const masterName = user?.name || user?.email || '—'
-              const avatarUrl  = user?.avatar ? getPbFileUrl(user, user.avatar, '40x40') : null
+              const avatarUrl  = user?.avatar ? getFileUrl('avatars', user.avatar) : null
 
               const clientName = appt.expand?.client
                 ? `${appt.expand.client.first_name} ${appt.expand.client.last_name || ''}`.trim()

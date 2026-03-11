@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from '@/components/shared/Toaster'
 import { useAppSettings } from '@/hooks/useAppSettings'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
-import pb from '@/lib/pocketbase'
+import { supabase } from '@/lib/supabase'
 import {
   isTelegramMiniApp,
   initMiniApp,
@@ -63,12 +63,13 @@ export function RegisterPage() {
     const initData = window.Telegram?.WebApp?.initData
     if (!initData) { setTgChecking(false); return }
 
-    pb.send('/api/tg-auth', {
+    fetch('/api/tg-auth', {
       method: 'POST',
-      body: { initData } as any,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initData }),
     })
-      .then((data: any) => {
-        pb.authStore.save(data.token, data.record)
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then((_data: any) => {
         navigate('/dashboard', { replace: true })
       })
       .catch(() => {
@@ -117,30 +118,29 @@ export function RegisterPage() {
       await registerUser(email, password, values.name)
 
       // Прописываем tg_chat_id в master_profiles (создаём или обновляем)
-      const userId = (pb.authStore as any).record?.id || (pb.authStore as any).model?.id
-      if (userId && tgId) {
-        try {
-          // Ищем существующий профиль
-          const existing = await pb.collection('master_profiles')
-            .getFirstListItem(`user = "${userId}"`)
-            .catch(() => null)
-
+      try {
+        const { data: { user: sbUser } } = await supabase.auth.getUser()
+        const userId = sbUser?.id
+        if (userId && tgId) {
+          const { data: existing } = await supabase
+            .from('master_profiles')
+            .select('id')
+            .eq('user_id', userId)
+            .maybeSingle()
           if (existing) {
-            // Обновляем tg_chat_id в существующем профиле
-            await pb.collection('master_profiles').update(existing.id, {
+            await supabase.from('master_profiles').update({
               tg_chat_id: tgId,
               ...(tgUser?.username ? { telegram: '@' + tgUser.username } : {}),
-            })
+            }).eq('id', existing.id)
           } else {
-            // Создаём новый профиль
-            await pb.collection('master_profiles').create({
-              user:       userId,
+            await supabase.from('master_profiles').insert({
+              user_id: userId,
               tg_chat_id: tgId,
-              telegram:   tgUser?.username ? '@' + tgUser.username : '',
+              telegram: tgUser?.username ? '@' + tgUser.username : '',
             })
           }
-        } catch { /* non-critical */ }
-      }
+        }
+      } catch { /* non-critical */ }
 
       toast.success('Аккаунт создан!')
       navigate(inviteCode ? `/join/${inviteCode}` : '/dashboard')
@@ -151,13 +151,15 @@ export function RegisterPage() {
         const initData = window.Telegram?.WebApp?.initData
         if (initData) {
           try {
-            const data: any = await pb.send('/api/tg-auth', {
+            const r = await fetch('/api/tg-auth', {
               method: 'POST',
-              body: { initData } as any,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ initData }),
             })
-            pb.authStore.save(data.token, data.record)
-            navigate('/dashboard', { replace: true })
-            return
+            if (r.ok) {
+              navigate('/dashboard', { replace: true })
+              return
+            }
           } catch {}
         }
         toast.error('Аккаунт уже существует')

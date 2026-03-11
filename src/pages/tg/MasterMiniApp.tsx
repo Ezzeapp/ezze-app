@@ -13,7 +13,8 @@ import {
   ChevronRight,
   ExternalLink,
 } from 'lucide-react'
-import pb from '@/lib/pocketbase'
+import { supabase } from '@/lib/supabase'
+import { getFileUrl } from '@/lib/utils'
 import {
   isTelegramMiniApp,
   initMiniApp,
@@ -86,11 +87,13 @@ export function MasterMiniApp() {
   // ── Загрузка профиля мастера ──────────────────────────────────────────────
   const loadProfile = useCallback(async (tgId: string): Promise<MasterProfile | null> => {
     try {
-      const result = await pb.collection('master_profiles').getFirstListItem(
-        `tg_chat_id = "${tgId}"`,
-        { query: { tgid: tgId } } as any
-      )
-      return result as unknown as MasterProfile
+      const { data, error } = await supabase
+        .from('master_profiles')
+        .select('*')
+        .eq('tg_chat_id', tgId)
+        .maybeSingle()
+      if (error || !data) return null
+      return data as unknown as MasterProfile
     } catch {
       return null
     }
@@ -99,12 +102,14 @@ export function MasterMiniApp() {
   // ── Загрузка записей на дату ──────────────────────────────────────────────
   const loadAppts = useCallback(async (masterId: string, date: string): Promise<AppointmentRow[]> => {
     try {
-      const records = await pb.collection('appointments').getFullList<AppointmentRow>({
-        filter: `master = "${masterId}" && date = "${date}" && status != "cancelled"`,
-        sort: 'start_time',
-        expand: 'service',
-      })
-      return records
+      const { data } = await supabase
+        .from('appointments')
+        .select('*, service:services(name)')
+        .eq('master_id', masterId)
+        .eq('date', date)
+        .neq('status', 'cancelled')
+        .order('start_time')
+      return (data ?? []) as unknown as AppointmentRow[]
     } catch {
       return []
     }
@@ -124,11 +129,12 @@ export function MasterMiniApp() {
       // Если пришли из TelegramEntryPage со state — используем сразу
       if (locationState?.masterId) {
         try {
-          const p = await pb.collection('master_profiles').getFirstListItem(
-            `user = "${locationState.masterId}"`,
-            { query: tgId ? { tgid: tgId } : {} } as any
-          )
-          masterProfile = p as unknown as MasterProfile
+          const { data } = await supabase
+            .from('master_profiles')
+            .select('*')
+            .eq('user_id', locationState.masterId)
+            .maybeSingle()
+          if (data) masterProfile = data as unknown as MasterProfile
         } catch {}
       }
 
@@ -146,8 +152,12 @@ export function MasterMiniApp() {
 
       // Получаем имя мастера из users
       try {
-        const user = await pb.collection('users').getOne(masterProfile.user)
-        setMasterName((user as any).name || masterProfile.profession)
+        const { data: userData } = await supabase
+          .from('users')
+          .select('name')
+          .eq('id', masterProfile.user)
+          .maybeSingle()
+        setMasterName(userData?.name || masterProfile.profession)
       } catch {
         setMasterName(masterProfile.profession)
       }
@@ -170,7 +180,7 @@ export function MasterMiniApp() {
     hapticImpact()
     setUpdatingId(apptId)
     try {
-      await pb.collection('appointments').update(apptId, { status })
+      await supabase.from('appointments').update({ status }).eq('id', apptId)
       hapticSuccess()
 
       // Обновляем локально
@@ -248,8 +258,8 @@ export function MasterMiniApp() {
 
   const currency = profile?.currency || 'RUB'
   const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '₽'
-  const avatarUrl = profile?.avatar && profile?.collectionId
-    ? pb.files.getUrl(profile as any, profile.avatar, { thumb: '100x100' })
+  const avatarUrl = profile?.avatar
+    ? getFileUrl('master_profiles', profile.avatar)
     : undefined
 
   return (

@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { User, Session } from '@supabase/supabase-js'
+import type { Session } from '@supabase/supabase-js'
+import type { User as AppUser } from '@/types'
 
 interface AuthContextType {
-  user: User | null
+  user: AppUser | null
   session: Session | null
   isAuthenticated: boolean
   isLoading: boolean
@@ -14,16 +15,47 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+async function fetchAppUser(userId: string): Promise<AppUser | null> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, email, name, avatar, language, theme, timezone, onboarded, is_admin, plan')
+    .eq('id', userId)
+    .single()
+  if (error || !data) return null
+  return {
+    id: data.id,
+    email: data.email ?? '',
+    name: data.name ?? '',
+    avatar: data.avatar ?? undefined,
+    language: data.language ?? undefined,
+    theme: data.theme ?? undefined,
+    timezone: data.timezone ?? undefined,
+    onboarded: data.onboarded ?? false,
+    is_admin: data.is_admin ?? false,
+    plan: data.plan ?? 'free',
+    // BaseRecord fields — not stored separately in Supabase, use sensible defaults
+    collectionId: 'users',
+    collectionName: 'users',
+    created: '',
+    updated: '',
+  } as AppUser
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<AppUser | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
-      setUser(session?.user ?? null)
+      if (session?.user) {
+        const appUser = await fetchAppUser(session.user.id)
+        setUser(appUser)
+      } else {
+        setUser(null)
+      }
       setIsLoading(false)
     })
 
@@ -41,9 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await supabase.auth.signOut()
           return
         }
+        const appUser = await fetchAppUser(session.user.id)
+        setSession(session)
+        setUser(appUser)
+      } else {
+        setSession(session)
+        setUser(null)
       }
-      setSession(session)
-      setUser(session?.user ?? null)
       setIsLoading(false)
     })
 

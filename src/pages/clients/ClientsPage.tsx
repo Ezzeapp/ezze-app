@@ -26,7 +26,8 @@ import { formatCurrency } from '@/lib/utils'
 import { useCurrency } from '@/hooks/useCurrency'
 import { usePlanLimitCheck } from '@/hooks/useAppSettings'
 import { useAuth } from '@/contexts/AuthContext'
-import pb from '@/lib/pocketbase'
+import { supabase } from '@/lib/supabase'
+import { getFileUrl } from '@/lib/utils'
 import type { Client } from '@/types'
 
 const schema = z.object({
@@ -223,7 +224,7 @@ export function ClientsPage() {
 
   const getAvatarUrl = (client: Client) => {
     if (!client.avatar) return null
-    return pb.getFileUrl(client, client.avatar, { thumb: '100x100' })
+    return getFileUrl('clients', client.avatar)
   }
 
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>({
@@ -233,10 +234,12 @@ export function ClientsPage() {
 
   const exportCSV = useCallback(async () => {
     if (!user || totalItems === 0) return
-    const all = await pb.collection('clients').getFullList<Client>({
-      filter: `master="${user.id}"`,
-      sort: 'first_name',
-    })
+    const { data: all } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('master_id', user.id)
+      .order('first_name')
+    if (!all) return
     const headers = ['Имя', 'Фамилия', 'Телефон', 'Email', 'Источник', 'Заметки', 'Дата добавления']
     const rows = all.map(c => [
       c.first_name,
@@ -276,7 +279,7 @@ export function ClientsPage() {
       tags: c.tags || [],
     })
     setAvatarFile(null)
-    setAvatarPreview(c.avatar ? (pb.getFileUrl(c, c.avatar, { thumb: '200x200' }) as string) : null)
+    setAvatarPreview(c.avatar ? getFileUrl('clients', c.avatar) : null)
     setDialogOpen(true)
   }
 

@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PageHeader } from '@/components/shared/PageHeader'
 import { toast } from '@/components/shared/Toaster'
 import { getStoredTheme, setTheme, type Theme } from '@/stores/themeStore'
-import pb from '@/lib/pocketbase'
+import { supabase } from '@/lib/supabase'
 import { cn, CURRENCIES, LANG_TO_CURRENCY } from '@/lib/utils'
 import { useProfile, useUpsertProfile } from '@/hooks/useProfile'
 import { NotificationsTab } from './NotificationsTab'
@@ -112,7 +112,7 @@ export function SettingsPage() {
     try {
       setLocSaving(true)
       await upsertProfile.mutateAsync({ id: profile?.id, data: { currency } })
-      await pb.collection('users').update(user!.id, { timezone })
+      await supabase.from('users').update({ timezone }).eq('id', user!.id)
       toast.success(t('common.saved'))
     } catch {
       toast.error(t('common.saveError'))
@@ -134,11 +134,8 @@ export function SettingsPage() {
     }
     try {
       setPwLoading(true)
-      await pb.collection('users').update(user!.id, {
-        oldPassword: values.oldPassword,
-        password: values.password,
-        passwordConfirm: values.passwordConfirm,
-      })
+      const { error } = await supabase.auth.updateUser({ password: values.password })
+      if (error) throw error
       toast.success(t('settings.passwordChanged'))
       resetPw()
     } catch {

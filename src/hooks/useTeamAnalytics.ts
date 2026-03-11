@@ -23,18 +23,20 @@ interface FetchOptions {
   end: string                    // YYYY-MM-DD
 }
 
+type ApptSummary = Pick<Appointment, 'id' | 'status' | 'price' | 'date'>
+
 async function fetchMemberAppointments(
   userId: string,
   start: string,
   end: string,
-): Promise<Appointment[]> {
+): Promise<ApptSummary[]> {
   const { data } = await supabase
     .from('appointments')
     .select('id, master_id, status, price, date')
     .eq('master_id', userId)
     .gte('date', start)
     .lte('date', end)
-  return (data ?? []) as Appointment[]
+  return (data ?? []) as unknown as ApptSummary[]
 }
 
 async function fetchTeamAnalytics({
@@ -48,7 +50,7 @@ async function fetchTeamAnalytics({
   const results = await Promise.all(
     members.map(async (member) => {
       const userId = (member as any).user_id ?? (member as any).user
-      const user = (member as any).user
+      const memberUser = (member as any).user
       const appts = await fetchMemberAppointments(userId, start, end)
 
       const done = appts.filter(a => a.status === 'done')
@@ -57,8 +59,8 @@ async function fetchTeamAnalytics({
 
       return {
         userId,
-        userName: user?.name ?? userId,
-        userAvatar: user?.avatar,
+        userName: memberUser?.name ?? userId,
+        userAvatar: memberUser?.avatar,
         revenue,
         appointmentCount: appts.length,
         doneCount: done.length,

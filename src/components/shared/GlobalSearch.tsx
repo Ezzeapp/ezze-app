@@ -4,7 +4,7 @@ import { Search, User, CalendarDays, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import pb from '@/lib/pocketbase'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useClients } from '@/hooks/useClients'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -34,12 +34,18 @@ export function GlobalSearch({ open, onClose }: Props) {
 
   const { data: searchAppts } = useQuery({
     queryKey: ['global_search_appts', user?.id],
-    queryFn: () =>
-      pb.collection('appointments').getFullList<Appointment>({
-        filter: `master="${user!.id}" && date>="${searchStart}" && date<="${searchEnd}"`,
-        expand: APPT_EXPAND,
-        sort: '-date,-start_time',
-      }),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*, client:clients(id,first_name,last_name), service:services(id,name)')
+        .eq('master_id', user!.id)
+        .gte('date', searchStart)
+        .lte('date', searchEnd)
+        .order('date', { ascending: false })
+        .order('start_time', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as unknown as Appointment[]
+    },
     enabled: open && !!user,
     staleTime: 60_000,
   })

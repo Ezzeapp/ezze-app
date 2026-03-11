@@ -9,12 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, getFileUrl } from '@/lib/utils'
 import { useCurrency } from '@/hooks/useCurrency'
 import { useMyTeam } from '@/hooks/useTeam'
 import { useTeamMembers } from '@/hooks/useTeam'
 import { useTeamAnalytics } from '@/hooks/useTeamAnalytics'
-import pb from '@/lib/pocketbase'
 
 // ── Период ───────────────────────────────────────────────────────────────────
 
@@ -318,11 +317,7 @@ export function TeamAnalyticsPage() {
             <div className="space-y-2">
               {analytics.stats.map((stat, i) => {
                 const avatarUrl = stat.userAvatar
-                  ? pb.getFileUrl(
-                      { collectionId: '_pb_users_auth_', id: stat.userId } as any,
-                      stat.userAvatar,
-                      { thumb: '80x80' },
-                    )
+                  ? getFileUrl('avatars', stat.userAvatar)
                   : undefined
 
                 // Ширина прогресс-бара относительно максимальной выручки
