@@ -47,8 +47,16 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           source: 'supabase/functions/*'
-          target: '/app/ezze-app/supabase/functions/'
+          target: '/app/supabase/volumes/functions/'
           strip_components: 2
+
+      - name: Reload Edge Functions runtime
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: cd /app/supabase && docker compose restart functions
 
       # ── Deploy Telegram bot + restart ────────────────────────────
       - name: Deploy tg_polling.js to VPS

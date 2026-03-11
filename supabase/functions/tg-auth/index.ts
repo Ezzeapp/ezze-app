@@ -234,24 +234,86 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  // 7. Create session for the user (7-day token via sign-in link / admin session)
-  const { data: sessionData, error: sessionError } =
-    await supabaseAdmin.auth.admin.createSession({ userId })
+  // 7. Create session via generateLink + verifyOtp
+  // (admin.createSession is not available in self-hosted GoTrue < v2.170)
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const anonKey     = Deno.env.get('SUPABASE_ANON_KEY') || ''
 
-  if (sessionError || !sessionData?.session) {
+  // Step 7a: Get user email
+  const { data: { user: authUser }, error: getUserErr } =
+    await supabaseAdmin.auth.admin.getUserById(userId)
+
+  if (getUserErr || !authUser?.email) {
     return new Response(
-      JSON.stringify({ message: 'auth failed: ' + (sessionError?.message ?? 'no session') }),
+      JSON.stringify({ message: 'user_fetch_failed: ' + (getUserErr?.message ?? 'no email') }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+
+  // Step 7b: Generate magic link
+  const linkResp = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': serviceKey,
+      'Authorization': `Bearer ${serviceKey}`,
+    },
+    body: JSON.stringify({ type: 'magiclink', email: authUser.email }),
+  })
+
+  if (!linkResp.ok) {
+    const errText = await linkResp.text()
+    return new Response(
+      JSON.stringify({ message: 'link_generation_failed: ' + errText }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+
+  const linkData = await linkResp.json()
+  const hashedToken = linkData.hashed_token
+
+  if (!hashedToken) {
+    return new Response(
+      JSON.stringify({ message: 'no_hashed_token in generateLink response' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+
+  // Step 7c: Exchange token for session
+  const verifyResp = await fetch(`${supabaseUrl}/auth/v1/verify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': anonKey || serviceKey,
+    },
+    body: JSON.stringify({ type: 'magiclink', token_hash: hashedToken }),
+  })
+
+  if (!verifyResp.ok) {
+    const errText = await verifyResp.text()
+    return new Response(
+      JSON.stringify({ message: 'verify_failed: ' + errText }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+
+  const session = await verifyResp.json()
+
+  if (!session.access_token) {
+    return new Response(
+      JSON.stringify({ message: 'no_access_token in verify response' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     )
   }
 
   return new Response(
     JSON.stringify({
-      access_token: sessionData.session.access_token,
-      refresh_token: sessionData.session.refresh_token,
-      token_type: 'bearer',
-      expires_in: sessionData.session.expires_in,
-      user: sessionData.session.user,
+      access_token:  session.access_token,
+      refresh_token: session.refresh_token,
+      token_type:    'bearer',
+      expires_in:    session.expires_in,
+      user:          session.user,
     }),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
   )
