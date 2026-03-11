@@ -450,6 +450,7 @@ CREATE TABLE IF NOT EXISTS public.notification_settings (
   template              TEXT,
   enable_email          BOOLEAN DEFAULT false,
   notification_email    TEXT,
+  email_template        TEXT DEFAULT '',
   created_at            TIMESTAMPTZ DEFAULT NOW(),
   updated_at            TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(master_id, type)
@@ -600,6 +601,8 @@ CREATE POLICY "users_owner" ON public.users
   FOR ALL USING (id = auth.uid());
 CREATE POLICY "users_admin_read" ON public.users
   FOR SELECT USING (public.is_admin());
+CREATE POLICY "users_admin_write" ON public.users
+  FOR ALL USING (public.is_admin());
 
 -- master_profiles
 ALTER TABLE public.master_profiles ENABLE ROW LEVEL SECURITY;
@@ -1010,3 +1013,128 @@ CREATE POLICY "Owner delete services" ON storage.objects
 INSERT INTO public.app_settings (key, value) VALUES
   ('plan_limits', '{"free":{"clients":50,"services":10,"appts_month":100},"pro":{"clients":null,"services":null,"appts_month":null}}')
 ON CONFLICT (key) DO NOTHING;
+
+
+-- ============================================================
+-- APPOINTMENT NOTIFICATION TRIGGERS (pg_net → Edge Functions)
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.notify_appointment_change()
+RETURNS TRIGGER AS $$
+DECLARE
+  payload  jsonb;
+  kong_url text := 'http://supabase-kong:8000';
+  anon_key text := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzczMjIxMjQ2LCJleHAiOjQ5MjY4MjEyNDZ9._URbTC4bjyDejp4pfsV6NdmT__Tvu0ifDzMDi0U9ER8';
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    payload := jsonb_build_object('type', 'INSERT', 'record', row_to_json(NEW));
+  ELSE
+    payload := jsonb_build_object('type', 'UPDATE', 'record', row_to_json(NEW), 'old_record', row_to_json(OLD));
+  END IF;
+  PERFORM net.http_post(
+    url     := kong_url || '/functions/v1/telegram-notifications',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'apikey', anon_key),
+    body    := payload
+  );
+  PERFORM net.http_post(
+    url     := kong_url || '/functions/v1/appointment-emails',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'apikey', anon_key),
+    body    := payload
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_appointment_notify_insert ON public.appointments;
+CREATE TRIGGER trg_appointment_notify_insert
+  AFTER INSERT ON public.appointments
+  FOR EACH ROW EXECUTE FUNCTION public.notify_appointment_change();
+
+DROP TRIGGER IF EXISTS trg_appointment_notify_update ON public.appointments;
+CREATE TRIGGER trg_appointment_notify_update
+  AFTER UPDATE ON public.appointments
+  FOR EACH ROW EXECUTE FUNCTION public.notify_appointment_change();
+
+
+-- ============================================================
+-- SCHEDULED REMINDERS (pg_cron → Edge Functions every 30 min)
+-- ============================================================
+SELECT cron.unschedule('appt-reminders-tg')
+  WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'appt-reminders-tg');
+SELECT cron.schedule('appt-reminders-tg', '*/30 * * * *',
+  $$SELECT net.http_post(
+      url     := 'http://supabase-kong:8000/functions/v1/telegram-notifications',
+      headers := '{"Content-Type":"application/json","apikey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzczMjIxMjQ2LCJleHAiOjQ5MjY4MjEyNDZ9._URbTC4bjyDejp4pfsV6NdmT__Tvu0ifDzMDi0U9ER8"}'::jsonb,
+      body    := '{"type":"CRON"}'::jsonb)$$
+);
+
+SELECT cron.unschedule('appt-reminders-email')
+  WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'appt-reminders-email');
+SELECT cron.schedule('appt-reminders-email', '*/30 * * * *',
+  $$SELECT net.http_post(
+      url     := 'http://supabase-kong:8000/functions/v1/appointment-emails',
+      headers := '{"Content-Type":"application/json","apikey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzczMjIxMjQ2LCJleHAiOjQ5MjY4MjEyNDZ9._URbTC4bjyDejp4pfsV6NdmT__Tvu0ifDzMDi0U9ER8"}'::jsonb,
+      body    := '{"type":"CRON"}'::jsonb)$$
+);
+
+
+-- ============================================================
+-- SEED DATA: GLOBAL SERVICES
+-- ============================================================
+INSERT INTO public.global_services (name, category) VALUES
+  ('Коррекция бровей',        'Брови и ресницы'),
+  ('Ламинирование бровей',    'Брови и ресницы'),
+  ('Ламинирование ресниц',    'Брови и ресницы'),
+  ('Наращивание ресниц',      'Брови и ресницы'),
+  ('Окрашивание бровей',      'Брови и ресницы'),
+  ('Ламинирование волос',     'Волосы'),
+  ('Мелирование',             'Волосы'),
+  ('Окрашивание',             'Волосы'),
+  ('Стрижка женская',         'Волосы'),
+  ('Стрижка мужская',         'Волосы'),
+  ('Укладка',                 'Волосы'),
+  ('Консультация',            'Другое'),
+  ('Ботокс',                  'Косметология'),
+  ('Мезотерапия',             'Косметология'),
+  ('Пилинг',                  'Косметология'),
+  ('Чистка лица',             'Косметология'),
+  ('Антицеллюлитный массаж',  'Массаж'),
+  ('Классический массаж',     'Массаж'),
+  ('Массаж лица',             'Массаж'),
+  ('Массаж спины',            'Массаж'),
+  ('Маникюр аппаратный',      'Ногти'),
+  ('Маникюр классический',    'Ногти'),
+  ('Наращивание ногтей',      'Ногти'),
+  ('Педикюр',                 'Ногти'),
+  ('Покрытие гель-лаком',     'Ногти'),
+  ('Татуаж бровей',           'Перманентный макияж'),
+  ('Татуаж губ',              'Перманентный макияж'),
+  ('Депиляция воском',        'Эпиляция'),
+  ('Шугаринг',                'Эпиляция')
+ON CONFLICT DO NOTHING;
+
+
+-- ============================================================
+-- SEED DATA: GLOBAL PRODUCTS
+-- ============================================================
+INSERT INTO public.global_products (name, category) VALUES
+  ('Кондиционер',         'Волосы'),
+  ('Краска для волос',    'Волосы'),
+  ('Лак для волос',       'Волосы'),
+  ('Маска для волос',     'Волосы'),
+  ('Шампунь',             'Волосы'),
+  ('Крем SPF',            'Косметология'),
+  ('Сыворотка для лица',  'Косметология'),
+  ('Масло массажное',     'Массаж'),
+  ('Тальк массажный',     'Массаж'),
+  ('Ацетон',              'Ногти'),
+  ('База для ногтей',     'Ногти'),
+  ('Гель-лак',            'Ногти'),
+  ('Крем для рук',        'Ногти'),
+  ('Топ для ногтей',      'Ногти'),
+  ('Дезинфектор',         'Расходники'),
+  ('Маска защитная',      'Расходники'),
+  ('Перчатки',            'Расходники'),
+  ('Тальк',               'Расходники'),
+  ('Воск для депиляции',  'Эпиляция'),
+  ('Сахарная паста',      'Эпиляция')
+ON CONFLICT DO NOTHING;
