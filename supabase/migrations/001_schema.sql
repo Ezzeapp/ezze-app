@@ -215,6 +215,11 @@ CREATE TABLE IF NOT EXISTS public.appointments (
   cancel_token           TEXT,
   promo_code             TEXT,
   booking_theme          TEXT,
+  discount               NUMERIC DEFAULT 0,
+  payment_method         TEXT,
+  paid_amount            NUMERIC DEFAULT 0,
+  promo_discount         NUMERIC DEFAULT 0,
+  confirmed_at           TIMESTAMPTZ,
   created_at             TIMESTAMPTZ DEFAULT NOW(),
   updated_at             TIMESTAMPTZ DEFAULT NOW()
 );
@@ -237,6 +242,7 @@ CREATE TABLE IF NOT EXISTS public.appointment_services (
   service_name    TEXT,
   price           NUMERIC DEFAULT 0,
   duration_min    INT DEFAULT 0,
+  sort_order      INT DEFAULT 0,
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
