@@ -130,7 +130,7 @@ export function PublicBookingPage() {
     try {
       const { data: profile, error: profileError } = await supabase
         .from('master_profiles')
-        .select('*, user:users(id, name, avatar, email)')
+        .select('*, user:users(id, name, email)')
         .eq('booking_slug', masterId)
         .eq('is_public', true)
         .maybeSingle()
