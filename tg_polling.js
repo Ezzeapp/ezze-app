@@ -428,18 +428,8 @@ async function processUpdate(update) {
           }
           await sendMasterMenu(chatId, firstName, masterProfile);
         } else {
-          // Проверяем: есть ли у этого Telegram ID записи как клиент
-          const { count: apptCount } = await supabase
-            .from("appointments")
-            .select("id", { count: "exact", head: true })
-            .eq("telegram_id", String(chatId));
-          if ((apptCount ?? 0) > 0) {
-            console.log(`ℹ️  Returning client chat=${chatId} — showing client cabinet`);
-            await sendReturningClientMenu(chatId, firstName);
-          } else {
-            console.log(`ℹ️  No master profile for chat=${chatId} — showing client menu`);
-            await sendClientMenu(chatId, firstName);
-          }
+          // Не мастер — показываем клиентское меню (Мои записи + Стать мастером)
+          await sendClientMenu(chatId, firstName);
         }
       }
     }
@@ -495,33 +485,19 @@ async function sendMasterMenu(chatId, firstName, masterProfile) {
   });
 }
 
+// Клиентское меню: для всех кто не является мастером.
+// Показываем Мои записи + предложение стать мастером.
 async function sendClientMenu(chatId, firstName) {
   await fetch(`${TG_API}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chatId,
-      text: `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nЯ бот платформы <b>Ezze</b> — сервиса для самозанятых мастеров.\n\nЗарегистрируйтесь, чтобы начать вести клиентов онлайн.`,
-      parse_mode: "HTML",
-      reply_markup: { inline_keyboard: [[
-        { text: "📝 Зарегистрироваться", web_app: { url: `${APP_URL}/register` } }
-      ]]}
-    }),
-  });
-}
-
-// Меню для вернувшегося клиента (уже есть записи, но не является мастером)
-async function sendReturningClientMenu(chatId, firstName) {
-  await fetch(`${TG_API}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: `👋 <b>С возвращением${firstName ? ", " + firstName : ""}!</b>\n\nВы уже записывались через Ezze. Все ваши записи сохранены.\n\nЧто хотите сделать?`,
+      text: `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nЗдесь вы можете посмотреть свои записи к мастерам или зарегистрироваться как мастер на платформе <b>Ezze</b>.`,
       parse_mode: "HTML",
       reply_markup: { inline_keyboard: [
         [{ text: "📋 Мои записи", web_app: { url: `${APP_URL}/my` } }],
-        [{ text: "🚀 Стать мастером в Ezze", web_app: { url: `${APP_URL}/register` } }],
+        [{ text: "🚀 Стать мастером", web_app: { url: `${APP_URL}/register` } }],
       ]}
     }),
   });
