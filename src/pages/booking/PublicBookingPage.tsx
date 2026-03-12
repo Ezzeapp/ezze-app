@@ -94,12 +94,6 @@ export function PublicBookingPage() {
 
   // Telegram safe-area top inset (чтобы контент не уходил под нативную шапку)
   const [tgTopPadding, setTgTopPadding] = useState(0)
-  // Telegram viewport height — инициализируем сразу из window, не ждём useEffect
-  const [tgViewportHeight, setTgViewportHeight] = useState(() =>
-    isTelegramMiniApp()
-      ? (window.Telegram?.WebApp?.viewportHeight || window.innerHeight)
-      : 0
-  )
 
   // Reviews
   const [reviews, setReviews] = useState<Review[]>([])
@@ -141,18 +135,11 @@ export function PublicBookingPage() {
       // Fallback 60px на старых версиях Telegram, где API возвращает 0
       setTgTopPadding(total > 0 ? total : 60)
     }
-    // Высота вьюпорта — чтобы страница растягивалась на весь экран
-    const updateHeight = () => {
-      const h = tg.viewportStableHeight || tg.viewportHeight || 0
-      if (h > 0) setTgViewportHeight(h)
-    }
-
-    // Небольшая задержка: дать Telegram время обновить размеры после expand()
-    const timer = setTimeout(() => { updatePadding(); updateHeight() }, 100)
+    // Небольшая задержка: дать Telegram время обновить safe area после expand()
+    const timer = setTimeout(updatePadding, 100)
     tg.onEvent('safeAreaChanged', updatePadding)
     tg.onEvent('contentSafeAreaChanged', updatePadding)
     tg.onEvent('fullscreenChanged', updatePadding)
-    tg.onEvent('viewportChanged', updateHeight)
 
     const tgUser = getTelegramUser()
     const tgId = getTelegramUserId()
@@ -167,7 +154,6 @@ export function PublicBookingPage() {
       tg.offEvent('safeAreaChanged', updatePadding)
       tg.offEvent('contentSafeAreaChanged', updatePadding)
       tg.offEvent('fullscreenChanged', updatePadding)
-      tg.offEvent('viewportChanged', updateHeight)
     }
   }, [])
 
@@ -802,7 +788,7 @@ export function PublicBookingPage() {
     <div
       className="bg-background"
       style={{
-        minHeight: tgViewportHeight > 0 ? `${tgViewportHeight}px` : '100dvh',
+        minHeight: 'var(--tg-viewport-stable-height, 100dvh)',
         ...getThemeVars(master.booking_theme),
       }}
     >

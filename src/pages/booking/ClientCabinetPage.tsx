@@ -184,12 +184,6 @@ export function ClientCabinetPage() {
   const [telegramId, setTelegramId] = useState<string | null>(null)
   const [userName, setUserName] = useState('')
   const [tgTopPadding, setTgTopPadding] = useState(0)
-  // Инициализируем высоту сразу из window — не ждём useEffect/события
-  const [tgViewportHeight, setTgViewportHeight] = useState(() =>
-    isTelegramMiniApp()
-      ? (window.Telegram?.WebApp?.viewportHeight || window.innerHeight)
-      : 0
-  )
 
   useEffect(() => {
     if (isTelegramMiniApp()) {
@@ -198,17 +192,15 @@ export function ClientCabinetPage() {
         tg.ready()
         tg.expand()
 
-        // Отступ сверху (нужен при fullscreen; в expand — из contentSafeAreaInset)
-        const updateSizes = () => {
+        // Отступ сверху из safe area (для fullscreen-режима)
+        const updatePadding = () => {
           const safe = tg.safeAreaInset?.top ?? 0
           const content = tg.contentSafeAreaInset?.top ?? 0
           setTgTopPadding(safe + content)
-          setTgViewportHeight(tg.viewportStableHeight || tg.viewportHeight || 0)
         }
-        setTimeout(updateSizes, 100)
-        tg.onEvent('safeAreaChanged', updateSizes)
-        tg.onEvent('contentSafeAreaChanged', updateSizes)
-        tg.onEvent('viewportChanged', updateSizes)
+        setTimeout(updatePadding, 100)
+        tg.onEvent('safeAreaChanged', updatePadding)
+        tg.onEvent('contentSafeAreaChanged', updatePadding)
       }
     }
 
@@ -317,7 +309,7 @@ export function ClientCabinetPage() {
   return (
     <div
       className="bg-background"
-      style={{ minHeight: tgViewportHeight > 0 ? `${tgViewportHeight}px` : '100dvh' }}
+      style={{ minHeight: 'var(--tg-viewport-stable-height, 100dvh)' }}
     >
       <div className="max-w-lg mx-auto px-4 pb-4 space-y-6">
       {/* Шапка */}
