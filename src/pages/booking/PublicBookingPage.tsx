@@ -113,20 +113,37 @@ export function PublicBookingPage() {
 
   // Инициализация Telegram Mini App и авто-заполнение данных клиента
   useEffect(() => {
+    let cleanup: (() => void) | undefined
+
     const tg = window.Telegram?.WebApp
     if (tg) {
-      // expand() разворачивает на всю высоту, НЕ requestFullscreen
       tg.ready()
-      tg.expand()
+      // requestFullscreen() — полный экран (Bot API 8.0+), как в MiniAppLayout
+      // Это то, что заставляет страницу раскрываться на весь экран в Telegram
+      if (typeof tg.requestFullscreen === 'function') {
+        tg.requestFullscreen()
+      } else {
+        tg.expand()
+      }
 
       const updatePadding = () => {
         const safe = tg.safeAreaInset?.top ?? 0
         const content = tg.contentSafeAreaInset?.top ?? 0
-        setTgTopPadding(safe + content)
+        const total = safe + content
+        // Fallback 60px пока safe area ещё не загрузилась
+        setTgTopPadding(total > 0 ? total : 60)
       }
-      setTimeout(updatePadding, 100)
+      const timer = setTimeout(updatePadding, 200)
       tg.onEvent('safeAreaChanged', updatePadding)
       tg.onEvent('contentSafeAreaChanged', updatePadding)
+      tg.onEvent('fullscreenChanged', updatePadding)
+
+      cleanup = () => {
+        clearTimeout(timer)
+        tg.offEvent('safeAreaChanged', updatePadding)
+        tg.offEvent('contentSafeAreaChanged', updatePadding)
+        tg.offEvent('fullscreenChanged', updatePadding)
+      }
     }
 
     const tgUser = getTelegramUser()
@@ -136,6 +153,8 @@ export function PublicBookingPage() {
       setValue('client_name', fullName)
     }
     if (tgId) setTgUserId(tgId)
+
+    return cleanup
   }, [])
 
   useEffect(() => {
@@ -774,7 +793,7 @@ export function PublicBookingPage() {
       }}
     >
       {/* Header */}
-      <div className="border-b py-6 px-4" style={{ paddingTop: tgTopPadding > 0 ? `${tgTopPadding + 8}px` : window.Telegram?.WebApp ? '36px' : undefined }}>
+      <div className="border-b py-6 px-4" style={{ paddingTop: tgTopPadding > 0 ? `${tgTopPadding + 8}px` : window.Telegram?.WebApp ? '60px' : undefined }}>
         <div className="max-w-2xl mx-auto">
           {canGoBack && (
             <div className="mb-3">
