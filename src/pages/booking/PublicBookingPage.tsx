@@ -113,33 +113,22 @@ export function PublicBookingPage() {
 
   // Инициализация Telegram Mini App и авто-заполнение данных клиента
   useEffect(() => {
-    const tg = window.Telegram?.WebApp
-    if (!tg) return
+    if (isTelegramMiniApp()) {
+      const tg = window.Telegram?.WebApp
+      if (tg) {
+        tg.ready()
+        tg.expand()
 
-    // Страница бронирования: НЕ вызываем requestFullscreen() —
-    // клиенту нужна нативная кнопка «× Закрыть» от Telegram.
-    // expand() просто разворачивает на всю высоту, не скрывая шапку.
-    tg.ready()
-    tg.expand()
-
-    // Отступ сверху нужен ТОЛЬКО в fullscreen-режиме (requestFullscreen).
-    // В expand()-режиме Telegram сам рисует шапку выше WebView — отступ не нужен.
-    const updatePadding = () => {
-      if (!tg.isFullscreen) {
-        setTgTopPadding(0)
-        return
+        const updatePadding = () => {
+          const safe = tg.safeAreaInset?.top ?? 0
+          const content = tg.contentSafeAreaInset?.top ?? 0
+          setTgTopPadding(safe + content)
+        }
+        setTimeout(updatePadding, 100)
+        tg.onEvent('safeAreaChanged', updatePadding)
+        tg.onEvent('contentSafeAreaChanged', updatePadding)
       }
-      const safe = tg.safeAreaInset?.top ?? 0
-      const content = tg.contentSafeAreaInset?.top ?? 0
-      const total = safe + content
-      // Fallback 60px на старых версиях Telegram, где API возвращает 0
-      setTgTopPadding(total > 0 ? total : 60)
     }
-    // Небольшая задержка: дать Telegram время обновить safe area после expand()
-    const timer = setTimeout(updatePadding, 100)
-    tg.onEvent('safeAreaChanged', updatePadding)
-    tg.onEvent('contentSafeAreaChanged', updatePadding)
-    tg.onEvent('fullscreenChanged', updatePadding)
 
     const tgUser = getTelegramUser()
     const tgId = getTelegramUserId()
@@ -148,13 +137,6 @@ export function PublicBookingPage() {
       setValue('client_name', fullName)
     }
     if (tgId) setTgUserId(tgId)
-
-    return () => {
-      clearTimeout(timer)
-      tg.offEvent('safeAreaChanged', updatePadding)
-      tg.offEvent('contentSafeAreaChanged', updatePadding)
-      tg.offEvent('fullscreenChanged', updatePadding)
-    }
   }, [])
 
   useEffect(() => {
@@ -793,7 +775,7 @@ export function PublicBookingPage() {
       }}
     >
       {/* Header */}
-      <div className="border-b py-6 px-4" style={tgTopPadding > 0 ? { paddingTop: `${tgTopPadding + 8}px` } : undefined}>
+      <div className="border-b py-6 px-4" style={{ paddingTop: tgTopPadding > 0 ? `${tgTopPadding + 8}px` : isTelegramMiniApp() ? '36px' : undefined }}>
         <div className="max-w-2xl mx-auto">
           {canGoBack && (
             <div className="mb-3">
