@@ -370,7 +370,6 @@ export function ClientCabinetPage() {
                 key={appt.id}
                 appt={appt}
                 onCancel={appt.cancel_token ? () => handleCancel(appt.cancel_token!) : undefined}
-                onBookAgain={appt.bookingSlug ? () => navigate(`/book/${appt.bookingSlug}`) : undefined}
               />
             ))}
           </div>
