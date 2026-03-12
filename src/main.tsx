@@ -31,6 +31,13 @@ i18n.on('languageChanged', applyDayjsLocale)
 
 initTheme()
 
+// Telegram Mini App: сразу сигнализируем готовность и раскрываем на весь экран
+// Делаем это ДО рендера React — чтобы viewport уже был правильным при первом рендере
+if (window.Telegram?.WebApp?.initData) {
+  window.Telegram.WebApp.ready()
+  window.Telegram.WebApp.expand()
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />

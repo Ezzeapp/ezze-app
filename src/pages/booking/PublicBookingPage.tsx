@@ -94,8 +94,12 @@ export function PublicBookingPage() {
 
   // Telegram safe-area top inset (чтобы контент не уходил под нативную шапку)
   const [tgTopPadding, setTgTopPadding] = useState(0)
-  // Telegram viewport height для правильного растяжения на весь экран
-  const [tgViewportHeight, setTgViewportHeight] = useState(0)
+  // Telegram viewport height — инициализируем сразу из window, не ждём useEffect
+  const [tgViewportHeight, setTgViewportHeight] = useState(() =>
+    isTelegramMiniApp()
+      ? (window.Telegram?.WebApp?.viewportHeight || window.innerHeight)
+      : 0
+  )
 
   // Reviews
   const [reviews, setReviews] = useState<Review[]>([])

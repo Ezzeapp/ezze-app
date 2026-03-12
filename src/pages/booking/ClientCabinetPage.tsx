@@ -184,7 +184,12 @@ export function ClientCabinetPage() {
   const [telegramId, setTelegramId] = useState<string | null>(null)
   const [userName, setUserName] = useState('')
   const [tgTopPadding, setTgTopPadding] = useState(0)
-  const [tgViewportHeight, setTgViewportHeight] = useState(0)
+  // Инициализируем высоту сразу из window — не ждём useEffect/события
+  const [tgViewportHeight, setTgViewportHeight] = useState(() =>
+    isTelegramMiniApp()
+      ? (window.Telegram?.WebApp?.viewportHeight || window.innerHeight)
+      : 0
+  )
 
   useEffect(() => {
     if (isTelegramMiniApp()) {
@@ -311,11 +316,12 @@ export function ClientCabinetPage() {
 
   return (
     <div
-      className="max-w-lg mx-auto p-4 space-y-6"
+      className="bg-background"
       style={{ minHeight: tgViewportHeight > 0 ? `${tgViewportHeight}px` : '100dvh' }}
     >
+      <div className="max-w-lg mx-auto px-4 pb-4 space-y-6">
       {/* Шапка */}
-      <div style={{ paddingTop: tgTopPadding > 0 ? `${tgTopPadding + 8}px` : isTelegramMiniApp() ? '12px' : '4px' }}>
+      <div style={{ paddingTop: tgTopPadding > 0 ? `${tgTopPadding + 8}px` : isTelegramMiniApp() ? '36px' : '12px' }}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <Avatar className="h-12 w-12 bg-primary/10 shrink-0">
@@ -378,6 +384,7 @@ export function ClientCabinetPage() {
           </div>
         </section>
       )}
+      </div>
     </div>
   )
 }
