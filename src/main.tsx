@@ -32,11 +32,22 @@ i18n.on('languageChanged', applyDayjsLocale)
 initTheme()
 
 // Telegram Mini App: сразу сигнализируем готовность и раскрываем на весь экран
-// Делаем это ДО рендера React — чтобы viewport уже был правильным при первом рендере
-// Проверяем наличие WebApp (не initData — она может быть пустой при открытии по ссылке)
+// Делаем это ДО рендера React — до загрузки любых lazy-chunks
 if (window.Telegram?.WebApp) {
-  window.Telegram.WebApp.ready()
-  window.Telegram.WebApp.expand()
+  const tg = window.Telegram.WebApp
+  tg.ready()
+  // Клиентские страницы (/book, /my, /tg, /cancel) — requestFullscreen() (Bot API 8.0+)
+  // Это критично для /book: без этого страница грузится медленно и Telegram
+  // фиксирует compact-режим до того как компонент вызовет expand().
+  // Для остальных страниц — expand() (мастер-кабинет и т.д.)
+  const path = window.location.pathname
+  const needsFullscreen = path.startsWith('/book/') || path === '/my' ||
+    path.startsWith('/tg') || path.startsWith('/cancel/')
+  if (needsFullscreen && typeof tg.requestFullscreen === 'function') {
+    tg.requestFullscreen()
+  } else {
+    tg.expand()
+  }
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
