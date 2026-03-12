@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import type { Appointment } from '@/types'
 
 // ── Telegram Login Widget (браузерный) ────────────────────────────────────────
@@ -182,13 +183,28 @@ export function ClientCabinetPage() {
   const [loading, setLoading] = useState(true)
   const [telegramId, setTelegramId] = useState<string | null>(null)
   const [userName, setUserName] = useState('')
+  const [tgTopPadding, setTgTopPadding] = useState(0)
+  const [tgViewportHeight, setTgViewportHeight] = useState(0)
 
   useEffect(() => {
     if (isTelegramMiniApp()) {
-      // Страница клиента: expand() без requestFullscreen() —
-      // клиент должен видеть нативную кнопку «× Закрыть»
       const tg = window.Telegram?.WebApp
-      if (tg) { tg.ready(); tg.expand() }
+      if (tg) {
+        tg.ready()
+        tg.expand()
+
+        // Отступ сверху (нужен при fullscreen; в expand — из contentSafeAreaInset)
+        const updateSizes = () => {
+          const safe = tg.safeAreaInset?.top ?? 0
+          const content = tg.contentSafeAreaInset?.top ?? 0
+          setTgTopPadding(safe + content)
+          setTgViewportHeight(tg.viewportStableHeight || tg.viewportHeight || 0)
+        }
+        setTimeout(updateSizes, 100)
+        tg.onEvent('safeAreaChanged', updateSizes)
+        tg.onEvent('contentSafeAreaChanged', updateSizes)
+        tg.onEvent('viewportChanged', updateSizes)
+      }
     }
 
     const tgId = getTelegramUserId()
@@ -294,18 +310,26 @@ export function ClientCabinetPage() {
   )
 
   return (
-    <div className="max-w-lg mx-auto p-4 space-y-6">
+    <div
+      className="max-w-lg mx-auto p-4 space-y-6"
+      style={{ minHeight: tgViewportHeight > 0 ? `${tgViewportHeight}px` : '100dvh' }}
+    >
       {/* Шапка */}
-      <div className="pt-2">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-12 w-12 bg-primary/10">
-            <AvatarFallback className="text-primary font-semibold text-lg">
-              {userName ? userName.charAt(0).toUpperCase() : '?'}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h1 className="text-lg font-bold">{userName || 'Мои записи'}</h1>
-            <p className="text-xs text-muted-foreground">Личный кабинет</p>
+      <div style={{ paddingTop: tgTopPadding > 0 ? `${tgTopPadding + 8}px` : isTelegramMiniApp() ? '12px' : '4px' }}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <Avatar className="h-12 w-12 bg-primary/10 shrink-0">
+              <AvatarFallback className="text-primary font-semibold text-lg">
+                {userName ? userName.charAt(0).toUpperCase() : '?'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold truncate">{userName || 'Мои записи'}</h1>
+              <p className="text-xs text-muted-foreground">Личный кабинет</p>
+            </div>
+          </div>
+          <div className="shrink-0">
+            <LanguageSwitcher />
           </div>
         </div>
       </div>

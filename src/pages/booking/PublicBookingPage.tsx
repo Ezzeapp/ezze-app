@@ -94,6 +94,8 @@ export function PublicBookingPage() {
 
   // Telegram safe-area top inset (чтобы контент не уходил под нативную шапку)
   const [tgTopPadding, setTgTopPadding] = useState(0)
+  // Telegram viewport height для правильного растяжения на весь экран
+  const [tgViewportHeight, setTgViewportHeight] = useState(0)
 
   // Reviews
   const [reviews, setReviews] = useState<Review[]>([])
@@ -135,11 +137,18 @@ export function PublicBookingPage() {
       // Fallback 60px на старых версиях Telegram, где API возвращает 0
       setTgTopPadding(total > 0 ? total : 60)
     }
-    // Небольшая задержка: дать Telegram время обновить isFullscreen после expand()
-    const timer = setTimeout(updatePadding, 100)
+    // Высота вьюпорта — чтобы страница растягивалась на весь экран
+    const updateHeight = () => {
+      const h = tg.viewportStableHeight || tg.viewportHeight || 0
+      if (h > 0) setTgViewportHeight(h)
+    }
+
+    // Небольшая задержка: дать Telegram время обновить размеры после expand()
+    const timer = setTimeout(() => { updatePadding(); updateHeight() }, 100)
     tg.onEvent('safeAreaChanged', updatePadding)
     tg.onEvent('contentSafeAreaChanged', updatePadding)
     tg.onEvent('fullscreenChanged', updatePadding)
+    tg.onEvent('viewportChanged', updateHeight)
 
     const tgUser = getTelegramUser()
     const tgId = getTelegramUserId()
@@ -154,6 +163,7 @@ export function PublicBookingPage() {
       tg.offEvent('safeAreaChanged', updatePadding)
       tg.offEvent('contentSafeAreaChanged', updatePadding)
       tg.offEvent('fullscreenChanged', updatePadding)
+      tg.offEvent('viewportChanged', updateHeight)
     }
   }, [])
 
@@ -785,7 +795,13 @@ export function PublicBookingPage() {
   }).filter(Boolean) as string[]
 
   return (
-    <div className="min-h-screen bg-background" style={getThemeVars(master.booking_theme)}>
+    <div
+      className="bg-background"
+      style={{
+        minHeight: tgViewportHeight > 0 ? `${tgViewportHeight}px` : '100dvh',
+        ...getThemeVars(master.booking_theme),
+      }}
+    >
       {/* Header */}
       <div className="border-b py-6 px-4" style={tgTopPadding > 0 ? { paddingTop: `${tgTopPadding + 8}px` } : undefined}>
         <div className="max-w-2xl mx-auto">
