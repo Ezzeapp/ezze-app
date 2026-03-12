@@ -149,7 +149,7 @@ async function handleInsert(record: any) {
   }
 }
 
-// ── UPDATE: cancelled or rescheduled → notify client ─────────────────────────
+// ── UPDATE: confirmed / cancelled / rescheduled → notify client ──────────────
 
 async function handleUpdate(record: any, oldRecord: any) {
   const masterId = record.master_id
@@ -167,14 +167,41 @@ async function handleUpdate(record: any, oldRecord: any) {
   const cancelLink = record.cancel_token ? `${APP_URL}/cancel/${record.cancel_token}` : ''
   const masterName = prof.profession ?? 'Мастер'
 
-  let svcName = '-'
+  let svcName = '-', svcPrice = ''
   if (record.service_id) {
-    const { data: svc } = await supabase.from('services').select('name').eq('id', record.service_id).maybeSingle()
-    if (svc) svcName = svc.name ?? '-'
+    const { data: svc } = await supabase.from('services').select('name,price').eq('id', record.service_id).maybeSingle()
+    if (svc) {
+      svcName = svc.name ?? '-'
+      if (svc.price) svcPrice = `${svc.price} ${prof.currency ?? 'UZS'}`
+    }
   }
 
   const sendToClient = async (msg: string) => {
     await sendTg(clientTgId || clientTgUsr, msg, true)
+  }
+
+  // Master confirmed the appointment (confirmed_at changed from null to a value)
+  if (oldRecord && !oldRecord.confirmed_at && record.confirmed_at) {
+    const setting = await getNotifSetting(masterId, 'appointment_master_confirmed')
+    if (setting.enabled) {
+      const msg = setting.template?.trim()
+        ? applyTemplate(setting.template, {
+            master_name: masterName, service: svcName, price: svcPrice,
+            date, time: startTime, end_time: endTime,
+            address: prof.address ?? '', cancel_link: cancelLink,
+          })
+        : `✅ <b>Запись подтверждена мастером!</b>\n\n` +
+          `👤 <b>Мастер:</b> ${masterName}\n` +
+          `✂️ <b>Услуга:</b> ${svcName}\n` +
+          (svcPrice ? `💰 <b>Стоимость:</b> ${svcPrice}\n` : '') +
+          `📅 <b>Дата:</b> ${date}\n🕐 <b>Время:</b> ${startTime}` +
+          (endTime ? ` — ${endTime}` : '') +
+          (prof.address ? `\n📍 <b>Адрес:</b> ${prof.address}` : '') +
+          `\n\nДо встречи! 🌟` +
+          (cancelLink ? `\n\n<i>❌ <a href="${cancelLink}">Отменить запись</a></i>` : '')
+      if (msg) await sendToClient(msg)
+    }
+    return
   }
 
   if (record.status === 'cancelled') {
