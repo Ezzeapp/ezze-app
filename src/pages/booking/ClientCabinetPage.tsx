@@ -262,7 +262,7 @@ export function ClientCabinetPage() {
             const { data: profile } = await supabase
               .from('master_profiles')
               .select('profession, booking_slug')
-              .eq('user_id', appt.master)
+              .eq('user_id', appt.master_id)
               .maybeSingle()
             masterName = profile?.profession || ''
             bookingSlug = profile?.booking_slug || ''
