@@ -252,25 +252,28 @@ export function ClientCabinetPage() {
 
       if (error) throw error
 
-      const enriched: AppointmentWithMaster[] = await Promise.all(
-        (records ?? []).map(async (appt: any) => {
-          let masterName = ''
-          let bookingSlug = ''
-          const serviceName = appt.service?.name || ''
+      // Батч-загрузка профилей мастеров (один запрос вместо N)
+      const masterIds = [...new Set((records ?? []).map((a: any) => a.master_id).filter(Boolean))]
+      let profileMap = new Map<string, { profession: string; booking_slug: string }>()
 
-          try {
-            const { data: profile } = await supabase
-              .from('master_profiles')
-              .select('profession, booking_slug')
-              .eq('user_id', appt.master_id)
-              .maybeSingle()
-            masterName = profile?.profession || ''
-            bookingSlug = profile?.booking_slug || ''
-          } catch {}
+      if (masterIds.length > 0) {
+        const { data: profiles, error: profileError } = await supabase
+          .from('master_profiles')
+          .select('user_id, profession, booking_slug')
+          .in('user_id', masterIds)
+        if (profileError) console.error('Profile load error:', profileError)
+        profileMap = new Map((profiles ?? []).map((p: any) => [p.user_id, p]))
+      }
 
-          return { ...appt, masterName, serviceName, bookingSlug } as AppointmentWithMaster
-        })
-      )
+      const enriched: AppointmentWithMaster[] = (records ?? []).map((appt: any) => {
+        const profile = profileMap.get(appt.master_id)
+        return {
+          ...appt,
+          masterName: profile?.profession || '',
+          serviceName: appt.service?.name || '',
+          bookingSlug: profile?.booking_slug || '',
+        } as AppointmentWithMaster
+      })
 
       setAppointments(enriched)
     } catch (err) {
