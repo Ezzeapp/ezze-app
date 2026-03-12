@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
@@ -41,6 +41,8 @@ interface SlotInfo {
   reason: BusyReason
 }
 
+const SERVICES_LIMIT = 30
+
 export function PublicBookingPage() {
   const { t, i18n } = useTranslation()
   const { masterId } = useParams<{ masterId: string }>()
@@ -60,6 +62,15 @@ export function PublicBookingPage() {
   // Мультивыбор услуг
   const [selectedServices, setSelectedServices] = useState<Service[]>([])
   const [serviceSearch, setServiceSearch] = useState('')
+
+  // Пагинация и серверный поиск услуг
+  const [masterUserId, setMasterUserId] = useState('')
+  const [servicesTotal, setServicesTotal] = useState(0)
+  const [servicesHasMore, setServicesHasMore] = useState(false)
+  const [servicesLoadingMore, setServicesLoadingMore] = useState(false)
+  const [servicesSearching, setServicesSearching] = useState(false)
+  const servicesBaseRef = useRef<Service[]>([])   // сохраняем пагинированный список (без поиска)
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Главные вкладки страницы
   const [mainTab, setMainTab] = useState<'booking' | 'about'>('booking')
@@ -189,12 +200,13 @@ export function PublicBookingPage() {
       const [svcsRes, schedRes, bksRes, blocksRes, revsRes] = await Promise.all([
         supabase
           .from('services')
-          .select('*')
+          .select('*', { count: 'exact' })
           .eq('master_id', userId)
           .eq('is_bookable', true)
           .eq('is_active', true)
           .order('order')
-          .order('name'),
+          .order('name')
+          .range(0, SERVICES_LIMIT - 1),
         supabase
           .from('schedules')
           .select('*')
@@ -217,7 +229,13 @@ export function PublicBookingPage() {
           .order('created', { ascending: false }),
       ])
 
-      setServices((svcsRes.data ?? []) as Service[])
+      const svcs = (svcsRes.data ?? []) as Service[]
+      const total = svcsRes.count ?? 0
+      setServices(svcs)
+      servicesBaseRef.current = svcs
+      setServicesTotal(total)
+      setServicesHasMore(svcs.length < total)
+      setMasterUserId(userId)
       setSchedule((schedRes.data ?? null) as Schedule | null)
       setBreaks((bksRes.data ?? []) as ScheduleBreak[])
       setDateBlocks((blocksRes.data ?? []) as DateBlock[])
@@ -247,10 +265,66 @@ export function PublicBookingPage() {
     [basePrice, promoApplied]
   )
 
-  // Фильтрованный список услуг по поиску
+  // Дебounced серверный поиск: при вводе 2+ символов запрашивает сервер
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+    const q = serviceSearch.trim()
+    if (!q) {
+      // Поиск сброшен — восстанавливаем пагинированный список
+      setServices(servicesBaseRef.current)
+      setServicesSearching(false)
+      return
+    }
+    if (q.length < 2) {
+      // 1 символ — быстрая клиентская фильтрация загруженных услуг
+      setServicesSearching(false)
+      return
+    }
+    // 2+ символов — серверный поиск через 300мс
+    searchTimerRef.current = setTimeout(async () => {
+      if (!masterUserId) return
+      setServicesSearching(true)
+      const { data } = await supabase
+        .from('services')
+        .select('*')
+        .eq('master_id', masterUserId)
+        .eq('is_bookable', true)
+        .eq('is_active', true)
+        .or(`name.ilike.%${q}%,description.ilike.%${q}%`)
+        .order('order')
+        .order('name')
+        .limit(100)
+      setServices(data as Service[] ?? [])
+      setServicesSearching(false)
+    }, 300)
+  }, [serviceSearch, masterUserId])
+
+  // Загрузить следующую порцию услуг
+  const loadMoreServices = async () => {
+    if (!masterUserId || servicesLoadingMore || serviceSearch.trim()) return
+    setServicesLoadingMore(true)
+    const from = servicesBaseRef.current.length
+    const { data } = await supabase
+      .from('services')
+      .select('*')
+      .eq('master_id', masterUserId)
+      .eq('is_bookable', true)
+      .eq('is_active', true)
+      .order('order')
+      .order('name')
+      .range(from, from + SERVICES_LIMIT - 1)
+    const appended = [...servicesBaseRef.current, ...(data as Service[] ?? [])]
+    servicesBaseRef.current = appended
+    setServices(appended)
+    setServicesHasMore(appended.length < servicesTotal)
+    setServicesLoadingMore(false)
+  }
+
+  // Фильтрация: при 1 символе — клиентская; при 2+ — сервер уже обновил services
   const filteredServices = useMemo(() => {
     const q = serviceSearch.toLowerCase().trim()
-    if (!q) return services
+    if (!q || q.length >= 2) return services
+    // 1 символ — быстрый клиентский фильтр
     return services.filter(s =>
       s.name.toLowerCase().includes(q) ||
       (s.description || '').toLowerCase().includes(q)
@@ -960,21 +1034,30 @@ export function PublicBookingPage() {
           <div className={`space-y-4${selectedServices.length > 0 ? ' pb-24' : ''}`}>
 
             {/* Поиск */}
-            {services.length > 4 && (
+            {(services.length > 4 || servicesTotal > 4) && (
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  className="pl-9"
+                  className="pl-9 pr-9"
                   placeholder={t('booking.searchServices')}
                   value={serviceSearch}
                   onChange={e => setServiceSearch(e.target.value)}
                 />
+                {servicesSearching && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
               </div>
             )}
 
             {/* Список услуг */}
             {(() => {
               const tabFiltered = filteredServices
+
+              if (servicesSearching && tabFiltered.length === 0) {
+                return <div className="py-6 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+              }
 
               if (tabFiltered.length === 0) {
                 return <p className="text-muted-foreground py-4 text-center">{t('booking.noServices')}</p>
@@ -1036,6 +1119,25 @@ export function PublicBookingPage() {
                       </button>
                     )
                   })}
+
+                  {/* Кнопка "Загрузить ещё" — только когда не идёт поиск */}
+                  {!serviceSearch.trim() && servicesHasMore && (
+                    <button
+                      type="button"
+                      onClick={loadMoreServices}
+                      disabled={servicesLoadingMore}
+                      className="w-full py-3 text-sm text-primary font-medium rounded-xl border-2 border-dashed border-primary/30 hover:border-primary/60 hover:bg-primary/5 transition-all disabled:opacity-50"
+                    >
+                      {servicesLoadingMore ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                          Загрузка...
+                        </span>
+                      ) : (
+                        `Ещё ${servicesTotal - servicesBaseRef.current.length} ${t('nav.services').toLowerCase()}`
+                      )}
+                    </button>
+                  )}
                 </div>
               )
             })()}
