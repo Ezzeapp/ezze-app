@@ -3,12 +3,13 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { Camera, Copy, ExternalLink, Globe, Instagram, Mail, MessageCircle, Phone, Send, BellRing, CheckCircle2, XCircle, Clock, ImagePlus, Trash2, MapPin, Navigation, Wand2, User, Settings, QrCode, ArrowLeftRight } from 'lucide-react'
+import { Camera, Copy, ExternalLink, Globe, Instagram, Mail, MessageCircle, Phone, Send, BellRing, CheckCircle2, XCircle, Clock, ImagePlus, Trash2, MapPin, Navigation, Wand2, User, Settings, QrCode, ArrowLeftRight, Sparkles } from 'lucide-react'
 import { ScheduleTab } from '@/pages/schedule/ScheduleTab'
 import { buildClientBookingLink } from '@/lib/telegramWebApp'
 import { BOOKING_THEMES } from '@/lib/bookingThemes'
 import { useQueryClient } from '@tanstack/react-query'
 import { useProfile, useUpsertProfile, PROFILE_KEY } from '@/hooks/useProfile'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useMyTeam } from '@/hooks/useTeam'
 import { SpecialtySelector } from '@/components/specialty/SpecialtySelector'
@@ -69,6 +70,7 @@ export function ProfilePage() {
   const [activityTypeName, setActivityTypeName] = useState('')
   const [wizardOpen, setWizardOpen] = useState(false)
   const [profileTab, setProfileTab] = useState<'main' | 'contacts' | 'schedule' | 'settings' | 'transfer'>('main')
+  const [generatingBio, setGeneratingBio] = useState(false)
   const { data: activityTypes } = useActivityTypes()
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors, isDirty } } = useForm<FormValues>({
@@ -214,6 +216,35 @@ export function ProfilePage() {
       toast.error(t('common.deleteError'))
     } finally {
       setPortfolioDeleting(prev => { const s = new Set(prev); s.delete(filename); return s })
+    }
+  }
+
+  const generateBio = async () => {
+    setGeneratingBio(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-generate-text`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token ?? ''}`,
+        },
+        body: JSON.stringify({
+          type: 'bio',
+          context: {
+            name: user?.name,
+            profession: watch('profession'),
+            specialty: activityTypeName,
+            city: watch('city'),
+          },
+        }),
+      })
+      const { text } = await resp.json()
+      if (text) setValue('bio', text, { shouldDirty: true })
+    } catch {
+      toast.error('Не удалось сгенерировать текст')
+    } finally {
+      setGeneratingBio(false)
     }
   }
 
@@ -525,7 +556,20 @@ export function ProfilePage() {
               {errors.profession && <p className="text-xs text-destructive">{errors.profession.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>{t('profile.bio')}</Label>
+              <div className="flex items-center justify-between">
+                <Label>{t('profile.bio')}</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs text-muted-foreground hover:text-primary"
+                  onClick={generateBio}
+                  disabled={generatingBio}
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  {generatingBio ? 'Генерирую...' : 'Сгенерировать'}
+                </Button>
+              </div>
               <Textarea rows={3} placeholder={t('profile.bioPlaceholder')} {...register('bio')} />
             </div>
           </CardContent>
@@ -708,42 +752,89 @@ export function ProfilePage() {
               </div>
             )}
 
-            {/* Ссылка Telegram Mini App для клиентов */}
+            {/* QR-коды для клиентов */}
             {isPublic && (
-              <FeatureGate feature="client_cabinet">
-              <div className="p-3 rounded-lg border bg-[#2AABEE]/5 border-[#2AABEE]/20 space-y-3">
-                <div className="flex items-center gap-2">
-                  <QrCode className="h-4 w-4 text-[#2AABEE]" />
-                  <p className="text-xs font-medium text-[#2AABEE]">Ссылка для клиентов (Telegram)</p>
-                </div>
-                <div className="flex gap-3 items-center">
-                  <img
-                    src={qrApiUrl}
-                    alt="QR-код для записи"
-                    className="h-24 w-24 rounded-lg border bg-white shrink-0"
-                  />
-                  <div className="flex-1 space-y-2">
-                    <code className="text-xs break-all text-muted-foreground block">{tgBookingUrl}</code>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="w-full text-xs"
-                      onClick={() => {
-                        navigator.clipboard.writeText(tgBookingUrl)
-                        toast.success('Ссылка скопирована')
-                      }}
-                    >
-                      <Copy className="h-3 w-3 mr-1.5" />
-                      Копировать ссылку
-                    </Button>
-                    <p className="text-xs text-muted-foreground">
-                      Клиент сканирует QR → открывается Telegram → бронирование
-                    </p>
+              <div className="space-y-3">
+                {/* Веб-ссылка — для всех */}
+                <div className="p-3 rounded-lg border bg-muted/30 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <QrCode className="h-4 w-4 text-primary" />
+                    <p className="text-xs font-medium">QR-код для бронирования (веб)</p>
+                  </div>
+                  <div className="flex gap-3 items-center">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(bookingUrl)}`}
+                      alt="QR-код для записи"
+                      className="h-24 w-24 rounded-lg border bg-white shrink-0"
+                    />
+                    <div className="flex-1 space-y-2">
+                      <code className="text-xs break-all text-muted-foreground block">{bookingUrl}</code>
+                      <div className="flex gap-1.5">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs"
+                          onClick={() => { navigator.clipboard.writeText(bookingUrl); toast.success('Ссылка скопирована') }}
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Копировать
+                        </Button>
+                        <a
+                          href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(bookingUrl)}&download=1`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-md border text-xs hover:bg-accent transition-colors whitespace-nowrap"
+                        >
+                          ↓ PNG
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </div>
+                {/* Telegram Mini App — только Pro */}
+                <FeatureGate feature="client_cabinet">
+                <div className="p-3 rounded-lg border bg-[#2AABEE]/5 border-[#2AABEE]/20 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <QrCode className="h-4 w-4 text-[#2AABEE]" />
+                    <p className="text-xs font-medium text-[#2AABEE]">QR-код (Telegram Mini App)</p>
+                  </div>
+                  <div className="flex gap-3 items-center">
+                    <img
+                      src={qrApiUrl}
+                      alt="QR-код Telegram"
+                      className="h-24 w-24 rounded-lg border bg-white shrink-0"
+                    />
+                    <div className="flex-1 space-y-2">
+                      <code className="text-xs break-all text-muted-foreground block">{tgBookingUrl}</code>
+                      <div className="flex gap-1.5">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs"
+                          onClick={() => { navigator.clipboard.writeText(tgBookingUrl); toast.success('Ссылка скопирована') }}
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Копировать
+                        </Button>
+                        <a
+                          href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(tgBookingUrl)}&download=1`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-md border text-xs hover:bg-accent transition-colors whitespace-nowrap"
+                        >
+                          ↓ PNG
+                        </a>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Открывается Telegram → бронирование
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                </FeatureGate>
               </div>
-              </FeatureGate>
             )}
           </CardContent>
         </Card>

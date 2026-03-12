@@ -333,13 +333,23 @@ export function TeamAnalyticsTab({ team, members, membersLoading }: Props) {
                       </div>
                     </div>
 
-                    {stat.doneCount > 0 && (
-                      <div className="mt-1.5 ml-7 pl-10 flex gap-3 text-xs text-muted-foreground">
-                        <span>
-                          {t('team.analytics.avgCheck')}: {formatCurrency(stat.avgCheck, currency, i18n.language)}
-                        </span>
-                      </div>
-                    )}
+                    {stat.doneCount > 0 && (() => {
+                      const member = members.find((m: any) => m.user_id === stat.userId)
+                      const commissionPct = (member as any)?.commission_pct ?? 100
+                      const masterShare = Math.round(stat.revenue * commissionPct / 100)
+                      return (
+                        <div className="mt-1.5 ml-7 pl-10 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          <span>
+                            {t('team.analytics.avgCheck')}: {formatCurrency(stat.avgCheck, currency, i18n.language)}
+                          </span>
+                          {commissionPct < 100 && (
+                            <span className="text-emerald-600 dark:text-emerald-400">
+                              Доля мастера ({commissionPct}%): {formatCurrency(masterShare, currency, i18n.language)}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </div>
                 )
               })}

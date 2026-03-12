@@ -487,6 +487,12 @@ export function CalendarPage() {
               {t('common.online')}
             </div>
           )}
+          {appt.booked_via === 'online' && !appt.confirmed_at && appt.status === 'scheduled' && (
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+              Ожидает
+            </div>
+          )}
         </div>
         {cleanNotes && (
           <div className="text-xs text-muted-foreground border-t pt-1.5 mt-1 line-clamp-3">{cleanNotes}</div>

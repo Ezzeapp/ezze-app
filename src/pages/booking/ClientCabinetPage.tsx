@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, Zap, Smartphone } from 'lucide-react'
+import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import {
   isTelegramMiniApp,
@@ -15,6 +15,35 @@ import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import type { Appointment } from '@/types'
+
+// ── Telegram Login Widget (браузерный) ────────────────────────────────────────
+function TelegramLoginWidget({ onAuth }: { onAuth: (user: Record<string, unknown>) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const onAuthRef = useRef(onAuth)
+  useEffect(() => { onAuthRef.current = onAuth }, [onAuth])
+
+  useEffect(() => {
+    if (!containerRef.current) return
+    ;(window as any).onTelegramAuth = (user: Record<string, unknown>) => {
+      onAuthRef.current(user)
+    }
+    const script = document.createElement('script')
+    script.src = 'https://telegram.org/js/telegram-widget.js?22'
+    script.setAttribute('data-telegram-login', 'ezzeapp_bot')
+    script.setAttribute('data-size', 'large')
+    script.setAttribute('data-radius', '8')
+    script.setAttribute('data-onauth', 'onTelegramAuth(user)')
+    script.setAttribute('data-request-access', 'write')
+    script.async = true
+    containerRef.current.appendChild(script)
+    return () => {
+      delete (window as any).onTelegramAuth
+      if (containerRef.current) containerRef.current.innerHTML = ''
+    }
+  }, [])
+
+  return <div ref={containerRef} className="flex justify-center" />
+}
 
 // Расширенный тип с данными о мастере
 interface AppointmentWithMaster extends Appointment {
@@ -174,9 +203,22 @@ export function ClientCabinetPage() {
       setAppointments(DEV_MOCK_APPOINTMENTS)
       setLoading(false)
     } else {
+      // Браузер без Telegram — покажем виджет входа
       setLoading(false)
     }
   }, [])
+
+  const handleWidgetAuth = (user: Record<string, unknown>) => {
+    const tgId = String(user.id ?? '')
+    const firstName = String(user.first_name ?? '')
+    const lastName = String(user.last_name ?? '')
+    const name = [firstName, lastName].filter(Boolean).join(' ')
+    if (!tgId) return
+    setTelegramId(tgId)
+    setUserName(name || firstName)
+    setLoading(true)
+    loadAppointments(tgId)
+  }
 
   const loadAppointments = async (tgId: string) => {
     try {
@@ -219,23 +261,22 @@ export function ClientCabinetPage() {
     navigate(`/cancel/${cancelToken}`)
   }
 
-  // Нет Telegram — заглушка (только в продакшене)
+  // Нет Telegram — показываем виджет входа (в браузере)
   if (!loading && !telegramId && !import.meta.env.DEV) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center gap-4">
-        <Smartphone className="h-16 w-16 text-muted-foreground" />
-        <h1 className="text-xl font-bold">Откройте через Telegram</h1>
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          Личный кабинет доступен только в Telegram Mini App.
-          <br />
-          Перейдите по ссылке от вашего мастера.
-        </p>
-        <a
-          href="https://t.me/ezzeapp_bot"
-          className="text-sm text-primary underline underline-offset-2"
-        >
-          Открыть @ezzeapp_bot
-        </a>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center gap-6">
+        <div className="space-y-2">
+          <div className="h-16 w-16 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto">
+            <svg viewBox="0 0 24 24" className="h-9 w-9 text-blue-500 fill-current" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-2.02 9.52c-.148.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.883.701z"/>
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold">Мои записи</h1>
+          <p className="text-muted-foreground text-sm">
+            Войдите через Telegram, чтобы увидеть ваши записи к мастеру
+          </p>
+        </div>
+        <TelegramLoginWidget onAuth={handleWidgetAuth} />
       </div>
     )
   }

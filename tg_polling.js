@@ -22,6 +22,7 @@ const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const APP_URL = process.env.APP_URL || "https://ezze.site";
 const SUPABASE_URL = process.env.SUPABASE_URL || "http://127.0.0.1:8001";
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
@@ -93,6 +94,168 @@ async function autoFixMasterProfile(chatId, tgUsername) {
   } catch (e) {
     console.error("autoFixMasterProfile error:", e.message);
     return null;
+  }
+}
+
+// ── AI / Claude helpers ──────────────────────────────────────────────────────
+
+async function sendTyping(chatId) {
+  await fetch(`${TG_API}/sendChatAction`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, action: "typing" }),
+  }).catch(() => {});
+}
+
+function getMasterTools() {
+  return [
+    {
+      name: "get_appointments",
+      description: "Получить записи мастера за указанный период. Используй для вопросов о расписании, записях, клиентах.",
+      input_schema: {
+        type: "object",
+        properties: {
+          date_from: { type: "string", description: "Дата начала (YYYY-MM-DD)" },
+          date_to: { type: "string", description: "Дата конца (YYYY-MM-DD)" },
+        },
+        required: ["date_from", "date_to"],
+      },
+    },
+    {
+      name: "get_stats",
+      description: "Получить статистику мастера: выручку и количество записей за период.",
+      input_schema: {
+        type: "object",
+        properties: {
+          days: { type: "number", description: "Количество последних дней (7, 30, 90)" },
+        },
+        required: ["days"],
+      },
+    },
+  ];
+}
+
+function getClientTools() {
+  return [
+    {
+      name: "get_my_appointments",
+      description: "Получить мои предстоящие и прошлые записи к мастерам.",
+      input_schema: { type: "object", properties: {} },
+    },
+  ];
+}
+
+async function executeMasterTool(toolName, input, masterId) {
+  try {
+    if (toolName === "get_appointments") {
+      const { data } = await supabase
+        .from("appointments")
+        .select("date, start_time, end_time, status, price, notes, clients(first_name, last_name)")
+        .eq("master_id", masterId)
+        .gte("date", input.date_from)
+        .lte("date", input.date_to)
+        .order("date").order("start_time");
+      const formatted = (data || []).map(a => ({
+        date: a.date,
+        time: a.start_time,
+        status: a.status,
+        price: a.price,
+        client: a.clients ? `${a.clients.first_name || ""} ${a.clients.last_name || ""}`.trim() : "—",
+        service: (a.notes || "").match(/^\[([^\]]+)\]/)?.[1] || "",
+      }));
+      return JSON.stringify(formatted);
+    }
+    if (toolName === "get_stats") {
+      const days = Math.min(input.days || 30, 365);
+      const dateFrom = new Date();
+      dateFrom.setDate(dateFrom.getDate() - days);
+      const dateStr = dateFrom.toISOString().slice(0, 10);
+      const { data } = await supabase
+        .from("appointments")
+        .select("price, status, date")
+        .eq("master_id", masterId)
+        .gte("date", dateStr);
+      const done = (data || []).filter(a => a.status === "done");
+      const revenue = done.reduce((s, a) => s + (a.price || 0), 0);
+      return JSON.stringify({ period_days: days, completed: done.length, total_appointments: (data || []).length, revenue });
+    }
+  } catch (e) {
+    return `Error: ${e.message}`;
+  }
+  return "Unknown tool";
+}
+
+async function executeClientTool(toolName, _input, chatId) {
+  try {
+    if (toolName === "get_my_appointments") {
+      const { data } = await supabase
+        .from("appointments")
+        .select("date, start_time, end_time, status, price, notes")
+        .eq("telegram_id", String(chatId))
+        .order("date", { ascending: false })
+        .limit(10);
+      return JSON.stringify(data || []);
+    }
+  } catch (e) {
+    return `Error: ${e.message}`;
+  }
+  return "Unknown tool";
+}
+
+async function runClaudeAgentic(messages, tools, systemPrompt, toolExecutor) {
+  let msgs = [...messages];
+  for (let i = 0; i < 5; i++) {
+    const body = { model: "claude-haiku-4-5", max_tokens: 1024, system: systemPrompt, messages: msgs };
+    if (tools?.length) body.tools = tools;
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+    if (!resp.ok) { console.error("Claude API error:", data); return "Извините, ИИ-помощник недоступен."; }
+    const content = data.content || [];
+    const toolUses = content.filter(c => c.type === "tool_use");
+    if (!toolUses.length || data.stop_reason === "end_turn") {
+      return content.find(c => c.type === "text")?.text || "Готово.";
+    }
+    msgs.push({ role: "assistant", content });
+    const results = await Promise.all(toolUses.map(async tu => ({
+      type: "tool_result", tool_use_id: tu.id, content: await toolExecutor(tu.name, tu.input),
+    })));
+    msgs.push({ role: "user", content: results });
+  }
+  return "Не удалось получить ответ.";
+}
+
+async function handleAIMessage(chatId, text, masterProfile) {
+  if (!ANTHROPIC_API_KEY) return false;
+  await sendTyping(chatId);
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    if (masterProfile) {
+      const masterId = masterProfile.user_id;
+      const system = `Ты умный помощник мастера в приложении Ezze. Сегодня ${today}. Отвечай кратко и по делу на русском. Используй инструменты чтобы ответить на вопросы о расписании и выручке. Форматируй даты как ДД.ММ, время как ЧЧ:ММ.`;
+      const answer = await runClaudeAgentic(
+        [{ role: "user", content: text }],
+        getMasterTools(), system,
+        (name, input) => executeMasterTool(name, input, masterId)
+      );
+      await sendMessage(chatId, answer);
+    } else {
+      const system = `Ты помощник клиента в приложении Ezze — сервисе записи к мастерам. Сегодня ${today}. Отвечай кратко и по делу на русском.`;
+      const answer = await runClaudeAgentic(
+        [{ role: "user", content: text }],
+        getClientTools(), system,
+        (name, input) => executeClientTool(name, input, chatId)
+      );
+      await sendMessage(chatId, answer);
+    }
+    return true;
+  } catch (err) {
+    console.error("handleAIMessage error:", err);
+    await sendMessage(chatId, "Извините, произошла ошибка. Попробуйте позже.");
+    return false;
   }
 }
 
@@ -172,6 +335,23 @@ async function processUpdate(update) {
     }
 
     if (text === "/menu") await sendClientMenu(chatId, firstName);
+
+    // AI: handle arbitrary (non-command) messages
+    if (!text.startsWith("/") && ANTHROPIC_API_KEY) {
+      const masterProfile = await findMasterByChatId(chatId);
+      if (masterProfile) {
+        await handleAIMessage(chatId, text, masterProfile);
+      } else {
+        // Check if this telegram user has any appointments (is a known client)
+        const { count } = await supabase
+          .from("appointments")
+          .select("id", { count: "exact", head: true })
+          .eq("telegram_id", String(chatId));
+        if ((count ?? 0) > 0) {
+          await handleAIMessage(chatId, text, null);
+        }
+      }
+    }
   }
 
   const callback = update.callback_query;

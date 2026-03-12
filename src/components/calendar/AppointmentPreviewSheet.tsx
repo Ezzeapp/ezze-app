@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, UserCircle, Banknote, Trash2, Pencil, MessageSquare } from 'lucide-react'
+import { CalendarDays, UserCircle, Banknote, Trash2, Pencil, MessageSquare, CheckCircle2, Clock } from 'lucide-react'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -9,7 +9,7 @@ import { cn, formatCurrency } from '@/lib/utils'
 import { useCurrency } from '@/hooks/useCurrency'
 import { useProfileIcon } from '@/hooks/useProfileIcon'
 import { toast } from '@/components/shared/Toaster'
-import { getAppointmentServiceNames, cleanAppointmentNotes } from '@/hooks/useAppointments'
+import { getAppointmentServiceNames, cleanAppointmentNotes, useConfirmAppointment } from '@/hooks/useAppointments'
 import type { Appointment, Service } from '@/types'
 
 dayjs.locale('ru')
@@ -62,6 +62,7 @@ export function AppointmentPreviewSheet({
   const currency = useCurrency()
   const ServiceIcon = useProfileIcon()
   const [statusLoading, setStatusLoading] = useState<ApptStatus | null>(null)
+  const confirm = useConfirmAppointment()
 
   // ── Свайп вниз для закрытия ─────────────────────────────────────────────
   const touchStartY = useRef<number | null>(null)
@@ -216,6 +217,29 @@ export function AppointmentPreviewSheet({
                 <p className="text-sm text-muted-foreground line-clamp-2">{cleanNotes}</p>
               </div>
             </button>
+          )}
+
+          {/* Баннер: ожидает подтверждения */}
+          {appt.booked_via === 'online' && !appt.confirmed_at && appt.status === 'scheduled' && (
+            <div className="mt-3 p-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 flex items-start gap-2.5">
+              <Clock className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-amber-700 dark:text-amber-300">Ожидает подтверждения</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Онлайн-запись от клиента</p>
+              </div>
+              <Button
+                size="sm"
+                className="shrink-0 h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white"
+                onClick={async () => {
+                  await confirm.mutateAsync(appt.id)
+                  toast.success('Запись подтверждена')
+                }}
+                disabled={confirm.isPending}
+              >
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Подтвердить
+              </Button>
+            </div>
           )}
 
           {/* Статус */}

@@ -215,6 +215,29 @@ export function useRemoveTeamMember() {
   })
 }
 
+// ── Обновить комиссию участника (владелец) ──────────────────────────────────
+
+export function useUpdateMemberCommission() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ memberId, commissionPct }: { memberId: string; commissionPct: number }) => {
+      const pct = Math.max(0, Math.min(100, Math.round(commissionPct)))
+      const { data, error } = await supabase
+        .from('team_members')
+        .update({ commission_pct: pct })
+        .eq('id', memberId)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [TEAM_MEMBERS_KEY] })
+    },
+  })
+}
+
 // ── Удалить команду (владелец) ───────────────────────────────────────────────
 
 export function useDeleteTeam() {

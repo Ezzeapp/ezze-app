@@ -7,7 +7,7 @@ import {
   LogIn, ChevronRight, Loader2, KeyRound, AlertTriangle,
   PauseCircle, PlayCircle,
 } from 'lucide-react'
-import { useMyTeam, useTeamMembers, useCreateTeam, useRemoveTeamMember, useLeaveTeam, useTogglePauseTeamMember } from '@/hooks/useTeam'
+import { useMyTeam, useTeamMembers, useCreateTeam, useRemoveTeamMember, useLeaveTeam, useTogglePauseTeamMember, useUpdateMemberCommission } from '@/hooks/useTeam'
 import { useTeamInvites, useCreateTeamInvite, useDeactivateTeamInvite, useJoinTeam } from '@/hooks/useTeamInvites'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -323,6 +323,7 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
   const createInvite = useCreateTeamInvite()
   const removeM = useRemoveTeamMember()
   const togglePause = useTogglePauseTeamMember()
+  const updateCommission = useUpdateMemberCommission()
 
   const activeInvites = invites.filter((inv: any) => {
     const expired = new Date(inv.expires_at) < new Date()
@@ -487,9 +488,30 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {t('team.joinedAt')} {dayjs(m.joined_at).format('DD.MM.YY')}
-                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <p className="text-xs text-muted-foreground">
+                          {t('team.joinedAt')} {dayjs(m.joined_at).format('DD.MM.YY')}
+                        </p>
+                        <span className="text-xs text-muted-foreground">·</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">Комиссия</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            defaultValue={m.commission_pct ?? 100}
+                            className="w-12 text-xs border rounded px-1 py-0.5 text-center focus:outline-none focus:ring-1 focus:ring-primary bg-background"
+                            onBlur={(e) => {
+                              const val = Math.max(0, Math.min(100, parseInt(e.target.value) || 100))
+                              e.target.value = String(val)
+                              if (val !== (m.commission_pct ?? 100)) {
+                                updateCommission.mutate({ memberId: m.id, commissionPct: val })
+                              }
+                            }}
+                          />
+                          <span className="text-xs text-muted-foreground">%</span>
+                        </div>
+                      </div>
                     </div>
                     <div className="flex gap-0.5 shrink-0">
                       <Button

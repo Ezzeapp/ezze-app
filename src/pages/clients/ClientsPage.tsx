@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, KeyboardEvent, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, CheckCircle2, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2 } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, CheckCircle2, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2 } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -35,6 +35,7 @@ const schema = z.object({
   last_name: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
+  birthday: z.string().optional(),
   notes: z.string().optional(),
   source: z.string().optional(),
   tags: z.array(z.string()).optional(),
@@ -204,6 +205,9 @@ export function ClientsPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
+  const [analysisOpen, setAnalysisOpen] = useState(false)
+  const [analysis, setAnalysis] = useState('')
+  const [analysisLoading, setAnalysisLoading] = useState(false)
 
   useEffect(() => {
     const id = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 350)
@@ -274,6 +278,7 @@ export function ClientsPage() {
       last_name: c.last_name || '',
       phone: c.phone || '',
       email: c.email || '',
+      birthday: c.birthday || '',
       notes: c.notes || '',
       source: c.source || '',
       tags: c.tags || [],
@@ -358,6 +363,48 @@ export function ClientsPage() {
   }
 
 
+  const generateAnalysis = useCallback(async () => {
+    setAnalysisOpen(true)
+    setAnalysisLoading(true)
+    setAnalysis('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token ?? ''
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-analyze-clients`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+      })
+      const json = await resp.json()
+      if (json.analysis) {
+        setAnalysis(json.analysis)
+      } else {
+        setAnalysis('Не удалось получить анализ. Попробуйте позже.')
+      }
+    } catch {
+      setAnalysis('Ошибка при запросе анализа. Проверьте подключение.')
+    } finally {
+      setAnalysisLoading(false)
+    }
+  }, [])
+
+  function renderAnalysis(text: string) {
+    return text.split('\n').map((line, i) => {
+      if (line.startsWith('## ')) {
+        return <h3 key={i} className="text-sm font-semibold mt-4 mb-1.5 first:mt-0">{line.slice(3)}</h3>
+      }
+      if (line.startsWith('- ') || line.startsWith('* ')) {
+        const content = line.slice(2).replace(/\*\*(.*?)\*\*/g, '$1')
+        return <li key={i} className="ml-4 text-sm list-disc text-muted-foreground leading-relaxed">{content}</li>
+      }
+      if (line.trim() === '') return <div key={i} className="h-1" />
+      return <p key={i} className="text-sm text-muted-foreground leading-relaxed">{line.replace(/\*\*(.*?)\*\*/g, '$1')}</p>
+    })
+  }
+
   return (
     <div className="space-y-6">
       <div className="space-y-2 sticky top-0 z-10 bg-background -mx-3 px-3 lg:-mx-6 lg:px-6 -mt-4 pt-4 lg:-mt-6 lg:pt-6 pb-3 shadow-sm">
@@ -422,19 +469,25 @@ export function ClientsPage() {
       <PlanLimitBanner limitKey="clients" count={clientCount} entityKey="clients" />
 
       {!isLoading && totalItems > 0 && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-xs text-muted-foreground">Всего клиентов</p>
-            <p className="text-2xl font-bold mt-1">{totalItems}</p>
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-xl border bg-card p-4">
+              <p className="text-xs text-muted-foreground">Всего клиентов</p>
+              <p className="text-2xl font-bold mt-1">{totalItems}</p>
+            </div>
+            <div className="rounded-xl border bg-card p-4">
+              <p className="text-xs text-muted-foreground">Новых за 30 дней</p>
+              <p className="text-2xl font-bold mt-1">{newThisMonth ?? '—'}</p>
+            </div>
+            <div className="rounded-xl border bg-card p-4">
+              <p className="text-xs text-muted-foreground">С телефоном</p>
+              <p className="text-2xl font-bold mt-1">{withPhone ?? '—'}</p>
+            </div>
           </div>
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-xs text-muted-foreground">Новых за 30 дней</p>
-            <p className="text-2xl font-bold mt-1">{newThisMonth ?? '—'}</p>
-          </div>
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-xs text-muted-foreground">С телефоном</p>
-            <p className="text-2xl font-bold mt-1">{withPhone ?? '—'}</p>
-          </div>
+          <Button variant="outline" size="sm" className="gap-2 text-purple-600 border-purple-200 hover:bg-purple-50 dark:hover:bg-purple-950/20" onClick={generateAnalysis}>
+            <Sparkles className="h-4 w-4" />
+            ИИ-анализ клиентской базы
+          </Button>
         </div>
       )}
 
@@ -669,6 +722,10 @@ export function ClientsPage() {
                   <Input type="email" {...register('email')} />
                   {errors.email && <p className="text-xs text-destructive">{t('auth.invalidEmail')}</p>}
                 </div>
+                <div className="space-y-2">
+                  <Label>День рождения</Label>
+                  <Input type="date" {...register('birthday')} />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>{t('clients.notes')}</Label>
@@ -720,6 +777,37 @@ export function ClientsPage() {
       {statsClient && (
         <ClientStatsDialog client={statsClient} onClose={() => setStatsClient(null)} />
       )}
+
+      {/* AI Analysis Dialog */}
+      <Dialog open={analysisOpen} onOpenChange={setAnalysisOpen}>
+        <DialogContent mobileFullscreen className="max-w-lg overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              ИИ-анализ клиентской базы
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            {analysisLoading ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                <p className="text-sm text-muted-foreground">Анализирую данные...</p>
+              </div>
+            ) : analysis ? (
+              <div className="space-y-1">{renderAnalysis(analysis)}</div>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAnalysisOpen(false)}>{t('common.cancel')}</Button>
+            {!analysisLoading && analysis && (
+              <Button variant="outline" className="gap-2 text-purple-600" onClick={generateAnalysis}>
+                <Sparkles className="h-4 w-4" />
+                Обновить
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

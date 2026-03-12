@@ -275,3 +275,23 @@ export function useDeleteAppointment() {
     },
   })
 }
+
+export function useConfirmAppointment() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase
+        .from('appointments')
+        .update({ confirmed_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      return normalizeAppointment(data)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_KEY] })
+    },
+  })
+}
