@@ -16,7 +16,7 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { formatCurrency, formatDuration, parseTimeToMinutes, minutesToTime, getFileUrl } from '@/lib/utils'
 import type { MasterProfile, Service, Schedule, ScheduleBreak, Appointment, Review, DateBlock } from '@/types'
-import { isTelegramMiniApp, getTelegramUser, getTelegramUserId, initMiniApp, hapticSuccess, buildClientCabinetLink } from '@/lib/telegramWebApp'
+import { isTelegramMiniApp, getTelegramUser, getTelegramUserId, hapticSuccess, buildClientCabinetLink } from '@/lib/telegramWebApp'
 import { validatePromoCode } from '@/hooks/usePromoCodes'
 import { getThemeVars } from '@/lib/bookingThemes'
 
@@ -116,16 +116,30 @@ export function PublicBookingPage() {
     const tg = window.Telegram?.WebApp
     if (!tg) return
 
-    initMiniApp()
+    // Страница бронирования: НЕ вызываем requestFullscreen() —
+    // клиенту нужна нативная кнопка «× Закрыть» от Telegram.
+    // expand() просто разворачивает на всю высоту, не скрывая шапку.
+    tg.ready()
+    tg.expand()
 
-    // Отступ сверху: safe area (статус-бар) + content safe area (шапка Telegram)
+    // Отступ сверху нужен ТОЛЬКО в fullscreen-режиме (requestFullscreen).
+    // В expand()-режиме Telegram сам рисует шапку выше WebView — отступ не нужен.
     const updatePadding = () => {
-      const top = (tg.safeAreaInset?.top ?? 0) + (tg.contentSafeAreaInset?.top ?? 0)
-      setTgTopPadding(top)
+      if (!tg.isFullscreen) {
+        setTgTopPadding(0)
+        return
+      }
+      const safe = tg.safeAreaInset?.top ?? 0
+      const content = tg.contentSafeAreaInset?.top ?? 0
+      const total = safe + content
+      // Fallback 60px на старых версиях Telegram, где API возвращает 0
+      setTgTopPadding(total > 0 ? total : 60)
     }
-    updatePadding()
+    // Небольшая задержка: дать Telegram время обновить isFullscreen после expand()
+    const timer = setTimeout(updatePadding, 100)
     tg.onEvent('safeAreaChanged', updatePadding)
     tg.onEvent('contentSafeAreaChanged', updatePadding)
+    tg.onEvent('fullscreenChanged', updatePadding)
 
     const tgUser = getTelegramUser()
     const tgId = getTelegramUserId()
@@ -136,8 +150,10 @@ export function PublicBookingPage() {
     if (tgId) setTgUserId(tgId)
 
     return () => {
+      clearTimeout(timer)
       tg.offEvent('safeAreaChanged', updatePadding)
       tg.offEvent('contentSafeAreaChanged', updatePadding)
+      tg.offEvent('fullscreenChanged', updatePadding)
     }
   }, [])
 
@@ -390,19 +406,6 @@ export function PublicBookingPage() {
   }
 
   // При переходе на шаг 2 — загрузить все записи за период и выбрать первую доступную дату
-  // Инициализация Telegram Mini App и авто-заполнение данных клиента
-  useEffect(() => {
-    if (isTelegramMiniApp()) {
-      initMiniApp()
-      const tgUser = getTelegramUser()
-      const tgId = getTelegramUserId()
-      if (tgUser) {
-        const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ')
-        setValue('client_name', fullName)
-      }
-      if (tgId) setTgUserId(tgId)
-    }
-  }, [])
 
   useEffect(() => {
     if (step !== 2 || !master || !schedule) return
@@ -434,20 +437,6 @@ export function PublicBookingPage() {
   }, [step])
 
   // При изменении набора услуг — пересчитать занятые дни и слоты
-  // Инициализация Telegram Mini App и авто-заполнение данных клиента
-  useEffect(() => {
-    if (isTelegramMiniApp()) {
-      initMiniApp()
-      const tgUser = getTelegramUser()
-      const tgId = getTelegramUserId()
-      if (tgUser) {
-        const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ')
-        setValue('client_name', fullName)
-      }
-      if (tgId) setTgUserId(tgId)
-    }
-  }, [])
-
   useEffect(() => {
     if (step === 2 && master && schedule) {
       const booked = computeFullyBooked(allPeriodAppts, totalDuration)
@@ -793,7 +782,7 @@ export function PublicBookingPage() {
   return (
     <div className="min-h-screen bg-background" style={getThemeVars(master.booking_theme)}>
       {/* Header */}
-      <div className="border-b py-6 px-4" style={tgTopPadding > 0 ? { paddingTop: `${tgTopPadding + 16}px` } : undefined}>
+      <div className="border-b py-6 px-4" style={tgTopPadding > 0 ? { paddingTop: `${tgTopPadding + 8}px` } : undefined}>
         <div className="max-w-2xl mx-auto">
           {canGoBack && (
             <div className="mb-3">
