@@ -3,8 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { Camera, Copy, ExternalLink, Globe, Instagram, Mail, MessageCircle, Phone, Send, BellRing, CheckCircle2, XCircle, Clock, ImagePlus, Trash2, MapPin, Navigation, Wand2, User, Settings, QrCode, ArrowLeftRight, Sparkles } from 'lucide-react'
-import { ScheduleTab } from '@/pages/schedule/ScheduleTab'
+import { Camera, Copy, ExternalLink, Globe, Instagram, Mail, MessageCircle, Phone, Send, BellRing, CheckCircle2, XCircle, ImagePlus, Trash2, MapPin, Navigation, Wand2, User, Settings, QrCode, ArrowLeftRight, Sparkles } from 'lucide-react'
 import { buildClientBookingLink } from '@/lib/telegramWebApp'
 import { BOOKING_THEMES } from '@/lib/bookingThemes'
 import { useQueryClient } from '@tanstack/react-query'
@@ -70,7 +69,7 @@ export function ProfilePage() {
   const [specialtyId, setSpecialtyId] = useState('')
   const [activityTypeName, setActivityTypeName] = useState('')
   const [wizardOpen, setWizardOpen] = useState(false)
-  const [profileTab, setProfileTab] = useState<'main' | 'contacts' | 'schedule' | 'settings' | 'transfer'>('main')
+  const [profileTab, setProfileTab] = useState<'main' | 'contacts' | 'settings' | 'transfer'>('main')
   const [generatingBio, setGeneratingBio] = useState(false)
   const { data: aiConfig } = useAIConfig()
   const { data: activityTypes } = useActivityTypes()
@@ -319,12 +318,11 @@ export function ProfilePage() {
       />
 
       {/* Вкладки */}
-      <div className="grid grid-cols-5 gap-1">
+      <div className="grid grid-cols-4 gap-1">
         {([
           { id: 'main',     label: t('profile.tabMain'),     icon: User           },
           { id: 'contacts', label: t('profile.contacts'),    icon: Phone          },
-          { id: 'schedule', label: t('nav.schedule'),        icon: Clock          },
-          { id: 'settings', label: t('profile.tabBooking'),    icon: Settings       },
+          { id: 'settings', label: t('profile.tabBooking'),  icon: Settings       },
           { id: 'transfer', label: t('profile.transfer'),    icon: ArrowLeftRight },
         ] as const).map(tab => (
           <button key={tab.id} type="button" title={tab.label} onClick={() => setProfileTab(tab.id)}
@@ -338,13 +336,6 @@ export function ProfilePage() {
         ))}
       </div>
 
-      {/* Вкладка Расписание — вне основного грида */}
-      {profileTab === 'schedule' && (
-        <div className="mt-2">
-          <ScheduleTab />
-        </div>
-      )}
-
       {/* Вкладка Перенос данных — вне основного грида */}
       {profileTab === 'transfer' && (
         <div className="mt-2">
@@ -354,7 +345,7 @@ export function ProfilePage() {
         </div>
       )}
 
-      <div className={cn("grid gap-6 lg:grid-cols-3", (profileTab === 'schedule' || profileTab === 'transfer') && 'hidden')}>
+      <div className={cn("grid gap-6 lg:grid-cols-3", profileTab === 'transfer' && 'hidden')}>
         {/* Avatar Card */}
         <Card className={cn(profileTab !== 'main' && 'hidden')}>
           <CardHeader><CardTitle className="text-base">{t('profile.photo')}</CardTitle></CardHeader>
