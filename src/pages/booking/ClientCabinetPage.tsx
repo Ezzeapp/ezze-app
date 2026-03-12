@@ -7,7 +7,6 @@ import {
   isTelegramMiniApp,
   getTelegramUserId,
   getTelegramDisplayName,
-  initMiniApp,
 } from '@/lib/telegramWebApp'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -186,7 +185,10 @@ export function ClientCabinetPage() {
 
   useEffect(() => {
     if (isTelegramMiniApp()) {
-      initMiniApp()
+      // Страница клиента: expand() без requestFullscreen() —
+      // клиент должен видеть нативную кнопку «× Закрыть»
+      const tg = window.Telegram?.WebApp
+      if (tg) { tg.ready(); tg.expand() }
     }
 
     const tgId = getTelegramUserId()

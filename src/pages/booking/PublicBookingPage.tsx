@@ -188,7 +188,7 @@ export function PublicBookingPage() {
         supabase
           .from('services')
           .select('*')
-          .eq('master', userId)
+          .eq('master_id', userId)
           .eq('is_bookable', true)
           .eq('is_active', true)
           .order('order')
@@ -196,21 +196,21 @@ export function PublicBookingPage() {
         supabase
           .from('schedules')
           .select('*')
-          .eq('master', userId)
+          .eq('master_id', userId)
           .maybeSingle(),
         supabase
           .from('schedule_breaks')
           .select('*')
-          .eq('master', userId),
+          .eq('master_id', userId),
         supabase
           .from('date_blocks')
           .select('*')
-          .eq('master', userId)
+          .eq('master_id', userId)
           .order('date_from'),
         supabase
           .from('reviews')
           .select('*')
-          .eq('master', userId)
+          .eq('master_id', userId)
           .eq('is_visible', true)
           .order('created', { ascending: false }),
       ])
@@ -328,7 +328,7 @@ export function PublicBookingPage() {
       const { data } = await supabase
         .from('appointments')
         .select('*')
-        .eq('master', master.user)
+        .eq('master_id', (master as any).user_id)
         .eq('date', date)
         .neq('status', 'cancelled')
       existingAppts = (data ?? []) as Appointment[]
@@ -417,7 +417,7 @@ export function PublicBookingPage() {
         const { data } = await supabase
           .from('appointments')
           .select('*')
-          .eq('master', master.user)
+          .eq('master_id', (master as any).user_id)
           .gte('date', dateFrom)
           .lte('date', dateTo)
           .neq('status', 'cancelled')
@@ -469,7 +469,7 @@ export function PublicBookingPage() {
       const { data: existingClient } = await supabase
         .from('clients')
         .select('id, first_name, last_name')
-        .eq('master', master.user)
+        .eq('master_id', (master as any).user_id)
         .eq('phone', values.client_phone)
         .maybeSingle()
 
@@ -487,7 +487,7 @@ export function PublicBookingPage() {
         const { data: newClient } = await supabase
           .from('clients')
           .insert({
-            master: master.user,
+            master_id: (master as any).user_id,
             first_name: firstName,
             last_name: lastName,
             phone: values.client_phone,
@@ -501,9 +501,9 @@ export function PublicBookingPage() {
       const { data: appt, error: apptError } = await supabase
         .from('appointments')
         .insert({
-          master: master.user,
-          client: clientId,
-          service: selectedServices[0].id,
+          master_id: (master as any).user_id,
+          client_id: clientId,
+          service_id: selectedServices[0].id,
           date: selectedDate,
           start_time: selectedSlot,
           end_time: endTime,
@@ -528,8 +528,11 @@ export function PublicBookingPage() {
       // Создаём записи appointment_services (новый формат мультиуслуг)
       await supabase.from('appointment_services').insert(
         selectedServices.map((svc, i) => ({
-          appointment: appt.id,
-          service: svc.id,
+          appointment_id: appt.id,
+          service_id: svc.id,
+          service_name: svc.name,
+          price: svc.price,
+          duration_min: svc.duration_min,
           sort_order: i,
         }))
       )
