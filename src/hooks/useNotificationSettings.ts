@@ -9,6 +9,7 @@ export type NotifType =
   | 'reminder_master'
   | 'birthday_notify'
   | 'appointment_confirmed'
+  | 'appointment_master_confirmed'
   | 'reminder_client'
   | 'appointment_cancelled'
   | 'appointment_rescheduled'
@@ -48,6 +49,11 @@ export const NOTIF_DEFAULTS: Record<NotifType, Omit<NotificationSetting, 'id' | 
   },
   appointment_confirmed: {
     type: 'appointment_confirmed',
+    enabled: true, enable_email: false,
+    template: '', email_template: '',
+  },
+  appointment_master_confirmed: {
+    type: 'appointment_master_confirmed',
     enabled: true, enable_email: false,
     template: '', email_template: '',
   },
@@ -95,6 +101,8 @@ export const NOTIF_DEFAULT_TEMPLATES: Record<NotifType, string> = {
     '🎂 Сегодня день рождения клиента {client_name}!\n📞 {client_phone}\n\n🎉 Не забудьте поздравить!',
   appointment_confirmed:
     '✅ Запись подтверждена!\n\nВы записаны к {master_name}\n✂️ {service}\n📅 {date} в {time}\n\n❌ Отменить: {cancel_link}',
+  appointment_master_confirmed:
+    '✅ Запись подтверждена мастером!\n\n👤 Мастер: {master_name}\n✂️ {service}\n📅 {date} в {time}\n\nДо встречи! 🌟\n\n❌ Отменить: {cancel_link}',
   reminder_client:
     '⏰ Напоминание! Через {hours} у вас запись:\n\n💇 {master_name}\n✂️ {service}\n🕐 {time}',
   appointment_cancelled:

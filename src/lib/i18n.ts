@@ -8,12 +8,12 @@ i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    supportedLngs: ['ru', 'en', 'kz', 'uz', 'tg', 'ky', 'by', 'uk'],
+    supportedLngs: ['ru', 'en', 'kz', 'uz', 'tg', 'ky', 'by', 'uk', 'kaa'],
     fallbackLng: 'ru',
     defaultNS: 'translation',
     backend: {
       loadPath: '/locales/{{lng}}/{{ns}}.json',
-      queryStringParams: { v: '36' },
+      queryStringParams: { v: '37' },
     },
     detection: {
       order: ['localStorage', 'navigator'],

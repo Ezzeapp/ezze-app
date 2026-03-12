@@ -65,13 +65,14 @@ const MASTER_ROWS: NotifRowConfig[] = [
 ]
 
 const CLIENT_ROWS: NotifRowConfig[] = [
-  { type: 'appointment_confirmed',  icon: CheckCircle,  color: 'text-green-500',  when: 'notifications.whenCreate' },
-  { type: 'reminder_client',        icon: AlarmClock,   color: 'text-amber-500',  when: '', hasTiming: 'hours' },
-  { type: 'appointment_cancelled',  icon: XCircle,      color: 'text-red-500',    when: '' },
-  { type: 'appointment_rescheduled',icon: CalendarDays, color: 'text-blue-500',   when: '' },
-  { type: 'post_visit_review',      icon: Star,         color: 'text-yellow-500', when: 'notifications.when2hAfter' },
-  { type: 'birthday_greeting',      icon: Gift,         color: 'text-pink-500',   when: 'notifications.whenCron9' },
-  { type: 'win_back',               icon: Heart,        color: 'text-purple-500', when: '', hasTiming: 'days' },
+  { type: 'appointment_confirmed',         icon: CheckCircle,  color: 'text-green-500',  when: 'notifications.whenCreate' },
+  { type: 'appointment_master_confirmed',  icon: CheckCircle,  color: 'text-emerald-600', when: '' },
+  { type: 'reminder_client',               icon: AlarmClock,   color: 'text-amber-500',  when: '', hasTiming: 'hours' },
+  { type: 'appointment_cancelled',         icon: XCircle,      color: 'text-red-500',    when: '' },
+  { type: 'appointment_rescheduled',       icon: CalendarDays, color: 'text-blue-500',   when: '' },
+  { type: 'post_visit_review',             icon: Star,         color: 'text-yellow-500', when: 'notifications.when2hAfter' },
+  { type: 'birthday_greeting',             icon: Gift,         color: 'text-pink-500',   when: 'notifications.whenCron9' },
+  { type: 'win_back',                      icon: Heart,        color: 'text-purple-500', when: '', hasTiming: 'days' },
 ]
 
 // ─── Template Dialog ──────────────────────────────────────────────────────────

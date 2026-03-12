@@ -18,7 +18,7 @@ import i18n from './lib/i18n'
 // Маппинг app-языков → dayjs-локали
 const DAYJS_LOCALE_MAP: Record<string, string> = {
   ru: 'ru', en: 'en', kz: 'kk', uz: 'uz',
-  tg: 'tg', ky: 'ky', by: 'be', uk: 'uk',
+  tg: 'tg', ky: 'ky', by: 'be', uk: 'uk', kaa: 'uz',
 }
 
 const applyDayjsLocale = (lng: string) => {

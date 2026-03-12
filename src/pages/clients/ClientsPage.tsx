@@ -24,7 +24,7 @@ import { PlanLimitBanner } from '@/components/shared/PlanLimitBanner'
 import { toast } from '@/components/shared/Toaster'
 import { formatCurrency } from '@/lib/utils'
 import { useCurrency } from '@/hooks/useCurrency'
-import { usePlanLimitCheck } from '@/hooks/useAppSettings'
+import { usePlanLimitCheck, useAIConfig } from '@/hooks/useAppSettings'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { getFileUrl } from '@/lib/utils'
@@ -193,6 +193,7 @@ export function ClientsPage() {
   const { t, i18n } = useTranslation()
   const currency = useCurrency()
   const { user } = useAuth()
+  const { data: aiConfig } = useAIConfig()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -484,10 +485,12 @@ export function ClientsPage() {
               <p className="text-2xl font-bold mt-1">{withPhone ?? '—'}</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="gap-2 text-purple-600 border-purple-200 hover:bg-purple-50 dark:hover:bg-purple-950/20" onClick={generateAnalysis}>
-            <Sparkles className="h-4 w-4" />
-            ИИ-анализ клиентской базы
-          </Button>
+          {aiConfig?.enabled && (
+            <Button variant="outline" size="sm" className="gap-2 text-purple-600 border-purple-200 hover:bg-purple-50 dark:hover:bg-purple-950/20" onClick={generateAnalysis}>
+              <Sparkles className="h-4 w-4" />
+              ИИ-анализ клиентской базы
+            </Button>
+          )}
         </div>
       )}
 

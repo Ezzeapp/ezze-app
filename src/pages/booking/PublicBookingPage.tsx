@@ -361,17 +361,18 @@ export function PublicBookingPage() {
     if (!master || reviewRating === 0) return
     setReviewSubmitting(true)
     try {
-      await supabase.from('reviews').insert({
-        master: master.user,
+      const { error } = await supabase.from('reviews').insert({
+        master_id: (master as any).user_id,
         rating: reviewRating,
         comment: reviewComment,
         client_name: bookingDetails?.clientName || '',
         telegram_id: tgUserId || '',
         is_visible: true,
       })
+      if (error) throw error
       setReviewSubmitted(true)
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('Review submit error:', err)
     } finally {
       setReviewSubmitting(false)
     }

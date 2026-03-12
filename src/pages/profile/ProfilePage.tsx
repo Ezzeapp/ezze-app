@@ -9,6 +9,7 @@ import { buildClientBookingLink } from '@/lib/telegramWebApp'
 import { BOOKING_THEMES } from '@/lib/bookingThemes'
 import { useQueryClient } from '@tanstack/react-query'
 import { useProfile, useUpsertProfile, PROFILE_KEY } from '@/hooks/useProfile'
+import { useAIConfig } from '@/hooks/useAppSettings'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useMyTeam } from '@/hooks/useTeam'
@@ -71,6 +72,7 @@ export function ProfilePage() {
   const [wizardOpen, setWizardOpen] = useState(false)
   const [profileTab, setProfileTab] = useState<'main' | 'contacts' | 'schedule' | 'settings' | 'transfer'>('main')
   const [generatingBio, setGeneratingBio] = useState(false)
+  const { data: aiConfig } = useAIConfig()
   const { data: activityTypes } = useActivityTypes()
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors, isDirty } } = useForm<FormValues>({
@@ -558,17 +560,19 @@ export function ProfilePage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>{t('profile.bio')}</Label>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 text-xs text-muted-foreground hover:text-primary"
-                  onClick={generateBio}
-                  disabled={generatingBio}
-                >
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  {generatingBio ? 'Генерирую...' : 'Сгенерировать'}
-                </Button>
+                {aiConfig?.enabled && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs text-muted-foreground hover:text-primary"
+                    onClick={generateBio}
+                    disabled={generatingBio}
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    {generatingBio ? 'Генерирую...' : 'Сгенерировать'}
+                  </Button>
+                )}
               </div>
               <Textarea rows={3} placeholder={t('profile.bioPlaceholder')} {...register('bio')} />
             </div>
