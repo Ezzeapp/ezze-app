@@ -33,7 +33,8 @@ initTheme()
 
 // Telegram Mini App: сразу сигнализируем готовность и раскрываем на весь экран
 // Делаем это ДО рендера React — чтобы viewport уже был правильным при первом рендере
-if (window.Telegram?.WebApp?.initData) {
+// Проверяем наличие WebApp (не initData — она может быть пустой при открытии по ссылке)
+if (window.Telegram?.WebApp) {
   window.Telegram.WebApp.ready()
   window.Telegram.WebApp.expand()
 }

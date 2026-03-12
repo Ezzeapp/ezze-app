@@ -113,21 +113,20 @@ export function PublicBookingPage() {
 
   // Инициализация Telegram Mini App и авто-заполнение данных клиента
   useEffect(() => {
-    if (isTelegramMiniApp()) {
-      const tg = window.Telegram?.WebApp
-      if (tg) {
-        tg.ready()
-        tg.expand()
+    const tg = window.Telegram?.WebApp
+    if (tg) {
+      // expand() разворачивает на всю высоту, НЕ requestFullscreen
+      tg.ready()
+      tg.expand()
 
-        const updatePadding = () => {
-          const safe = tg.safeAreaInset?.top ?? 0
-          const content = tg.contentSafeAreaInset?.top ?? 0
-          setTgTopPadding(safe + content)
-        }
-        setTimeout(updatePadding, 100)
-        tg.onEvent('safeAreaChanged', updatePadding)
-        tg.onEvent('contentSafeAreaChanged', updatePadding)
+      const updatePadding = () => {
+        const safe = tg.safeAreaInset?.top ?? 0
+        const content = tg.contentSafeAreaInset?.top ?? 0
+        setTgTopPadding(safe + content)
       }
+      setTimeout(updatePadding, 100)
+      tg.onEvent('safeAreaChanged', updatePadding)
+      tg.onEvent('contentSafeAreaChanged', updatePadding)
     }
 
     const tgUser = getTelegramUser()
@@ -775,7 +774,7 @@ export function PublicBookingPage() {
       }}
     >
       {/* Header */}
-      <div className="border-b py-6 px-4" style={{ paddingTop: tgTopPadding > 0 ? `${tgTopPadding + 8}px` : isTelegramMiniApp() ? '36px' : undefined }}>
+      <div className="border-b py-6 px-4" style={{ paddingTop: tgTopPadding > 0 ? `${tgTopPadding + 8}px` : window.Telegram?.WebApp ? '36px' : undefined }}>
         <div className="max-w-2xl mx-auto">
           {canGoBack && (
             <div className="mb-3">
