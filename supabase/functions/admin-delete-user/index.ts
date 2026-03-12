@@ -130,6 +130,19 @@ Deno.serve(async (req: Request) => {
     })
   }
 
+  // Cannot delete admin accounts
+  const { data: targetUser } = await supabaseAdmin
+    .from('users')
+    .select('is_admin')
+    .eq('id', userId)
+    .single()
+  if (targetUser?.is_admin) {
+    return new Response(JSON.stringify({ message: 'cannot_delete_admin' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   try {
     // ── Step 1: email_log via appointments ────────────────────────────────────
     const apptIds = await collectIds('appointments', 'master_id', userId)

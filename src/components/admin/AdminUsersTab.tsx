@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Shield, ShieldOff, Search, Download, Users, TrendingUp, UserCheck2, Ban, Trash2, AlertTriangle, CheckSquare } from 'lucide-react'
+import { Shield, ShieldOff, Search, Download, Users, TrendingUp, UserCheck2, Ban, Trash2, AlertTriangle, CheckSquare, Lock } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useUsers, useToggleUserAdmin, useUpdateUserPlan, useToggleUserDisabled, useDeleteUser } from '@/hooks/useUsers'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -371,7 +371,7 @@ export function AdminUsersTab() {
                 }`}
               >
                 {/* Checkbox */}
-                {!isSelf ? (
+                {!isSelf && !isAdmin ? (
                   <Checkbox
                     checked={selectedIds.has(u.id)}
                     onCheckedChange={() => toggleSelect(u.id)}
@@ -414,7 +414,7 @@ export function AdminUsersTab() {
                       <div className="flex items-center gap-1">
                         <Switch
                           checked={isAdmin}
-                          disabled={isSelf || toggleAdmin.isPending}
+                          disabled={isSelf || isAdmin || toggleAdmin.isPending}
                           onCheckedChange={() => handleToggleAdmin(u.id, isAdmin)}
                         />
                         {isAdmin
@@ -422,7 +422,7 @@ export function AdminUsersTab() {
                           : <ShieldOff className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
                         }
                       </div>
-                      {!isSelf && (
+                      {!isSelf && !isAdmin && (
                         <Switch
                           checked={!isDisabled}
                           disabled={toggleDisabled.isPending}
@@ -430,14 +430,16 @@ export function AdminUsersTab() {
                         />
                       )}
                       {!isSelf && (
-                        <button
-                          onClick={() => setDeleteTarget({ id: u.id, name: u.name || '—', email: u.email || '' })}
-                          disabled={deleteUser.isPending}
-                          title="Удалить пользователя"
-                          className="p-1 rounded transition-colors text-muted-foreground/40 hover:text-destructive"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        isAdmin
+                          ? <Lock className="h-3.5 w-3.5 text-amber-500/50 shrink-0" aria-label="Администратор не удаляется" />
+                          : <button
+                              onClick={() => setDeleteTarget({ id: u.id, name: u.name || '—', email: u.email || '' })}
+                              disabled={deleteUser.isPending}
+                              title="Удалить пользователя"
+                              className="p-1 rounded transition-colors text-muted-foreground/40 hover:text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                       )}
                     </div>
                   </div>
@@ -449,9 +451,9 @@ export function AdminUsersTab() {
                 <div className="hidden sm:flex w-16 items-center justify-center gap-1 shrink-0">
                   <Switch
                     checked={isAdmin}
-                    disabled={isSelf || toggleAdmin.isPending}
+                    disabled={isSelf || isAdmin || toggleAdmin.isPending}
                     onCheckedChange={() => handleToggleAdmin(u.id, isAdmin)}
-                    title={isSelf ? t('admin.cannotSelf') : isAdmin ? t('admin.removeAdmin') : t('admin.makeAdmin')}
+                    title={isSelf ? t('admin.cannotSelf') : isAdmin ? 'Нельзя снять роль у администратора' : t('admin.makeAdmin')}
                   />
                   {isAdmin
                     ? <Shield className="h-3.5 w-3.5 text-amber-500 shrink-0" />
@@ -460,7 +462,7 @@ export function AdminUsersTab() {
                 </div>
 
                 <div className="hidden sm:flex w-16 items-center justify-center shrink-0">
-                  {isSelf ? (
+                  {isSelf || isAdmin ? (
                     <span className="text-[10px] text-muted-foreground/40">—</span>
                   ) : (
                     <Switch
@@ -474,7 +476,9 @@ export function AdminUsersTab() {
 
                 {/* Delete button — desktop */}
                 <div className="hidden sm:flex w-8 items-center justify-center shrink-0">
-                  {!isSelf && (
+                  {isSelf ? null : isAdmin ? (
+                    <Lock className="h-4 w-4 text-amber-500/40" aria-label="Администратор не удаляется" />
+                  ) : (
                     <button
                       onClick={() => setDeleteTarget({ id: u.id, name: u.name || '—', email: u.email || '' })}
                       disabled={deleteUser.isPending}
