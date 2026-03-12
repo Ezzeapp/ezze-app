@@ -142,6 +142,7 @@
   "profile": {
     "subtitle": "Кіраванне публічным профілем",
     "tabMain": "Асноўнае",
+    "tabBooking": "Онлайн запіс",
     "photo": "Фота",
     "basicInfo": "Асноўная інфармацыя",
     "contacts": "Кантакты",
@@ -464,7 +465,7 @@
     "timezone": "Гадзінны пояс",
     "currencyTimezone": "Валюта і гадзінны пояс",
     "currencyTimezoneDesc": "Выкарыстоўваецца для адлюстравання цэн і дат",
-    "tabProfile": "Профіль",
+    "tabProfile": "Акаўнт",
     "tabInterface": "Інтэрфейс",
     "tabIntegrations": "Інтэграцыі",
     "tabAdmin": "Адміністраванне"

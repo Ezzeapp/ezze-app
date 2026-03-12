@@ -142,6 +142,7 @@
   "profile": {
     "subtitle": "Жалпыға ортақ профильді басқару",
     "tabMain": "Негізгі",
+    "tabBooking": "Онлайн жазылу",
     "photo": "Фото",
     "basicInfo": "Негізгі ақпарат",
     "contacts": "Байланыс",
@@ -464,7 +465,7 @@
     "timezone": "Уақыт белдеуі",
     "currencyTimezone": "Валюта және уақыт белдеуі",
     "currencyTimezoneDesc": "Бағалар мен күндерді көрсету үшін қолданылады",
-    "tabProfile": "Профиль",
+    "tabProfile": "Аккаунт",
     "tabInterface": "Интерфейс",
     "tabIntegrations": "Интеграциялар",
     "tabAdmin": "Әкімшілік"

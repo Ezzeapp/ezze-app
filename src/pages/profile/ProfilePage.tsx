@@ -322,7 +322,7 @@ export function ProfilePage() {
           { id: 'main',     label: t('profile.tabMain'),     icon: User           },
           { id: 'contacts', label: t('profile.contacts'),    icon: Phone          },
           { id: 'schedule', label: t('nav.schedule'),        icon: Clock          },
-          { id: 'settings', label: t('nav.settings'),        icon: Settings       },
+          { id: 'settings', label: t('profile.tabBooking'),    icon: Settings       },
           { id: 'transfer', label: t('profile.transfer'),    icon: ArrowLeftRight },
         ] as const).map(tab => (
           <button key={tab.id} type="button" title={tab.label} onClick={() => setProfileTab(tab.id)}

@@ -142,6 +142,7 @@
   "profile": {
     "subtitle": "Профили ҷамъиятии худро идора кунед",
     "tabMain": "Асосӣ",
+    "tabBooking": "Сабти онлайн",
     "photo": "Акс",
     "basicInfo": "Маълумоти асосӣ",
     "contacts": "Тамосҳо ва шабакаҳои иҷтимоӣ",
@@ -464,7 +465,7 @@
     "timezone": "Минтақаи вақтӣ",
     "currencyTimezone": "Асъор ва минтақаи вақтӣ",
     "currencyTimezoneDesc": "Барои нишон додани нархҳо ва санаҳо истифода мешавад",
-    "tabProfile": "Профил",
+    "tabProfile": "Аккаунт",
     "tabInterface": "Интерфейс",
     "tabIntegrations": "Интегратсияҳо",
     "tabAdmin": "Маъмурият"

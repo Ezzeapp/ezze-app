@@ -141,6 +141,7 @@
   "profile": {
     "subtitle": "Ommaviy profilingizni boshqaring",
     "tabMain": "Asosiy",
+    "tabBooking": "Onlayn yozilish",
     "photo": "Foto",
     "basicInfo": "Asosiy ma'lumot",
     "contacts": "Aloqa",
@@ -463,7 +464,7 @@
     "timezone": "Vaqt mintaqasi",
     "currencyTimezone": "Valyuta va vaqt mintaqasi",
     "currencyTimezoneDesc": "Narxlar va sanalarni koʻsatishda ishlatiladi",
-    "tabProfile": "Profil",
+    "tabProfile": "Akkaunt",
     "tabInterface": "Interfeys",
     "tabIntegrations": "Integratsiyalar",
     "tabAdmin": "Boshqaruv"

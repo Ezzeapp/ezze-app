@@ -214,6 +214,7 @@
   "profile": {
     "subtitle": "Управляйте своим публичным профилем",
     "tabMain": "Основное",
+    "tabBooking": "Онлайн-запись",
     "photo": "Фото",
     "basicInfo": "Основная информация",
     "contacts": "Контакты и соцсети",
@@ -579,7 +580,7 @@
     "timezone": "Часовой пояс",
     "currencyTimezone": "Валюта и часовой пояс",
     "currencyTimezoneDesc": "Используется при отображении цен и дат",
-    "tabProfile": "Профиль",
+    "tabProfile": "Аккаунт",
     "tabInterface": "Интерфейс",
     "tabNotifications": "Уведомления",
     "tabIntegrations": "Интеграции",

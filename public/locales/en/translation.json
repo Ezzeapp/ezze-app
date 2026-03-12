@@ -206,6 +206,7 @@
   "profile": {
     "subtitle": "Manage your public profile",
     "tabMain": "Main",
+    "tabBooking": "Online booking",
     "photo": "Photo",
     "basicInfo": "Basic information",
     "contacts": "Contacts & Social",
@@ -558,7 +559,7 @@
     "timezone": "Timezone",
     "currencyTimezone": "Currency & Timezone",
     "currencyTimezoneDesc": "Used when displaying prices and dates",
-    "tabProfile": "Profile",
+    "tabProfile": "Account",
     "tabInterface": "Interface",
     "tabNotifications": "Notifications",
     "tabIntegrations": "Integrations",
