@@ -365,6 +365,7 @@ export function ClientCabinetPage() {
                 key={appt.id}
                 appt={appt}
                 onCancel={appt.cancel_token ? () => handleCancel(appt.cancel_token!) : undefined}
+                onBookAgain={appt.bookingSlug ? () => navigate(`/book/${appt.bookingSlug}`) : undefined}
               />
             ))}
           </div>
@@ -452,7 +453,7 @@ function AppointmentCard({ appt, onCancel, onBookAgain }: AppointmentCardProps) 
         </div>
 
         {/* Цена */}
-        {appt.price && appt.price > 0 && (
+        {(appt.price ?? 0) > 0 && (
           <p className="text-sm font-medium">{appt.price} ₽</p>
         )}
 
