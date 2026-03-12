@@ -49,6 +49,7 @@ function TelegramLoginWidget({ onAuth }: { onAuth: (user: Record<string, unknown
 interface AppointmentWithMaster extends Appointment {
   masterName?: string
   serviceName?: string
+  bookingSlug?: string
 }
 
 // ── Mock-данные для локального тестирования (убрать перед продом) ─────────────
@@ -71,6 +72,7 @@ const DEV_MOCK_APPOINTMENTS: AppointmentWithMaster[] = [
     cancel_token: 'mock-cancel-token-1',
     masterName: 'Парикмахер',
     serviceName: 'Стрижка + укладка',
+    bookingSlug: 'mock-master',
   },
   {
     id: 'mock2',
@@ -90,6 +92,7 @@ const DEV_MOCK_APPOINTMENTS: AppointmentWithMaster[] = [
     cancel_token: '',
     masterName: 'Мастер маникюра',
     serviceName: 'Маникюр',
+    bookingSlug: 'mock-master-2',
   },
   {
     id: 'mock3',
@@ -109,6 +112,7 @@ const DEV_MOCK_APPOINTMENTS: AppointmentWithMaster[] = [
     cancel_token: '',
     masterName: 'Парикмахер',
     serviceName: 'Окрашивание',
+    bookingSlug: 'mock-master',
   },
   {
     id: 'mock4',
@@ -128,6 +132,7 @@ const DEV_MOCK_APPOINTMENTS: AppointmentWithMaster[] = [
     cancel_token: '',
     masterName: 'Мастер маникюра',
     serviceName: 'Коррекция бровей',
+    bookingSlug: 'mock-master-2',
   },
   {
     id: 'mock5',
@@ -147,6 +152,7 @@ const DEV_MOCK_APPOINTMENTS: AppointmentWithMaster[] = [
     cancel_token: '',
     masterName: 'Массажист',
     serviceName: 'Массаж спины',
+    bookingSlug: 'mock-master-3',
   },
 ]
 
@@ -249,18 +255,20 @@ export function ClientCabinetPage() {
       const enriched: AppointmentWithMaster[] = await Promise.all(
         (records ?? []).map(async (appt: any) => {
           let masterName = ''
+          let bookingSlug = ''
           const serviceName = appt.service?.name || ''
 
           try {
             const { data: profile } = await supabase
               .from('master_profiles')
-              .select('profession')
+              .select('profession, booking_slug')
               .eq('user_id', appt.master_id)
               .maybeSingle()
             masterName = profile?.profession || ''
+            bookingSlug = profile?.booking_slug || ''
           } catch {}
 
-          return { ...appt, masterName, serviceName } as AppointmentWithMaster
+          return { ...appt, masterName, serviceName, bookingSlug } as AppointmentWithMaster
         })
       )
 
@@ -371,7 +379,11 @@ export function ClientCabinetPage() {
           </h2>
           <div className="space-y-2">
             {past.map((appt) => (
-              <AppointmentCard key={appt.id} appt={appt} />
+              <AppointmentCard
+                key={appt.id}
+                appt={appt}
+                onBookAgain={appt.bookingSlug ? () => navigate(`/book/${appt.bookingSlug}`) : undefined}
+              />
             ))}
           </div>
         </section>
@@ -386,9 +398,10 @@ export function ClientCabinetPage() {
 interface AppointmentCardProps {
   appt: AppointmentWithMaster
   onCancel?: () => void
+  onBookAgain?: () => void
 }
 
-function AppointmentCard({ appt, onCancel }: AppointmentCardProps) {
+function AppointmentCard({ appt, onCancel, onBookAgain }: AppointmentCardProps) {
   const cfg = STATUS_CONFIG[appt.status] ?? STATUS_CONFIG.scheduled
   const StatusIcon = cfg.icon
 
@@ -443,16 +456,31 @@ function AppointmentCard({ appt, onCancel }: AppointmentCardProps) {
           <p className="text-sm font-medium">{appt.price} ₽</p>
         )}
 
-        {/* Кнопка отмены */}
-        {onCancel && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full text-destructive border-destructive/30 hover:bg-destructive/5 hover:text-destructive"
-            onClick={onCancel}
-          >
-            Отменить запись
-          </Button>
+        {/* Кнопки действий */}
+        {(onCancel || onBookAgain) && (
+          <div className="flex gap-2">
+            {onBookAgain && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={onBookAgain}
+              >
+                🔁 Записаться снова
+              </Button>
+            )}
+            {onCancel && (
+              <Button
+                variant="outline"
+                size="sm"
+                className={onBookAgain ? 'flex-1' : 'w-full'}
+                onClick={onCancel}
+                style={{ color: 'var(--destructive)', borderColor: 'color-mix(in srgb, var(--destructive) 30%, transparent)' }}
+              >
+                Отменить
+              </Button>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
