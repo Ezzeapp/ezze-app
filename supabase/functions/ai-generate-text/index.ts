@@ -7,11 +7,30 @@
  *   context: object with relevant fields
  */
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? ''
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+)
+
+async function getAIConfig() {
+  try {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'ai_config')
+      .maybeSingle()
+    if (!data?.value) return null
+    return JSON.parse(data.value)
+  } catch {
+    return null
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -21,8 +40,18 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: CORS })
   }
-  if (!ANTHROPIC_API_KEY) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), { status: 500, headers: CORS })
+
+  // Load AI config from DB, fallback to env
+  const aiCfg = await getAIConfig()
+  const apiKey = aiCfg?.api_key || Deno.env.get('ANTHROPIC_API_KEY') || ''
+  const model = aiCfg?.model || 'claude-haiku-4-5'
+  const maxTokens = Math.min(aiCfg?.max_tokens || 512, 512) // cap at 512 for text gen
+
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: 'AI не настроен. Задайте API-ключ в Панели администратора → ИИ.' }), { status: 503, headers: CORS })
+  }
+  if (aiCfg?.enabled === false) {
+    return new Response(JSON.stringify({ error: 'ИИ-функции отключены администратором.' }), { status: 503, headers: CORS })
   }
 
   try {
@@ -72,12 +101,12 @@ Deno.serve(async (req: Request) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 256,
+        model,
+        max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
       }),
     })

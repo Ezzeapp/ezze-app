@@ -3,17 +3,30 @@
  * Analyzes master's client base using Claude AI and returns business insights.
  */
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 )
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? ''
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+async function getAIConfig() {
+  try {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'ai_config')
+      .maybeSingle()
+    if (!data?.value) return null
+    return JSON.parse(data.value)
+  } catch {
+    return null
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -21,8 +34,18 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: CORS })
   }
-  if (!ANTHROPIC_API_KEY) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), { status: 500, headers: CORS })
+
+  // Load AI config from DB, fallback to env
+  const aiCfg = await getAIConfig()
+  const apiKey = aiCfg?.api_key || Deno.env.get('ANTHROPIC_API_KEY') || ''
+  const model = aiCfg?.model || 'claude-haiku-4-5'
+  const maxTokens = Math.min(aiCfg?.max_tokens || 1024, 1024)
+
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: 'AI не настроен. Задайте API-ключ в Панели администратора → ИИ.' }), { status: 503, headers: CORS })
+  }
+  if (aiCfg?.enabled === false) {
+    return new Response(JSON.stringify({ error: 'ИИ-функции отключены администратором.' }), { status: 503, headers: CORS })
   }
 
   // Get authenticated user
@@ -126,12 +149,12 @@ Deno.serve(async (req: Request) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 800,
+        model,
+        max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
       }),
     })

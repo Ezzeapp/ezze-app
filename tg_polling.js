@@ -99,6 +99,32 @@ async function autoFixMasterProfile(chatId, tgUsername) {
 
 // ── AI / Claude helpers ──────────────────────────────────────────────────────
 
+// Динамическая загрузка AI-конфига из Supabase (с кешем 5 мин)
+let _cachedAIConfig = null;
+let _aiConfigLoadedAt = 0;
+
+async function loadAIConfig() {
+  const now = Date.now();
+  if (_cachedAIConfig !== null && now - _aiConfigLoadedAt < 5 * 60_000) {
+    return _cachedAIConfig;
+  }
+  try {
+    const { data } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "ai_config")
+      .maybeSingle();
+    if (data?.value) {
+      _cachedAIConfig = JSON.parse(data.value);
+      _aiConfigLoadedAt = now;
+      console.log(`🤖 AI config loaded: model=${_cachedAIConfig.model}, enabled=${_cachedAIConfig.enabled}`);
+    }
+  } catch (e) {
+    console.error("Failed to load AI config from DB:", e.message);
+  }
+  return _cachedAIConfig;
+}
+
 async function sendTyping(chatId) {
   await fetch(`${TG_API}/sendChatAction`, {
     method: "POST",
@@ -202,14 +228,17 @@ async function executeClientTool(toolName, _input, chatId) {
   return "Unknown tool";
 }
 
-async function runClaudeAgentic(messages, tools, systemPrompt, toolExecutor) {
+async function runClaudeAgentic(messages, tools, systemPrompt, toolExecutor, apiKey, model, maxTokens) {
+  const resolvedKey = apiKey || ANTHROPIC_API_KEY;
+  const resolvedModel = model || "claude-haiku-4-5";
+  const resolvedTokens = maxTokens || 1024;
   let msgs = [...messages];
   for (let i = 0; i < 5; i++) {
-    const body = { model: "claude-haiku-4-5", max_tokens: 1024, system: systemPrompt, messages: msgs };
+    const body = { model: resolvedModel, max_tokens: resolvedTokens, system: systemPrompt, messages: msgs };
     if (tools?.length) body.tools = tools;
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+      headers: { "Content-Type": "application/json", "x-api-key": resolvedKey, "anthropic-version": "2023-06-01" },
       body: JSON.stringify(body),
     });
     const data = await resp.json();
@@ -229,7 +258,15 @@ async function runClaudeAgentic(messages, tools, systemPrompt, toolExecutor) {
 }
 
 async function handleAIMessage(chatId, text, masterProfile) {
-  if (!ANTHROPIC_API_KEY) return false;
+  // Load AI config from Supabase (cached), fallback to env var
+  const cfg = await loadAIConfig();
+  const apiKey = cfg?.api_key || ANTHROPIC_API_KEY;
+  const model = cfg?.model || "claude-haiku-4-5";
+  const maxTokens = cfg?.max_tokens || 1024;
+
+  if (!apiKey) return false;
+  if (cfg?.enabled === false) return false;
+
   await sendTyping(chatId);
   const today = new Date().toISOString().slice(0, 10);
   try {
@@ -239,7 +276,8 @@ async function handleAIMessage(chatId, text, masterProfile) {
       const answer = await runClaudeAgentic(
         [{ role: "user", content: text }],
         getMasterTools(), system,
-        (name, input) => executeMasterTool(name, input, masterId)
+        (name, input) => executeMasterTool(name, input, masterId),
+        apiKey, model, maxTokens
       );
       await sendMessage(chatId, answer);
     } else {
@@ -247,7 +285,8 @@ async function handleAIMessage(chatId, text, masterProfile) {
       const answer = await runClaudeAgentic(
         [{ role: "user", content: text }],
         getClientTools(), system,
-        (name, input) => executeClientTool(name, input, chatId)
+        (name, input) => executeClientTool(name, input, chatId),
+        apiKey, model, maxTokens
       );
       await sendMessage(chatId, answer);
     }
@@ -337,7 +376,7 @@ async function processUpdate(update) {
     if (text === "/menu") await sendClientMenu(chatId, firstName);
 
     // AI: handle arbitrary (non-command) messages
-    if (!text.startsWith("/") && ANTHROPIC_API_KEY) {
+    if (!text.startsWith("/")) {
       const masterProfile = await findMasterByChatId(chatId);
       if (masterProfile) {
         await handleAIMessage(chatId, text, masterProfile);

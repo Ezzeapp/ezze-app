@@ -297,3 +297,56 @@ export function useUpdateAppLogo() {
     onSuccess: () => qc.invalidateQueries({ queryKey: [APP_SETTINGS_KEY] }),
   })
 }
+
+// ── AI Config ─────────────────────────────────────────────────────────────────
+
+export interface AIConfig {
+  enabled: boolean
+  api_key: string
+  model: string
+  max_tokens: number
+}
+
+export const DEFAULT_AI_CONFIG: AIConfig = {
+  enabled: false,
+  api_key: '',
+  model: 'claude-haiku-4-5',
+  max_tokens: 1024,
+}
+
+export function useAIConfig() {
+  return useQuery({
+    queryKey: [APP_SETTINGS_KEY, 'ai_config'],
+    queryFn: async (): Promise<AIConfig> => {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'ai_config')
+        .maybeSingle()
+      if (!data?.value) return DEFAULT_AI_CONFIG
+      try {
+        return { ...DEFAULT_AI_CONFIG, ...JSON.parse(data.value) } as AIConfig
+      } catch {
+        return DEFAULT_AI_CONFIG
+      }
+    },
+    staleTime: 2 * 60_000,
+  })
+}
+
+export function useUpdateAIConfig() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (config: AIConfig) => {
+      const value = JSON.stringify(config)
+      const { data, error } = await supabase
+        .from('app_settings')
+        .upsert({ key: 'ai_config', value }, { onConflict: 'key' })
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [APP_SETTINGS_KEY, 'ai_config'] }),
+  })
+}

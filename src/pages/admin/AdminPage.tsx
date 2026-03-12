@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
-import { Shield, Zap, Users, BookOpen, Palette, CreditCard, Mail } from 'lucide-react'
+import { Shield, Zap, Users, BookOpen, Palette, CreditCard, Mail, Bot } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
@@ -11,8 +11,9 @@ import { AdminCatalogsTab } from '@/components/admin/AdminCatalogsTab'
 import { AdminAppearanceTab } from '@/components/admin/AdminAppearanceTab'
 import { AdminBillingTab } from '@/components/admin/AdminBillingTab'
 import { AdminEmailTab } from '@/components/admin/AdminEmailTab'
+import { AdminAITab } from '@/components/admin/AdminAITab'
 
-type Tab = 'features' | 'users' | 'catalogs' | 'appearance' | 'billing' | 'email'
+type Tab = 'features' | 'users' | 'catalogs' | 'appearance' | 'billing' | 'email' | 'ai'
 
 export function AdminPage() {
   const { t } = useTranslation()
@@ -31,6 +32,7 @@ export function AdminPage() {
     { id: 'appearance', label: t('admin.tabAppearance'), icon: Palette },
     { id: 'billing',    label: t('admin.tabBilling'),    icon: CreditCard },
     { id: 'email',      label: t('admin.tabEmail'),      icon: Mail },
+    { id: 'ai',         label: 'ИИ',                     icon: Bot },
   ]
 
   return (
@@ -71,6 +73,7 @@ export function AdminPage() {
         {tab === 'appearance' && <AdminAppearanceTab />}
         {tab === 'billing'    && <AdminBillingTab />}
         {tab === 'email'      && <AdminEmailTab />}
+        {tab === 'ai'         && <AdminAITab />}
       </div>
     </div>
   )
