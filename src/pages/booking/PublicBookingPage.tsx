@@ -776,8 +776,8 @@ export function PublicBookingPage() {
       {/* Header */}
       <div className="border-b py-6 px-4">
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-center justify-between mb-2">
-            {canGoBack ? (
+          {canGoBack && (
+            <div className="mb-3">
               <button
                 type="button"
                 onClick={() => fromTeam ? navigate(`/book/team/${fromTeam}`) : navigate(-1)}
@@ -786,9 +786,8 @@ export function PublicBookingPage() {
                 <ChevronLeft className="h-4 w-4" />
                 {fromTeam ? t('team.booking.backToTeam') : t('common.back')}
               </button>
-            ) : <span />}
-            <LanguageSwitcher />
-          </div>
+            </div>
+          )}
           <div className="flex items-start gap-4">
             <Avatar className="h-20 w-20 shrink-0">
               <AvatarImage src={avatarUrl} />
@@ -830,6 +829,10 @@ export function PublicBookingPage() {
                 )}
               </div>
             </div>
+          </div>
+          {/* Переключатель языка — под информацией о мастере */}
+          <div className="flex justify-end mt-3">
+            <LanguageSwitcher />
           </div>
         </div>
       </div>
