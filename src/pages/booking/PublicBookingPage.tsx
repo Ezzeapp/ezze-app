@@ -92,6 +92,9 @@ export function PublicBookingPage() {
   const [promoError, setPromoError] = useState('')
   const [promoLoading, setPromoLoading] = useState(false)
 
+  // Telegram safe-area top inset (чтобы контент не уходил под нативную шапку)
+  const [tgTopPadding, setTgTopPadding] = useState(0)
+
   // Reviews
   const [reviews, setReviews] = useState<Review[]>([])
 
@@ -110,15 +113,31 @@ export function PublicBookingPage() {
 
   // Инициализация Telegram Mini App и авто-заполнение данных клиента
   useEffect(() => {
-    if (isTelegramMiniApp()) {
-      initMiniApp()
-      const tgUser = getTelegramUser()
-      const tgId = getTelegramUserId()
-      if (tgUser) {
-        const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ')
-        setValue('client_name', fullName)
-      }
-      if (tgId) setTgUserId(tgId)
+    const tg = window.Telegram?.WebApp
+    if (!tg) return
+
+    initMiniApp()
+
+    // Отступ сверху: safe area (статус-бар) + content safe area (шапка Telegram)
+    const updatePadding = () => {
+      const top = (tg.safeAreaInset?.top ?? 0) + (tg.contentSafeAreaInset?.top ?? 0)
+      setTgTopPadding(top)
+    }
+    updatePadding()
+    tg.onEvent('safeAreaChanged', updatePadding)
+    tg.onEvent('contentSafeAreaChanged', updatePadding)
+
+    const tgUser = getTelegramUser()
+    const tgId = getTelegramUserId()
+    if (tgUser) {
+      const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ')
+      setValue('client_name', fullName)
+    }
+    if (tgId) setTgUserId(tgId)
+
+    return () => {
+      tg.offEvent('safeAreaChanged', updatePadding)
+      tg.offEvent('contentSafeAreaChanged', updatePadding)
     }
   }, [])
 
@@ -774,7 +793,7 @@ export function PublicBookingPage() {
   return (
     <div className="min-h-screen bg-background" style={getThemeVars(master.booking_theme)}>
       {/* Header */}
-      <div className="border-b py-6 px-4">
+      <div className="border-b py-6 px-4" style={tgTopPadding > 0 ? { paddingTop: `${tgTopPadding + 16}px` } : undefined}>
         <div className="max-w-2xl mx-auto">
           {canGoBack && (
             <div className="mb-3">
