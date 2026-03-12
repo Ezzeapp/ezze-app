@@ -182,7 +182,9 @@ export function PublicBookingPage() {
       }
       setMaster(profileWithExpand)
 
-      const userId = (profile as any).user?.id ?? (profile as any).user
+      // user_id — прямой UUID из master_profiles (всегда доступен anon)
+      // user?.id — из JOIN с users (нужна RLS политика users_public_master_read)
+      const userId = (profile as any).user_id ?? (profile as any).user?.id
 
       const [svcsRes, schedRes, bksRes, blocksRes, revsRes] = await Promise.all([
         supabase
