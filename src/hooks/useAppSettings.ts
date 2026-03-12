@@ -302,13 +302,16 @@ export function useUpdateAppLogo() {
 
 export interface AIConfig {
   enabled: boolean
+  provider: string   // 'anthropic' | 'openai' | 'gemini' | 'deepseek' | 'qwen' | 'custom'
   api_key: string
   model: string
   max_tokens: number
+  base_url?: string  // для provider='custom'
 }
 
 export const DEFAULT_AI_CONFIG: AIConfig = {
   enabled: false,
+  provider: 'anthropic',
   api_key: '',
   model: 'claude-haiku-4-5',
   max_tokens: 1024,

@@ -33,6 +33,53 @@ async function getAIConfig() {
   }
 }
 
+const PROVIDER_BASE_URLS: Record<string, string> = {
+  openai:   'https://api.openai.com/v1',
+  gemini:   'https://generativelanguage.googleapis.com/v1beta/openai',
+  deepseek: 'https://api.deepseek.com/v1',
+  qwen:     'https://dashscope.aliyuncs.com/compatible-mode/v1',
+}
+
+async function callAI(
+  cfg: Record<string, unknown> | null,
+  messages: Array<{ role: string; content: string }>,
+  maxTokens: number
+): Promise<string> {
+  const provider = (cfg?.provider as string) || 'anthropic'
+  const apiKey = (cfg?.api_key as string) || ''
+  const model = (cfg?.model as string) || 'claude-haiku-4-5'
+
+  if (provider === 'anthropic') {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({ model, max_tokens: maxTokens, messages }),
+    })
+    const data = await resp.json()
+    if (!resp.ok) throw new Error(JSON.stringify(data))
+    return (data.content?.[0]?.text as string) ?? ''
+  } else {
+    const baseUrl = provider === 'custom'
+      ? ((cfg?.base_url as string) || '')
+      : (PROVIDER_BASE_URLS[provider] || PROVIDER_BASE_URLS.openai)
+    const resp = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ model, max_tokens: maxTokens, messages }),
+    })
+    const data = await resp.json()
+    if (!resp.ok) throw new Error(JSON.stringify(data))
+    return (data.choices?.[0]?.message?.content as string) ?? ''
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS })
@@ -43,9 +90,8 @@ Deno.serve(async (req: Request) => {
 
   // Load AI config from DB, fallback to env
   const aiCfg = await getAIConfig()
-  const apiKey = aiCfg?.api_key || Deno.env.get('ANTHROPIC_API_KEY') || ''
-  const model = aiCfg?.model || 'claude-haiku-4-5'
-  const maxTokens = Math.min(aiCfg?.max_tokens || 512, 512) // cap at 512 for text gen
+  const apiKey = (aiCfg?.api_key as string) || Deno.env.get('ANTHROPIC_API_KEY') || ''
+  const maxTokens = Math.min((aiCfg?.max_tokens as number) || 512, 512) // cap at 512 for text gen
 
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'AI не настроен. Задайте API-ключ в Панели администратора → ИИ.' }), { status: 503, headers: CORS })
@@ -96,35 +142,16 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: 'Unknown type' }), { status: 400, headers: CORS })
     }
 
-    // Call Claude API
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: maxTokens,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    })
-
-    if (!resp.ok) {
-      const err = await resp.text()
-      console.error('Anthropic API error:', err)
-      return new Response(JSON.stringify({ error: 'AI service error' }), { status: 502, headers: CORS })
-    }
-
-    const data = await resp.json()
-    const text = data.content?.[0]?.text ?? ''
+    // Call AI API (provider-aware)
+    const text = await callAI(aiCfg, [{ role: 'user', content: prompt }], maxTokens)
 
     return new Response(JSON.stringify({ text: text.trim() }), {
       headers: { ...CORS, 'Content-Type': 'application/json' },
     })
   } catch (err) {
     console.error('ai-generate-text error:', err)
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: CORS })
+    const msg = String(err)
+    const status = msg.includes('credit') || msg.includes('balance') ? 402 : 502
+    return new Response(JSON.stringify({ error: 'AI service error', detail: msg }), { status, headers: CORS })
   }
 })

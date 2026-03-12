@@ -228,13 +228,19 @@ async function executeClientTool(toolName, _input, chatId) {
   return "Unknown tool";
 }
 
-async function runClaudeAgentic(messages, tools, systemPrompt, toolExecutor, apiKey, model, maxTokens) {
+const PROVIDER_BASE_URLS = {
+  openai:   "https://api.openai.com/v1",
+  gemini:   "https://generativelanguage.googleapis.com/v1beta/openai",
+  deepseek: "https://api.deepseek.com/v1",
+  qwen:     "https://dashscope.aliyuncs.com/compatible-mode/v1",
+};
+
+// Anthropic agentic loop (native tool use format)
+async function runAnthropicAgentic(messages, tools, systemPrompt, toolExecutor, apiKey, model, maxTokens) {
   const resolvedKey = apiKey || ANTHROPIC_API_KEY;
-  const resolvedModel = model || "claude-haiku-4-5";
-  const resolvedTokens = maxTokens || 1024;
   let msgs = [...messages];
   for (let i = 0; i < 5; i++) {
-    const body = { model: resolvedModel, max_tokens: resolvedTokens, system: systemPrompt, messages: msgs };
+    const body = { model, max_tokens: maxTokens, system: systemPrompt, messages: msgs };
     if (tools?.length) body.tools = tools;
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -242,7 +248,7 @@ async function runClaudeAgentic(messages, tools, systemPrompt, toolExecutor, api
       body: JSON.stringify(body),
     });
     const data = await resp.json();
-    if (!resp.ok) { console.error("Claude API error:", data); return "Извините, ИИ-помощник недоступен."; }
+    if (!resp.ok) { console.error("Anthropic API error:", data); return "Извините, ИИ-помощник недоступен."; }
     const content = data.content || [];
     const toolUses = content.filter(c => c.type === "tool_use");
     if (!toolUses.length || data.stop_reason === "end_turn") {
@@ -257,12 +263,67 @@ async function runClaudeAgentic(messages, tools, systemPrompt, toolExecutor, api
   return "Не удалось получить ответ.";
 }
 
-async function handleAIMessage(chatId, text, masterProfile) {
-  // Load AI config from Supabase (cached), fallback to env var
-  const cfg = await loadAIConfig();
+// OpenAI-compatible agentic loop (works with OpenAI, Gemini, DeepSeek, Qwen, custom)
+async function runOpenAIAgentic(messages, tools, systemPrompt, toolExecutor, apiKey, model, maxTokens, cfg) {
+  const provider = cfg?.provider || "openai";
+  const baseUrl = provider === "custom"
+    ? (cfg?.base_url || "")
+    : (PROVIDER_BASE_URLS[provider] || PROVIDER_BASE_URLS.openai);
+
+  // Convert Anthropic tool schema → OpenAI function format
+  const oaiTools = tools?.map(t => ({
+    type: "function",
+    function: { name: t.name, description: t.description, parameters: t.input_schema },
+  }));
+
+  let msgs = [
+    { role: "system", content: systemPrompt },
+    ...messages,
+  ];
+
+  for (let i = 0; i < 5; i++) {
+    const body = { model, max_tokens: maxTokens, messages: msgs };
+    if (oaiTools?.length) body.tools = oaiTools;
+    const resp = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+    if (!resp.ok) { console.error("OpenAI-compatible API error:", data); return "Извините, ИИ-помощник недоступен."; }
+    const choice = data.choices?.[0];
+    const msg = choice?.message;
+    if (!msg?.tool_calls?.length || choice.finish_reason === "stop") {
+      return msg?.content || "Готово.";
+    }
+    msgs.push({ role: "assistant", content: msg.content || null, tool_calls: msg.tool_calls });
+    for (const tc of msg.tool_calls) {
+      let input = {};
+      try { input = JSON.parse(tc.function.arguments || "{}"); } catch {}
+      const result = await toolExecutor(tc.function.name, input);
+      msgs.push({ role: "tool", content: result, tool_call_id: tc.id });
+    }
+  }
+  return "Не удалось получить ответ.";
+}
+
+// Единый dispatcher — выбирает loop по провайдеру
+async function runAgentic(messages, tools, systemPrompt, toolExecutor, cfg) {
+  const provider = cfg?.provider || "anthropic";
   const apiKey = cfg?.api_key || ANTHROPIC_API_KEY;
   const model = cfg?.model || "claude-haiku-4-5";
   const maxTokens = cfg?.max_tokens || 1024;
+
+  if (provider === "anthropic") {
+    return runAnthropicAgentic(messages, tools, systemPrompt, toolExecutor, apiKey, model, maxTokens);
+  } else {
+    return runOpenAIAgentic(messages, tools, systemPrompt, toolExecutor, apiKey, model, maxTokens, cfg);
+  }
+}
+
+async function handleAIMessage(chatId, text, masterProfile) {
+  const cfg = await loadAIConfig();
+  const apiKey = cfg?.api_key || ANTHROPIC_API_KEY;
 
   if (!apiKey) return false;
   if (cfg?.enabled === false) return false;
@@ -273,20 +334,20 @@ async function handleAIMessage(chatId, text, masterProfile) {
     if (masterProfile) {
       const masterId = masterProfile.user_id;
       const system = `Ты умный помощник мастера в приложении Ezze. Сегодня ${today}. Отвечай кратко и по делу на русском. Используй инструменты чтобы ответить на вопросы о расписании и выручке. Форматируй даты как ДД.ММ, время как ЧЧ:ММ.`;
-      const answer = await runClaudeAgentic(
+      const answer = await runAgentic(
         [{ role: "user", content: text }],
         getMasterTools(), system,
         (name, input) => executeMasterTool(name, input, masterId),
-        apiKey, model, maxTokens
+        cfg
       );
       await sendMessage(chatId, answer);
     } else {
       const system = `Ты помощник клиента в приложении Ezze — сервисе записи к мастерам. Сегодня ${today}. Отвечай кратко и по делу на русском.`;
-      const answer = await runClaudeAgentic(
+      const answer = await runAgentic(
         [{ role: "user", content: text }],
         getClientTools(), system,
         (name, input) => executeClientTool(name, input, chatId),
-        apiKey, model, maxTokens
+        cfg
       );
       await sendMessage(chatId, answer);
     }
