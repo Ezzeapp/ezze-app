@@ -822,20 +822,20 @@
     "appts": "сабт дар моҳ"
   },
   "cabinet": {
-    "myAppointments": "Мои записи",
-    "personalCabinet": "Личный кабинет",
-    "upcoming": "Предстоящие",
-    "history": "История",
-    "noAppointments": "Нет записей",
-    "noAppointmentsDesc": "Запишитесь к мастеру по его ссылке",
-    "cancelAppt": "Отменить",
-    "bookAgain": "Записаться снова",
-    "loginDesc": "Войдите через Telegram, чтобы увидеть ваши записи",
+    "myAppointments": "Навбатҳои ман",
+    "personalCabinet": "Кабинети шахсӣ",
+    "upcoming": "Оянда",
+    "history": "Таърих",
+    "noAppointments": "Навбатҳо нест",
+    "noAppointmentsDesc": "Тавассути истодаи устод ёбед",
+    "cancelAppt": "Бекор кардан",
+    "bookAgain": "Дубора навбат гирифтан",
+    "loginDesc": "Барои дидани навбатҳо тавассути Telegram ворид шавед",
     "status": {
-      "scheduled": "Запланировано",
-      "done": "Выполнено",
-      "cancelled": "Отменено",
-      "no_show": "Не явился"
+      "scheduled": "Нақшавӣ",
+      "done": "Иҷро шуд",
+      "cancelled": "Бекор шуд",
+      "no_show": "Наомад"
     }
   }
 }

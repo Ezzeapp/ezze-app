@@ -821,20 +821,20 @@
     }
   },
   "cabinet": {
-    "myAppointments": "Мои записи",
-    "personalCabinet": "Личный кабинет",
-    "upcoming": "Предстоящие",
-    "history": "История",
-    "noAppointments": "Нет записей",
-    "noAppointmentsDesc": "Запишитесь к мастеру по его ссылке",
-    "cancelAppt": "Отменить",
-    "bookAgain": "Записаться снова",
-    "loginDesc": "Войдите через Telegram, чтобы увидеть ваши записи",
+    "myAppointments": "Mening yozuvlarim",
+    "personalCabinet": "Shaxsiy kabinet",
+    "upcoming": "Kutilayotgan",
+    "history": "Tarix",
+    "noAppointments": "Yozuvlar yo'q",
+    "noAppointmentsDesc": "Ustaga uning havolasi orqali yoziling",
+    "cancelAppt": "Bekor qilish",
+    "bookAgain": "Qayta yozilish",
+    "loginDesc": "Yozuvlaringizni ko'rish uchun Telegram orqali kiring",
     "status": {
-      "scheduled": "Запланировано",
-      "done": "Выполнено",
-      "cancelled": "Отменено",
-      "no_show": "Не явился"
+      "scheduled": "Rejalashtirilgan",
+      "done": "Bajarildi",
+      "cancelled": "Bekor qilindi",
+      "no_show": "Kelmadi"
     }
   }
 }

@@ -822,20 +822,20 @@
     "appts": "жазбалар айына"
   },
   "cabinet": {
-    "myAppointments": "Мои записи",
-    "personalCabinet": "Личный кабинет",
-    "upcoming": "Предстоящие",
-    "history": "История",
-    "noAppointments": "Нет записей",
-    "noAppointmentsDesc": "Запишитесь к мастеру по его ссылке",
-    "cancelAppt": "Отменить",
-    "bookAgain": "Записаться снова",
-    "loginDesc": "Войдите через Telegram, чтобы увидеть ваши записи",
+    "myAppointments": "Менің жазбаларым",
+    "personalCabinet": "Жеке кабинет",
+    "upcoming": "Алдағы",
+    "history": "Тарих",
+    "noAppointments": "Жазбалар жоқ",
+    "noAppointmentsDesc": "Шебердің сілтемесі арқылы жазылыңыз",
+    "cancelAppt": "Болдырмау",
+    "bookAgain": "Қайта жазылу",
+    "loginDesc": "Жазбаларды көру үшін Telegram арқылы кіріңіз",
     "status": {
-      "scheduled": "Запланировано",
-      "done": "Выполнено",
-      "cancelled": "Отменено",
-      "no_show": "Не явился"
+      "scheduled": "Жоспарланған",
+      "done": "Орындалды",
+      "cancelled": "Болдырылмады",
+      "no_show": "Келмеді"
     }
   }
 }

@@ -822,20 +822,20 @@
     "appts": "запісаў у месяц"
   },
   "cabinet": {
-    "myAppointments": "Мои записи",
-    "personalCabinet": "Личный кабинет",
-    "upcoming": "Предстоящие",
-    "history": "История",
-    "noAppointments": "Нет записей",
-    "noAppointmentsDesc": "Запишитесь к мастеру по его ссылке",
-    "cancelAppt": "Отменить",
-    "bookAgain": "Записаться снова",
-    "loginDesc": "Войдите через Telegram, чтобы увидеть ваши записи",
+    "myAppointments": "Мае запісы",
+    "personalCabinet": "Асабісты кабінет",
+    "upcoming": "Блізкія",
+    "history": "Гісторыя",
+    "noAppointments": "Запісаў няма",
+    "noAppointmentsDesc": "Запішыцеся да майстра па яго спасылцы",
+    "cancelAppt": "Адмяніць",
+    "bookAgain": "Запісацца зноў",
+    "loginDesc": "Увайдзіце праз Telegram, каб убачыць вашы запісы",
     "status": {
-      "scheduled": "Запланировано",
-      "done": "Выполнено",
-      "cancelled": "Отменено",
-      "no_show": "Не явился"
+      "scheduled": "Запланавана",
+      "done": "Выканана",
+      "cancelled": "Адменена",
+      "no_show": "Не з'явіўся"
     }
   }
 }
