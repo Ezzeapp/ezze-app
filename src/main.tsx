@@ -36,6 +36,14 @@ initTheme()
 if (window.Telegram?.WebApp) {
   const tg = window.Telegram.WebApp
   tg.ready()
+
+  // Тема: берём из Telegram (светлая/тёмная) и переключаем CSS-класс
+  const applyTgTheme = () => {
+    document.documentElement.classList.toggle('dark', tg.colorScheme === 'dark')
+  }
+  applyTgTheme()
+  tg.onEvent('themeChanged', applyTgTheme)
+
   // Клиентские страницы (/book, /my, /tg, /cancel) — requestFullscreen() (Bot API 8.0+)
   // Это критично для /book: без этого страница грузится медленно и Telegram
   // фиксирует compact-режим до того как компонент вызовет expand().

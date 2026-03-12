@@ -820,5 +820,22 @@
     "clients": "клиентов",
     "services": "услуг",
     "appts": "сабт дар моҳ"
+  },
+  "cabinet": {
+    "myAppointments": "Мои записи",
+    "personalCabinet": "Личный кабинет",
+    "upcoming": "Предстоящие",
+    "history": "История",
+    "noAppointments": "Нет записей",
+    "noAppointmentsDesc": "Запишитесь к мастеру по его ссылке",
+    "cancelAppt": "Отменить",
+    "bookAgain": "Записаться снова",
+    "loginDesc": "Войдите через Telegram, чтобы увидеть ваши записи",
+    "status": {
+      "scheduled": "Запланировано",
+      "done": "Выполнено",
+      "cancelled": "Отменено",
+      "no_show": "Не явился"
+    }
   }
 }

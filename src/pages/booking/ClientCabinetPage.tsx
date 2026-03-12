@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
 import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -185,6 +186,7 @@ const STATUS_CONFIG = {
 
 export function ClientCabinetPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [appointments, setAppointments] = useState<AppointmentWithMaster[]>([])
   const [loading, setLoading] = useState(true)
   const [telegramId, setTelegramId] = useState<string | null>(null)
@@ -297,9 +299,9 @@ export function ClientCabinetPage() {
               <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-2.02 9.52c-.148.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.883.701z"/>
             </svg>
           </div>
-          <h1 className="text-xl font-bold">Мои записи</h1>
+          <h1 className="text-xl font-bold">{t('cabinet.myAppointments')}</h1>
           <p className="text-muted-foreground text-sm">
-            Войдите через Telegram, чтобы увидеть ваши записи к мастеру
+            {t('cabinet.loginDesc')}
           </p>
         </div>
         <TelegramLoginWidget onAuth={handleWidgetAuth} />
@@ -333,8 +335,8 @@ export function ClientCabinetPage() {
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">
-              <h1 className="text-lg font-bold truncate">{userName || 'Мои записи'}</h1>
-              <p className="text-xs text-muted-foreground">Личный кабинет</p>
+              <h1 className="text-lg font-bold truncate">{userName || t('cabinet.myAppointments')}</h1>
+              <p className="text-xs text-muted-foreground">{t('cabinet.personalCabinet')}</p>
             </div>
           </div>
           <div className="shrink-0">
@@ -348,9 +350,9 @@ export function ClientCabinetPage() {
         <Card>
           <CardContent className="py-12 text-center space-y-3">
             <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
-            <h2 className="font-semibold">Нет записей</h2>
+            <h2 className="font-semibold">{t('cabinet.noAppointments')}</h2>
             <p className="text-sm text-muted-foreground">
-              Запишитесь к мастеру по его ссылке
+              {t('cabinet.noAppointmentsDesc')}
             </p>
           </CardContent>
         </Card>
@@ -360,7 +362,7 @@ export function ClientCabinetPage() {
       {upcoming.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Предстоящие
+            {t('cabinet.upcoming')}
           </h2>
           <div className="space-y-2">
             {upcoming.map((appt) => (
@@ -379,7 +381,7 @@ export function ClientCabinetPage() {
       {past.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            История
+            {t('cabinet.history')}
           </h2>
           <div className="space-y-2">
             {past.map((appt) => (
@@ -406,6 +408,7 @@ interface AppointmentCardProps {
 }
 
 function AppointmentCard({ appt, onCancel, onBookAgain }: AppointmentCardProps) {
+  const { t } = useTranslation()
   const cfg = STATUS_CONFIG[appt.status] ?? STATUS_CONFIG.scheduled
   const StatusIcon = cfg.icon
 
@@ -430,7 +433,7 @@ function AppointmentCard({ appt, onCancel, onBookAgain }: AppointmentCardProps) 
             <span className="text-sm font-medium">{dateFormatted}</span>
           </div>
           <Badge variant={cfg.variant} className="text-xs shrink-0">
-            {cfg.label}
+            {t(`cabinet.status.${appt.status}`, cfg.label)}
           </Badge>
         </div>
 
@@ -470,7 +473,7 @@ function AppointmentCard({ appt, onCancel, onBookAgain }: AppointmentCardProps) 
                 className="flex-1"
                 onClick={onBookAgain}
               >
-                🔁 Записаться снова
+                🔁 {t('cabinet.bookAgain')}
               </Button>
             )}
             {onCancel && (
@@ -481,7 +484,7 @@ function AppointmentCard({ appt, onCancel, onBookAgain }: AppointmentCardProps) 
                 onClick={onCancel}
                 style={{ color: 'var(--destructive)', borderColor: 'color-mix(in srgb, var(--destructive) 30%, transparent)' }}
               >
-                Отменить
+                {t('cabinet.cancelAppt')}
               </Button>
             )}
           </div>

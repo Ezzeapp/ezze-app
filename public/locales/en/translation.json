@@ -979,5 +979,22 @@
     "history": {
       "title": "Payment history"
     }
+  },
+  "cabinet": {
+    "myAppointments": "My Appointments",
+    "personalCabinet": "My Cabinet",
+    "upcoming": "Upcoming",
+    "history": "History",
+    "noAppointments": "No appointments",
+    "noAppointmentsDesc": "Book with a master using their link",
+    "cancelAppt": "Cancel",
+    "bookAgain": "Book again",
+    "loginDesc": "Sign in with Telegram to see your appointments",
+    "status": {
+      "scheduled": "Scheduled",
+      "done": "Done",
+      "cancelled": "Cancelled",
+      "no_show": "No show"
+    }
   }
 }
