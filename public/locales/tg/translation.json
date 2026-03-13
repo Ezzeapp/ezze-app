@@ -673,6 +673,7 @@
     "searchSpecialties": "Ҷустуҷӯ аз рӯи намудҳои фаъолият ва ихтисосҳо...",
     "tabBilling": "Биллинг",
     "tabEmail": "Email",
+    "tabAI": "ҲЗ",
     "emailDesc": "SMTP server and email notification settings",
     "emailGlobalEnabled": "Email notifications enabled",
     "emailGlobalEnabledDesc": "Allow sending emails to masters and clients",

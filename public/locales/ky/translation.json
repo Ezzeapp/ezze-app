@@ -673,6 +673,7 @@
     "searchSpecialties": "Иш-аракет түрлөрү жана адистиктер боюнча издөө...",
     "tabBilling": "Биллинг",
     "tabEmail": "Email",
+    "tabAI": "AI",
     "emailDesc": "SMTP server and email notification settings",
     "emailGlobalEnabled": "Email notifications enabled",
     "emailGlobalEnabledDesc": "Allow sending emails to masters and clients",
