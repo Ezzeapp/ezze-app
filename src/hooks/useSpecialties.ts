@@ -110,7 +110,7 @@ export function useDeleteActivityType() {
 export function useCreateSpecialty() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (data: Pick<Specialty, 'name' | 'activity_type'>) => {
+    mutationFn: async (data: { name: string; activity_type_id: string }) => {
       const { data: result, error } = await supabase
         .from('specialties')
         .insert(data)
@@ -126,7 +126,7 @@ export function useCreateSpecialty() {
 export function useUpdateSpecialty() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<Pick<Specialty, 'name' | 'activity_type' | 'order'>> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Pick<Specialty, 'name' | 'activity_type_id' | 'order'>> }) => {
       const { data: result, error } = await supabase
         .from('specialties')
         .update(data)

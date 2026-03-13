@@ -26,10 +26,10 @@ export interface ActivityType extends BaseRecord {
 }
 
 export interface Specialty extends BaseRecord {
-  activity_type: string          // FK → activity_types
+  activity_type_id: string       // FK → activity_types
   name: string                   // «Парикмахер»
   order?: number
-  expand?: { activity_type?: ActivityType }
+  activity_type?: ActivityType   // joined object from select
 }
 
 // Что сохраняется у мастера в профиле

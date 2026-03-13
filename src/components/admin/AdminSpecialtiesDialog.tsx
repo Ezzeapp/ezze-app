@@ -93,7 +93,7 @@ function BrowseTab() {
     const q = search.toLowerCase()
     return (activityTypes ?? []).filter((type: ActivityType) =>
       type.name.toLowerCase().includes(q) ||
-      (allSpecialties ?? []).filter(s => s.activity_type === type.id)
+      (allSpecialties ?? []).filter(s => s.activity_type_id === type.id)
         .some(s => s.name.toLowerCase().includes(q))
     )
   }, [activityTypes, allSpecialties, search])
@@ -116,7 +116,7 @@ function BrowseTab() {
   const [deleteSpecId, setDeleteSpecId] = useState<string | null>(null)
 
   const specsForType = (typeId: string) =>
-    allSpecialties?.filter((s) => s.activity_type === typeId) ?? []
+    allSpecialties?.filter((s) => s.activity_type_id === typeId) ?? []
 
   const handleCreateType = async () => {
     if (!newTypeName.trim()) return
@@ -148,7 +148,7 @@ function BrowseTab() {
   const handleCreateSpec = async (typeId: string) => {
     if (!newSpecName.trim()) return
     try {
-      await createSpec.mutateAsync({ activity_type: typeId, name: newSpecName.trim() })
+      await createSpec.mutateAsync({ activity_type_id: typeId, name: newSpecName.trim() })
       setNewSpecName('')
       setNewSpecType(null)
       toast.success(t('admin.specCreated'))
