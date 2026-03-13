@@ -723,7 +723,10 @@
     "next": "Next",
     "skip": "Skip",
     "finish": "Get started",
-    "specialtyLabel": "Activity type / Specialty"
+    "specialtyLabel": "Activity type / Specialty",
+    "welcomeGreeting": "Welcome!",
+    "welcomeDesc": "Let's set up your profile — it will only take a couple of minutes.",
+    "startBtn": "Start setup"
   },
   "errors": {
     "notFound": "Page not found",

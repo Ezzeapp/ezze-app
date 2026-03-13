@@ -707,7 +707,10 @@
     "next": "Keyingi",
     "skip": "Oʻtkazib yuborish",
     "finish": "Ishni boshlash",
-    "specialtyLabel": "Faoliyat turi / Mutaxassislik"
+    "specialtyLabel": "Faoliyat turi / Mutaxassislik",
+    "welcomeGreeting": "Xush kelibsiz!",
+    "welcomeDesc": "Profilingizni sozlaylik — bu bir necha daqiqa vaqt oladi.",
+    "startBtn": "Sozlashni boshlash"
   },
   "errors": {
     "notFound": "Sahifa topilmadi",

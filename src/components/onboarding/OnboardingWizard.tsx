@@ -96,12 +96,13 @@ interface Props {
 export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
+  const [showWelcome, setShowWelcome] = useState(true)
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [photoModalOpen, setPhotoModalOpen] = useState(false)
 
-  // ── Step 1 ────────────────────────────────────────────────────────────────
-  const [name, setName]             = useState(prefill?.name    || user?.name || '')
+  // ── Step 0 ────────────────────────────────────────────────────────────────
+  const [displayName, setDisplayName] = useState(prefill?.name || '')
   const [phone, setPhone]           = useState(prefill?.phone   || '')
   const [city, setCity]             = useState(prefill?.city    || '')
   const [address, setAddress]       = useState(prefill?.address || '')
@@ -133,9 +134,10 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   // ── Reset on open ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!open) return
+    setShowWelcome(true)
     setStep(0)
     setAvatarFile(null); setAvatarPreview(null)
-    setName(prefill?.name || user?.name || ''); setPhone(prefill?.phone || '')
+    setDisplayName(prefill?.name || ''); setPhone(prefill?.phone || '')
     setCity(prefill?.city || ''); setAddress(prefill?.address || '')
     setProfession(prefill?.profession || '')
     setProfessionQuery(prefill?.profession || '')
@@ -238,7 +240,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   }
 
   const generateSlug = () => {
-    const base = name.trim().toLowerCase().replace(/\s+/g, '') || 'master'
+    const base = (displayName || user?.name || '').trim().toLowerCase().replace(/\s+/g, '') || 'master'
     return `${base}${Math.random().toString(36).slice(2, 7)}`
   }
 
@@ -267,10 +269,11 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   const handleFinish = async () => {
     setLoading(true)
     try {
-      await supabase.from('users').update({ name: name.trim() || user?.name, language, timezone, onboarded: true }).eq('id', user!.id)
+      await supabase.from('users').update({ language, timezone, onboarded: true }).eq('id', user!.id)
       if (language !== i18n.language) i18n.changeLanguage(language)
       const profileData: Record<string, any> = {
-        profession: profession.trim() || name.trim() || 'Мастер',
+        display_name: displayName.trim() || undefined,
+        profession: profession.trim() || displayName.trim() || user?.name || 'Мастер',
         phone: phone.trim() || undefined,
         city: city.trim() || undefined,
         address: address.trim() || undefined,
@@ -309,7 +312,40 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
     <Dialog open={open} onOpenChange={(v) => { if (!v && onClose) onClose() }}>
       <DialogContent className="max-w-lg p-0 overflow-hidden flex flex-col gap-0" hideClose mobileFullscreen>
 
-        {/* ── Header ─────────────────────────────────────────────────────── */}
+        {/* ── Welcome screen ─────────────────────────────────────────────── */}
+        {showWelcome && (
+          <>
+            <div className="flex flex-col items-center justify-center flex-1 px-8 py-12 gap-6 text-center">
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="h-10 w-10 text-primary/60" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">{t('onboarding.welcomeGreeting')}</p>
+                <h2 className="text-2xl font-bold">{user?.name || '—'}</h2>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  {t('onboarding.welcomeDesc')}
+                </p>
+              </div>
+            </div>
+            <div className="px-6 pb-6 pt-2 border-t bg-background">
+              <Button className="w-full gap-1" onClick={() => setShowWelcome(false)}>
+                {t('onboarding.startBtn')} <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        )}
+
+        {/* ── Wizard (header + steps + footer) ──────────────────────────── */}
+        {!showWelcome && (<>
         <div className="px-6 pt-6 pb-4">
           {/* Title row */}
           <div className="flex items-start justify-between gap-2">
@@ -382,8 +418,12 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
               <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="sr-only" onChange={onAvatarChange} />
 
               <div className="space-y-1.5">
+                <Label className="text-xs">{t('profile.displayName')}</Label>
+                <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={t('profile.displayNamePlaceholder')} autoFocus />
+              </div>
+              <div className="space-y-1.5">
                 <Label className="text-xs">{t('profile.phone')}</Label>
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998 99 000-00-00" type="tel" autoFocus />
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998 99 000-00-00" type="tel" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t('profile.city')}</Label>
@@ -573,6 +613,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
             </Button>
           </div>
         </div>
+        </>)}
 
       </DialogContent>
 

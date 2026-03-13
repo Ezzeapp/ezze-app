@@ -707,7 +707,10 @@
     "next": "Кейінгі",
     "skip": "Өткізіп жіберіу",
     "finish": "Жумысты баслаў",
-    "specialtyLabel": "Белсенлік түрі / Мамандық"
+    "specialtyLabel": "Белсенлік түрі / Мамандық",
+    "welcomeGreeting": "Xosh keldiňiz!",
+    "welcomeDesc": "Profileňizdi sozlaý — bul birneshe minut alady.",
+    "startBtn": "Sozlawdı baslaw"
   },
   "errors": {
     "notFound": "Бет табылмады",
