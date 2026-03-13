@@ -30,6 +30,9 @@ export function AdminSpecialtiesDialog({ open, onClose }: Props) {
   const { t } = useTranslation()
   const [tab, setTab] = useState<Tab>('browse')
 
+  const { data: activityTypes } = useActivityTypes()
+  const { data: allSpecialties } = useAllSpecialties()
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent mobileFullscreen className="max-w-2xl sm:h-[90vh] sm:max-h-[90vh] flex flex-col p-0 gap-0">
@@ -38,6 +41,9 @@ export function AdminSpecialtiesDialog({ open, onClose }: Props) {
             <BookOpen className="h-5 w-5" />
             {t('admin.specialtiesTitle')}
           </DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            {activityTypes?.length ?? 0} {t('admin.statTypes')} · {allSpecialties?.length ?? 0} {t('admin.statSpecialties')}
+          </p>
         </DialogHeader>
 
         {/* Tabs */}
@@ -204,15 +210,6 @@ function BrowseTab() {
           >
             <Plus className="h-4 w-4" />
           </Button>
-        </div>
-      )}
-
-      {/* Counters */}
-      {!search && (
-        <div className="flex gap-3 text-xs text-muted-foreground">
-          <span>{activityTypes?.length ?? 0} {t('admin.statTypes')}</span>
-          <span>·</span>
-          <span>{allSpecialties?.length ?? 0} {t('admin.statSpecialties')}</span>
         </div>
       )}
 
