@@ -207,6 +207,15 @@ function BrowseTab() {
         </div>
       )}
 
+      {/* Counters */}
+      {!search && (
+        <div className="flex gap-3 text-xs text-muted-foreground">
+          <span>{activityTypes?.length ?? 0} {t('admin.statTypes')}</span>
+          <span>·</span>
+          <span>{allSpecialties?.length ?? 0} {t('admin.statSpecialties')}</span>
+        </div>
+      )}
+
       {/* Activity types list */}
       <div className="space-y-2">
         {filteredTypes.length === 0 && (

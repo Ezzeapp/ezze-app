@@ -919,7 +919,9 @@
         "opensourcePowerful": "Open-source, powerful"
       }
     },
-    "searchSpecialties": "Search specialties..."
+    "searchSpecialties": "Search specialties...",
+    "statTypes": "activity types",
+    "statSpecialties": "specialties"
   },
   "analytics": {
     "title": "Analytics",

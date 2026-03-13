@@ -903,7 +903,9 @@
         "opensourcePowerful": "Open-source, магутная"
       }
     },
-    "searchSpecialties": "Пошук па спецыяльнасцях..."
+    "searchSpecialties": "Пошук па спецыяльнасцях...",
+    "statTypes": "від дзейнасці",
+    "statSpecialties": "спецыяльнасцей"
   },
   "analytics": {
     "title": "Аналітыка",

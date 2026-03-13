@@ -903,7 +903,9 @@
         "opensourcePowerful": "Open-source, күчтүү"
       }
     },
-    "searchSpecialties": "Адистиктер боюнча издөө..."
+    "searchSpecialties": "Адистиктер боюнча издөө...",
+    "statTypes": "иш түрү",
+    "statSpecialties": "адистик"
   },
   "analytics": {
     "title": "Аналитика",

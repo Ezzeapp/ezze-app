@@ -903,7 +903,9 @@
         "opensourcePowerful": "Open-source, потужна"
       }
     },
-    "searchSpecialties": "Пошук за спеціальностями..."
+    "searchSpecialties": "Пошук за спеціальностями...",
+    "statTypes": "видів діяльності",
+    "statSpecialties": "спеціальностей"
   },
   "analytics": {
     "title": "Аналітика",

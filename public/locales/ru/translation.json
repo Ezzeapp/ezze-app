@@ -818,7 +818,9 @@
         "opensourcePowerful": "Open-source, мощная"
       }
     },
-    "searchSpecialties": "Поиск по специальностям..."
+    "searchSpecialties": "Поиск по специальностям...",
+    "statTypes": "видов деятельности",
+    "statSpecialties": "специальностей"
   },
   "catalog": {
     "searchServices": "Поиск по услугам или категориям...",

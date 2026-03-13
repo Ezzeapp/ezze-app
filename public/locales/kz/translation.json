@@ -903,7 +903,9 @@
         "opensourcePowerful": "Open-source, қуатты"
       }
     },
-    "searchSpecialties": "Мамандықтар бойынша іздеу..."
+    "searchSpecialties": "Мамандықтар бойынша іздеу...",
+    "statTypes": "қызмет түрі",
+    "statSpecialties": "мамандық"
   },
   "analytics": {
     "title": "Аналитика",

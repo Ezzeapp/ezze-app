@@ -903,7 +903,9 @@
         "opensourcePowerful": "Open-source, kuchli"
       }
     },
-    "searchSpecialties": "Mutaxassisliklar bo'yicha qidirish..."
+    "searchSpecialties": "Mutaxassisliklar bo'yicha qidirish...",
+    "statTypes": "faoliyat turi",
+    "statSpecialties": "mutaxassislik"
   },
   "analytics": {
     "title": "Tahlil",

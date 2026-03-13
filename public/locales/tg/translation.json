@@ -903,7 +903,9 @@
         "opensourcePowerful": "Open-source, қавӣ"
       }
     },
-    "searchSpecialties": "Ҷустуҷӯ аз рӯи ихтисосҳо..."
+    "searchSpecialties": "Ҷустуҷӯ аз рӯи ихтисосҳо...",
+    "statTypes": "намуди фаолият",
+    "statSpecialties": "ихтисос"
   },
   "analytics": {
     "title": "Таҳлил",
