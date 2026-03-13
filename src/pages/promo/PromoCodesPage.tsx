@@ -39,6 +39,14 @@ function generateCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase()
 }
 
+// Parse "DD.MM.YYYY" → "YYYY-MM-DD" for the API
+function parseDateInput(v: string): string | undefined {
+  const match = v.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/)
+  if (!match) return undefined
+  const [, d, m, y] = match
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
+}
+
 export function PromoCodesPage() {
   const hasPromos = useFeature('promo_codes')
   const { data: codes, isLoading } = usePromoCodes()
@@ -75,8 +83,8 @@ export function PromoCodesPage() {
         code: form.code.toUpperCase(),
         discount_type: form.discount_type,
         discount_value: Number(form.discount_value),
-        valid_from: form.valid_from || undefined,
-        valid_until: form.valid_until || undefined,
+        valid_from: parseDateInput(form.valid_from),
+        valid_until: parseDateInput(form.valid_until),
         max_uses: form.max_uses ? Number(form.max_uses) : 0,
         description: form.description || undefined,
         is_active: true,
@@ -196,7 +204,9 @@ export function PromoCodesPage() {
               <div className="space-y-1">
                 <Label>Действует с</Label>
                 <Input
-                  type="date"
+                  type="text"
+                  placeholder="01.01.2000"
+                  maxLength={10}
                   value={form.valid_from}
                   onChange={(e) => setForm(f => ({ ...f, valid_from: e.target.value }))}
                 />
@@ -204,7 +214,9 @@ export function PromoCodesPage() {
               <div className="space-y-1">
                 <Label>Действует по</Label>
                 <Input
-                  type="date"
+                  type="text"
+                  placeholder="01.01.2000"
+                  maxLength={10}
                   value={form.valid_until}
                   onChange={(e) => setForm(f => ({ ...f, valid_until: e.target.value }))}
                 />
