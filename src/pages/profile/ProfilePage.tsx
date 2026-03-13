@@ -274,7 +274,7 @@ export function ProfilePage() {
     phone: profile.phone,
     city: profile.city,
     address: profile.address,
-    profession: profile.profession,
+    profession: profile.profession !== user?.name ? profile.profession : undefined,
     activityTypeId: profile.activity_type,
     specialtyId: profile.specialty,
     currency: profile.currency,

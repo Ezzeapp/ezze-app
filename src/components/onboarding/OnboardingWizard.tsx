@@ -273,7 +273,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
       if (language !== i18n.language) i18n.changeLanguage(language)
       const profileData: Record<string, any> = {
         display_name: displayName.trim() || undefined,
-        profession: profession.trim() || displayName.trim() || user?.name || 'Мастер',
+        profession: profession.trim() || 'Мастер',
         phone: phone.trim() || undefined,
         city: city.trim() || undefined,
         address: address.trim() || undefined,
