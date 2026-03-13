@@ -7,12 +7,15 @@ import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { initMiniApp, isTelegramMiniApp } from '@/lib/telegramWebApp'
+import { useAppointmentsRealtime } from '@/hooks/useAppointmentsRealtime'
 
 const inTelegram = isTelegramMiniApp()
 
 export function AppLayout() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+
+  useAppointmentsRealtime()
 
   // Expand to full screen if opened inside Telegram Mini App + track safe area insets
   useEffect(() => {
