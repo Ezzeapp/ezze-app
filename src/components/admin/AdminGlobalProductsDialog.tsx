@@ -33,6 +33,12 @@ const EMPTY_PROD_FORM = { name: '', unit: '', price: '' }
 export function AdminGlobalProductsDialog({ open, onClose }: Props) {
   const { t } = useTranslation()
   const [tab, setTab] = useState<Tab>('browse')
+  const { data: allProducts } = useGlobalProducts()
+
+  const totalCategories = useMemo(() => {
+    if (!allProducts) return 0
+    return new Set(allProducts.map((p) => p.category).filter(Boolean)).size
+  }, [allProducts])
 
   return (
     <>
@@ -43,6 +49,9 @@ export function AdminGlobalProductsDialog({ open, onClose }: Props) {
               <Package className="h-5 w-5" />
               {t('admin.globalProductsTitle')}
             </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              {totalCategories} {t('admin.statCategories')} · {allProducts?.length ?? 0} {t('admin.statProducts')}
+            </p>
           </DialogHeader>
 
           {/* Tabs */}

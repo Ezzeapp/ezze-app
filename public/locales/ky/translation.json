@@ -907,7 +907,8 @@
     "statTypes": "иш түрү",
     "statSpecialties": "адистик",
     "statCategories": "категория",
-    "statServices": "кызмат"
+    "statServices": "кызмат",
+    "statProducts": "товар"
   },
   "analytics": {
     "title": "Аналитика",

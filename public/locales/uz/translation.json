@@ -907,7 +907,8 @@
     "statTypes": "faoliyat turi",
     "statSpecialties": "mutaxassislik",
     "statCategories": "kategoriya",
-    "statServices": "xizmat"
+    "statServices": "xizmat",
+    "statProducts": "mahsulot"
   },
   "analytics": {
     "title": "Tahlil",

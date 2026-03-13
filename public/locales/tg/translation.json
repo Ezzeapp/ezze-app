@@ -907,7 +907,8 @@
     "statTypes": "намуди фаолият",
     "statSpecialties": "ихтисос",
     "statCategories": "гурӯҳ",
-    "statServices": "хизмат"
+    "statServices": "хизмат",
+    "statProducts": "мол"
   },
   "analytics": {
     "title": "Таҳлил",

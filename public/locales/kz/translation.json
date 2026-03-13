@@ -907,7 +907,8 @@
     "statTypes": "қызмет түрі",
     "statSpecialties": "мамандық",
     "statCategories": "санат",
-    "statServices": "қызмет"
+    "statServices": "қызмет",
+    "statProducts": "өнім"
   },
   "analytics": {
     "title": "Аналитика",

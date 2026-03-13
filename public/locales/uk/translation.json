@@ -907,7 +907,8 @@
     "statTypes": "видів діяльності",
     "statSpecialties": "спеціальностей",
     "statCategories": "категорій",
-    "statServices": "послуг"
+    "statServices": "послуг",
+    "statProducts": "товарів"
   },
   "analytics": {
     "title": "Аналітика",

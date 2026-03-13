@@ -923,7 +923,8 @@
     "statTypes": "activity types",
     "statSpecialties": "specialties",
     "statCategories": "categories",
-    "statServices": "services"
+    "statServices": "services",
+    "statProducts": "products"
   },
   "analytics": {
     "title": "Analytics",

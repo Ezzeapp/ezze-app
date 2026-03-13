@@ -822,7 +822,8 @@
     "statTypes": "видов деятельности",
     "statSpecialties": "специальностей",
     "statCategories": "категорий",
-    "statServices": "услуг"
+    "statServices": "услуг",
+    "statProducts": "товаров"
   },
   "catalog": {
     "searchServices": "Поиск по услугам или категориям...",

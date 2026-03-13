@@ -907,7 +907,8 @@
     "statTypes": "is túri",
     "statSpecialties": "hünär",
     "statCategories": "kategoriya",
-    "statServices": "xizmet"
+    "statServices": "xizmet",
+    "statProducts": "tovar"
   },
   "analytics": {
     "title": "Талқылаў",
