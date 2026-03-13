@@ -20,7 +20,8 @@
     "groupMarketing": "Маркетинг",
     "groupTeam": "Даста",
     "promoCodes": "Промокодҳо",
-    "reviews": "Шарҳҳо"
+    "reviews": "Шарҳҳо",
+    "support": "Дастгирӣ"
   },
   "feature": {
     "lockedDesc": "Дар нақшаи {{plan}} ва боло дастрас аст",
@@ -464,7 +465,14 @@
     "categoryRenamed": "Категория иваз шуд",
     "categoryDeleted": "Категория нест карда шуд",
     "newCategoryName": "Номи нав",
-    "categoryNamePlaceholder": "Мас. Нигоҳубини мӯй"
+    "categoryNamePlaceholder": "Мас. Нигоҳубини мӯй",
+    "statTotal": "Ҳамаи мавқеъҳо",
+    "statCategories": "Категорияҳо",
+    "statLowStock": "Кам мешавад",
+    "statOutOfStock": "Тамомшуда",
+    "statCostValue": "Арзиши харид",
+    "statSellValue": "Арзиши фурӯш",
+    "statMargin": "Фоидаи имконпазир"
   },
   "appointments": {
     "add": "Қабули нав",
@@ -1167,5 +1175,25 @@
     "commentPlaceholder": "Шарҳи шумо (ихтиёрӣ)",
     "submitButton": "Шарҳ гузоштан",
     "submitSuccess": "✅ Барои шарҳ ташаккур!"
+  },
+  "support": {
+    "title": "Дастгирии техникӣ",
+    "newTicket": "Муроҷиати нав",
+    "type": "Навъи муроҷиат",
+    "typeBug": "Хато / мушкилот",
+    "typeFeature": "Функсияи нав",
+    "typeQuestion": "Савол",
+    "typeOther": "Дигар",
+    "titleField": "Сарлавҳа",
+    "titlePlaceholder": "Мухтасар тавсиф диҳед",
+    "message": "Тавсиф",
+    "messagePlaceholder": "Муфассалтар тавсиф диҳед...",
+    "submit": "Фиристодан",
+    "submitted": "Муроҷиат фиристода шуд",
+    "noTickets": "Ҳоло муроҷиате нест",
+    "statusNew": "Нав",
+    "statusInProgress": "Дар кор",
+    "statusResolved": "Ҳал шуд",
+    "statusClosed": "Баста шуд"
   }
 }

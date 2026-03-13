@@ -20,7 +20,8 @@
     "groupMain": "Тийкарғы",
     "groupCatalog": "Каталог",
     "groupMarketing": "Маркетинг",
-    "groupTeam": "Команда"
+    "groupTeam": "Команда",
+    "support": "Қоллав"
   },
   "feature": {
     "lockedDesc": "{{plan}} тарифинде ҳәм жоқарыда жетекли",
@@ -464,7 +465,14 @@
     "categoryRenamed": "Категория аты өзгертілді",
     "categoryDeleted": "Категория өшірілді",
     "newCategoryName": "Жаңа ат",
-    "categoryNamePlaceholder": "Мысалы, Шаш күтімі"
+    "categoryNamePlaceholder": "Мысалы, Шаш күтімі",
+    "statTotal": "Барлық позициялар",
+    "statCategories": "Категориялар",
+    "statLowStock": "Азайып барады",
+    "statOutOfStock": "Таусылған",
+    "statCostValue": "Сатып алыў баҳасы",
+    "statSellValue": "Сатыў баҳасы",
+    "statMargin": "Потенциал пайда"
   },
   "appointments": {
     "add": "Жаңа жазыў",
@@ -1167,5 +1175,25 @@
       "cancelled": "Бийкар қылынды",
       "no_show": "Келмеді"
     }
+  },
+  "support": {
+    "title": "Техникалық қоллав",
+    "newTicket": "Жаңа мүрәжат",
+    "type": "Мүрәжат түри",
+    "typeBug": "Қәтелик / мәсле",
+    "typeFeature": "Жаңа функционал",
+    "typeQuestion": "Соraw",
+    "typeOther": "Басқа",
+    "titleField": "Тема",
+    "titlePlaceholder": "Қысқаша сүwретлеңиз",
+    "message": "Сүwретлеме",
+    "messagePlaceholder": "Толығырақ сүwретлеңиз...",
+    "submit": "Жибериw",
+    "submitted": "Мүрәжат жиберилди",
+    "noTickets": "Мүрәжатлар жоқ",
+    "statusNew": "Жаңа",
+    "statusInProgress": "Ислениwде",
+    "statusResolved": "Шешилdi",
+    "statusClosed": "Жабылды"
   }
 }

@@ -20,7 +20,8 @@
     "groupMarketing": "Маркетинг",
     "groupTeam": "Команда",
     "promoCodes": "Промокоди",
-    "reviews": "Відгуки"
+    "reviews": "Відгуки",
+    "support": "Підтримка"
   },
   "feature": {
     "lockedDesc": "Доступно на плані {{plan}} і вище",
@@ -464,7 +465,14 @@
     "categoryRenamed": "Категорію перейменовано",
     "categoryDeleted": "Категорію видалено",
     "newCategoryName": "Нова назва",
-    "categoryNamePlaceholder": "Напр. Догляд за волоссям"
+    "categoryNamePlaceholder": "Напр. Догляд за волоссям",
+    "statTotal": "Всього позицій",
+    "statCategories": "Категорій",
+    "statLowStock": "Закінчується",
+    "statOutOfStock": "На нулі",
+    "statCostValue": "Закупівельна вартість",
+    "statSellValue": "Продажна вартість",
+    "statMargin": "Потенційний прибуток"
   },
   "appointments": {
     "add": "Новий запис",
@@ -1167,5 +1175,25 @@
     "commentPlaceholder": "Ваш коментар (необов'язково)",
     "submitButton": "Залишити відгук",
     "submitSuccess": "✅ Дякуємо за відгук!"
+  },
+  "support": {
+    "title": "Технічна підтримка",
+    "newTicket": "Нове звернення",
+    "type": "Тип звернення",
+    "typeBug": "Помилка / проблема",
+    "typeFeature": "Новий функціонал",
+    "typeQuestion": "Питання",
+    "typeOther": "Інше",
+    "titleField": "Заголовок",
+    "titlePlaceholder": "Коротко опишіть",
+    "message": "Опис",
+    "messagePlaceholder": "Опишіть детальніше...",
+    "submit": "Надіслати",
+    "submitted": "Звернення надіслано",
+    "noTickets": "Звернень поки немає",
+    "statusNew": "Нове",
+    "statusInProgress": "В роботі",
+    "statusResolved": "Вирішено",
+    "statusClosed": "Закрито"
   }
 }

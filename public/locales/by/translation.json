@@ -20,7 +20,8 @@
     "groupMarketing": "Маркетынг",
     "groupTeam": "Каманда",
     "promoCodes": "Прамакоды",
-    "reviews": "Водгукі"
+    "reviews": "Водгукі",
+    "support": "Падтрымка"
   },
   "feature": {
     "lockedDesc": "Даступна на плане {{plan}} і вышэй",
@@ -464,7 +465,14 @@
     "categoryRenamed": "Катэгорыя перайменавана",
     "categoryDeleted": "Катэгорыя выдалена",
     "newCategoryName": "Новая назва",
-    "categoryNamePlaceholder": "Напр. Догляд за валасамі"
+    "categoryNamePlaceholder": "Напр. Догляд за валасамі",
+    "statTotal": "Усяго пазіцый",
+    "statCategories": "Катэгорый",
+    "statLowStock": "Заканчваецца",
+    "statOutOfStock": "На нулі",
+    "statCostValue": "Закупачная кошт",
+    "statSellValue": "Прадажная кошт",
+    "statMargin": "Патэнцыйны прыбытак"
   },
   "appointments": {
     "add": "Новы запіс",
@@ -1167,5 +1175,25 @@
     "commentPlaceholder": "Ваш каментарый (неабавязкова)",
     "submitButton": "Пакінуць водгук",
     "submitSuccess": "✅ Дзякуй за водгук!"
+  },
+  "support": {
+    "title": "Тэхнічная падтрымка",
+    "newTicket": "Новы зварот",
+    "type": "Тып звароту",
+    "typeBug": "Памылка / праблема",
+    "typeFeature": "Новы функцыянал",
+    "typeQuestion": "Пытанне",
+    "typeOther": "Іншае",
+    "titleField": "Загаловак",
+    "titlePlaceholder": "Кратка апішыце",
+    "message": "Апісанне",
+    "messagePlaceholder": "Апішыце падрабязней...",
+    "submit": "Адправіць",
+    "submitted": "Зварот адпраўлены",
+    "noTickets": "Зваротаў пакуль няма",
+    "statusNew": "Новы",
+    "statusInProgress": "У рабоце",
+    "statusResolved": "Вырашана",
+    "statusClosed": "Закрыта"
   }
 }

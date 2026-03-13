@@ -20,7 +20,8 @@
     "groupCatalog": "Catalog",
     "groupMarketing": "Marketing",
     "groupTeam": "Team",
-    "billing": "Subscription"
+    "billing": "Subscription",
+    "support": "Support"
   },
   "feature": {
     "lockedDesc": "Available on {{plan}} plan and above",
@@ -478,7 +479,14 @@
     "categoryRenamed": "Category renamed",
     "categoryDeleted": "Category removed",
     "newCategoryName": "New name",
-    "categoryNamePlaceholder": "E.g. Hair care"
+    "categoryNamePlaceholder": "E.g. Hair care",
+    "statTotal": "Total items",
+    "statCategories": "Categories",
+    "statLowStock": "Low stock",
+    "statOutOfStock": "Out of stock",
+    "statCostValue": "Cost value",
+    "statSellValue": "Sell value",
+    "statMargin": "Potential profit"
   },
   "appointments": {
     "add": "New appointment",
@@ -1183,5 +1191,25 @@
       "cancelled": "Cancelled",
       "no_show": "No show"
     }
+  },
+  "support": {
+    "title": "Support",
+    "newTicket": "New ticket",
+    "type": "Type",
+    "typeBug": "Bug / issue",
+    "typeFeature": "Feature request",
+    "typeQuestion": "Question",
+    "typeOther": "Other",
+    "titleField": "Subject",
+    "titlePlaceholder": "Brief description",
+    "message": "Message",
+    "messagePlaceholder": "Describe in detail...",
+    "submit": "Submit",
+    "submitted": "Ticket submitted",
+    "noTickets": "No tickets yet",
+    "statusNew": "New",
+    "statusInProgress": "In progress",
+    "statusResolved": "Resolved",
+    "statusClosed": "Closed"
   }
 }

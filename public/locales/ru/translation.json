@@ -20,7 +20,8 @@
     "groupCatalog": "Каталог",
     "groupMarketing": "Маркетинг",
     "groupTeam": "Команда",
-    "billing": "Подписка"
+    "billing": "Подписка",
+    "support": "Поддержка"
   },
   "feature": {
     "lockedDesc": "Доступно на плане {{plan}} и выше",
@@ -478,7 +479,14 @@
     "categoryRenamed": "Категория переименована",
     "categoryDeleted": "Категория удалена",
     "newCategoryName": "Новое название",
-    "categoryNamePlaceholder": "Напр. Уход за волосами"
+    "categoryNamePlaceholder": "Напр. Уход за волосами",
+    "statTotal": "Всего позиций",
+    "statCategories": "Категорий",
+    "statLowStock": "Заканчивается",
+    "statOutOfStock": "На нуле",
+    "statCostValue": "Закупочная стоимость",
+    "statSellValue": "Продажная стоимость",
+    "statMargin": "Потенциальная прибыль"
   },
   "appointments": {
     "add": "Новая запись",
@@ -1183,5 +1191,25 @@
       "cancelled": "Отменено",
       "no_show": "Не явился"
     }
+  },
+  "support": {
+    "title": "Тех. поддержка",
+    "newTicket": "Новое обращение",
+    "type": "Тип обращения",
+    "typeBug": "Ошибка / проблема",
+    "typeFeature": "Новый функционал",
+    "typeQuestion": "Вопрос",
+    "typeOther": "Другое",
+    "titleField": "Заголовок",
+    "titlePlaceholder": "Кратко опишите",
+    "message": "Описание",
+    "messagePlaceholder": "Опишите подробнее...",
+    "submit": "Отправить",
+    "submitted": "Обращение отправлено",
+    "noTickets": "Обращений пока нет",
+    "statusNew": "Новое",
+    "statusInProgress": "В работе",
+    "statusResolved": "Решено",
+    "statusClosed": "Закрыто"
   }
 }

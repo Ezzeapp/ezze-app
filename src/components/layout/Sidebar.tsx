@@ -3,7 +3,7 @@ import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard, User, Users, Package, CalendarDays,
-  Settings, Zap, X, ShieldCheck, UsersRound, Tag, Star, CreditCard,
+  Settings, Zap, X, ShieldCheck, UsersRound, Tag, Star, CreditCard, LifeBuoy,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -101,6 +101,7 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
       {/* Bottom nav */}
       <div className="py-4 px-2 space-y-1">
         <SidebarNavItem icon={CreditCard} label={t('nav.billing')}  to="/billing"  onClick={onClose} />
+        <SidebarNavItem icon={LifeBuoy}   label={t('nav.support')}  to="/support"  onClick={onClose} />
         <SidebarNavItem icon={User}       label={t('nav.profile')}  to="/profile"  onClick={onClose} />
         <SidebarNavItem icon={Settings}   label={t('nav.settings')} to="/settings" onClick={onClose} />
         {user?.is_admin && (

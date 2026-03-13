@@ -20,7 +20,8 @@
     "groupMain": "Asosiy",
     "groupCatalog": "Katalog",
     "groupMarketing": "Marketing",
-    "groupTeam": "Jamoa"
+    "groupTeam": "Jamoa",
+    "support": "Yordam"
   },
   "feature": {
     "lockedDesc": "{{plan}} rejasida va undan yuqorida mavjud",
@@ -464,7 +465,14 @@
     "categoryRenamed": "Kategoriya nomi o'zgartirildi",
     "categoryDeleted": "Kategoriya o'chirildi",
     "newCategoryName": "Yangi nom",
-    "categoryNamePlaceholder": "Masalan, Soch parvarishi"
+    "categoryNamePlaceholder": "Masalan, Soch parvarishi",
+    "statTotal": "Jami mahsulotlar",
+    "statCategories": "Kategoriyalar",
+    "statLowStock": "Kamaymoqda",
+    "statOutOfStock": "Tugagan",
+    "statCostValue": "Xarid qiymati",
+    "statSellValue": "Sotish qiymati",
+    "statMargin": "Potensial foyda"
   },
   "appointments": {
     "add": "Yangi yozuv",
@@ -1167,5 +1175,25 @@
       "cancelled": "Bekor qilindi",
       "no_show": "Kelmadi"
     }
+  },
+  "support": {
+    "title": "Texnik yordam",
+    "newTicket": "Yangi murojaat",
+    "type": "Murojaat turi",
+    "typeBug": "Xatolik / muammo",
+    "typeFeature": "Yangi funksiya",
+    "typeQuestion": "Savol",
+    "typeOther": "Boshqa",
+    "titleField": "Sarlavha",
+    "titlePlaceholder": "Qisqacha tasvirlab bering",
+    "message": "Tavsif",
+    "messagePlaceholder": "Batafsilroq tasvirlab bering...",
+    "submit": "Yuborish",
+    "submitted": "Murojaat yuborildi",
+    "noTickets": "Murojaatlar yo'q",
+    "statusNew": "Yangi",
+    "statusInProgress": "Ishlanmoqda",
+    "statusResolved": "Hal qilindi",
+    "statusClosed": "Yopildi"
   }
 }
