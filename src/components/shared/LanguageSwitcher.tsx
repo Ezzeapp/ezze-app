@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 
 const LANGUAGES = [
   { code: 'ru', label: 'Русский', flag: '🇷🇺' },
-  { code: 'en', label: 'English', flag: '🇬🇧' },
+  { code: 'en', label: 'English', flag: 'EN' },
   { code: 'kz', label: 'Қазақша', flag: '🇰🇿' },
   { code: 'uz', label: "O'zbekcha", flag: '🇺🇿' },
   { code: 'tg', label: 'Тоҷикӣ', flag: '🇹🇯' },
