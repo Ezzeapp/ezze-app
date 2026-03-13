@@ -12,7 +12,9 @@
     "more": "Ko'proq",
     "analytics": "Tahlil",
     "team": "Jamoa",
-    "teamAnalytics": "Jamoa statistikasi"
+    "teamAnalytics": "Jamoa statistikasi",
+    "promoCodes": "Promokodlar",
+    "reviews": "Sharhlar"
   },
   "feature": {
     "lockedDesc": "{{plan}} rejasida va undan yuqorida mavjud",
@@ -819,6 +821,54 @@
     "history": {
       "title": "To'lovlar tarixi"
     }
+  },
+  "promo": {
+    "subtitle": "Mijozlar uchun chegirma kodlari yarating",
+    "create": "Yaratish",
+    "newTitle": "Yangi promokod",
+    "validationError": "Kod va chegirma miqdorini to'ldiring",
+    "created": "Promokod yaratildi",
+    "createError": "Promokod yaratishda xatolik",
+    "statTotal": "Jami kodlar",
+    "statActive": "Faol",
+    "statUses": "Foydalanishlar",
+    "statExpired": "Muddati o'tgan",
+    "code": "Kod",
+    "random": "Tasodifiy",
+    "discountType": "Chegirma turi",
+    "discountPercent": "Foiz %",
+    "discountFixed": "Belgilangan",
+    "discountValue": "Chegirma miqdori",
+    "maxUses": "Maks. foydalanishlar",
+    "validFrom": "Amal qilish boshlanishi",
+    "validUntil": "Amal qilish tugashi",
+    "description": "Tavsif (ixtiyoriy)",
+    "descriptionPlaceholder": "Yozgi aksiya",
+    "createBtn": "Promokod yaratish",
+    "empty": "Promokodlar yo'q",
+    "emptyHint": "Mijozlarni jalb qilish uchun birinchi promokod yarating",
+    "statusExpired": "Muddati o'tgan",
+    "statusExhausted": "Tugagan",
+    "statusActive": "Faol",
+    "statusInactive": "O'chiq",
+    "discount": "Chegirma",
+    "usageCount": "Foydalanishlar: {{used}} / {{max}}",
+    "usageTotal": "{{count}} marta ishlatilgan",
+    "until": "{{date}} gacha"
+  },
+  "reviews": {
+    "subtitle": "Mijozlarning ishingiz haqidagi sharhlari",
+    "avgRating": "O'rtacha reyting",
+    "total": "Jami sharhlar",
+    "visible": "Nashr etilgan",
+    "hidden": "Yashirilgan",
+    "distribution": "Baholar taqsimoti",
+    "empty": "Sharhlar yo'q",
+    "emptyHint": "Mijozlar bron shakli orqali sharh qoldirganidan keyin bu yerda ko'rsatiladi",
+    "client": "Mijoz",
+    "hiddenBadge": "Yashirilgan",
+    "hide": "Sharhni yashirish",
+    "show": "Sharhni ko'rsatish"
   },
   "cabinet": {
     "myAppointments": "Mening yozuvlarim",

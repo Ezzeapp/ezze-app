@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Star, Trash2, Eye, EyeOff } from 'lucide-react'
 import { useFeature } from '@/hooks/useFeatureFlags'
+import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
 import { useReviews, useToggleReviewVisibility, useDeleteReview } from '@/hooks/useReviews'
 import { Card, CardContent } from '@/components/ui/card'
@@ -26,6 +27,7 @@ function StarRating({ rating }: { rating: number }) {
 export function ReviewsPage() {
   const hasReviews = useFeature('reviews')
   const { data: reviews, isLoading } = useReviews()
+  const { t } = useTranslation()
 
   if (!hasReviews) return <Navigate to="/billing" replace />
   const toggleVisibility = useToggleReviewVisibility()
@@ -45,7 +47,7 @@ export function ReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Отзывы" description="Отзывы клиентов о вашей работе">
+      <PageHeader title={t('nav.reviews')} description={t('reviews.subtitle')}>
         {stats && (
           <div className="flex items-center gap-1.5 text-sm font-medium">
             <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
@@ -55,31 +57,29 @@ export function ReviewsPage() {
         )}
       </PageHeader>
 
-      {/* Статистика */}
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-muted/40 rounded-xl p-3 space-y-0.5">
-            <p className="text-xs text-muted-foreground">Средний рейтинг</p>
+            <p className="text-xs text-muted-foreground">{t('reviews.avgRating')}</p>
             <div className="flex items-center gap-1.5">
               <Star className="h-4 w-4 fill-amber-400 text-amber-400 shrink-0" />
               <span className="text-2xl font-bold">{stats.avg}</span>
             </div>
           </div>
           <div className="bg-muted/40 rounded-xl p-3 space-y-0.5">
-            <p className="text-xs text-muted-foreground">Всего отзывов</p>
+            <p className="text-xs text-muted-foreground">{t('reviews.total')}</p>
             <p className="text-2xl font-bold">{stats.total}</p>
           </div>
           <div className="bg-muted/40 rounded-xl p-3 space-y-0.5">
-            <p className="text-xs text-muted-foreground">Опубликовано</p>
+            <p className="text-xs text-muted-foreground">{t('reviews.visible')}</p>
             <p className="text-2xl font-bold text-emerald-600">{stats.visible}</p>
           </div>
           <div className="bg-muted/40 rounded-xl p-3 space-y-0.5">
-            <p className="text-xs text-muted-foreground">Скрыто</p>
+            <p className="text-xs text-muted-foreground">{t('reviews.hidden')}</p>
             <p className="text-2xl font-bold text-muted-foreground">{stats.hidden}</p>
           </div>
-          {/* Распределение по звёздам */}
           <div className="col-span-2 sm:col-span-4 bg-muted/40 rounded-xl p-3 space-y-1.5">
-            <p className="text-xs text-muted-foreground mb-2">Распределение оценок</p>
+            <p className="text-xs text-muted-foreground mb-2">{t('reviews.distribution')}</p>
             {stats.dist.map(({ star, count }) => (
               <div key={star} className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground w-3 shrink-0">{star}</span>
@@ -98,15 +98,13 @@ export function ReviewsPage() {
       )}
 
       {isLoading ? (
-        <p className="text-muted-foreground text-sm">Загрузка...</p>
+        <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
       ) : !reviews || reviews.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center space-y-2">
             <Star className="h-10 w-10 text-muted-foreground mx-auto" />
-            <p className="font-medium">Нет отзывов</p>
-            <p className="text-sm text-muted-foreground">
-              Отзывы появятся здесь после того, как клиенты оставят их через форму бронирования
-            </p>
+            <p className="font-medium">{t('reviews.empty')}</p>
+            <p className="text-sm text-muted-foreground">{t('reviews.emptyHint')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -122,16 +120,16 @@ export function ReviewsPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-medium">{review.client_name || 'Клиент'}</p>
+                      <p className="text-sm font-medium">{review.client_name || t('reviews.client')}</p>
                       {review.created && <p className="text-xs text-muted-foreground">{dayjs(review.created).format('D MMM YYYY')}</p>}
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    {!review.is_visible && <Badge variant="outline" className="text-xs">Скрыт</Badge>}
+                    {!review.is_visible && <Badge variant="outline" className="text-xs">{t('reviews.hiddenBadge')}</Badge>}
                     <Button
                       variant="ghost" size="icon" className="h-7 w-7"
                       onClick={() => toggleVisibility.mutateAsync({ id: review.id, is_visible: !review.is_visible })}
-                      title={review.is_visible ? 'Скрыть отзыв' : 'Показать отзыв'}
+                      title={review.is_visible ? t('reviews.hide') : t('reviews.show')}
                     >
                       {review.is_visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                     </Button>

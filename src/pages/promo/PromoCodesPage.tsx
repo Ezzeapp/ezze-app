@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Plus, Trash2, Tag, Copy, Check, TrendingUp } from 'lucide-react'
 import { useFeature } from '@/hooks/useFeatureFlags'
+import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
 import { usePromoCodes, useCreatePromoCode, useUpdatePromoCode, useDeletePromoCode } from '@/hooks/usePromoCodes'
 import { Button } from '@/components/ui/button'
@@ -58,6 +59,7 @@ function formatDateInput(v: string): string {
 export function PromoCodesPage() {
   const hasPromos = useFeature('promo_codes')
   const { data: codes, isLoading } = usePromoCodes()
+  const { t } = useTranslation()
 
   if (!hasPromos) return <Navigate to="/billing" replace />
   const create = useCreatePromoCode()
@@ -83,7 +85,7 @@ export function PromoCodesPage() {
 
   const handleCreate = async () => {
     if (!form.code || !form.discount_value) {
-      toast.error('Заполните код и размер скидки')
+      toast.error(t('promo.validationError'))
       return
     }
     try {
@@ -99,9 +101,9 @@ export function PromoCodesPage() {
       } as any)
       setForm(EMPTY_FORM)
       setShowForm(false)
-      toast.success('Промокод создан')
+      toast.success(t('promo.created'))
     } catch (err: any) {
-      const msg = err?.response?.message || err?.message || 'Ошибка создания промокода'
+      const msg = err?.response?.message || err?.message || t('promo.createError')
       toast.error(msg)
     }
   }
@@ -119,10 +121,10 @@ export function PromoCodesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Промокоды" description="Создавайте скидочные коды для клиентов">
+      <PageHeader title={t('nav.promoCodes')} description={t('promo.subtitle')}>
         <Button onClick={() => setShowForm(!showForm)}>
           <Plus className="h-4 w-4 mr-1" />
-          Создать
+          {t('promo.create')}
         </Button>
       </PageHeader>
 
@@ -130,22 +132,22 @@ export function PromoCodesPage() {
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-muted/40 rounded-xl p-3 space-y-0.5">
-            <p className="text-xs text-muted-foreground">Всего кодов</p>
+            <p className="text-xs text-muted-foreground">{t('promo.statTotal')}</p>
             <p className="text-2xl font-bold">{stats.total}</p>
           </div>
           <div className="bg-muted/40 rounded-xl p-3 space-y-0.5">
-            <p className="text-xs text-muted-foreground">Активных</p>
+            <p className="text-xs text-muted-foreground">{t('promo.statActive')}</p>
             <p className="text-2xl font-bold text-emerald-600">{stats.active}</p>
           </div>
           <div className="bg-muted/40 rounded-xl p-3 space-y-0.5">
-            <p className="text-xs text-muted-foreground">Использований</p>
+            <p className="text-xs text-muted-foreground">{t('promo.statUses')}</p>
             <div className="flex items-center gap-1.5">
               <TrendingUp className="h-4 w-4 text-primary shrink-0" />
               <span className="text-2xl font-bold">{stats.totalUses}</span>
             </div>
           </div>
           <div className="bg-muted/40 rounded-xl p-3 space-y-0.5">
-            <p className="text-xs text-muted-foreground">Истёкших</p>
+            <p className="text-xs text-muted-foreground">{t('promo.statExpired')}</p>
             <p className="text-2xl font-bold text-muted-foreground">{stats.expired}</p>
           </div>
         </div>
@@ -155,12 +157,12 @@ export function PromoCodesPage() {
       {showForm && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Новый промокод</CardTitle>
+            <CardTitle className="text-base">{t('promo.newTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2 items-end">
               <div className="space-y-1 flex-1">
-                <Label>Код</Label>
+                <Label>{t('promo.code')}</Label>
                 <Input
                   placeholder="SUMMER20"
                   value={form.code}
@@ -168,13 +170,13 @@ export function PromoCodesPage() {
                 />
               </div>
               <Button type="button" variant="outline" onClick={() => setForm(f => ({ ...f, code: generateCode() }))}>
-                Случайный
+                {t('promo.random')}
               </Button>
             </div>
 
             <div className="flex gap-3 items-end">
               <div className="space-y-1">
-                <Label>Тип скидки</Label>
+                <Label>{t('promo.discountType')}</Label>
                 <Select
                   value={form.discount_type}
                   onValueChange={(v) => setForm(f => ({ ...f, discount_type: v as 'percent' | 'fixed' }))}
@@ -183,13 +185,13 @@ export function PromoCodesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="percent">Процент %</SelectItem>
-                    <SelectItem value="fixed">Фиксированная</SelectItem>
+                    <SelectItem value="percent">{t('promo.discountPercent')}</SelectItem>
+                    <SelectItem value="fixed">{t('promo.discountFixed')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1 w-28">
-                <Label>Размер скидки</Label>
+                <Label>{t('promo.discountValue')}</Label>
                 <Input
                   type="number"
                   placeholder={form.discount_type === 'percent' ? '10' : '500'}
@@ -198,7 +200,7 @@ export function PromoCodesPage() {
                 />
               </div>
               <div className="space-y-1 w-28">
-                <Label>Макс. использований</Label>
+                <Label>{t('promo.maxUses')}</Label>
                 <Input
                   type="number"
                   placeholder="0 = ∞"
@@ -210,7 +212,7 @@ export function PromoCodesPage() {
 
             <div className="flex gap-3 items-end flex-wrap">
               <div className="space-y-1">
-                <Label>Действует с</Label>
+                <Label>{t('promo.validFrom')}</Label>
                 <Input
                   type="text"
                   placeholder="01.01.2000"
@@ -220,7 +222,7 @@ export function PromoCodesPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label>Действует по</Label>
+                <Label>{t('promo.validUntil')}</Label>
                 <Input
                   type="text"
                   placeholder="01.01.2000"
@@ -230,9 +232,9 @@ export function PromoCodesPage() {
                 />
               </div>
               <div className="space-y-1 flex-1 min-w-40">
-                <Label>Описание (необязательно)</Label>
+                <Label>{t('promo.description')}</Label>
                 <Input
-                  placeholder="Летняя акция"
+                  placeholder={t('promo.descriptionPlaceholder')}
                   value={form.description}
                   onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
                 />
@@ -240,8 +242,8 @@ export function PromoCodesPage() {
             </div>
 
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => { setShowForm(false); setForm(EMPTY_FORM) }}>Отмена</Button>
-              <Button onClick={handleCreate} loading={create.isPending}>Создать промокод</Button>
+              <Button variant="outline" onClick={() => { setShowForm(false); setForm(EMPTY_FORM) }}>{t('common.cancel')}</Button>
+              <Button onClick={handleCreate} loading={create.isPending}>{t('promo.createBtn')}</Button>
             </div>
           </CardContent>
         </Card>
@@ -249,13 +251,13 @@ export function PromoCodesPage() {
 
       {/* List */}
       {isLoading ? (
-        <p className="text-muted-foreground text-sm">Загрузка...</p>
+        <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
       ) : codes && codes.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center space-y-2">
             <Tag className="h-10 w-10 text-muted-foreground mx-auto" />
-            <p className="font-medium">Нет промокодов</p>
-            <p className="text-sm text-muted-foreground">Создайте первый промокод для привлечения клиентов</p>
+            <p className="font-medium">{t('promo.empty')}</p>
+            <p className="text-sm text-muted-foreground">{t('promo.emptyHint')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -279,16 +281,16 @@ export function PromoCodesPage() {
                         {copiedId === promo.id ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
                       </Button>
                       <Badge variant={promo.is_active && !isExpired && !isExhausted ? 'default' : 'outline'}>
-                        {isExpired ? 'Истёк' : isExhausted ? 'Исчерпан' : promo.is_active ? 'Активен' : 'Выкл'}
+                        {isExpired ? t('promo.statusExpired') : isExhausted ? t('promo.statusExhausted') : promo.is_active ? t('promo.statusActive') : t('promo.statusInactive')}
                       </Badge>
                     </div>
 
                     <p className="text-sm text-muted-foreground">
-                      Скидка: <strong>{promo.discount_value}{promo.discount_type === 'percent' ? '%' : ' ₽'}</strong>
+                      {t('promo.discount')}: <strong>{promo.discount_value}{promo.discount_type === 'percent' ? '%' : ' ₽'}</strong>
                       {promo.max_uses && promo.max_uses > 0
-                        ? ` · Использований: ${promo.use_count ?? 0} / ${promo.max_uses}`
-                        : promo.use_count ? ` · Использован ${promo.use_count} раз` : ''}
-                      {promo.valid_until && ` · До ${promo.valid_until}`}
+                        ? ` · ${t('promo.usageCount', { used: promo.use_count ?? 0, max: promo.max_uses })}`
+                        : promo.use_count ? ` · ${t('promo.usageTotal', { count: promo.use_count })}` : ''}
+                      {promo.valid_until && ` · ${t('promo.until', { date: promo.valid_until })}`}
                     </p>
                     {promo.description && <p className="text-xs text-muted-foreground">{promo.description}</p>}
                   </div>

@@ -12,7 +12,9 @@
     "more": "Көбірек",
     "analytics": "Талқылаў",
     "team": "Команда",
-    "teamAnalytics": "Команда статистикасы"
+    "teamAnalytics": "Команда статистикасы",
+    "promoCodes": "Промо-кодлар",
+    "reviews": "Пикирлер"
   },
   "feature": {
     "lockedDesc": "{{plan}} тарифинде ҳәм жоқарыда жетекли",
@@ -819,6 +821,54 @@
     "history": {
       "title": "Төлемлер тарийхы"
     }
+  },
+  "promo": {
+    "subtitle": "Клиентлар ушын жеңилдик кодлары жасаң",
+    "create": "Жасау",
+    "newTitle": "Жаңа промо-код",
+    "validationError": "Код ҳәм жеңилдик муғдарын толтырыңыз",
+    "created": "Промо-код жасалды",
+    "createError": "Промо-код жасаўда қәте",
+    "statTotal": "Барлық кодлар",
+    "statActive": "Белсенди",
+    "statUses": "Қолланылыўлар",
+    "statExpired": "Мүддети өткен",
+    "code": "Код",
+    "random": "Тезтезден",
+    "discountType": "Жеңилдик түри",
+    "discountPercent": "Процент %",
+    "discountFixed": "Белгиленген",
+    "discountValue": "Жеңилдик муғдары",
+    "maxUses": "Макс. қолланылыўлар",
+    "validFrom": "Дейин жарамлы",
+    "validUntil": "Шекем жарамлы",
+    "description": "Сыпатлама (ерикли)",
+    "descriptionPlaceholder": "Жазғы акция",
+    "createBtn": "Промо-код жасау",
+    "empty": "Промо-кодлар жоқ",
+    "emptyHint": "Клиентлерди тартыў ушын биринши промо-кодты жасаң",
+    "statusExpired": "Мүддети өтті",
+    "statusExhausted": "Тауысылды",
+    "statusActive": "Белсенди",
+    "statusInactive": "Өшири",
+    "discount": "Жеңилдик",
+    "usageCount": "Қолланылыўлар: {{used}} / {{max}}",
+    "usageTotal": "{{count}} рет қолланылды",
+    "until": "{{date}} шекем"
+  },
+  "reviews": {
+    "subtitle": "Клиентлердиң сиздиң жумысыңыз туралы пикирлери",
+    "avgRating": "Орташа рейтинг",
+    "total": "Барлық пикирлер",
+    "visible": "Жарияланған",
+    "hidden": "Жасырылған",
+    "distribution": "Баҳалардың тарқалыўы",
+    "empty": "Пикирлер жоқ",
+    "emptyHint": "Клиентлер жазылыў формасы арқалы пикир қалдырғаннан кейін бул жерде көрсетиледи",
+    "client": "Клиент",
+    "hiddenBadge": "Жасырылған",
+    "hide": "Пикирди жасырыў",
+    "show": "Пикирди көрсетиў"
   },
   "cabinet": {
     "myAppointments": "Менің жазыўларым",
