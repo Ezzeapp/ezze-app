@@ -42,7 +42,7 @@ export function SpecialtySelector({ activityTypeId, specialtyId, onChange, label
   // Auto-select category of currently selected specialty on open
   useEffect(() => {
     if (!open || !activityTypes || !currentSpec) return
-    const type = activityTypes.find((t) => t.id === currentSpec.activity_type)
+    const type = activityTypes.find((t) => t.id === currentSpec.activity_type_id)
     if (type) setSelectedType(type)
   }, [open, activityTypes, currentSpec])
 
@@ -67,7 +67,7 @@ export function SpecialtySelector({ activityTypeId, specialtyId, onChange, label
     if (!activityTypes || !allSpecialties) return []
     return activityTypes.map((type) => ({
       type,
-      specs: allSpecialties.filter((s) => s.activity_type === type.id),
+      specs: allSpecialties.filter((s) => s.activity_type_id === type.id),
     })).filter((g) => g.specs.length > 0)
   }, [activityTypes, allSpecialties])
 
@@ -83,11 +83,11 @@ export function SpecialtySelector({ activityTypeId, specialtyId, onChange, label
   const rightPanelSpecs = useMemo(() => {
     if (isSearching) return null // search mode — show flat list
     if (!selectedType) return null
-    return allSpecialties?.filter((s) => s.activity_type === selectedType.id) ?? []
+    return allSpecialties?.filter((s) => s.activity_type_id === selectedType.id) ?? []
   }, [allSpecialties, selectedType, isSearching])
 
   const handleSelect = (spec: Specialty) => {
-    const type = activityTypes?.find((t) => t.id === spec.activity_type)
+    const type = activityTypes?.find((t) => t.id === spec.activity_type_id)
     if (!type) return
     onChange(type.id, spec.id, type.name, spec.name)
     setOpen(false)
@@ -169,7 +169,7 @@ export function SpecialtySelector({ activityTypeId, specialtyId, onChange, label
                 )}
                 {searchResults.map((spec) => {
                   const isSelected = specialtyId === spec.id
-                  const typeEntry = activityTypes?.find((t) => t.id === spec.activity_type)
+                  const typeEntry = activityTypes?.find((t) => t.id === spec.activity_type_id)
                   const SpecIcon = getProfessionIcon(spec.name)
                   return (
                     <button
