@@ -1060,17 +1060,21 @@
     "until": "{{date}} чейин"
   },
   "reviews": {
-    "subtitle": "Client reviews about your work",
-    "avgRating": "Average rating",
-    "total": "Total reviews",
-    "visible": "Published",
-    "hidden": "Hidden",
-    "distribution": "Rating distribution",
-    "empty": "No reviews",
-    "emptyHint": "Reviews will appear here after clients leave them via the booking form",
-    "client": "Client",
-    "hiddenBadge": "Hidden",
-    "hide": "Hide review",
-    "show": "Show review"
+    "subtitle": "Кардарлардын сиздин иш жөнүндөгү пикирлери",
+    "avgRating": "Орточо рейтинг",
+    "total": "Бардык пикирлер",
+    "visible": "Жарыяланган",
+    "hidden": "Жашырылган",
+    "distribution": "Баалардын бөлүштүрүлүшү",
+    "empty": "Пикирлер жок",
+    "emptyHint": "Кардарлар брондоо формасы аркылуу пикир калтыргандан кийин бул жерде пайда болот",
+    "client": "Кардар",
+    "hiddenBadge": "Жашырылган",
+    "hide": "Пикирди жашыруу",
+    "show": "Пикирди көрсөтүү",
+    "rateLabel": "Чеберди баалаңыз",
+    "commentPlaceholder": "Комментарийиңиз (милдеттүү эмес)",
+    "submitButton": "Пикир калтыруу",
+    "submitSuccess": "✅ Пикириңиз үчүн рахмат!"
   }
 }

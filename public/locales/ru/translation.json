@@ -1171,7 +1171,11 @@
     "client": "Клиент",
     "hiddenBadge": "Скрыт",
     "hide": "Скрыть отзыв",
-    "show": "Показать отзыв"
+    "show": "Показать отзыв",
+    "rateLabel": "Оцените мастера",
+    "commentPlaceholder": "Ваш комментарий (необязательно)",
+    "submitButton": "Оставить отзыв",
+    "submitSuccess": "✅ Спасибо за отзыв!"
   },
   "cabinet": {
     "myAppointments": "Мои записи",

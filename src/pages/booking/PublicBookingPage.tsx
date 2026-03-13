@@ -774,7 +774,7 @@ export function PublicBookingPage() {
             {/* Форма отзыва */}
             {!reviewSubmitted && (
               <div className="mt-4 pt-4 border-t text-left space-y-3">
-                <p className="text-sm font-semibold text-center">Оцените мастера</p>
+                <p className="text-sm font-semibold text-center">{t('reviews.rateLabel')}</p>
                 <div className="flex justify-center gap-1">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <button key={s} type="button" onClick={() => setReviewRating(s)}>
@@ -786,7 +786,7 @@ export function PublicBookingPage() {
                   <textarea
                     className="w-full rounded-lg border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
                     rows={2}
-                    placeholder="Ваш комментарий (необязательно)"
+                    placeholder={t('reviews.commentPlaceholder')}
                     value={reviewComment}
                     onChange={(e) => setReviewComment(e.target.value)}
                   />
@@ -799,14 +799,14 @@ export function PublicBookingPage() {
                     onClick={handleSubmitReview}
                     loading={reviewSubmitting}
                   >
-                    Оставить отзыв
+                    {t('reviews.submitButton')}
                   </Button>
                 )}
               </div>
             )}
             {reviewSubmitted && (
               <p className="mt-4 text-sm text-emerald-600 dark:text-emerald-400 text-center">
-                ✅ Спасибо за отзыв!
+                {t('reviews.submitSuccess')}
               </p>
             )}
 

@@ -1060,17 +1060,21 @@
     "until": "Да {{date}}"
   },
   "reviews": {
-    "subtitle": "Client reviews about your work",
-    "avgRating": "Average rating",
-    "total": "Total reviews",
-    "visible": "Published",
-    "hidden": "Hidden",
-    "distribution": "Rating distribution",
-    "empty": "No reviews",
-    "emptyHint": "Reviews will appear here after clients leave them via the booking form",
-    "client": "Client",
-    "hiddenBadge": "Hidden",
-    "hide": "Hide review",
-    "show": "Show review"
+    "subtitle": "Водгукі кліентаў аб вашай рабоце",
+    "avgRating": "Сярэдні рэйтынг",
+    "total": "Усяго водгукаў",
+    "visible": "Апублікавана",
+    "hidden": "Схавана",
+    "distribution": "Размеркаванне ацэнак",
+    "empty": "Водгукаў няма",
+    "emptyHint": "Водгукі з'явяцца тут пасля таго, як кліенты пакінуць іх праз форму браніравання",
+    "client": "Кліент",
+    "hiddenBadge": "Схаваны",
+    "hide": "Схаваць водгук",
+    "show": "Паказаць водгук",
+    "rateLabel": "Ацаніце майстра",
+    "commentPlaceholder": "Ваш каментарый (неабавязкова)",
+    "submitButton": "Пакінуць водгук",
+    "submitSuccess": "✅ Дзякуй за водгук!"
   }
 }

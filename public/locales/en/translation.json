@@ -1171,7 +1171,11 @@
     "client": "Client",
     "hiddenBadge": "Hidden",
     "hide": "Hide review",
-    "show": "Show review"
+    "show": "Show review",
+    "rateLabel": "Rate the master",
+    "commentPlaceholder": "Your comment (optional)",
+    "submitButton": "Leave a review",
+    "submitSuccess": "✅ Thank you for your review!"
   },
   "cabinet": {
     "myAppointments": "My Appointments",

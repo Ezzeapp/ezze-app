@@ -1144,18 +1144,22 @@
     "until": "{{date}} gacha"
   },
   "reviews": {
-    "subtitle": "Mijozlarning ishingiz haqidagi sharhlari",
+    "subtitle": "Mijozlarning siz haqingizda fikrlari",
     "avgRating": "O'rtacha reyting",
     "total": "Jami sharhlar",
     "visible": "Nashr etilgan",
     "hidden": "Yashirilgan",
-    "distribution": "Baholar taqsimoti",
+    "distribution": "Baholash taqsimoti",
     "empty": "Sharhlar yo'q",
-    "emptyHint": "Mijozlar bron shakli orqali sharh qoldirganidan keyin bu yerda ko'rsatiladi",
+    "emptyHint": "Mijozlar bron forma orqali sharh qoldirgandan so'ng bu yerda ko'rinadi",
     "client": "Mijoz",
     "hiddenBadge": "Yashirilgan",
     "hide": "Sharhni yashirish",
-    "show": "Sharhni ko'rsatish"
+    "show": "Sharhni ko'rsatish",
+    "rateLabel": "Ustani baholang",
+    "commentPlaceholder": "Izohingiz (ixtiyoriy)",
+    "submitButton": "Sharh qoldirish",
+    "submitSuccess": "✅ Sharh uchun rahmat!"
   },
   "cabinet": {
     "myAppointments": "Mening yozuvlarim",

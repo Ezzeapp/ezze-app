@@ -1114,17 +1114,21 @@
     "until": "До {{date}}"
   },
   "reviews": {
-    "subtitle": "Client reviews about your work",
-    "avgRating": "Average rating",
-    "total": "Total reviews",
-    "visible": "Published",
-    "hidden": "Hidden",
-    "distribution": "Rating distribution",
-    "empty": "No reviews",
-    "emptyHint": "Reviews will appear here after clients leave them via the booking form",
-    "client": "Client",
-    "hiddenBadge": "Hidden",
-    "hide": "Hide review",
-    "show": "Show review"
+    "subtitle": "Відгуки клієнтів про вашу роботу",
+    "avgRating": "Середній рейтинг",
+    "total": "Всього відгуків",
+    "visible": "Опубліковано",
+    "hidden": "Приховано",
+    "distribution": "Розподіл оцінок",
+    "empty": "Відгуків немає",
+    "emptyHint": "Відгуки з'являться тут після того, як клієнти залишать їх через форму бронювання",
+    "client": "Клієнт",
+    "hiddenBadge": "Прихований",
+    "hide": "Приховати відгук",
+    "show": "Показати відгук",
+    "rateLabel": "Оцініть майстра",
+    "commentPlaceholder": "Ваш коментар (необов'язково)",
+    "submitButton": "Залишити відгук",
+    "submitSuccess": "✅ Дякуємо за відгук!"
   }
 }

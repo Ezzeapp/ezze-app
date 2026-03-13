@@ -1060,17 +1060,21 @@
     "until": "То {{date}}"
   },
   "reviews": {
-    "subtitle": "Client reviews about your work",
-    "avgRating": "Average rating",
-    "total": "Total reviews",
-    "visible": "Published",
-    "hidden": "Hidden",
-    "distribution": "Rating distribution",
-    "empty": "No reviews",
-    "emptyHint": "Reviews will appear here after clients leave them via the booking form",
-    "client": "Client",
-    "hiddenBadge": "Hidden",
-    "hide": "Hide review",
-    "show": "Show review"
+    "subtitle": "Назари муштариён дар бораи кори шумо",
+    "avgRating": "Рейтинги миёна",
+    "total": "Ҳамаи шарҳҳо",
+    "visible": "Нашршуда",
+    "hidden": "Пинҳоншуда",
+    "distribution": "Тақсимоти баҳоҳо",
+    "empty": "Шарҳҳо нест",
+    "emptyHint": "Шарҳҳо пас аз он пайдо мешаванд, ки муштариён онҳоро тавассути шакли банд кардан гузоранд",
+    "client": "Муштарӣ",
+    "hiddenBadge": "Пинҳон",
+    "hide": "Шарҳро пинҳон кунед",
+    "show": "Шарҳро нишон диҳед",
+    "rateLabel": "Устодро баҳо диҳед",
+    "commentPlaceholder": "Шарҳи шумо (ихтиёрӣ)",
+    "submitButton": "Шарҳ гузоштан",
+    "submitSuccess": "✅ Барои шарҳ ташаккур!"
   }
 }

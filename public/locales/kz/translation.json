@@ -1060,17 +1060,21 @@
     "until": "{{date}} дейін"
   },
   "reviews": {
-    "subtitle": "Client reviews about your work",
-    "avgRating": "Average rating",
-    "total": "Total reviews",
-    "visible": "Published",
-    "hidden": "Hidden",
-    "distribution": "Rating distribution",
-    "empty": "No reviews",
-    "emptyHint": "Reviews will appear here after clients leave them via the booking form",
-    "client": "Client",
-    "hiddenBadge": "Hidden",
-    "hide": "Hide review",
-    "show": "Show review"
+    "subtitle": "Клиенттердің жұмысыңыз туралы пікірлері",
+    "avgRating": "Орташа рейтинг",
+    "total": "Барлық пікірлер",
+    "visible": "Жарияланған",
+    "hidden": "Жасырылған",
+    "distribution": "Бағалардың бөлінуі",
+    "empty": "Пікірлер жоқ",
+    "emptyHint": "Клиенттер брондау формасы арқылы пікір қалдырғаннан кейін мұнда пайда болады",
+    "client": "Клиент",
+    "hiddenBadge": "Жасырылған",
+    "hide": "Пікірді жасыру",
+    "show": "Пікірді көрсету",
+    "rateLabel": "Шеберді бағалаңыз",
+    "commentPlaceholder": "Пікіріңіз (міндетті емес)",
+    "submitButton": "Пікір қалдыру",
+    "submitSuccess": "✅ Пікіріңіз үшін рахмет!"
   }
 }
