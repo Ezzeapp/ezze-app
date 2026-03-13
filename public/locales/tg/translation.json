@@ -13,7 +13,14 @@
     "analytics": "Таҳлил",
     "team": "Гурӯҳ",
     "teamAnalytics": "Омори гурӯҳ",
-    "billing": "Подписка"
+    "billing": "Подписка",
+    "newAppointment": "Сабти нав",
+    "groupMain": "Асосӣ",
+    "groupCatalog": "Каталог",
+    "groupMarketing": "Маркетинг",
+    "groupTeam": "Даста",
+    "promoCodes": "Промокодҳо",
+    "reviews": "Шарҳҳо"
   },
   "feature": {
     "lockedDesc": "Дар нақшаи {{plan}} ва боло дастрас аст",
@@ -41,7 +48,8 @@
     "noAccount": "Ҳисоб надоред?",
     "hasAccount": "Аллакай ҳисоб доред?",
     "registrationClosed": "Бақайдгирӣ пӯшида аст",
-    "registrationClosedDesc": "Дар айни замон бақайдгирии корбарони нав дастрас нест"
+    "registrationClosedDesc": "Дар айни замон бақайдгирии корбарони нав дастрас нест",
+    "accountDisabled": "Ҳисоби шумо манъ шудааст. Бо маъмур тамос гиред."
   },
   "common": {
     "save": "Нигоҳ доштан",
@@ -84,7 +92,21 @@
     "stockOk": "Ҳама чиз хуб аст",
     "title": "Омор",
     "myStats": "Маълумоти ман",
-    "teamStats": "Гурӯҳ"
+    "teamStats": "Гурӯҳ",
+    "weekRevenue": "Даромади ҳафта",
+    "monthRevenue": "Даромади моҳ",
+    "onlineBookings": "Сабтҳои онлайн",
+    "thisMonth": "ин моҳ",
+    "positions": "мавқеъ",
+    "times": "маротиба",
+    "weekChart": "Банд будан аз рӯи рӯзҳои ҳафта",
+    "upcoming": "Сабтҳои наздик",
+    "allAppointments": "Ҳамаи сабтҳо",
+    "noUpcoming": "Сабтҳои наздик нест",
+    "topServices": "Хидматҳои беҳтарин",
+    "noData": "Маълумот нест",
+    "showAll": "Ҳамаро нишон диҳед",
+    "viewTeam": "Даста"
   },
   "team": {
     "title": "Гурӯҳ",
@@ -144,8 +166,37 @@
       "avgCheck": "Миёнаи чек",
       "appts": "сабт",
       "ownerOnly": "Омори гурӯҳ танҳо барои соҳиб дастрас аст",
-      "dataHint": "Танҳо сабтҳо бо ҳолати «Иҷро шуд» ҳисобида мешаванд"
-    }
+      "dataHint": "Танҳо сабтҳо бо ҳолати «Иҷро шуд» ҳисобида мешаванд",
+      "revenue": "Даромад",
+      "appointments": "Сабтҳо",
+      "clients": "Муштариён",
+      "perMaster": "Аз рӯи устод",
+      "noData": "Маълумот нест",
+      "totalAppointments": "Ҳамаи сабтҳо",
+      "activeMembers": "Аъзоёни фаъол"
+    },
+    "createTeamHint": "Усторонро зери як бренд муттаҳид кунед",
+    "joinTeamHint": "Тавассути рамзи даъват пайванд шавед",
+    "inviteExpiredLabel": "Муддат гузаштааст",
+    "inviteContactPlaceholder": "Email, телефон ё @telegram (ихтиёрӣ)",
+    "deleteTeam": "Дастаро нест кунед",
+    "deleteTeamConfirm": "Дастаро нест кунем? Ҳамаи аъзоён қатъ мешаванд. Ин амалро бозгардонидан мумкин нест.",
+    "deleteSuccess": "Даста нест шуд",
+    "settingsTitle": "Танзимоти даста",
+    "noTeamYet": "Ҳанӯз дастае нест",
+    "createOrJoin": "Даста созед ё пайванд шавед",
+    "leave": "Аз даста хориҷ шавед",
+    "slugHint": "Ҳарфҳои лотинӣ, рақамҳо ва тире",
+    "inviteTitle": "Даъватҳо",
+    "inviteCreate": "Даъват созед",
+    "inviteRevoke": "Бозпас гирифтан",
+    "memberCount": "{{count}} аъзо",
+    "removeMemberConfirm": "Аъзоро аз даста хориҷ кунем?",
+    "removedSuccess": "Аъзо нест шуд",
+    "joinCode": "Рамзи дохилшавӣ",
+    "joinCodePlaceholder": "Рамзро ворид кунед...",
+    "join": "Дохил шавед",
+    "joinError": "Рамзи нодуруст ё кӯҳна"
   },
   "profile": {
     "subtitle": "Профили ҷамъиятии худро идора кунед",
@@ -229,7 +280,26 @@
     "qrTelegram": "QR-код (Telegram Mini App)",
     "tgBookingHint": "Telegram кушода мешавад",
     "generating": "Эчод шуда истодааст...",
-    "generate": "Эчод кунед"
+    "generate": "Эчод кунед",
+    "telegramNotifications": "Огоҳиҳои Telegram",
+    "telegramConnected": "Telegram пайваст аст",
+    "telegramConnectedDesc": "Огоҳиҳо дар бораи сабтҳои нав мегиред",
+    "telegramNotConnected": "Telegram пайваст нашудааст",
+    "telegramNotConnectedDesc": "Барои гирифтани огоҳиҳо дар бораи сабтҳои нав ботро пайваст кунед",
+    "telegramConnect": "Боти Telegram-ро пайваст кунед",
+    "telegramReconnect": "Боти дубора пайваст кунед",
+    "telegramHint": "Тугмаро пахш кунед → Telegram кушода мешавад → Start пахш кунед",
+    "reminders": "Ёддоштҳо",
+    "remindersDesc": "Ёддоштҳои автоматӣ дар бораи сабтҳои наздик тавассути Telegram",
+    "remindMaster": "Ёддошт ба устод",
+    "remindClient": "Ёддошт ба муштарӣ",
+    "remindClientHint": "Муштарӣ агар ҳангоми сабт Telegram нишон дода бошад огоҳӣ мегирад",
+    "remindOff": "Хомӯш",
+    "remindBefore": "{{n}} {{unit}} пеш",
+    "remindHour": "соат",
+    "remindHours2": "соат",
+    "remindDay": "рӯз",
+    "remindDays2": "рӯз"
   },
   "clients": {
     "subtitle": "Идораи пойгоҳи муштариён",
@@ -304,7 +374,10 @@
     "categoryDeleted": "Гурӯҳ нест шуд",
     "noCategoriesYet": "Ҳоло гурӯҳ нест",
     "sortBy": {
-      "category": "Категория"
+      "category": "Категория",
+      "name": "Аз рӯи ном",
+      "price": "Аз рӯи нарх",
+      "duration": "Аз рӯи давомнокӣ"
     },
     "saveThenMaterials": "Аввал хидматро нигоҳ доред, пас метавонед маводҳоро илова кунед",
     "goToMain": "Ба маълумоти асосӣ",
@@ -312,7 +385,11 @@
     "addMaterialsAfterSaveHint": "Пас аз сабт ба ҷадвали маводҳо гузаред",
     "deletedMultiple": "{{count}} хидмат нест карда шуд",
     "selectedCount": "Интихоб шуд: {{count}}",
-    "bulkDeleteConfirm": "{{count}} хидматро нест кунед?"
+    "bulkDeleteConfirm": "{{count}} хидматро нест кунед?",
+    "categoryDeleteConfirm": "Категорияро нест кунед?",
+    "search": "Ҷустуҷӯ аз рӯи хидматҳо...",
+    "notFound": "Хидмат ёфт нашуд",
+    "status": "Вазъият"
   },
   "schedule": {
     "subtitle": "Соатҳои кории худро танзим кунед",
@@ -454,7 +531,9 @@
     "tabDiscount": "Тахфиф",
     "tabPayment": "Пардохт",
     "tabNote": "Қайд",
-    "tabRecurring": "Такрор"
+    "tabRecurring": "Такрор",
+    "selectTimeFirst": "Аввал вақтро интихоб кунед",
+    "tabDetails": "Тафсилот"
   },
   "calendar": {
     "week": "Ҳафта",
@@ -462,7 +541,17 @@
     "today": "Имрӯз",
     "noAppointments": "Сабтҳо нест",
     "appointmentsCount": "{{count}} сабт",
-    "moreAppts": "боз"
+    "moreAppts": "боз",
+    "list": "Рӯйхат",
+    "listSearch": "Ҷустуҷӯи муштарӣ, хидмат...",
+    "allStatuses": "Ҳамаи ҳолатҳо",
+    "dateFrom": "Аз санаи",
+    "dateTo": "То санаи",
+    "listCount": "Сабтҳо: {{count}}",
+    "selectedCount": "Интихобшуда: {{count}}",
+    "deleteSelected": "Нест кардани интихобшудагон",
+    "deleteSelectedConfirm": "{{count}} сабтро нест кунем?",
+    "deletedCount": "{{count}} сабт нест шуд"
   },
   "settings": {
     "account": "Ҳисоб",
@@ -496,7 +585,8 @@
     "tabProfile": "Аккаунт",
     "tabInterface": "Интерфейс",
     "tabIntegrations": "Интегратсияҳо",
-    "tabAdmin": "Маъмурият"
+    "tabAdmin": "Маъмурият",
+    "tabAppearance": "Интерфейс"
   },
   "catalog": {
     "searchServices": "Ҷустуҷӯи хизматҳо ё категорияҳо...",
@@ -576,7 +666,21 @@
     "expandCalendar": "Нишон додани моҳ",
     "collapseCalendar": "Пӯшидан",
     "limitReached": "Устод муваqqатан сабтро қабул намекунад: лимити ин моҳ тамом шуд.",
-    "bookingError": "Сабт эҷод карда нашуд. Бори дигар кӯшиш кунед."
+    "bookingError": "Сабт эҷод карда нашуд. Бори дигар кӯшиш кунед.",
+    "cancelTitle": "Бекор кардани сабт",
+    "cancelConfirmDesc": "Оё мехоҳед сабтро бекор кунед?",
+    "keepBooking": "Сабтро нигоҳ дор",
+    "confirmCancel": "Бале, бекор кун",
+    "cancelledTitle": "Сабт бекор карда шуд",
+    "cancelledDesc": "Сабти шумо бо муваффақият бекор карда шуд. Шуморо дубора интизор мешавем!",
+    "alreadyCancelled": "Сабт аллакай бекор карда шудааст",
+    "alreadyCancelledDesc": "Ин сабт пештар бекор карда шудааст.",
+    "cancelError": "Пайванд нодуруст",
+    "cancelErrorDesc": "Сабт ёфт нашуд ё пайванд кӯҳна шудааст.",
+    "clientTelegram": "Telegram-и шумо (ихтиёрӣ)",
+    "clientTelegramHint": "Барои гирифтани тасдиқ ва ёддошт",
+    "masterContacts": "Тамосҳои устод",
+    "telegramConfirmSent": "✅ Тасдиқ ба Telegram фиристода шуд"
   },
   "onboarding": {
     "title": "Хуш омадед ба Ezze!",
@@ -730,7 +834,28 @@
       "limitsSaved": "Маҳдудиятҳо захира шуданд",
       "on": "Фаъол",
       "unlimitedNote": "майдони холӣ = бе маҳдудият"
-    }
+    },
+    "searchUsers": "Ҷустуҷӯ аз рӯи ном ё email...",
+    "usersNotFound": "Корбарон ёфт нашуданд",
+    "disableUser": "Корбарро ғайрифаъол кунед",
+    "enableUser": "Корбарро фаъол кунед",
+    "userDisabled": "Корбар ғайрифаъол шуд",
+    "userEnabled": "Корбар фаъол шуд",
+    "disabled": "Манъшуда",
+    "active": "Фаъол",
+    "userIsDisabled": "Дастрасӣ манъ шудааст — корбар ворид шуда наметавонад",
+    "exportCSV": "Содир ба CSV",
+    "exportDone": "Содир анҷом ёфт",
+    "statsTotal": "Ҳамаи",
+    "statsNewMonth": "Нав дар моҳ",
+    "statsPaid": "Пардохтшуда",
+    "statsDisabled": "Ғайрифаъол",
+    "colUser": "Корбар",
+    "colPlan": "Нақша",
+    "colAdmin": "Маъмур",
+    "colStatus": "Вазъият",
+    "limitMetric": "Метрика",
+    "limitHint": "Агар ин маҳдудият лозим набошад, сатрро ғайрифаъол кунед."
   },
   "analytics": {
     "title": "Таҳлил",

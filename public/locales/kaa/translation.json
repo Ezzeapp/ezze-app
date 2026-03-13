@@ -15,7 +15,12 @@
     "teamAnalytics": "Команда статистикасы",
     "promoCodes": "Промо-кодлар",
     "reviews": "Пикирлер",
-    "billing": "Жазылым"
+    "billing": "Жазылым",
+    "newAppointment": "Жаңа жазыу",
+    "groupMain": "Тийкарғы",
+    "groupCatalog": "Каталог",
+    "groupMarketing": "Маркетинг",
+    "groupTeam": "Команда"
   },
   "feature": {
     "lockedDesc": "{{plan}} тарифинде ҳәм жоқарыда жетекли",
@@ -43,7 +48,8 @@
     "noAccount": "Аккаунтыңыз жоқпа?",
     "hasAccount": "Аккаунтыңыз барма?",
     "registrationClosed": "Тіркелиу жабық",
-    "registrationClosedDesc": "Ҳәзир жаңа пайдаланыўшылар тіркеле алмайды"
+    "registrationClosedDesc": "Ҳәзир жаңа пайдаланыўшылар тіркеле алмайды",
+    "accountDisabled": "Аккаунтыңыз бөгелген. Администраторға хабарласың."
   },
   "common": {
     "save": "Сақлаў",
@@ -86,7 +92,21 @@
     "stockOk": "Бәрі жақсы",
     "title": "Статистика",
     "myStats": "Менің мағлыўматларым",
-    "teamStats": "Команда"
+    "teamStats": "Команда",
+    "weekRevenue": "Aptalıq daromat",
+    "monthRevenue": "Aylıq daromat",
+    "onlineBookings": "Onlayn jazıwlar",
+    "thisMonth": "bul ayda",
+    "positions": "pozitsiya",
+    "times": "marte",
+    "weekChart": "Apta künleri boyınsha jükteme",
+    "upcoming": "Jaqın jazıwlar",
+    "allAppointments": "Barlıq jazıwlar",
+    "noUpcoming": "Jaqın jazıw joq",
+    "topServices": "Top xizmetler",
+    "noData": "Málimet joq",
+    "showAll": "Barsın kórsetiw",
+    "viewTeam": "Komanda"
   },
   "team": {
     "title": "Команда",
@@ -146,8 +166,37 @@
       "avgCheck": "Орташа чек",
       "appts": "жазыў",
       "ownerOnly": "Команда статистикасы тек ийесіне жетекли",
-      "dataHint": "Тек «Орынланды» ҳалатындағы жазыўлар есапланады"
-    }
+      "dataHint": "Тек «Орынланды» ҳалатындағы жазыўлар есапланады",
+      "revenue": "Daromat",
+      "appointments": "Jazıwlar",
+      "clients": "Mijozlar",
+      "perMaster": "Sheber boyınsha",
+      "noData": "Málimet joq",
+      "totalAppointments": "Barlıq jazıwlar",
+      "activeMembers": "Aktiv azalar"
+    },
+    "createTeamHint": "Sheberledi bir brand astında birlestiriń",
+    "joinTeamHint": "Shaqırıw kodi arqalı kirińiz",
+    "inviteExpiredLabel": "Merzimi ótken",
+    "inviteContactPlaceholder": "Email, telefon yáki @telegram (ixtiyariy)",
+    "deleteTeam": "Komandanı joyw",
+    "deleteTeamConfirm": "Komandanı joyw kerek pe? Barlik azalar ajıratıladı. Bul amaldı qaytarıp bolmadı.",
+    "deleteSuccess": "Komanda joyıldı",
+    "settingsTitle": "Komanda sazlamaları",
+    "noTeamYet": "Áli komanda joq",
+    "createOrJoin": "Komanda jasań yáki qosılıń",
+    "leave": "Komandadan shıǵıw",
+    "slugHint": "Latın háripleri, sanlar hám sızıqsha",
+    "inviteTitle": "Shaqırıwlar",
+    "inviteCreate": "Shaqırıw jasaw",
+    "inviteRevoke": "Bekar qılıw",
+    "memberCount": "{{count}} aza",
+    "removeMemberConfirm": "Azanı komandadan shıǵarıw kerek pe?",
+    "removedSuccess": "Aza joyıldı",
+    "joinCode": "Kirisiw kodi",
+    "joinCodePlaceholder": "Kodtı kirisiń...",
+    "join": "Kirisiw",
+    "joinError": "Náwrıs yáki eski kod"
   },
   "profile": {
     "subtitle": "Жәмийетлик профилиңізді басқарыў",
@@ -231,7 +280,26 @@
     "qrTelegram": "QR-код (Telegram Mini App)",
     "tgBookingHint": "Telegram ашылады",
     "generating": "Жасалыўда...",
-    "generate": "Жасаў"
+    "generate": "Жасаў",
+    "telegramNotifications": "Telegram xabarlawlar",
+    "telegramConnected": "Telegram ullandı",
+    "telegramConnectedDesc": "Jańa jazıwlar haqqında xabarlar alasız",
+    "telegramNotConnected": "Telegram ullanbaǵan",
+    "telegramNotConnectedDesc": "Jańa jazıwlar haqqında xabar alıw ushın bottı ulaŋ",
+    "telegramConnect": "Telegram botti ulaw",
+    "telegramReconnect": "Bottı qayta ulaw",
+    "telegramHint": "Batırmanı basıń → Telegram ашılAdı → Start basıń",
+    "reminders": "Eslatpalar",
+    "remindersDesc": "Telegram arqalı keleshek jazıwlar haqqında avtomatik eslatpalar",
+    "remindMaster": "Sheberge eslatpa",
+    "remindClient": "Mijoǵa eslatpa",
+    "remindClientHint": "Mijoz jazılıwda Telegram kórsatse xabar alAdı",
+    "remindOff": "Ósiriw",
+    "remindBefore": "{{n}} {{unit}} aldın",
+    "remindHour": "saat",
+    "remindHours2": "saat",
+    "remindDay": "kün",
+    "remindDays2": "kün"
   },
   "clients": {
     "subtitle": "Клиентлер базасын басқарыў",
@@ -306,7 +374,10 @@
     "categoryDeleted": "Категория өшірілді",
     "noCategoriesYet": "Категориялар жоқ",
     "sortBy": {
-      "category": "Категория"
+      "category": "Категория",
+      "name": "Atı boyınsha",
+      "price": "Bahası boyınsha",
+      "duration": "Uzaqlıǵı boyınsha"
     },
     "saveThenMaterials": "Алдын хызметті сақлаңыз, соңынан материаллар қосыўыңыз мүмкін",
     "goToMain": "Тийкарғы мағлыўматқа",
@@ -314,7 +385,11 @@
     "addMaterialsAfterSaveHint": "Сақланғаннан соң материаллар бөліміне өтіңіз",
     "deletedMultiple": "{{count}} хызмет өшірілді",
     "selectedCount": "Таңланған: {{count}}",
-    "bulkDeleteConfirm": "{{count}} хызметті өшіріу?"
+    "bulkDeleteConfirm": "{{count}} хызметті өшіріу?",
+    "categoryDeleteConfirm": "Kategoriyani joywqerek pe?",
+    "search": "Xizmetler boyınsha qıdırıw...",
+    "notFound": "Xizmet tabılmadı",
+    "status": "Jaǵday"
   },
   "schedule": {
     "subtitle": "Жумыс ўақтын баптаў",
@@ -456,7 +531,9 @@
     "tabDiscount": "Жеңілдік",
     "tabPayment": "Төлем",
     "tabNote": "Еслетпе",
-    "tabRecurring": "Қайталанатын"
+    "tabRecurring": "Қайталанатын",
+    "selectTimeFirst": "Aldı waqıttı tańlań",
+    "tabDetails": "Tolıqlaw"
   },
   "calendar": {
     "week": "Ҳапта",
@@ -464,7 +541,17 @@
     "today": "Бүгін",
     "noAppointments": "Жазыўлар жоқ",
     "appointmentsCount": "{{count}} жазыў",
-    "moreAppts": "тағы"
+    "moreAppts": "тағы",
+    "list": "Dizim",
+    "listSearch": "Mijoz, xizmet boyınsha qıdırıw...",
+    "allStatuses": "Barlıq jaǵdaylar",
+    "dateFrom": "Sanadan",
+    "dateTo": "Sanağa shekem",
+    "listCount": "Jazıwlar: {{count}}",
+    "selectedCount": "Tańlanǵan: {{count}}",
+    "deleteSelected": "Tańlanǵanlardı joyw",
+    "deleteSelectedConfirm": "{{count}} jazıwdı joyw kerek pe?",
+    "deletedCount": "{{count}} jazıw joyıldı"
   },
   "settings": {
     "account": "Аккаунт",
@@ -579,7 +666,21 @@
     "expandCalendar": "Пүткіл айды көрсетіу",
     "collapseCalendar": "Жыйыстырыў",
     "limitReached": "Уста ҳәзірше онлайн жазылыўды қабыл алмайды: бул айлық лимит толды.",
-    "bookingError": "Жазылыў орынланбады. Қайта урынып көріңіз."
+    "bookingError": "Жазылыў орынланбады. Қайта урынып көріңіз.",
+    "cancelTitle": "Jazıwdı bekar qılıw",
+    "cancelConfirmDesc": "Jazıwdı bekar qılıwǵa isenim bar ma?",
+    "keepBooking": "Jazıwdı saqlap qalıw",
+    "confirmCancel": "Ha, bekar qılıw",
+    "cancelledTitle": "Jazıw bekar qılındı",
+    "cancelledDesc": "Jazıwıńız wáde bekar qılındı. Sizi qayta kütip qalamız!",
+    "alreadyCancelled": "Jazıw buwın bekar qılınǵan",
+    "alreadyCancelledDesc": "Bul jazıw burın bekar qılınǵan.",
+    "cancelError": "Shola járamdas emes",
+    "cancelErrorDesc": "Jazıw tabılmadı yáki shola eski.",
+    "clientTelegram": "Sizin Telegram (ixtiyariy)",
+    "clientTelegramHint": "Tastıyıqlama hám eslatpa alıw ushın",
+    "masterContacts": "Sheber baylanısları",
+    "telegramConfirmSent": "✅ Tastıyıqlama Telegram-ǵa jiberildi"
   },
   "onboarding": {
     "title": "Ezzeʻге хош келдіңіз!",
@@ -752,7 +853,28 @@
     "limitServices": "Хызметлер",
     "limitAppts": "Жазыўлар/ай",
     "unlimited": "∞",
-    "searchSpecialties": "Белсенлік түрлері ҳәм мамандықлар бойынша излеу..."
+    "searchSpecialties": "Белсенлік түрлері ҳәм мамандықлар бойынша излеу...",
+    "searchUsers": "Atı yáki email boyınsha qıdırıw...",
+    "usersNotFound": "Paydalanıwshılar tabılmadı",
+    "disableUser": "Paydalanıwshını ósiriw",
+    "enableUser": "Paydalanıwshını yaqlaw",
+    "userDisabled": "Paydalanıwshı ósiriw",
+    "userEnabled": "Paydalanıwshı yaqlawdı",
+    "disabled": "Bógeliw",
+    "active": "Aktiv",
+    "userIsDisabled": "Kirisiw bógelgen — paydalanıwshı kire almadı",
+    "exportCSV": "CSV-ke eksport",
+    "exportDone": "Eksport amaqlastı",
+    "statsTotal": "Barlıǵı",
+    "statsNewMonth": "Ayda jańa",
+    "statsPaid": "Aqılı",
+    "statsDisabled": "Ósiriw",
+    "colUser": "Paydalanıwshı",
+    "colPlan": "Tarif",
+    "colAdmin": "Admin",
+    "colStatus": "Jaǵday",
+    "limitMetric": "Metrika",
+    "limitHint": "Bul limit kerek bolmasa, qatardı ósiriń."
   },
   "analytics": {
     "title": "Талқылаў",

@@ -13,7 +13,14 @@
     "analytics": "Аналітыка",
     "team": "Каманда",
     "teamAnalytics": "Статыстыка каманды",
-    "billing": "Подписка"
+    "billing": "Подписка",
+    "newAppointment": "Новы запіс",
+    "groupMain": "Асноўнае",
+    "groupCatalog": "Каталог",
+    "groupMarketing": "Маркетынг",
+    "groupTeam": "Каманда",
+    "promoCodes": "Прамакоды",
+    "reviews": "Водгукі"
   },
   "feature": {
     "lockedDesc": "Даступна на плане {{plan}} і вышэй",
@@ -41,7 +48,8 @@
     "noAccount": "Няма акаўнта?",
     "hasAccount": "Ужо ёсць акаўнт?",
     "registrationClosed": "Рэгістрацыя зачынена",
-    "registrationClosedDesc": "На дадзены момант рэгістрацыя новых карыстальнікаў недаступна"
+    "registrationClosedDesc": "На дадзены момант рэгістрацыя новых карыстальнікаў недаступна",
+    "accountDisabled": "Ваш акаўнт заблакаваны. Звярніцеся да адміністратара."
   },
   "common": {
     "save": "Захаваць",
@@ -84,7 +92,21 @@
     "stockOk": "Усё добра",
     "title": "Статыстыка",
     "myStats": "Мае дадзеныя",
-    "teamStats": "Каманда"
+    "teamStats": "Каманда",
+    "weekRevenue": "Выручка за тыдзень",
+    "monthRevenue": "Выручка за месяц",
+    "onlineBookings": "Анлайн-запісы",
+    "thisMonth": "у гэтым месяцы",
+    "positions": "пазіцый",
+    "times": "разоў",
+    "weekChart": "Занятасць па днях тыдня",
+    "upcoming": "Бліжэйшыя запісы",
+    "allAppointments": "Усе запісы",
+    "noUpcoming": "Няма бліжэйшых запісаў",
+    "topServices": "Топ паслуг",
+    "noData": "Дадзеных пакуль няма",
+    "showAll": "Паказаць усё",
+    "viewTeam": "Каманда"
   },
   "team": {
     "title": "Каманда",
@@ -144,8 +166,37 @@
       "avgCheck": "Сярэдні чэк",
       "appts": "запісаў",
       "ownerOnly": "Статыстыка каманды даступна толькі ўладальніку",
-      "dataHint": "Улічваюцца толькі запісы са статусам «Выканана»"
-    }
+      "dataHint": "Улічваюцца толькі запісы са статусам «Выканана»",
+      "revenue": "Выручка",
+      "appointments": "Запісы",
+      "clients": "Кліенты",
+      "perMaster": "Па майстру",
+      "noData": "Дадзеных няма",
+      "totalAppointments": "Усе запісы",
+      "activeMembers": "Актыўныя ўдзельнікі"
+    },
+    "createTeamHint": "Аб'яднайце майстроў пад адным брэндам",
+    "joinTeamHint": "Далучайцеся па кодзе запрашэння",
+    "inviteExpiredLabel": "Тэрмін мінуў",
+    "inviteContactPlaceholder": "Email, тэлефон або @telegram (неабавязкова)",
+    "deleteTeam": "Выдаліць каманду",
+    "deleteTeamConfirm": "Выдаліць каманду? Усе ўдзельнікі будуць адключаны. Гэта дзеянне немагчыма адмяніць.",
+    "deleteSuccess": "Каманда выдалена",
+    "settingsTitle": "Налады каманды",
+    "noTeamYet": "Пакуль каманды няма",
+    "createOrJoin": "Стварыце або далучыцеся да каманды",
+    "leave": "Пакінуць каманду",
+    "slugHint": "Лацінскія літары, лічбы і злучок",
+    "inviteTitle": "Запрашэнні",
+    "inviteCreate": "Стварыць запрашэнне",
+    "inviteRevoke": "Адклікаць",
+    "memberCount": "{{count}} удзельнікаў",
+    "removeMemberConfirm": "Выдаліць удзельніка з каманды?",
+    "removedSuccess": "Удзельнік выдалены",
+    "joinCode": "Код уваходу",
+    "joinCodePlaceholder": "Увядзіце код...",
+    "join": "Далучыцца",
+    "joinError": "Няправільны або ўстарэлы код"
   },
   "profile": {
     "subtitle": "Кіраванне публічным профілем",
@@ -229,7 +280,26 @@
     "qrTelegram": "QR-код (Telegram Mini App)",
     "tgBookingHint": "Адкрываецца Telegram",
     "generating": "Ствараецца...",
-    "generate": "Стварыць"
+    "generate": "Стварыць",
+    "telegramNotifications": "Паведамленні Telegram",
+    "telegramConnected": "Telegram падключаны",
+    "telegramConnectedDesc": "Вы будзеце атрымліваць паведамленні аб новых запісах",
+    "telegramNotConnected": "Telegram не падключаны",
+    "telegramNotConnectedDesc": "Падключыце бота для атрымання апавяшчэнняў аб новых запісах",
+    "telegramConnect": "Падключыць Telegram бота",
+    "telegramReconnect": "Перападключыць бота",
+    "telegramHint": "Націсніце кнопку → адкрыецца Telegram → націсніце Start",
+    "reminders": "Напаміны",
+    "remindersDesc": "Аўтаматычныя напаміны аб бліжэйшых запісах праз Telegram",
+    "remindMaster": "Напамін майстру",
+    "remindClient": "Напамін кліенту",
+    "remindClientHint": "Кліент атрымае паведамленне, калі ўказаў Telegram пры запісе",
+    "remindOff": "Адключана",
+    "remindBefore": "За {{n}} {{unit}}",
+    "remindHour": "гадзіна",
+    "remindHours2": "гадзіны",
+    "remindDay": "дзень",
+    "remindDays2": "дні"
   },
   "clients": {
     "subtitle": "Кіраванне базай кліентаў",
@@ -304,7 +374,10 @@
     "categoryDeleted": "Катэгорыя выдалена",
     "noCategoriesYet": "Катэгорый пакуль няма",
     "sortBy": {
-      "category": "Катэгорыя"
+      "category": "Катэгорыя",
+      "name": "Па назве",
+      "price": "Па цане",
+      "duration": "Па працягласці"
     },
     "saveThenMaterials": "Спачатку захавайце паслугу, потым можна дадаць матэрыялы",
     "goToMain": "Да асноўных даных",
@@ -312,7 +385,11 @@
     "addMaterialsAfterSaveHint": "Пасля захавання перайсці на ўкладку матэрыялаў",
     "deletedMultiple": "Выдалена паслуг: {{count}}",
     "selectedCount": "Выбрана: {{count}}",
-    "bulkDeleteConfirm": "Выдаліць {{count}} паслуг?"
+    "bulkDeleteConfirm": "Выдаліць {{count}} паслуг?",
+    "categoryDeleteConfirm": "Выдаліць катэгорыю?",
+    "search": "Пошук па паслугах...",
+    "notFound": "Паслуга не знойдзена",
+    "status": "Статус"
   },
   "schedule": {
     "subtitle": "Настройка рабочых гадзін",
@@ -454,7 +531,9 @@
     "tabDiscount": "Зніжка",
     "tabPayment": "Аплата",
     "tabNote": "Нататка",
-    "tabRecurring": "Паўтор"
+    "tabRecurring": "Паўтор",
+    "selectTimeFirst": "Спачатку выберыце час",
+    "tabDetails": "Падрабязнасці"
   },
   "calendar": {
     "week": "Тыдзень",
@@ -462,7 +541,17 @@
     "today": "Сёння",
     "noAppointments": "Запісаў няма",
     "appointmentsCount": "{{count}} запіс",
-    "moreAppts": "яшчэ"
+    "moreAppts": "яшчэ",
+    "list": "Спіс",
+    "listSearch": "Пошук па кліенце, паслузе...",
+    "allStatuses": "Усе статусы",
+    "dateFrom": "З даты",
+    "dateTo": "Па дату",
+    "listCount": "Запісаў: {{count}}",
+    "selectedCount": "Абраных: {{count}}",
+    "deleteSelected": "Выдаліць абраныя",
+    "deleteSelectedConfirm": "Выдаліць {{count}} запісаў?",
+    "deletedCount": "Выдалена {{count}} запісаў"
   },
   "settings": {
     "account": "Акаўнт",
@@ -496,7 +585,8 @@
     "tabProfile": "Акаўнт",
     "tabInterface": "Інтэрфейс",
     "tabIntegrations": "Інтэграцыі",
-    "tabAdmin": "Адміністраванне"
+    "tabAdmin": "Адміністраванне",
+    "tabAppearance": "Інтэрфейс"
   },
   "catalog": {
     "searchServices": "Пошук па паслугах ці катэгорыях...",
@@ -576,7 +666,21 @@
     "expandCalendar": "Паказаць увесь месяц",
     "collapseCalendar": "Згарнуць",
     "limitReached": "Майстар часова не прымае онлайн-запісы: ліміт на гэты месяц дасягнуты.",
-    "bookingError": "Не атрымалася стварыць запіс. Паспрабуйце яшчэ раз."
+    "bookingError": "Не атрымалася стварыць запіс. Паспрабуйце яшчэ раз.",
+    "cancelTitle": "Адмена запісу",
+    "cancelConfirmDesc": "Вы ўпэўненыя, што хочаце адмяніць запіс?",
+    "keepBooking": "Пакінуць запіс",
+    "confirmCancel": "Так, адмяніць",
+    "cancelledTitle": "Запіс адменены",
+    "cancelledDesc": "Ваш запіс паспяхова адменены. Чакаем вас зноў!",
+    "alreadyCancelled": "Запіс ужо адменены",
+    "alreadyCancelledDesc": "Гэты запіс быў адменены раней.",
+    "cancelError": "Спасылка несапраўдная",
+    "cancelErrorDesc": "Запіс не знойдзены або спасылка ўстарэла.",
+    "clientTelegram": "Ваш Telegram (неабавязкова)",
+    "clientTelegramHint": "Для атрымання пацверджання і напаміну",
+    "masterContacts": "Кантакты майстра",
+    "telegramConfirmSent": "✅ Пацверджанне адпраўлена ў Telegram"
   },
   "onboarding": {
     "title": "Сардэчна запрашаем у Ezze!",
@@ -730,7 +834,28 @@
       "limitsSaved": "Ліміты захаваны",
       "on": "Укл",
       "unlimitedNote": "пустое поле = без абмежаванняў"
-    }
+    },
+    "searchUsers": "Пошук па імені або email...",
+    "usersNotFound": "Карыстальнікі не знойдзены",
+    "disableUser": "Адключыць карыстальніка",
+    "enableUser": "Уключыць карыстальніка",
+    "userDisabled": "Карыстальнік адключаны",
+    "userEnabled": "Карыстальнік уключаны",
+    "disabled": "Заблакаваны",
+    "active": "Актыўны",
+    "userIsDisabled": "Доступ заблакаваны — карыстальнік не можа ўвайсці",
+    "exportCSV": "Экспарт у CSV",
+    "exportDone": "Экспарт завершаны",
+    "statsTotal": "Усяго",
+    "statsNewMonth": "Новых за месяц",
+    "statsPaid": "Платных",
+    "statsDisabled": "Адключаных",
+    "colUser": "Карыстальнік",
+    "colPlan": "Тарыф",
+    "colAdmin": "Адмін",
+    "colStatus": "Статус",
+    "limitMetric": "Метрыка",
+    "limitHint": "Адключыце радок, калі гэты ліміт не патрэбны."
   },
   "analytics": {
     "title": "Аналітыка",

@@ -13,7 +13,14 @@
     "analytics": "Аналитика",
     "team": "Команда",
     "teamAnalytics": "Команда статистикасы",
-    "billing": "Подписка"
+    "billing": "Подписка",
+    "newAppointment": "Жаңа жазба",
+    "groupMain": "Негізгі",
+    "groupCatalog": "Каталог",
+    "groupMarketing": "Маркетинг",
+    "groupTeam": "Команда",
+    "promoCodes": "Промокодтар",
+    "reviews": "Пікірлер"
   },
   "feature": {
     "lockedDesc": "{{plan}} жоспарында және одан жоғарыда қол жетімді",
@@ -41,7 +48,8 @@
     "noAccount": "Тіркелгі жоқ па?",
     "hasAccount": "Тіркелгі бар ма?",
     "registrationClosed": "Тіркелу жабылған",
-    "registrationClosedDesc": "Қазіргі уақытта жаңа пайдаланушылардың тіркелуі қолжетімді емес"
+    "registrationClosedDesc": "Қазіргі уақытта жаңа пайдаланушылардың тіркелуі қолжетімді емес",
+    "accountDisabled": "Аккаунтыңыз бұғатталған. Әкімшіге хабарласыңыз."
   },
   "common": {
     "save": "Сақтау",
@@ -84,7 +92,21 @@
     "stockOk": "Барлығы жақсы",
     "title": "Статистика",
     "myStats": "Менің деректерім",
-    "teamStats": "Команда"
+    "teamStats": "Команда",
+    "weekRevenue": "Апталық табыс",
+    "monthRevenue": "Айлық табыс",
+    "onlineBookings": "Онлайн-жазбалар",
+    "thisMonth": "осы айда",
+    "positions": "позиция",
+    "times": "рет",
+    "weekChart": "Апта күндері бойынша жүктеме",
+    "upcoming": "Жақын жазбалар",
+    "allAppointments": "Барлық жазбалар",
+    "noUpcoming": "Жақын жазба жоқ",
+    "topServices": "Үздік қызметтер",
+    "noData": "Деректер жоқ",
+    "showAll": "Барлығын көрсету",
+    "viewTeam": "Команда"
   },
   "team": {
     "title": "Команда",
@@ -144,8 +166,37 @@
       "avgCheck": "Орташа чек",
       "appts": "жазба",
       "ownerOnly": "Команда статистикасы тек иесіне қолжетімді",
-      "dataHint": "Тек «Орындалды» мәртебесіндегі жазбалар есептеледі"
-    }
+      "dataHint": "Тек «Орындалды» мәртебесіндегі жазбалар есептеледі",
+      "revenue": "Табыс",
+      "appointments": "Жазбалар",
+      "clients": "Клиенттер",
+      "perMaster": "Шебер бойынша",
+      "noData": "Деректер жоқ",
+      "totalAppointments": "Барлық жазбалар",
+      "activeMembers": "Белсенді мүшелер"
+    },
+    "createTeamHint": "Шеберлерді бір бренд астында біріктіріңіз",
+    "joinTeamHint": "Шақыру коды арқылы кіріңіз",
+    "inviteExpiredLabel": "Мерзімі өткен",
+    "inviteContactPlaceholder": "Email, телефон немесе @telegram (міндетті емес)",
+    "deleteTeam": "Команданы жою",
+    "deleteTeamConfirm": "Команданы жою керек пе? Барлық мүшелер ажыратылады. Бұл амалды кері қайтаруға болмайды.",
+    "deleteSuccess": "Команда жойылды",
+    "settingsTitle": "Команда параметрлері",
+    "noTeamYet": "Әлі команда жоқ",
+    "createOrJoin": "Команда жасаңыз немесе қосылыңыз",
+    "leave": "Командадан шығу",
+    "slugHint": "Латын әріптері, сандар және сызықша",
+    "inviteTitle": "Шақырулар",
+    "inviteCreate": "Шақыру жасау",
+    "inviteRevoke": "Қайтарып алу",
+    "memberCount": "{{count}} мүше",
+    "removeMemberConfirm": "Мүшені командадан шығару керек пе?",
+    "removedSuccess": "Мүше жойылды",
+    "joinCode": "Кіру коды",
+    "joinCodePlaceholder": "Кодты енгізіңіз...",
+    "join": "Кіру",
+    "joinError": "Қате немесе ескірген код"
   },
   "profile": {
     "subtitle": "Жалпыға ортақ профильді басқару",
@@ -229,7 +280,26 @@
     "qrTelegram": "QR-код (Telegram Mini App)",
     "tgBookingHint": "Telegram ашылады",
     "generating": "Жасалуда...",
-    "generate": "Жасау"
+    "generate": "Жасау",
+    "telegramNotifications": "Telegram хабарландырулары",
+    "telegramConnected": "Telegram қосылды",
+    "telegramConnectedDesc": "Жаңа жазбалар туралы хабарландыру аласыз",
+    "telegramNotConnected": "Telegram қосылмаған",
+    "telegramNotConnectedDesc": "Жаңа жазбалар туралы хабарландыру алу үшін ботты қосыңыз",
+    "telegramConnect": "Telegram ботын қосу",
+    "telegramReconnect": "Ботты қайта қосу",
+    "telegramHint": "Батырманы басыңыз → Telegram ашылады → Start басыңыз",
+    "reminders": "Еске салулар",
+    "remindersDesc": "Telegram арқылы алдағы жазбалар туралы автоматты еске салулар",
+    "remindMaster": "Шеберге еске салу",
+    "remindClient": "Клиентке еске салу",
+    "remindClientHint": "Клиент жазылу кезінде Telegram көрсеткен болса хабарландыру алады",
+    "remindOff": "Өшірілген",
+    "remindBefore": "{{n}} {{unit}} бұрын",
+    "remindHour": "сағат",
+    "remindHours2": "сағат",
+    "remindDay": "күн",
+    "remindDays2": "күн"
   },
   "clients": {
     "subtitle": "Клиенттер базасын басқару",
@@ -304,7 +374,10 @@
     "categoryDeleted": "Санат жойылды",
     "noCategoriesYet": "Санаттар жоқ",
     "sortBy": {
-      "category": "Санат"
+      "category": "Санат",
+      "name": "Атауы бойынша",
+      "price": "Баға бойынша",
+      "duration": "Ұзақтығы бойынша"
     },
     "saveThenMaterials": "Алдымен қызметті сақтаңыз, содан кейін материалдарды қосуға болады",
     "goToMain": "Негізгі деректерге",
@@ -312,7 +385,11 @@
     "addMaterialsAfterSaveHint": "Сақтағаннан кейін материалдар қойындысына өту",
     "deletedMultiple": "{{count}} қызмет жойылды",
     "selectedCount": "Таңдалған: {{count}}",
-    "bulkDeleteConfirm": "{{count}} қызметті жою?"
+    "bulkDeleteConfirm": "{{count}} қызметті жою?",
+    "categoryDeleteConfirm": "Санатты жою керек пе?",
+    "search": "Қызметтер бойынша іздеу...",
+    "notFound": "Қызмет табылмады",
+    "status": "Күй"
   },
   "schedule": {
     "subtitle": "Жұмыс уақытын баптау",
@@ -454,7 +531,9 @@
     "tabDiscount": "Жеңілдік",
     "tabPayment": "Төлем",
     "tabNote": "Ескертпе",
-    "tabRecurring": "Қайталау"
+    "tabRecurring": "Қайталау",
+    "selectTimeFirst": "Алдымен уақытты таңдаңыз",
+    "tabDetails": "Толығырақ"
   },
   "calendar": {
     "week": "Апта",
@@ -462,7 +541,17 @@
     "today": "Бүгін",
     "noAppointments": "Жазбалар жоқ",
     "appointmentsCount": "{{count}} жазба",
-    "moreAppts": "тағы"
+    "moreAppts": "тағы",
+    "list": "Тізім",
+    "listSearch": "Клиент, қызмет бойынша іздеу...",
+    "allStatuses": "Барлық күйлер",
+    "dateFrom": "Мерзімінен",
+    "dateTo": "Мерзіміне дейін",
+    "listCount": "Жазбалар: {{count}}",
+    "selectedCount": "Таңдалған: {{count}}",
+    "deleteSelected": "Таңдалғандарды жою",
+    "deleteSelectedConfirm": "{{count}} жазбаны жою керек пе?",
+    "deletedCount": "{{count}} жазба жойылды"
   },
   "settings": {
     "account": "Тіркелгі",
@@ -496,7 +585,8 @@
     "tabProfile": "Аккаунт",
     "tabInterface": "Интерфейс",
     "tabIntegrations": "Интеграциялар",
-    "tabAdmin": "Әкімшілік"
+    "tabAdmin": "Әкімшілік",
+    "tabAppearance": "Интерфейс"
   },
   "catalog": {
     "searchServices": "Қызметтерді немесе санаттарды іздеу...",
@@ -576,7 +666,21 @@
     "expandCalendar": "Толық айды көрсету",
     "collapseCalendar": "Жию",
     "limitReached": "Шебер онлайн-жазылуды уақытша қабылдамайды: осы айдың лимиті толды.",
-    "bookingError": "Жазылу жасалмады. Қайталап көріңіз."
+    "bookingError": "Жазылу жасалмады. Қайталап көріңіз.",
+    "cancelTitle": "Жазбаны бас тарту",
+    "cancelConfirmDesc": "Жазбаны бас тартқыңыз келе ме?",
+    "keepBooking": "Жазбаны қалдыру",
+    "confirmCancel": "Иә, бас тарту",
+    "cancelledTitle": "Жазба бас тартылды",
+    "cancelledDesc": "Жазбаңыз сәтті бас тартылды. Сізді қайта күтеміз!",
+    "alreadyCancelled": "Жазба бұрын бас тартылған",
+    "alreadyCancelledDesc": "Бұл жазба бұрын бас тартылған.",
+    "cancelError": "Сілтеме жарамсыз",
+    "cancelErrorDesc": "Жазба табылмады немесе сілтеме ескірген.",
+    "clientTelegram": "Сіздің Telegram (міндетті емес)",
+    "clientTelegramHint": "Растау және еске салу алу үшін",
+    "masterContacts": "Шебер байланыстары",
+    "telegramConfirmSent": "✅ Растау Telegram-ға жіберілді"
   },
   "onboarding": {
     "title": "Ezze-ге қош келдіңіз!",
@@ -730,7 +834,28 @@
       "limitsSaved": "Шектеулер сақталды",
       "on": "Қосу",
       "unlimitedNote": "бос өріс = шексіз"
-    }
+    },
+    "searchUsers": "Аты немесе email бойынша іздеу...",
+    "usersNotFound": "Пайдаланушылар табылмады",
+    "disableUser": "Пайдаланушыны өшіру",
+    "enableUser": "Пайдаланушыны қосу",
+    "userDisabled": "Пайдаланушы өшірілді",
+    "userEnabled": "Пайдаланушы қосылды",
+    "disabled": "Бұғатталған",
+    "active": "Белсенді",
+    "userIsDisabled": "Кіру бұғатталған — пайдаланушы кіре алмайды",
+    "exportCSV": "CSV-ке экспорт",
+    "exportDone": "Экспорт аяқталды",
+    "statsTotal": "Барлығы",
+    "statsNewMonth": "Айда жаңа",
+    "statsPaid": "Ақылы",
+    "statsDisabled": "Өшірілген",
+    "colUser": "Пайдаланушы",
+    "colPlan": "Жоспар",
+    "colAdmin": "Әкімші",
+    "colStatus": "Күй",
+    "limitMetric": "Метрика",
+    "limitHint": "Бұл шектеу қажет болмаса жолды өшіріңіз."
   },
   "analytics": {
     "title": "Аналитика",

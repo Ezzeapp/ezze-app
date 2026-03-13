@@ -15,7 +15,12 @@
     "teamAnalytics": "Jamoa statistikasi",
     "promoCodes": "Promokodlar",
     "reviews": "Sharhlar",
-    "billing": "Obuna"
+    "billing": "Obuna",
+    "newAppointment": "Yangi yozuv",
+    "groupMain": "Asosiy",
+    "groupCatalog": "Katalog",
+    "groupMarketing": "Marketing",
+    "groupTeam": "Jamoa"
   },
   "feature": {
     "lockedDesc": "{{plan}} rejasida va undan yuqorida mavjud",
@@ -43,7 +48,8 @@
     "noAccount": "Hisob yo'qmi?",
     "hasAccount": "Hisob bormi?",
     "registrationClosed": "Ro'yxatdan o'tish yopiq",
-    "registrationClosedDesc": "Hozirda yangi foydalanuvchilar ro'yxatdan o'ta olmaydi"
+    "registrationClosedDesc": "Hozirda yangi foydalanuvchilar ro'yxatdan o'ta olmaydi",
+    "accountDisabled": "Hisobingiz bloklangan. Administrator bilan bog'laning."
   },
   "common": {
     "save": "Saqlash",
@@ -86,7 +92,21 @@
     "stockOk": "Hammasi yaxshi",
     "title": "Statistika",
     "myStats": "Mening ma'lumotlarim",
-    "teamStats": "Jamoa"
+    "teamStats": "Jamoa",
+    "weekRevenue": "Haftalik daromad",
+    "monthRevenue": "Oylik daromad",
+    "onlineBookings": "Onlayn yozuvlar",
+    "thisMonth": "bu oyda",
+    "positions": "ta",
+    "times": "marta",
+    "weekChart": "Hafta kunlari bo'yicha band bo'lish",
+    "upcoming": "Yaqin yozuvlar",
+    "allAppointments": "Barcha yozuvlar",
+    "noUpcoming": "Yaqin yozuvlar yo'q",
+    "topServices": "Top xizmatlar",
+    "noData": "Ma'lumot yo'q",
+    "showAll": "Barchasini ko'rsatish",
+    "viewTeam": "Jamoa"
   },
   "team": {
     "title": "Jamoa",
@@ -146,8 +166,37 @@
       "avgCheck": "O'rtacha chek",
       "appts": "yozuv",
       "ownerOnly": "Jamoa statistikasi faqat egasiga mavjud",
-      "dataHint": "Faqat «Bajarildi» holati bilan yozuvlar hisoblanadi"
-    }
+      "dataHint": "Faqat «Bajarildi» holati bilan yozuvlar hisoblanadi",
+      "revenue": "Daromad",
+      "appointments": "Yozuvlar",
+      "clients": "Mijozlar",
+      "perMaster": "Har bir master bo'yicha",
+      "noData": "Ma'lumot yo'q",
+      "totalAppointments": "Jami yozuvlar",
+      "activeMembers": "Faol a'zolar"
+    },
+    "createTeamHint": "Masterlarni bitta brend ostida birlashtiring",
+    "joinTeamHint": "Taklif kodi orqali qo'shiling",
+    "inviteExpiredLabel": "Muddati o'tgan",
+    "inviteContactPlaceholder": "Email, telefon yoki @telegram (ixtiyoriy)",
+    "deleteTeam": "Jamoani o'chirish",
+    "deleteTeamConfirm": "Jamoani o'chirish kerakmi? Barcha a'zolar uziladi. Bu amalni qaytarib bo'lmaydi.",
+    "deleteSuccess": "Jamoa o'chirildi",
+    "settingsTitle": "Jamoa sozlamalari",
+    "noTeamYet": "Hali jamoa yo'q",
+    "createOrJoin": "Jamoa yarating yoki qo'shiling",
+    "leave": "Jamoani tark etish",
+    "slugHint": "Lotin harflari, raqamlar va chiziqcha",
+    "inviteTitle": "Takliflar",
+    "inviteCreate": "Taklif yaratish",
+    "inviteRevoke": "Bekor qilish",
+    "memberCount": "{{count}} ta a'zo",
+    "removeMemberConfirm": "A'zoni jamoadan chiqarish kerakmi?",
+    "removedSuccess": "A'zo o'chirildi",
+    "joinCode": "Qo'shilish kodi",
+    "joinCodePlaceholder": "Kodni kiriting...",
+    "join": "Qo'shilish",
+    "joinError": "Noto'g'ri yoki eskirgan kod"
   },
   "profile": {
     "subtitle": "Ommaviy profilingizni boshqaring",
@@ -231,7 +280,26 @@
     "transferResultInventory": "Ombor: +{{added}} yangi, {{replaced}} almashtrildi, {{skipped}} o'tkazib yuborildi",
     "transferResultMaterials": "Xizmat materiallari: {{added}}",
     "notificationEmail": "Bildirishnoma email",
-    "notificationEmailHint": "Ko'rsatilmasa — akkaunt emaili ishlatiladi. Telegram orqali ro'yxatdan o'tgan masterlar uchun foydali"
+    "notificationEmailHint": "Ko'rsatilmasa — akkaunt emaili ishlatiladi. Telegram orqali ro'yxatdan o'tgan masterlar uchun foydali",
+    "telegramNotifications": "Telegram bildirishnomalar",
+    "telegramConnected": "Telegram ulangan",
+    "telegramConnectedDesc": "Yangi yozuvlar haqida bildirishnomalar olasiz",
+    "telegramNotConnected": "Telegram ulanmagan",
+    "telegramNotConnectedDesc": "Yangi yozuvlar haqida bildirishnoma olish uchun botni ulang",
+    "telegramConnect": "Telegram botini ulash",
+    "telegramReconnect": "Botni qayta ulash",
+    "telegramHint": "Tugmani bosing → Telegram ochiladi → Start bosing",
+    "reminders": "Eslatmalar",
+    "remindersDesc": "Telegram orqali kelgusi yozuvlar haqida avtomatik eslatmalar",
+    "remindMaster": "Ustaga eslatma",
+    "remindClient": "Mijozga eslatma",
+    "remindClientHint": "Agar mijoz yozilishda Telegram ko'rsatgan bo'lsa bildirishnoma oladi",
+    "remindOff": "O'chirilgan",
+    "remindBefore": "{{n}} {{unit}} oldin",
+    "remindHour": "soat",
+    "remindHours2": "soat",
+    "remindDay": "kun",
+    "remindDays2": "kun"
   },
   "clients": {
     "subtitle": "Mijozlar bazasini boshqarish",
@@ -306,7 +374,10 @@
     "categoryDeleted": "Kategoriya oʻchirildi",
     "noCategoriesYet": "Kategoriyalar yoʻq",
     "sortBy": {
-      "category": "Kategoriya"
+      "category": "Kategoriya",
+      "name": "Nom bo'yicha",
+      "price": "Narx bo'yicha",
+      "duration": "Davomiylik bo'yicha"
     },
     "saveThenMaterials": "Avval xizmatni saqlang, keyin materiallar qo'shishingiz mumkin",
     "goToMain": "Asosiy ma'lumotlarga",
@@ -314,7 +385,11 @@
     "addMaterialsAfterSaveHint": "Saqlangandan so'ng materiallar bo'limiga o'tish",
     "deletedMultiple": "{{count}} ta xizmat oʻchirildi",
     "selectedCount": "Tanlangan: {{count}}",
-    "bulkDeleteConfirm": "{{count}} ta xizmatni oʻchirish?"
+    "bulkDeleteConfirm": "{{count}} ta xizmatni oʻchirish?",
+    "categoryDeleteConfirm": "Kategoriyani o'chirish kerakmi?",
+    "search": "Xizmatlar bo'yicha qidirish...",
+    "notFound": "Xizmat topilmadi",
+    "status": "Holat"
   },
   "schedule": {
     "subtitle": "Ish vaqtini sozlash",
@@ -456,7 +531,9 @@
     "tabDiscount": "Chegirma",
     "tabPayment": "To'lov",
     "tabNote": "Izoh",
-    "tabRecurring": "Takror"
+    "tabRecurring": "Takror",
+    "selectTimeFirst": "Avval vaqtni tanlang",
+    "tabDetails": "Tafsilotlar"
   },
   "calendar": {
     "week": "Hafta",
@@ -464,7 +541,17 @@
     "today": "Bugun",
     "noAppointments": "Yozuvlar yoʼq",
     "appointmentsCount": "{{count}} yozuv",
-    "moreAppts": "yana"
+    "moreAppts": "yana",
+    "list": "Ro'yxat",
+    "listSearch": "Mijoz, xizmat bo'yicha qidirish...",
+    "allStatuses": "Barcha holatlar",
+    "dateFrom": "Sanadan",
+    "dateTo": "Sanagacha",
+    "listCount": "Yozuvlar: {{count}}",
+    "selectedCount": "Tanlangan: {{count}}",
+    "deleteSelected": "Tanlanganlarni o'chirish",
+    "deleteSelectedConfirm": "{{count}} ta yozuvni o'chirish kerakmi?",
+    "deletedCount": "{{count}} ta yozuv o'chirildi"
   },
   "settings": {
     "account": "Hisob",
@@ -579,7 +666,21 @@
     "expandCalendar": "Butun oyni ko'rsatish",
     "collapseCalendar": "Yig'ish",
     "limitReached": "Usta vaqtincha onlayn yozilishni qabul qilmayapti: bu oylik limit to'ldi.",
-    "bookingError": "Yozilish amalga oshmadi. Qayta urinib ko'ring."
+    "bookingError": "Yozilish amalga oshmadi. Qayta urinib ko'ring.",
+    "cancelTitle": "Yozuvni bekor qilish",
+    "cancelConfirmDesc": "Yozuvni bekor qilmoqchimisiz?",
+    "keepBooking": "Yozuvni saqlash",
+    "confirmCancel": "Ha, bekor qilish",
+    "cancelledTitle": "Yozuv bekor qilindi",
+    "cancelledDesc": "Yozuvingiz muvaffaqiyatli bekor qilindi. Yana kutamiz!",
+    "alreadyCancelled": "Yozuv allaqachon bekor qilingan",
+    "alreadyCancelledDesc": "Bu yozuv avval bekor qilingan.",
+    "cancelError": "Havola yaroqsiz",
+    "cancelErrorDesc": "Yozuv topilmadi yoki havola eskirgan.",
+    "clientTelegram": "Sizning Telegram (ixtiyoriy)",
+    "clientTelegramHint": "Tasdiqlash va eslatma olish uchun",
+    "masterContacts": "Usta kontaktlari",
+    "telegramConfirmSent": "✅ Tasdiqlash Telegram-ga yuborildi"
   },
   "onboarding": {
     "title": "Ezzeʻga xush kelibsiz!",
@@ -834,7 +935,28 @@
     "limitServices": "Xizmatlar",
     "limitAppts": "Yozuvlar/oy",
     "unlimited": "∞",
-    "searchSpecialties": "Faoliyat turlari va mutaxassisliklar boʻyicha qidirish..."
+    "searchSpecialties": "Faoliyat turlari va mutaxassisliklar boʻyicha qidirish...",
+    "searchUsers": "Ism yoki email bo'yicha qidirish...",
+    "usersNotFound": "Foydalanuvchilar topilmadi",
+    "disableUser": "Foydalanuvchini o'chirish",
+    "enableUser": "Foydalanuvchini yoqish",
+    "userDisabled": "Foydalanuvchi o'chirildi",
+    "userEnabled": "Foydalanuvchi yoqildi",
+    "disabled": "Bloklangan",
+    "active": "Faol",
+    "userIsDisabled": "Kirish bloklangan — foydalanuvchi kira olmaydi",
+    "exportCSV": "CSV ga eksport",
+    "exportDone": "Eksport yakunlandi",
+    "statsTotal": "Jami",
+    "statsNewMonth": "Oyda yangi",
+    "statsPaid": "Pullik",
+    "statsDisabled": "O'chirilgan",
+    "colUser": "Foydalanuvchi",
+    "colPlan": "Tarif",
+    "colAdmin": "Admin",
+    "colStatus": "Holat",
+    "limitMetric": "Ko'rsatkich",
+    "limitHint": "Agar bu limit kerak bo'lmasa, qatorni o'chiring."
   },
   "analytics": {
     "title": "Tahlil",

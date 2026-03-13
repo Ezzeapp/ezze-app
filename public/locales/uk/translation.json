@@ -13,7 +13,14 @@
     "analytics": "Аналітика",
     "team": "Команда",
     "teamAnalytics": "Статистика команди",
-    "billing": "Подписка"
+    "billing": "Подписка",
+    "newAppointment": "Новий запис",
+    "groupMain": "Основне",
+    "groupCatalog": "Каталог",
+    "groupMarketing": "Маркетинг",
+    "groupTeam": "Команда",
+    "promoCodes": "Промокоди",
+    "reviews": "Відгуки"
   },
   "feature": {
     "lockedDesc": "Доступно на плані {{plan}} і вище",
@@ -41,7 +48,8 @@
     "noAccount": "Немає акаунту?",
     "hasAccount": "Вже є акаунт?",
     "registrationClosed": "Реєстрація закрита",
-    "registrationClosedDesc": "Наразі реєстрація нових користувачів недоступна"
+    "registrationClosedDesc": "Наразі реєстрація нових користувачів недоступна",
+    "accountDisabled": "Ваш акаунт заблокований. Зверніться до адміністратора."
   },
   "common": {
     "save": "Зберегти",
@@ -84,7 +92,21 @@
     "stockOk": "Все гаразд",
     "title": "Статистика",
     "myStats": "Мої дані",
-    "teamStats": "Команда"
+    "teamStats": "Команда",
+    "weekRevenue": "Виручка за тиждень",
+    "monthRevenue": "Виручка за місяць",
+    "onlineBookings": "Онлайн-записи",
+    "thisMonth": "у цьому місяці",
+    "positions": "позицій",
+    "times": "разів",
+    "weekChart": "Зайнятість по днях тижня",
+    "upcoming": "Найближчі записи",
+    "allAppointments": "Всі записи",
+    "noUpcoming": "Немає найближчих записів",
+    "topServices": "Топ послуг",
+    "noData": "Даних поки немає",
+    "showAll": "Показати все",
+    "viewTeam": "Команда"
   },
   "team": {
     "title": "Команда",
@@ -144,8 +166,37 @@
       "avgCheck": "Середній чек",
       "appts": "записів",
       "ownerOnly": "Статистика команди доступна лише власнику",
-      "dataHint": "Враховуються лише записи зі статусом «Виконано»"
-    }
+      "dataHint": "Враховуються лише записи зі статусом «Виконано»",
+      "revenue": "Виручка",
+      "appointments": "Записи",
+      "clients": "Клієнти",
+      "perMaster": "По майстру",
+      "noData": "Даних немає",
+      "totalAppointments": "Всі записи",
+      "activeMembers": "Активні учасники"
+    },
+    "createTeamHint": "Об'єднайте майстрів під одним брендом",
+    "joinTeamHint": "Приєднайтесь за кодом запрошення",
+    "inviteExpiredLabel": "Термін сплив",
+    "inviteContactPlaceholder": "Email, телефон або @telegram (необов'язково)",
+    "deleteTeam": "Видалити команду",
+    "deleteTeamConfirm": "Видалити команду? Усі учасники будуть від'єднані. Цю дію неможливо скасувати.",
+    "deleteSuccess": "Команду видалено",
+    "settingsTitle": "Налаштування команди",
+    "noTeamYet": "Команди поки немає",
+    "createOrJoin": "Створіть або приєднайтесь до команди",
+    "leave": "Покинути команду",
+    "slugHint": "Латинські літери, цифри та дефіс",
+    "inviteTitle": "Запрошення",
+    "inviteCreate": "Створити запрошення",
+    "inviteRevoke": "Відкликати",
+    "memberCount": "{{count}} учасників",
+    "removeMemberConfirm": "Видалити учасника з команди?",
+    "removedSuccess": "Учасника видалено",
+    "joinCode": "Код входу",
+    "joinCodePlaceholder": "Введіть код...",
+    "join": "Приєднатися",
+    "joinError": "Неправильний або застарілий код"
   },
   "profile": {
     "subtitle": "Управління публічним профілем",
@@ -229,7 +280,26 @@
     "qrTelegram": "QR-код (Telegram Mini App)",
     "tgBookingHint": "Вiдкривається Telegram",
     "generating": "Генерується...",
-    "generate": "Згенерувати"
+    "generate": "Згенерувати",
+    "telegramNotifications": "Сповіщення Telegram",
+    "telegramConnected": "Telegram підключено",
+    "telegramConnectedDesc": "Ви отримуватимете сповіщення про нові записи",
+    "telegramNotConnected": "Telegram не підключено",
+    "telegramNotConnectedDesc": "Підключіть бота для отримання сповіщень про нові записи",
+    "telegramConnect": "Підключити Telegram бот",
+    "telegramReconnect": "Перепідключити бота",
+    "telegramHint": "Натисніть кнопку → відкриється Telegram → натисніть Start",
+    "reminders": "Нагадування",
+    "remindersDesc": "Автоматичні нагадування про майбутні записи через Telegram",
+    "remindMaster": "Нагадування майстру",
+    "remindClient": "Нагадування клієнту",
+    "remindClientHint": "Клієнт отримає сповіщення, якщо вказав Telegram при записі",
+    "remindOff": "Вимкнено",
+    "remindBefore": "За {{n}} {{unit}}",
+    "remindHour": "годину",
+    "remindHours2": "години",
+    "remindDay": "день",
+    "remindDays2": "дні"
   },
   "clients": {
     "subtitle": "Управління клієнтською базою",
@@ -304,7 +374,10 @@
     "categoryDeleted": "Категорію видалено",
     "noCategoriesYet": "Категорій поки немає",
     "sortBy": {
-      "category": "Категорія"
+      "category": "Категорія",
+      "name": "За назвою",
+      "price": "За ціною",
+      "duration": "За тривалістю"
     },
     "saveThenMaterials": "Спочатку збережіть послугу, потім можна додати матеріали",
     "goToMain": "До основних даних",
@@ -312,7 +385,11 @@
     "addMaterialsAfterSaveHint": "Після збереження перейти на вкладку матеріалів",
     "deletedMultiple": "Видалено послуг: {{count}}",
     "selectedCount": "Вибрано: {{count}}",
-    "bulkDeleteConfirm": "Видалити {{count}} послуг?"
+    "bulkDeleteConfirm": "Видалити {{count}} послуг?",
+    "categoryDeleteConfirm": "Видалити категорію?",
+    "search": "Пошук за послугами...",
+    "notFound": "Послугу не знайдено",
+    "status": "Статус"
   },
   "schedule": {
     "subtitle": "Налаштування робочих годин",
@@ -454,7 +531,9 @@
     "tabDiscount": "Знижка",
     "tabPayment": "Оплата",
     "tabNote": "Нотатка",
-    "tabRecurring": "Повтор"
+    "tabRecurring": "Повтор",
+    "selectTimeFirst": "Спочатку оберіть час",
+    "tabDetails": "Деталі"
   },
   "calendar": {
     "week": "Тиждень",
@@ -462,7 +541,17 @@
     "today": "Сьогодні",
     "noAppointments": "Записів немає",
     "appointmentsCount": "{{count}} запис",
-    "moreAppts": "ще"
+    "moreAppts": "ще",
+    "list": "Список",
+    "listSearch": "Пошук за клієнтом, послугою...",
+    "allStatuses": "Всі статуси",
+    "dateFrom": "З дати",
+    "dateTo": "По дату",
+    "listCount": "Записів: {{count}}",
+    "selectedCount": "Вибрано: {{count}}",
+    "deleteSelected": "Видалити вибрані",
+    "deleteSelectedConfirm": "Видалити {{count}} записів?",
+    "deletedCount": "Видалено {{count}} записів"
   },
   "settings": {
     "account": "Акаунт",
@@ -496,7 +585,8 @@
     "tabProfile": "Акаунт",
     "tabInterface": "Інтерфейс",
     "tabIntegrations": "Інтеграції",
-    "tabAdmin": "Адміністрування"
+    "tabAdmin": "Адміністрування",
+    "tabAppearance": "Інтерфейс"
   },
   "catalog": {
     "searchServices": "Пошук за послугами або категоріями...",
@@ -576,7 +666,21 @@
     "expandCalendar": "Показати весь місяць",
     "collapseCalendar": "Згорнути",
     "limitReached": "Майстер тимчасово не приймає онлайн-записи: ліміт на цей місяць вичерпано.",
-    "bookingError": "Не вдалося створити запис. Спробуйте ще раз."
+    "bookingError": "Не вдалося створити запис. Спробуйте ще раз.",
+    "cancelTitle": "Скасування запису",
+    "cancelConfirmDesc": "Ви впевнені, що хочете скасувати запис?",
+    "keepBooking": "Залишити запис",
+    "confirmCancel": "Так, скасувати",
+    "cancelledTitle": "Запис скасовано",
+    "cancelledDesc": "Ваш запис успішно скасовано. Чекаємо вас знову!",
+    "alreadyCancelled": "Запис вже скасовано",
+    "alreadyCancelledDesc": "Цей запис був скасований раніше.",
+    "cancelError": "Посилання недійсне",
+    "cancelErrorDesc": "Запис не знайдено або посилання застаріло.",
+    "clientTelegram": "Ваш Telegram (необов'язково)",
+    "clientTelegramHint": "Для отримання підтвердження та нагадування",
+    "masterContacts": "Контакти майстра",
+    "telegramConfirmSent": "✅ Підтвердження надіслано у Telegram"
   },
   "onboarding": {
     "title": "Ласкаво просимо до Ezze!",
@@ -784,7 +888,28 @@
     "deleteIrreversible": "Всi данi будуть видаленi безповоротно.",
     "deleteUserDetails": "Користувач: {{name}} ({{email}})",
     "deleting": "Видалення...",
-    "nothingFound": "Нiчого не знайдено"
+    "nothingFound": "Нiчого не знайдено",
+    "searchUsers": "Пошук за ім'ям або email...",
+    "usersNotFound": "Користувачів не знайдено",
+    "disableUser": "Вимкнути користувача",
+    "enableUser": "Увімкнути користувача",
+    "userDisabled": "Користувача вимкнено",
+    "userEnabled": "Користувача увімкнено",
+    "disabled": "Заблокований",
+    "active": "Активний",
+    "userIsDisabled": "Доступ заблоковано — користувач не може увійти",
+    "exportCSV": "Експорт у CSV",
+    "exportDone": "Експорт завершено",
+    "statsTotal": "Всього",
+    "statsNewMonth": "Нових за місяць",
+    "statsPaid": "Платних",
+    "statsDisabled": "Вимкнених",
+    "colUser": "Користувач",
+    "colPlan": "Тариф",
+    "colAdmin": "Адмін",
+    "colStatus": "Статус",
+    "limitMetric": "Метрика",
+    "limitHint": "Вимкніть рядок, якщо цей ліміт не потрібен."
   },
   "analytics": {
     "title": "Аналітика",
