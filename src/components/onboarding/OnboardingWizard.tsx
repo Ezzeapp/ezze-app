@@ -382,12 +382,8 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
               <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="sr-only" onChange={onAvatarChange} />
 
               <div className="space-y-1.5">
-                <Label className="text-xs">{t('auth.name')}</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('auth.namePlaceholder')} autoFocus />
-              </div>
-              <div className="space-y-1.5">
                 <Label className="text-xs">{t('profile.phone')}</Label>
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998 99 000-00-00" type="tel" />
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998 99 000-00-00" type="tel" autoFocus />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t('profile.city')}</Label>
