@@ -735,26 +735,6 @@ export function ProfilePage() {
               <Input placeholder="my-studio" {...register('booking_slug')} />
               {errors.booking_slug && <p className="text-xs text-destructive">{errors.booking_slug.message}</p>}
             </div>
-            {isPublic && (
-              <div className="p-3 rounded-lg bg-muted">
-                <p className="text-xs text-muted-foreground mb-2">{t('profile.yourLink')}</p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs break-all">{bookingUrl}</code>
-                  <Button type="button" size="icon" variant="ghost" onClick={copyBookingLink}>
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
-                  <a
-                    href={bookingUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors text-muted-foreground"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                </div>
-              </div>
-            )}
-
             {/* QR-коды для клиентов */}
             {isPublic && (
               <div className="space-y-3">
@@ -790,6 +770,14 @@ export function ProfilePage() {
                           className="inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-md border text-xs hover:bg-accent transition-colors whitespace-nowrap"
                         >
                           ↓ PNG
+                        </a>
+                        <a
+                          href={bookingUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-md border hover:bg-accent transition-colors text-muted-foreground"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
                         </a>
                       </div>
                     </div>
