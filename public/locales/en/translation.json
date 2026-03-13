@@ -1100,18 +1100,18 @@
       "expired": "Expired"
     },
     "feat": {
-      "clients50": "Up to 50 clients",
-      "clientsUnlimited": "Unlimited clients",
-      "appts100": "Up to 100 appointments/month",
-      "apptsUnlimited": "Unlimited appointments",
       "telegram": "Telegram notifications",
       "email": "Email notifications",
-      "team": "Team management",
       "analytics": "Advanced analytics",
+      "team": "Team management",
       "support": "Priority support",
       "clientsLimit": "Up to {{limit}} clients",
+      "clientsUnlimited": "Unlimited clients",
       "servicesLimit": "Up to {{limit}} services",
-      "apptsLimit": "Up to {{limit}} appointments/month"
+      "apptsLimit": "Up to {{limit}} appointments/month",
+      "apptsUnlimited": "Unlimited appointments",
+      "clients50": "Up to 50 clients",
+      "appts100": "Up to 100 appointments/month"
     },
     "payDialog": {
       "title": "Select payment method",

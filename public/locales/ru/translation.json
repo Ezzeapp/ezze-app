@@ -1100,18 +1100,18 @@
       "expired": "Истекла"
     },
     "feat": {
-      "clients50": "До 50 клиентов",
-      "clientsUnlimited": "Неограниченно клиентов",
-      "appts100": "До 100 записей в месяц",
-      "apptsUnlimited": "Неограниченно записей",
       "telegram": "Telegram-уведомления",
       "email": "Email-уведомления",
-      "team": "Управление командой",
       "analytics": "Расширенная аналитика",
+      "team": "Управление командой",
       "support": "Приоритетная поддержка",
       "clientsLimit": "До {{limit}} клиентов",
+      "clientsUnlimited": "Неограниченно клиентов",
       "servicesLimit": "До {{limit}} услуг",
-      "apptsLimit": "До {{limit}} записей в месяц"
+      "apptsLimit": "До {{limit}} записей в месяц",
+      "apptsUnlimited": "Неограниченно записей",
+      "clients50": "До 50 клиентов",
+      "appts100": "До 100 записей в месяц"
     },
     "payDialog": {
       "title": "Выбор способа оплаты",
