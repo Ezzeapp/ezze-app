@@ -905,7 +905,9 @@
     },
     "searchSpecialties": "Mutaxassisliklar bo'yicha qidirish...",
     "statTypes": "faoliyat turi",
-    "statSpecialties": "mutaxassislik"
+    "statSpecialties": "mutaxassislik",
+    "statCategories": "kategoriya",
+    "statServices": "xizmat"
   },
   "analytics": {
     "title": "Tahlil",

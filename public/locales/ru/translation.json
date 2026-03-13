@@ -820,7 +820,9 @@
     },
     "searchSpecialties": "Поиск по специальностям...",
     "statTypes": "видов деятельности",
-    "statSpecialties": "специальностей"
+    "statSpecialties": "специальностей",
+    "statCategories": "категорий",
+    "statServices": "услуг"
   },
   "catalog": {
     "searchServices": "Поиск по услугам или категориям...",

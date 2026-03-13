@@ -905,7 +905,9 @@
     },
     "searchSpecialties": "Ҷустуҷӯ аз рӯи ихтисосҳо...",
     "statTypes": "намуди фаолият",
-    "statSpecialties": "ихтисос"
+    "statSpecialties": "ихтисос",
+    "statCategories": "гурӯҳ",
+    "statServices": "хизмат"
   },
   "analytics": {
     "title": "Таҳлил",

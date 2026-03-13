@@ -921,7 +921,9 @@
     },
     "searchSpecialties": "Search specialties...",
     "statTypes": "activity types",
-    "statSpecialties": "specialties"
+    "statSpecialties": "specialties",
+    "statCategories": "categories",
+    "statServices": "services"
   },
   "analytics": {
     "title": "Analytics",

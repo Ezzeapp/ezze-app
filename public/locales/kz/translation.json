@@ -905,7 +905,9 @@
     },
     "searchSpecialties": "Мамандықтар бойынша іздеу...",
     "statTypes": "қызмет түрі",
-    "statSpecialties": "мамандық"
+    "statSpecialties": "мамандық",
+    "statCategories": "санат",
+    "statServices": "қызмет"
   },
   "analytics": {
     "title": "Аналитика",

@@ -905,7 +905,9 @@
     },
     "searchSpecialties": "Пошук за спеціальностями...",
     "statTypes": "видів діяльності",
-    "statSpecialties": "спеціальностей"
+    "statSpecialties": "спеціальностей",
+    "statCategories": "категорій",
+    "statServices": "послуг"
   },
   "analytics": {
     "title": "Аналітика",

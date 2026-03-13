@@ -905,7 +905,9 @@
     },
     "searchSpecialties": "Адистиктер боюнча издөө...",
     "statTypes": "иш түрү",
-    "statSpecialties": "адистик"
+    "statSpecialties": "адистик",
+    "statCategories": "категория",
+    "statServices": "кызмат"
   },
   "analytics": {
     "title": "Аналитика",

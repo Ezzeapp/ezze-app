@@ -33,6 +33,12 @@ const EMPTY_SVC_FORM = { name: '', duration_min: '', price: '' }
 export function AdminGlobalServicesDialog({ open, onClose }: Props) {
   const { t } = useTranslation()
   const [tab, setTab] = useState<Tab>('browse')
+  const { data: allServices } = useGlobalServices()
+
+  const totalCategories = useMemo(() => {
+    if (!allServices) return 0
+    return new Set(allServices.map((s) => s.category)).size
+  }, [allServices])
 
   return (
     <>
@@ -43,6 +49,11 @@ export function AdminGlobalServicesDialog({ open, onClose }: Props) {
               <Scissors className="h-5 w-5" />
               {t('admin.globalServicesTitle')}
             </DialogTitle>
+            {allServices && (
+              <p className="text-sm text-muted-foreground">
+                {totalCategories} {t('admin.statCategories')} · {allServices.length} {t('admin.statServices')}
+              </p>
+            )}
           </DialogHeader>
 
           {/* Tabs */}

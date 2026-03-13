@@ -905,7 +905,9 @@
     },
     "searchSpecialties": "Hünärler boyınsha izlew...",
     "statTypes": "is túri",
-    "statSpecialties": "hünär"
+    "statSpecialties": "hünär",
+    "statCategories": "kategoriya",
+    "statServices": "xizmet"
   },
   "analytics": {
     "title": "Талқылаў",
