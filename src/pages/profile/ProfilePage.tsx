@@ -161,7 +161,7 @@ export function ProfilePage() {
     setDeletingAvatar(true)
     try {
       await upsert.mutateAsync({ id: profile.id, data: { _avatarFile: null } })
-      toast.success('Фото удалено')
+      toast.success(t('profile.photoDeleted'))
     } catch {
       toast.error(t('common.deleteError'))
     } finally {
@@ -243,7 +243,7 @@ export function ProfilePage() {
       const { text } = await resp.json()
       if (text) setValue('bio', text, { shouldDirty: true })
     } catch {
-      toast.error('Не удалось сгенерировать текст')
+      toast.error(t('profile.generateFailed'))
     } finally {
       setGeneratingBio(false)
     }
@@ -391,7 +391,7 @@ export function ProfilePage() {
             <Dialog open={photoModalOpen} onOpenChange={setPhotoModalOpen}>
               <DialogContent className="max-w-xs">
                 <DialogHeader>
-                  <DialogTitle>Фото профиля</DialogTitle>
+                  <DialogTitle>{t('profile.photoTitle')}</DialogTitle>
                 </DialogHeader>
                 <div className="flex flex-col gap-2 pt-1">
                   <Button
@@ -401,7 +401,7 @@ export function ProfilePage() {
                     onClick={() => { setPhotoModalOpen(false); setTimeout(() => cameraInputRef.current?.click(), 100) }}
                   >
                     <Camera className="h-4 w-4" />
-                    Сделать фото
+                    {t('profile.takePhoto')}
                   </Button>
                   <Button
                     type="button"
@@ -410,7 +410,7 @@ export function ProfilePage() {
                     onClick={() => { setPhotoModalOpen(false); setTimeout(() => fileInputRef.current?.click(), 100) }}
                   >
                     <ImagePlus className="h-4 w-4" />
-                    Выбрать из галереи
+                    {t('profile.chooseGallery')}
                   </Button>
                   {(avatarPreview || (profile?.avatar && !deletingAvatar)) && (
                     <Button
@@ -420,7 +420,7 @@ export function ProfilePage() {
                       onClick={handleDeleteAvatar}
                     >
                       <Trash2 className="h-4 w-4" />
-                      Удалить фото
+                      {t('profile.deletePhotoBtn')}
                     </Button>
                   )}
                 </div>
@@ -561,7 +561,7 @@ export function ProfilePage() {
                     disabled={generatingBio}
                   >
                     <Sparkles className="h-3 w-3 mr-1" />
-                    {generatingBio ? 'Генерирую...' : 'Сгенерировать'}
+                    {generatingBio ? t('profile.generating') : t('profile.generate')}
                   </Button>
                 )}
               </div>
@@ -647,11 +647,11 @@ export function ProfilePage() {
                 {profile?.tg_chat_id ? (
                   <p className="text-xs text-emerald-600 flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3 shrink-0" />
-                    Подключён через бот · обновляется автоматически
+                    {t('profile.tgBotConnected')}
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    Введите @username или подключите бот в разделе «Настройки»
+                    {t('profile.tgEnterUsername')}
                   </p>
                 )}
               </div>
@@ -700,7 +700,7 @@ export function ProfilePage() {
             </div>
             {/* Тема оформления */}
             <div className="space-y-2">
-              <Label>Тема оформления</Label>
+              <Label>{t('profile.theme')}</Label>
               <div className="flex gap-2 flex-wrap">
                 {BOOKING_THEMES.map(theme => (
                   <button
@@ -754,12 +754,12 @@ export function ProfilePage() {
                 <div className="p-3 rounded-lg border bg-muted/30 space-y-3">
                   <div className="flex items-center gap-2">
                     <QrCode className="h-4 w-4 text-primary" />
-                    <p className="text-xs font-medium">QR-код для бронирования (веб)</p>
+                    <p className="text-xs font-medium">{t('profile.qrWeb')}</p>
                   </div>
                   <div className="flex gap-3 items-center">
                     <img
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(bookingUrl)}`}
-                      alt="QR-код для записи"
+                      alt={t('profile.qrAlt')}
                       className="h-24 w-24 rounded-lg border bg-white shrink-0"
                     />
                     <div className="flex-1 space-y-2">
@@ -770,10 +770,10 @@ export function ProfilePage() {
                           size="sm"
                           variant="outline"
                           className="flex-1 text-xs"
-                          onClick={() => { navigator.clipboard.writeText(bookingUrl); toast.success('Ссылка скопирована') }}
+                          onClick={() => { navigator.clipboard.writeText(bookingUrl); toast.success(t('profile.linkCopied')) }}
                         >
                           <Copy className="h-3 w-3 mr-1" />
-                          Копировать
+                          {t('profile.copy')}
                         </Button>
                         <a
                           href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(bookingUrl)}&download=1`}
@@ -792,7 +792,7 @@ export function ProfilePage() {
                 <div className="p-3 rounded-lg border bg-[#2AABEE]/5 border-[#2AABEE]/20 space-y-3">
                   <div className="flex items-center gap-2">
                     <QrCode className="h-4 w-4 text-[#2AABEE]" />
-                    <p className="text-xs font-medium text-[#2AABEE]">QR-код (Telegram Mini App)</p>
+                    <p className="text-xs font-medium text-[#2AABEE]">{t('profile.qrTelegram')}</p>
                   </div>
                   <div className="flex gap-3 items-center">
                     <img
@@ -808,10 +808,10 @@ export function ProfilePage() {
                           size="sm"
                           variant="outline"
                           className="flex-1 text-xs"
-                          onClick={() => { navigator.clipboard.writeText(tgBookingUrl); toast.success('Ссылка скопирована') }}
+                          onClick={() => { navigator.clipboard.writeText(tgBookingUrl); toast.success(t('profile.linkCopied')) }}
                         >
                           <Copy className="h-3 w-3 mr-1" />
-                          Копировать
+                          {t('profile.copy')}
                         </Button>
                         <a
                           href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(tgBookingUrl)}&download=1`}
@@ -823,7 +823,7 @@ export function ProfilePage() {
                         </a>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Открывается Telegram → бронирование
+                        {t('profile.tgBookingHint')}
                       </p>
                     </div>
                   </div>

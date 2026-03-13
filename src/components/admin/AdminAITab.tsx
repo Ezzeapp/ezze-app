@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Bot, Eye, EyeOff, ExternalLink, Sparkles, MessageSquare, BarChart2 } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
@@ -17,38 +18,38 @@ const PROVIDERS = [
   { value: 'gemini',    label: 'Google Gemini' },
   { value: 'deepseek',  label: 'DeepSeek 🇨🇳' },
   { value: 'qwen',      label: 'Qwen / Alibaba 🇨🇳' },
-  { value: 'custom',    label: 'Другой (OpenAI-совместимый)' },
+  { value: 'custom',    label: 'custom' },
 ]
 
 const PROVIDER_MODELS: Record<string, Array<{ value: string; label: string; desc: string }>> = {
   anthropic: [
-    { value: 'claude-haiku-4-5',          label: 'Claude Haiku 4.5',   desc: 'Быстрая · дешёвая (рекомендуется)' },
-    { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku',   desc: 'Быстрая' },
-    { value: 'claude-sonnet-4-5',          label: 'Claude Sonnet 4.5',  desc: 'Сбалансированная' },
-    { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet', desc: 'Умная' },
-    { value: 'claude-opus-4-5',            label: 'Claude Opus 4.5',    desc: 'Самая умная · дорогая' },
+    { value: 'claude-haiku-4-5',          label: 'Claude Haiku 4.5',   desc: 'admin.ai.modelDesc.fastCheapRec' },
+    { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku',   desc: 'admin.ai.modelDesc.fast' },
+    { value: 'claude-sonnet-4-5',          label: 'Claude Sonnet 4.5',  desc: 'admin.ai.modelDesc.balanced' },
+    { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet', desc: 'admin.ai.modelDesc.smart' },
+    { value: 'claude-opus-4-5',            label: 'Claude Opus 4.5',    desc: 'admin.ai.modelDesc.smartestExpensive' },
   ],
   openai: [
-    { value: 'gpt-4o-mini',   label: 'GPT-4o mini',   desc: 'Быстрая · дешёвая (рекомендуется)' },
-    { value: 'gpt-4o',        label: 'GPT-4o',         desc: 'Умная · многофункциональная' },
-    { value: 'gpt-4-turbo',   label: 'GPT-4 Turbo',    desc: 'Мощная' },
-    { value: 'o3-mini',       label: 'o3-mini',         desc: 'Логика и рассуждения' },
+    { value: 'gpt-4o-mini',   label: 'GPT-4o mini',   desc: 'admin.ai.modelDesc.fastCheapRec' },
+    { value: 'gpt-4o',        label: 'GPT-4o',         desc: 'admin.ai.modelDesc.smartVersatile' },
+    { value: 'gpt-4-turbo',   label: 'GPT-4 Turbo',    desc: 'admin.ai.modelDesc.powerful' },
+    { value: 'o3-mini',       label: 'o3-mini',         desc: 'admin.ai.modelDesc.logicReasoning' },
   ],
   gemini: [
-    { value: 'gemini-2.0-flash',     label: 'Gemini 2.0 Flash',     desc: 'Быстрая (рекомендуется)' },
-    { value: 'gemini-1.5-flash',     label: 'Gemini 1.5 Flash',     desc: 'Экономичная' },
-    { value: 'gemini-1.5-pro',       label: 'Gemini 1.5 Pro',       desc: 'Умная · большой контекст' },
-    { value: 'gemini-2.0-pro-exp',   label: 'Gemini 2.0 Pro (exp)', desc: 'Самая умная' },
+    { value: 'gemini-2.0-flash',     label: 'Gemini 2.0 Flash',     desc: 'admin.ai.modelDesc.fastRec' },
+    { value: 'gemini-1.5-flash',     label: 'Gemini 1.5 Flash',     desc: 'admin.ai.modelDesc.economical' },
+    { value: 'gemini-1.5-pro',       label: 'Gemini 1.5 Pro',       desc: 'admin.ai.modelDesc.smartBigContext' },
+    { value: 'gemini-2.0-pro-exp',   label: 'Gemini 2.0 Pro (exp)', desc: 'admin.ai.modelDesc.smartest' },
   ],
   deepseek: [
-    { value: 'deepseek-chat',     label: 'DeepSeek Chat',     desc: 'Общение · дешёвая (рекомендуется)' },
-    { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner', desc: 'Сложные задачи · reasoning' },
+    { value: 'deepseek-chat',     label: 'DeepSeek Chat',     desc: 'admin.ai.modelDesc.chatCheapRec' },
+    { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner', desc: 'admin.ai.modelDesc.complexReasoning' },
   ],
   qwen: [
-    { value: 'qwen-plus',              label: 'Qwen Plus',         desc: 'Сбалансированная (рекомендуется)' },
-    { value: 'qwen-turbo',             label: 'Qwen Turbo',        desc: 'Быстрая · дешёвая' },
-    { value: 'qwen-max',               label: 'Qwen Max',          desc: 'Самая умная' },
-    { value: 'qwen2.5-72b-instruct',   label: 'Qwen 2.5 72B',      desc: 'Open-source · мощная' },
+    { value: 'qwen-plus',              label: 'Qwen Plus',         desc: 'admin.ai.modelDesc.balancedRec' },
+    { value: 'qwen-turbo',             label: 'Qwen Turbo',        desc: 'admin.ai.modelDesc.fastCheap' },
+    { value: 'qwen-max',               label: 'Qwen Max',          desc: 'admin.ai.modelDesc.smartest' },
+    { value: 'qwen2.5-72b-instruct',   label: 'Qwen 2.5 72B',      desc: 'admin.ai.modelDesc.opensourcePowerful' },
   ],
   custom: [],
 }
@@ -80,12 +81,13 @@ const KEY_PLACEHOLDERS: Record<string, string> = {
   gemini:    'AIza...',
   deepseek:  'sk-...',
   qwen:      'sk-...',
-  custom:    'API ключ',
+  custom:    '',
 }
 
 // ── Компонент ────────────────────────────────────────────────────────────────
 
 export function AdminAITab() {
+  const { t } = useTranslation()
   const { data: config, isLoading } = useAIConfig()
   const update = useUpdateAIConfig()
   const [form, setForm] = useState<AIConfig | null>(null)
@@ -104,9 +106,9 @@ export function AdminAITab() {
     try {
       await update.mutateAsync(current)
       setForm(null)
-      toast.success('Настройки ИИ сохранены')
+      toast.success(t('admin.ai.saved'))
     } catch {
-      toast.error('Ошибка сохранения')
+      toast.error(t('common.saveError'))
     }
   }
 
@@ -133,7 +135,7 @@ export function AdminAITab() {
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted-foreground">
-        Настройки ИИ-интеграции. Ключ и модель применяются ко всем ИИ-функциям платформы.
+        {t('admin.ai.desc')}
       </p>
 
       {/* Глобальный тоггл */}
@@ -147,8 +149,8 @@ export function AdminAITab() {
             <Bot className={`h-4 w-4 ${current?.enabled ? 'text-purple-600' : 'text-muted-foreground'}`} />
           </div>
           <div>
-            <p className="text-sm font-semibold">ИИ-функции включены</p>
-            <p className="text-xs text-muted-foreground">Генерация текстов, анализ клиентов, Telegram-бот</p>
+            <p className="text-sm font-semibold">{t('admin.ai.enabled')}</p>
+            <p className="text-xs text-muted-foreground">{t('admin.ai.enabledDesc')}</p>
           </div>
         </div>
         <Switch
@@ -162,14 +164,16 @@ export function AdminAITab() {
 
         {/* Провайдер */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Провайдер</Label>
+          <Label className="text-sm font-medium">{t('admin.ai.provider')}</Label>
           <Select value={provider} onValueChange={handleProviderChange}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {PROVIDERS.map(p => (
-                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                <SelectItem key={p.value} value={p.value}>
+                  {p.value === 'custom' ? t('admin.ai.customProvider') : p.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -177,13 +181,13 @@ export function AdminAITab() {
 
         {/* API ключ */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">API-ключ {providerLabel}</Label>
+          <Label className="text-sm font-medium">{t('admin.ai.apiKey')} {providerLabel}</Label>
           <div className="flex gap-2">
             <Input
               type={showKey ? 'text' : 'password'}
               value={current?.api_key ?? ''}
               onChange={e => set({ api_key: e.target.value })}
-              placeholder={KEY_PLACEHOLDERS[provider] ?? 'API ключ'}
+              placeholder={KEY_PLACEHOLDERS[provider] || t('admin.ai.apiKeyPlaceholder')}
               className="font-mono text-sm"
             />
             <Button
@@ -198,7 +202,7 @@ export function AdminAITab() {
           </div>
           {keyLink?.url && (
             <p className="text-xs text-muted-foreground flex items-center gap-1">
-              Получить на&nbsp;
+              {t('admin.ai.getKeyAt')}&nbsp;
               <a
                 href={keyLink.url}
                 target="_blank"
@@ -223,19 +227,19 @@ export function AdminAITab() {
               className="font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              OpenAI-совместимый API. URL без trailing slash и без /chat/completions
+              {t('admin.ai.baseUrlHint')}
             </p>
           </div>
         )}
 
         {/* Модель */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Модель</Label>
+          <Label className="text-sm font-medium">{t('admin.ai.model')}</Label>
           {provider === 'custom' ? (
             <Input
               value={current?.model ?? ''}
               onChange={e => set({ model: e.target.value })}
-              placeholder="Название модели, например: llama-3.3-70b"
+              placeholder={t('admin.ai.modelPlaceholder')}
               className="font-mono text-sm"
             />
           ) : (
@@ -251,7 +255,7 @@ export function AdminAITab() {
                   <SelectItem key={m.value} value={m.value}>
                     <div>
                       <span className="font-medium">{m.label}</span>
-                      <span className="text-xs text-muted-foreground ml-2">— {m.desc}</span>
+                      <span className="text-xs text-muted-foreground ml-2">— {t(m.desc)}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -262,7 +266,7 @@ export function AdminAITab() {
 
         {/* Макс. токенов */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Макс. токенов ответа</Label>
+          <Label className="text-sm font-medium">{t('admin.ai.maxTokens')}</Label>
           <div className="flex items-center gap-3">
             <Input
               type="number"
@@ -276,10 +280,10 @@ export function AdminAITab() {
               }}
               className="w-32"
             />
-            <span className="text-xs text-muted-foreground">токенов (128 – 4096)</span>
+            <span className="text-xs text-muted-foreground">{t('admin.ai.tokensRange')}</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Больше токенов = длиннее ответы + выше стоимость. 1024 — хороший баланс.
+            {t('admin.ai.tokensHint')}
           </p>
         </div>
 
@@ -291,25 +295,25 @@ export function AdminAITab() {
             loading={update.isPending}
             className="gap-2"
           >
-            Сохранить настройки
+            {t('admin.ai.save')}
           </Button>
         </div>
       </div>
 
       {/* Статус */}
       <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
-        <p className="text-sm font-medium">Статус</p>
+        <p className="text-sm font-medium">{t('admin.ai.status')}</p>
 
         <div className="space-y-1.5">
           {keyPreview ? (
             <div className="flex items-center gap-2 text-sm">
               <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-emerald-700 dark:text-emerald-400">API-ключ задан ({keyPreview})</span>
+              <span className="text-emerald-700 dark:text-emerald-400">{t('admin.ai.keySet')} ({keyPreview})</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 text-sm">
               <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-              <span className="text-amber-700 dark:text-amber-400">API-ключ не задан — ИИ-функции недоступны</span>
+              <span className="text-amber-700 dark:text-amber-400">{t('admin.ai.keyNotSet')}</span>
             </div>
           )}
 
@@ -317,26 +321,26 @@ export function AdminAITab() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
               <span>
-                ИИ активен · <span className="font-medium">{providerLabel}</span>
-                {' · '}модель: <span className="font-mono text-xs">{current.model}</span>
-                {' · '}токенов: {current.max_tokens}
+                {t('admin.ai.active')} · <span className="font-medium">{providerLabel}</span>
+                {' · '}{t('admin.ai.modelLabel')}: <span className="font-mono text-xs">{current.model}</span>
+                {' · '}{t('admin.ai.tokensLabel')}: {current.max_tokens}
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="w-2 h-2 rounded-full bg-muted-foreground/40 shrink-0" />
-              <span>ИИ-функции выключены</span>
+              <span>{t('admin.ai.inactive')}</span>
             </div>
           )}
         </div>
 
         <div className="border-t pt-3">
-          <p className="text-xs text-muted-foreground mb-2">Использует ИИ:</p>
+          <p className="text-xs text-muted-foreground mb-2">{t('admin.ai.usedBy')}</p>
           <div className="flex flex-wrap gap-2">
             {[
-              { icon: Sparkles,       label: 'Генератор bio и описаний' },
-              { icon: BarChart2,      label: 'Анализ клиентской базы' },
-              { icon: MessageSquare,  label: 'Telegram-бот (ИИ-ответы)' },
+              { icon: Sparkles,       label: t('admin.ai.featureBio') },
+              { icon: BarChart2,      label: t('admin.ai.featureAnalysis') },
+              { icon: MessageSquare,  label: t('admin.ai.featureBot') },
             ].map(({ icon: Icon, label }) => (
               <div key={label} className="flex items-center gap-1.5 text-xs bg-background border rounded-full px-2.5 py-1">
                 <Icon className="h-3 w-3 text-purple-500" />

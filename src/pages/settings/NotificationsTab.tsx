@@ -484,10 +484,10 @@ export function NotificationsTab() {
         <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground leading-relaxed">
           <span className="font-medium text-foreground">Telegram:</span>{' '}
-          требует подключения в профиле. Клиенты получают уведомления если при записи указан Telegram ID.
+          {t('notifications.infoTelegram')}
           <br />
           <span className="font-medium text-foreground">Email:</span>{' '}
-          требует настройки SMTP в PocketBase. Клиенты получают уведомления если при записи указан email.
+          {t('notifications.infoEmail')}
         </p>
       </div>
     </div>

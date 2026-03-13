@@ -71,10 +71,10 @@ export function AdminUsersTab() {
     try {
       await deleteUser.mutateAsync(deleteTarget.id)
       setSelectedIds(prev => { const next = new Set(prev); next.delete(deleteTarget.id); return next })
-      toast.success('Пользователь удалён')
+      toast.success(t('admin.userDeleted'))
       setDeleteTarget(null)
     } catch {
-      toast.error('Ошибка удаления')
+      toast.error(t('admin.deleteError'))
     }
   }
 
@@ -103,8 +103,8 @@ export function AdminUsersTab() {
     setBulkDeleting(false)
     setBulkDeleteOpen(false)
     setSelectedIds(new Set())
-    if (succeeded > 0) toast.success(`Удалено ${succeeded} пользователей`)
-    if (failed > 0) toast.error(`Ошибка при удалении ${failed} пользователей`)
+    if (succeeded > 0) toast.success(t('admin.deletedCount', { count: succeeded }))
+    if (failed > 0) toast.error(t('admin.deleteFailedCount', { count: failed }))
   }
 
   const getAvatarUrl = (u: any) => {
@@ -173,13 +173,13 @@ export function AdminUsersTab() {
   const exportCSV = () => {
     const all = users ?? []
     if (!all.length) return
-    const headers = ['Имя', 'Email', 'План', 'Администратор', 'Отключён', 'Дата регистрации']
+    const headers = [t('admin.csvName'), t('admin.csvEmail'), t('admin.csvPlan'), t('admin.csvAdmin'), t('admin.csvDisabled'), t('admin.csvDate')]
     const rows = all.map(u => [
       u.name || '',
       u.email || '',
       (u as any).plan || 'free',
-      (u as any).is_admin ? 'да' : 'нет',
-      (u as any).disabled ? 'да' : 'нет',
+      (u as any).is_admin ? t('admin.csvYes') : t('admin.csvNo'),
+      (u as any).disabled ? t('admin.csvYes') : t('admin.csvNo'),
       (u as any).created_at ? dayjs((u as any).created_at).format('DD.MM.YYYY') : '',
     ])
     const csv = [headers, ...rows]
@@ -305,7 +305,7 @@ export function AdminUsersTab() {
           <div className="flex items-center gap-2">
             <CheckSquare className="h-4 w-4 text-primary shrink-0" />
             <span className="text-sm font-medium">
-              Выбрано: {selectedIds.size}
+              {t('admin.selectedCount', { count: selectedIds.size })}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -313,7 +313,7 @@ export function AdminUsersTab() {
               onClick={() => setSelectedIds(new Set())}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded"
             >
-              Снять
+              {t('admin.deselect')}
             </button>
             <Button
               variant="destructive"
@@ -322,7 +322,7 @@ export function AdminUsersTab() {
               onClick={() => setBulkDeleteOpen(true)}
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Удалить ({selectedIds.size})
+              {t('admin.deleteSelected', { count: selectedIds.size })}
             </Button>
           </div>
         </div>
@@ -335,7 +335,7 @@ export function AdminUsersTab() {
             checked={allFilteredSelected}
             onCheckedChange={toggleSelectAll}
             className="h-3.5 w-3.5 shrink-0"
-            aria-label="Выбрать всех"
+            aria-label={t('admin.selectAll')}
           />
           <div className="w-8 shrink-0" />
           <div className="flex-1 min-w-0">{t('admin.colUser')}</div>
@@ -376,7 +376,7 @@ export function AdminUsersTab() {
                     checked={selectedIds.has(u.id)}
                     onCheckedChange={() => toggleSelect(u.id)}
                     className="shrink-0 self-start mt-1.5"
-                    aria-label={`Выбрать ${u.name || u.email}`}
+                    aria-label={t('admin.selectUser', { name: u.name || u.email })}
                   />
                 ) : (
                   <div className="w-4 shrink-0" />
@@ -431,11 +431,11 @@ export function AdminUsersTab() {
                       )}
                       {!isSelf && (
                         isAdmin
-                          ? <Lock className="h-3.5 w-3.5 text-amber-500/50 shrink-0" aria-label="Администратор не удаляется" />
+                          ? <Lock className="h-3.5 w-3.5 text-amber-500/50 shrink-0" aria-label={t('admin.cannotDeleteAdmin')} />
                           : <button
                               onClick={() => setDeleteTarget({ id: u.id, name: u.name || '—', email: u.email || '' })}
                               disabled={deleteUser.isPending}
-                              title="Удалить пользователя"
+                              title={t('admin.deleteUserAction')}
                               className="p-1 rounded transition-colors text-muted-foreground/40 hover:text-destructive"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -453,7 +453,7 @@ export function AdminUsersTab() {
                     checked={isAdmin}
                     disabled={isSelf || isAdmin || toggleAdmin.isPending}
                     onCheckedChange={() => handleToggleAdmin(u.id, isAdmin)}
-                    title={isSelf ? t('admin.cannotSelf') : isAdmin ? 'Нельзя снять роль у администратора' : t('admin.makeAdmin')}
+                    title={isSelf ? t('admin.cannotSelf') : isAdmin ? t('admin.cannotRemoveAdmin') : t('admin.makeAdmin')}
                   />
                   {isAdmin
                     ? <Shield className="h-3.5 w-3.5 text-amber-500 shrink-0" />
@@ -477,12 +477,12 @@ export function AdminUsersTab() {
                 {/* Delete button — desktop */}
                 <div className="hidden sm:flex w-8 items-center justify-center shrink-0">
                   {isSelf ? null : isAdmin ? (
-                    <Lock className="h-4 w-4 text-amber-500/40" aria-label="Администратор не удаляется" />
+                    <Lock className="h-4 w-4 text-amber-500/40" aria-label={t('admin.cannotDeleteAdmin')} />
                   ) : (
                     <button
                       onClick={() => setDeleteTarget({ id: u.id, name: u.name || '—', email: u.email || '' })}
                       disabled={deleteUser.isPending}
-                      title="Удалить пользователя"
+                      title={t('admin.deleteUserAction')}
                       className="p-1.5 rounded-md transition-colors text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -501,14 +501,14 @@ export function AdminUsersTab() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5 shrink-0" />
-              Удалить {selectedIds.size} пользователей?
+              {t('admin.bulkDeleteTitle', { count: selectedIds.size })}
             </DialogTitle>
             <DialogDescription className="pt-1 space-y-1">
               <span className="block">
-                Будут безвозвратно удалены все данные {selectedIds.size} пользователей: записи, клиенты, услуги и профили.
+                {t('admin.bulkDeleteDesc', { count: selectedIds.size })}
               </span>
               <span className="block pt-1 text-xs text-destructive/80">
-                Это действие нельзя отменить.
+                {t('admin.deleteIrreversible')}
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -518,14 +518,14 @@ export function AdminUsersTab() {
               onClick={() => setBulkDeleteOpen(false)}
               disabled={bulkDeleting}
             >
-              Отмена
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleBulkDelete}
               disabled={bulkDeleting}
             >
-              {bulkDeleting ? 'Удаление...' : `Удалить ${selectedIds.size}`}
+              {bulkDeleting ? t('admin.deleting') : t('admin.deleteSelected', { count: selectedIds.size })}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -537,11 +537,11 @@ export function AdminUsersTab() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5 shrink-0" />
-              Удалить пользователя?
+              {t('admin.deleteUserTitle')}
             </DialogTitle>
             <DialogDescription className="pt-1 space-y-1">
               <span className="block">
-                Будут удалены все данные пользователя:
+                {t('admin.deleteUserDesc')}
               </span>
               <span className="block font-medium text-foreground">
                 {deleteTarget?.name}
@@ -550,7 +550,7 @@ export function AdminUsersTab() {
                 {deleteTarget?.email}
               </span>
               <span className="block pt-1 text-xs text-destructive/80">
-                Записи, клиенты, услуги и профиль — удалятся без возможности восстановления.
+                {t('admin.deleteUserDetails')}
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -560,14 +560,14 @@ export function AdminUsersTab() {
               onClick={() => setDeleteTarget(null)}
               disabled={deleteUser.isPending}
             >
-              Отмена
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleConfirmDelete}
               disabled={deleteUser.isPending}
             >
-              {deleteUser.isPending ? 'Удаление...' : 'Удалить'}
+              {deleteUser.isPending ? t('admin.deleting') : t('admin.deleteUserAction')}
             </Button>
           </DialogFooter>
         </DialogContent>

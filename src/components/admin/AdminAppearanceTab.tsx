@@ -281,7 +281,7 @@ export function AdminAppearanceTab() {
             </div>
             <div>
               <p className="text-sm font-medium">{t('admin.platformLogo')}</p>
-              <p className="text-xs text-muted-foreground mb-2">PNG, JPG, SVG · до 5 МБ</p>
+              <p className="text-xs text-muted-foreground mb-2">{t('admin.logoHint')}</p>
               <Button
                 variant="outline"
                 size="sm"
@@ -388,16 +388,16 @@ export function AdminAppearanceTab() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Type className="h-4 w-4" />
-            Размер шрифта
+            {t('admin.fontSize')}
           </CardTitle>
-          <CardDescription>Влияет на весь интерфейс, включая Telegram Mini App</CardDescription>
+          <CardDescription>{t('admin.fontSizeDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-3">
             {([
-              { value: 'small',  label: 'Маленький', px: '14px', preview: 'text-xs' },
-              { value: 'medium', label: 'Средний',   px: '16px', preview: 'text-sm' },
-              { value: 'large',  label: 'Крупный',   px: '18px', preview: 'text-base' },
+              { value: 'small',  labelKey: 'admin.fontSmall',  px: '14px', preview: 'text-xs' },
+              { value: 'medium', labelKey: 'admin.fontMedium', px: '16px', preview: 'text-sm' },
+              { value: 'large',  labelKey: 'admin.fontLarge',  px: '18px', preview: 'text-base' },
             ] as const).map(opt => {
               const isActive = (settings?.font_size ?? 'medium') === opt.value
               return (
@@ -414,7 +414,7 @@ export function AdminAppearanceTab() {
                   `}
                 >
                   <span className={`font-semibold ${opt.preview}`}>Аа</span>
-                  <span className="text-xs font-medium">{opt.label}</span>
+                  <span className="text-xs font-medium">{t(opt.labelKey)}</span>
                   <span className="text-[10px] text-muted-foreground">{opt.px}</span>
                 </button>
               )

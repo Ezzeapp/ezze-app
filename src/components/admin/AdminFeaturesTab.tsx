@@ -157,7 +157,7 @@ export function AdminFeaturesTab() {
         <Input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Поиск функции..."
+          placeholder={t('admin.searchFeature')}
           className="pl-9 pr-9 h-9"
         />
         {search && (
@@ -174,7 +174,7 @@ export function AdminFeaturesTab() {
       {/* Search results */}
       {filteredFeatures && (
         filteredFeatures.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">Ничего не найдено</p>
+          <p className="text-sm text-muted-foreground text-center py-6">{t('common.nothingFound')}</p>
         ) : (
           <div className="space-y-1">
             {filteredFeatures.map((f) => (
