@@ -64,7 +64,15 @@
     "deselectAll": "Таңлаўды бийкар қылыў",
     "min": "мин",
     "h": "саат",
-    "online": "Онлайн"
+    "online": "Онлайн",
+    "nothingFound": "Ешнарсе табылмады",
+    "today": "Bugin",
+    "copy": "Нусха алыу",
+    "open": "Ашыу",
+    "back": "Артка",
+    "next": "Кейинги",
+    "confirm": "Тастыйыклаў",
+    "clearFilter": "Фильтрди тазалаў"
   },
   "dashboard": {
     "todayAppointments": "Бүгінги жазыўлар",
@@ -203,7 +211,27 @@
     "transferResultInventory": "Омбар: +{{added}} жаңа, {{replaced}} алмастырылды, {{skipped}} өткізілді",
     "transferResultMaterials": "Хызметлерге материаллар: {{added}}",
     "notificationEmail": "Хабарландырыў emailи",
-    "notificationEmailHint": "Көрсетілмесе — аккаунт emailи қолланылады. Telegram арқалы тіркелген усталар ушын пайдалы"
+    "notificationEmailHint": "Көрсетілмесе — аккаунт emailи қолланылады. Telegram арқалы тіркелген усталар ушын пайдалы",
+    "portfolioTitle": "Портфолио",
+    "portfolioHint": "Жумыс суwретлерин косыныз",
+    "portfolioAdd": "Суwрет косыу",
+    "portfolioMax": "Максималды 8 суwрет",
+    "photoDeleted": "Суwрет жойылды",
+    "photoTitle": "Профиль суwрети",
+    "takePhoto": "Суwрет тусириу",
+    "chooseGallery": "Галереядан таныдаў",
+    "deletePhotoBtn": "Суwретти жойыу",
+    "generateFailed": "Текст жасалмады",
+    "tgBotConnected": "Бот аркалы улланды",
+    "tgEnterUsername": "@username кирисиниз",
+    "theme": "Dizayn тематикасы",
+    "qrWeb": "Бронлаў QR-коды (веб)",
+    "qrAlt": "Жазыу ушын QR-код",
+    "copy": "Нусха алыу",
+    "qrTelegram": "QR-код (Telegram Mini App)",
+    "tgBookingHint": "Telegram ашылады",
+    "generating": "Жасалыўда...",
+    "generate": "Жасаў"
   },
   "clients": {
     "subtitle": "Клиентлер базасын басқарыў",
@@ -816,7 +844,9 @@
     "win_back_title": "«Узақ ўақыт келмеди»",
     "win_back_desc": "Узақ ўақыт келмеген клиентлерге еске салыў",
     "saved": "Баплаўлар сақланды",
-    "saveError": "Сақлаўда қате"
+    "saveError": "Сақлаўда қате",
+    "infoTelegram": "Telegram хабарландырыўлары Профиль → Telegram болимине ботты улаўды талап етеди.",
+    "infoEmail": "Email хабарландырыўлары Администратор → Email болимине SMTP баптаўды талап етеди."
   },
   "limits": {
     "warning": "{{current}} дан {{limit}} {{entity}} пайдаландыңыз. Лимит жақынласпакте.",
