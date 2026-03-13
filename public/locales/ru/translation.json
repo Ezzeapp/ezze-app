@@ -703,6 +703,7 @@
     "tabAppearance": "Оформление",
     "tabBilling": "Биллинг",
     "tabEmail": "Email",
+    "tabAI": "ИИ",
     "emailDesc": "Настройка SMTP-сервера и email-уведомлений платформы",
     "emailGlobalEnabled": "Email уведомления включены",
     "emailGlobalEnabledDesc": "Разрешить отправку писем мастерам и клиентам",

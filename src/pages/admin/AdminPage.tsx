@@ -32,7 +32,7 @@ export function AdminPage() {
     { id: 'appearance', label: t('admin.tabAppearance'), icon: Palette },
     { id: 'billing',    label: t('admin.tabBilling'),    icon: CreditCard },
     { id: 'email',      label: t('admin.tabEmail'),      icon: Mail },
-    { id: 'ai',         label: 'ИИ',                     icon: Bot },
+    { id: 'ai',         label: t('admin.tabAI'),         icon: Bot },
   ]
 
   return (

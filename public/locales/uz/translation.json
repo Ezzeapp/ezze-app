@@ -14,7 +14,8 @@
     "team": "Jamoa",
     "teamAnalytics": "Jamoa statistikasi",
     "promoCodes": "Promokodlar",
-    "reviews": "Sharhlar"
+    "reviews": "Sharhlar",
+    "billing": "Obuna"
   },
   "feature": {
     "lockedDesc": "{{plan}} rejasida va undan yuqorida mavjud",
@@ -468,6 +469,7 @@
     "currencyTimezoneDesc": "Narxlar va sanalarni koʻsatishda ishlatiladi",
     "tabProfile": "Akkaunt",
     "tabInterface": "Interfeys",
+    "tabNotifications": "Bildirishnomalar",
     "tabIntegrations": "Integratsiyalar",
     "tabAdmin": "Boshqaruv"
   },
@@ -654,6 +656,7 @@
     "tabAppearance": "Ko'rinish",
     "tabBilling": "To'lovlar",
     "tabEmail": "Email",
+    "tabAI": "ИИ",
     "emailDesc": "SMTP server and email notification settings",
     "emailGlobalEnabled": "Email notifications enabled",
     "emailGlobalEnabledDesc": "Allow sending emails to masters and clients",

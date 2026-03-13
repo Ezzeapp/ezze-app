@@ -13,7 +13,7 @@ const LANGUAGES = [
   { code: 'ky', label: 'Кыргызча', flag: '🇰🇬' },
   { code: 'by', label: 'Беларуская', flag: '🇧🇾' },
   { code: 'uk', label: 'Українська', flag: '🇺🇦' },
-  { code: 'kaa', label: 'Қарақалпақша', flag: '🏳️' },
+  { code: 'kaa', label: 'Қарақалпақша', flag: '🇺🇿' },
 ]
 
 export function LanguageSwitcher() {

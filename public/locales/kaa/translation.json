@@ -14,7 +14,8 @@
     "team": "Команда",
     "teamAnalytics": "Команда статистикасы",
     "promoCodes": "Промо-кодлар",
-    "reviews": "Пикирлер"
+    "reviews": "Пикирлер",
+    "billing": "Жазылым"
   },
   "feature": {
     "lockedDesc": "{{plan}} тарифинде ҳәм жоқарыда жетекли",
@@ -468,6 +469,7 @@
     "currencyTimezoneDesc": "Баҳалар ҳәм сәнелерді көрсетіўде қолланылады",
     "tabProfile": "Аккаунт",
     "tabInterface": "Интерфейс",
+    "tabNotifications": "Хабарламалар",
     "tabIntegrations": "Интеграциялар",
     "tabAdmin": "Басқарыў"
   },
@@ -654,6 +656,7 @@
     "tabAppearance": "Көрінісі",
     "tabBilling": "Төлемлер",
     "tabEmail": "Email",
+    "tabAI": "ИИ",
     "emailDesc": "SMTP сервер ҳәм email хабарландырыў баптаулары",
     "emailGlobalEnabled": "Email хабарландырыўлары қосылған",
     "emailGlobalEnabledDesc": "Усталар ҳәм клиентлерге email жіберіўге рұқсат",
