@@ -918,7 +918,8 @@
         "fastCheap": "Fast, cheap",
         "opensourcePowerful": "Open-source, powerful"
       }
-    }
+    },
+    "searchSpecialties": "Search specialties..."
   },
   "analytics": {
     "title": "Analytics",

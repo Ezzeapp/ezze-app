@@ -817,7 +817,8 @@
         "fastCheap": "Быстро, дешево",
         "opensourcePowerful": "Open-source, мощная"
       }
-    }
+    },
+    "searchSpecialties": "Поиск по специальностям..."
   },
   "catalog": {
     "searchServices": "Поиск по услугам или категориям...",
