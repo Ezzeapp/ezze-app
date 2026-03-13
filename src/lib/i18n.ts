@@ -16,7 +16,7 @@ i18n
     defaultNS: 'translation',
     backend: {
       loadPath: '/locales/{{lng}}/{{ns}}.json',
-      queryStringParams: { v: '56' },
+      queryStringParams: { v: '57' },
     },
     detection: {
       order: ['localStorage', 'navigator'],
