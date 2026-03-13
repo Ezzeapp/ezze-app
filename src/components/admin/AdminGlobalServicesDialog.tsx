@@ -49,11 +49,9 @@ export function AdminGlobalServicesDialog({ open, onClose }: Props) {
               <Scissors className="h-5 w-5" />
               {t('admin.globalServicesTitle')}
             </DialogTitle>
-            {allServices && (
-              <p className="text-sm text-muted-foreground">
-                {totalCategories} {t('admin.statCategories')} · {allServices.length} {t('admin.statServices')}
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground">
+              {totalCategories} {t('admin.statCategories')} · {allServices?.length ?? 0} {t('admin.statServices')}
+            </p>
           </DialogHeader>
 
           {/* Tabs */}
