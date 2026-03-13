@@ -299,7 +299,9 @@
     "remindHour": "soat",
     "remindHours2": "soat",
     "remindDay": "kun",
-    "remindDays2": "kun"
+    "remindDays2": "kun",
+    "displayName": "Ism",
+    "displayNamePlaceholder": "Ismingiz yoki taxallusingiz..."
   },
   "clients": {
     "subtitle": "Mijozlar bazasini boshqarish",

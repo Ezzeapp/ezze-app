@@ -32,6 +32,7 @@ import { DataTransferSection } from '@/components/profile/DataTransferSection'
 import { FeatureGate } from '@/components/shared/FeatureGate'
 
 const schema = z.object({
+  display_name: z.string().max(100).optional(),
   profession: z.string().min(2).max(100),
   bio: z.string().max(1000).optional(),
   phone: z.string().optional(),
@@ -77,6 +78,7 @@ export function ProfilePage() {
   const { register, handleSubmit, setValue, watch, reset, formState: { errors, isDirty } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      display_name: '',
       profession: '',
       bio: '',
       phone: '',
@@ -98,6 +100,7 @@ export function ProfilePage() {
   useEffect(() => {
     if (profile) {
       reset({
+        display_name: profile.display_name || '',
         profession: profile.profession || '',
         bio: profile.bio || '',
         phone: profile.phone || '',
@@ -520,6 +523,11 @@ export function ProfilePage() {
         <Card className={cn("lg:col-span-2", profileTab !== 'main' && 'hidden')}>
           <CardHeader><CardTitle className="text-base">{t('profile.basicInfo')}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
+            {/* Имя (отображаемое имя / ФИО) */}
+            <div className="space-y-2">
+              <Label>{t('profile.displayName')}</Label>
+              <Input placeholder={t('profile.displayNamePlaceholder')} {...register('display_name')} />
+            </div>
             {/* Сфера деятельности (read-only, обновляется через SpecialtySelector) */}
             {activityTypeName && (
               <div className="space-y-2">

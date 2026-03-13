@@ -299,7 +299,9 @@
     "remindHour": "саат",
     "remindHours2": "саат",
     "remindDay": "күн",
-    "remindDays2": "күн"
+    "remindDays2": "күн",
+    "displayName": "Аты",
+    "displayNamePlaceholder": "Атыңыз же лакап атыңыз..."
   },
   "clients": {
     "subtitle": "Кардарлар базасын башкаруу",

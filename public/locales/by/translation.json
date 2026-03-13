@@ -299,7 +299,9 @@
     "remindHour": "гадзіна",
     "remindHours2": "гадзіны",
     "remindDay": "дзень",
-    "remindDays2": "дні"
+    "remindDays2": "дні",
+    "displayName": "Імя",
+    "displayNamePlaceholder": "Ваша імя або псеўданім..."
   },
   "clients": {
     "subtitle": "Кіраванне базай кліентаў",

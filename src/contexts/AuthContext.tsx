@@ -32,14 +32,14 @@ async function fetchAppUser(userId: string): Promise<AppUser | null> {
   // Fetch name/avatar from master_profiles (optional — may not exist yet)
   const { data: profile } = await supabase
     .from('master_profiles')
-    .select('profession, avatar')
+    .select('display_name, profession, avatar')
     .eq('user_id', userId)
     .maybeSingle()
 
   return {
     id: data.id,
     email,
-    name: profile?.profession ?? '',
+    name: profile?.display_name || profile?.profession || '',
     avatar: profile?.avatar ?? undefined,
     language: data.language ?? undefined,
     theme: data.theme ?? undefined,

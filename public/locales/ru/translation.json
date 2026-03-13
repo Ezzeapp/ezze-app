@@ -313,7 +313,9 @@
     "qrTelegram": "QR-код (Telegram Mini App)",
     "tgBookingHint": "Открывается Telegram → бронирование",
     "generating": "Генерирую...",
-    "generate": "Сгенерировать"
+    "generate": "Сгенерировать",
+    "displayName": "Имя",
+    "displayNamePlaceholder": "Ваше имя или псевдоним..."
   },
   "clients": {
     "subtitle": "Управление клиентской базой",

@@ -299,7 +299,9 @@
     "remindHour": "saat",
     "remindHours2": "saat",
     "remindDay": "kün",
-    "remindDays2": "kün"
+    "remindDays2": "kün",
+    "displayName": "Atı",
+    "displayNamePlaceholder": "Atıňız yamasa lakabyňız..."
   },
   "clients": {
     "subtitle": "Клиентлер базасын басқарыў",

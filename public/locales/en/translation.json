@@ -313,7 +313,9 @@
     "qrTelegram": "QR code (Telegram Mini App)",
     "tgBookingHint": "Opens Telegram → booking",
     "generating": "Generating...",
-    "generate": "Generate"
+    "generate": "Generate",
+    "displayName": "Name",
+    "displayNamePlaceholder": "Your name or alias..."
   },
   "clients": {
     "subtitle": "Manage your client base",

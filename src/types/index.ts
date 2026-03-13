@@ -61,6 +61,7 @@ export interface GlobalProduct extends BaseRecord {
 
 export interface MasterProfile extends BaseRecord {
   user: string
+  display_name?: string    // Отображаемое имя мастера (ФИО или псевдоним)
   profession: string
   activity_type?: string   // FK → activity_types
   specialty?: string       // FK → specialties

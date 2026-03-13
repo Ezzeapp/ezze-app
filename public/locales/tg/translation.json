@@ -299,7 +299,9 @@
     "remindHour": "соат",
     "remindHours2": "соат",
     "remindDay": "рӯз",
-    "remindDays2": "рӯз"
+    "remindDays2": "рӯз",
+    "displayName": "Ном",
+    "displayNamePlaceholder": "Номи шумо ё тахаллус..."
   },
   "clients": {
     "subtitle": "Идораи пойгоҳи муштариён",
