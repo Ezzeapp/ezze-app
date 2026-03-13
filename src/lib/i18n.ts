@@ -9,11 +9,14 @@ i18n
   .use(initReactI18next)
   .init({
     supportedLngs: ['ru', 'en', 'kz', 'uz', 'tg', 'ky', 'by', 'uk', 'kaa'],
-    fallbackLng: 'ru',
+    fallbackLng: {
+      'ru': ['ru'],
+      'default': ['en', 'ru'],
+    },
     defaultNS: 'translation',
     backend: {
       loadPath: '/locales/{{lng}}/{{ns}}.json',
-      queryStringParams: { v: '44' },
+      queryStringParams: { v: '45' },
     },
     detection: {
       order: ['localStorage', 'navigator'],

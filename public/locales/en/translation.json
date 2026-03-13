@@ -48,7 +48,8 @@
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
     "registrationClosed": "Registration closed",
-    "registrationClosedDesc": "New user registration is currently unavailable"
+    "registrationClosedDesc": "New user registration is currently unavailable",
+    "accountDisabled": "Your account is blocked. Contact the administrator."
   },
   "common": {
     "save": "Save",
@@ -76,7 +77,8 @@
     "today": "Today",
     "copy": "Copy",
     "open": "Open",
-    "nothingFound": "Nothing found"
+    "nothingFound": "Nothing found",
+    "confirm": "Confirm"
   },
   "dashboard": {
     "todayAppointments": "Today's appointments",
@@ -202,7 +204,13 @@
     "inviteUsesUnlimited": "unlimited",
     "paused": "On pause",
     "pauseMember": "Pause member",
-    "unpauseMember": "Resume member"
+    "unpauseMember": "Resume member",
+    "createTeamHint": "Unite masters under one brand",
+    "joinTeamHint": "Join using an invitation code",
+    "inviteContactPlaceholder": "Email, phone or @telegram (optional)",
+    "deleteTeam": "Delete team",
+    "deleteTeamConfirm": "Delete team? All members will be disconnected. This action cannot be undone.",
+    "deleteSuccess": "Team deleted"
   },
   "profile": {
     "subtitle": "Manage your public profile",
@@ -394,7 +402,8 @@
     "addMaterialsAfterSaveHint": "After saving, go to the materials tab",
     "deletedMultiple": "Deleted {{count}} services",
     "selectedCount": "Selected: {{count}}",
-    "bulkDeleteConfirm": "Delete {{count}} services?"
+    "bulkDeleteConfirm": "Delete {{count}} services?",
+    "categoryDeleteConfirm": "Delete category?"
   },
   "schedule": {
     "subtitle": "Configure your working hours",
@@ -536,7 +545,9 @@
     "tabDiscount": "Discount",
     "tabPayment": "Payment",
     "tabNote": "Note",
-    "tabRecurring": "Repeat"
+    "tabRecurring": "Repeat",
+    "selectTimeFirst": "Select a time first",
+    "tabDetails": "Details"
   },
   "calendar": {
     "week": "Week",
@@ -544,7 +555,17 @@
     "today": "Today",
     "noAppointments": "No appointments",
     "appointmentsCount": "{{count}} appointment(s)",
-    "moreAppts": "more"
+    "moreAppts": "more",
+    "list": "List",
+    "listSearch": "Search by client, service...",
+    "allStatuses": "All statuses",
+    "dateFrom": "From date",
+    "dateTo": "To date",
+    "listCount": "Appointments: {{count}}",
+    "selectedCount": "Selected: {{count}}",
+    "deleteSelected": "Delete selected",
+    "deleteSelectedConfirm": "Delete {{count}} appointments?",
+    "deletedCount": "Deleted {{count}} appointments"
   },
   "settings": {
     "account": "Account",
@@ -788,8 +809,6 @@
     "fontSmall": "Small",
     "fontMedium": "Medium",
     "fontLarge": "Large",
-    "featureEnabled": "Feature enabled",
-    "featureDisabled": "Feature disabled",
     "userDeleted": "User deleted",
     "deleteError": "Delete failed",
     "deletedCount": "Deleted {{count}} users",
@@ -932,7 +951,28 @@
     "limitServices": "Services",
     "limitAppts": "Appointments/month",
     "unlimited": "∞",
-    "searchSpecialties": "Search activity types and specialties..."
+    "searchSpecialties": "Search activity types and specialties...",
+    "searchUsers": "Search by name or email...",
+    "usersNotFound": "No users found",
+    "disableUser": "Disable user",
+    "enableUser": "Enable user",
+    "userDisabled": "User disabled",
+    "userEnabled": "User enabled",
+    "disabled": "Blocked",
+    "active": "Active",
+    "userIsDisabled": "Access blocked — user cannot sign in",
+    "exportCSV": "Export to CSV",
+    "exportDone": "Export complete",
+    "statsTotal": "Total",
+    "statsNewMonth": "New this month",
+    "statsPaid": "Paid",
+    "statsDisabled": "Disabled",
+    "colUser": "User",
+    "colPlan": "Plan",
+    "colAdmin": "Admin",
+    "colStatus": "Status",
+    "limitMetric": "Metric",
+    "limitHint": "Disable the row if this limit is not needed."
   },
   "analytics": {
     "title": "Analytics",
