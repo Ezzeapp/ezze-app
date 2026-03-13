@@ -27,6 +27,20 @@ import type { Appointment } from '@/types'
 
 dayjs.extend(isoWeek)
 
+function formatDateInput(v: string): string {
+  const digits = v.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}.${digits.slice(2)}`
+  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`
+}
+
+function parseDateFilter(v: string): string {
+  if (!v || v.length < 10) return ''
+  const [d, m, y] = v.split('.')
+  if (!d || !m || !y || y.length < 4) return ''
+  return `${y}-${m}-${d}`
+}
+
 const STATUS_COLORS: Record<string, string> = {
   scheduled: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-200',
   done: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900 dark:text-emerald-200',
@@ -279,8 +293,10 @@ export function CalendarPage() {
     return src
       .filter(a => {
         if (listStatus !== 'all' && a.status !== listStatus) return false
-        if (listDateFrom && a.date < listDateFrom) return false
-        if (listDateTo && a.date > listDateTo) return false
+        const fromISO = parseDateFilter(listDateFrom)
+        const toISO = parseDateFilter(listDateTo)
+        if (fromISO && a.date < fromISO) return false
+        if (toISO && a.date > toISO) return false
         if (listSearch) {
           const q = listSearch.toLowerCase()
           const clientName = a.expand?.client
@@ -587,17 +603,20 @@ export function CalendarPage() {
                 <option value="no_show">{t('appointments.status.no_show')}</option>
               </select>
               <input
-                type="date"
+                type="text"
                 value={listDateFrom}
-                onChange={e => setListDateFrom(e.target.value)}
+                onChange={e => setListDateFrom(formatDateInput(e.target.value))}
                 className="text-sm border rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder={t('calendar.dateFrom')}
+                placeholder="01.01.2000"
+                maxLength={10}
               />
               <input
-                type="date"
+                type="text"
                 value={listDateTo}
-                onChange={e => setListDateTo(e.target.value)}
+                onChange={e => setListDateTo(formatDateInput(e.target.value))}
                 className="text-sm border rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="01.01.2000"
+                maxLength={10}
               />
               {(listSearch || listStatus !== 'all' || listDateFrom || listDateTo) && (
                 <Button variant="ghost" size="sm" onClick={() => { setListSearch(''); setListStatus('all'); setListDateFrom(''); setListDateTo('') }}>
