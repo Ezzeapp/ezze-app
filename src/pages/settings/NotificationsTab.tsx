@@ -23,6 +23,7 @@ import {
   type NotifType,
   type NotificationSetting,
 } from '@/hooks/useNotificationSettings'
+import { useEmailConfig } from '@/hooks/useAppSettings'
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -172,11 +173,12 @@ interface NotifRowProps {
   onTemplateChange: (template: string) => void
   onEmailTemplateChange: (template: string) => void
   toggling: boolean
+  emailGlobalEnabled: boolean
 }
 
 function NotifRow({
   config, setting, onToggle, onEmailToggle,
-  onTimingChange, onTemplateChange, onEmailTemplateChange, toggling,
+  onTimingChange, onTemplateChange, onEmailTemplateChange, toggling, emailGlobalEnabled,
 }: NotifRowProps) {
   const { t } = useTranslation()
   const [tgTemplateOpen, setTgTemplateOpen]   = useState(false)
@@ -224,7 +226,7 @@ function NotifRow({
             </div>
             {/* Email toggle (только для поддерживаемых типов) */}
             {supportsEmail && (
-              <div className="flex items-center gap-1.5">
+              <div className={cn('flex items-center gap-1.5', !emailGlobalEnabled && 'opacity-40 pointer-events-none')}>
                 <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
                   <Mail className="h-2.5 w-2.5" />
                   Email
@@ -232,7 +234,7 @@ function NotifRow({
                 <Switch
                   checked={setting.enable_email ?? false}
                   onCheckedChange={onEmailToggle}
-                  disabled={toggling}
+                  disabled={toggling || !emailGlobalEnabled}
                 />
               </div>
             )}
@@ -303,7 +305,7 @@ function NotifRow({
             )}
 
             {/* Email template button */}
-            {supportsEmail && (setting.enable_email ?? false) && (
+            {supportsEmail && (setting.enable_email ?? false) && emailGlobalEnabled && (
               <button
                 type="button"
                 onClick={() => setEmlTemplateOpen(true)}
@@ -359,6 +361,8 @@ export function NotificationsTab() {
   const [togglingTypes, setTogglingTypes] = useState<Set<string>>(new Set())
 
   const { user } = useAuth()
+  const { data: emailConfig } = useEmailConfig()
+  const emailGlobalEnabled = emailConfig?.enabled ?? false
 
   const getSetting = (type: NotifType): NotificationSetting => {
     return settingsMap?.[type] ?? { ...NOTIF_DEFAULTS[type], master_id: user?.id ?? '' }
@@ -444,6 +448,7 @@ export function NotificationsTab() {
             }
             onTemplateChange={(template) => handleTemplateChange(config.type, template)}
             onEmailTemplateChange={(template) => handleEmailTemplateChange(config.type, template)}
+            emailGlobalEnabled={emailGlobalEnabled}
           />
         </div>
       )
