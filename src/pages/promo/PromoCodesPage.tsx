@@ -47,6 +47,14 @@ function parseDateInput(v: string): string | undefined {
   return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
 }
 
+// Auto-insert dots while typing: "01012026" → "01.01.2026"
+function formatDateInput(v: string): string {
+  const digits = v.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}.${digits.slice(2)}`
+  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`
+}
+
 export function PromoCodesPage() {
   const hasPromos = useFeature('promo_codes')
   const { data: codes, isLoading } = usePromoCodes()
@@ -208,7 +216,7 @@ export function PromoCodesPage() {
                   placeholder="01.01.2000"
                   maxLength={10}
                   value={form.valid_from}
-                  onChange={(e) => setForm(f => ({ ...f, valid_from: e.target.value }))}
+                  onChange={(e) => setForm(f => ({ ...f, valid_from: formatDateInput(e.target.value) }))}
                 />
               </div>
               <div className="space-y-1">
@@ -218,7 +226,7 @@ export function PromoCodesPage() {
                   placeholder="01.01.2000"
                   maxLength={10}
                   value={form.valid_until}
-                  onChange={(e) => setForm(f => ({ ...f, valid_until: e.target.value }))}
+                  onChange={(e) => setForm(f => ({ ...f, valid_until: formatDateInput(e.target.value) }))}
                 />
               </div>
               <div className="space-y-1 flex-1 min-w-40">
