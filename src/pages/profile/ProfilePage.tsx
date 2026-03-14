@@ -12,7 +12,6 @@ import { useAIConfig } from '@/hooks/useAppSettings'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useMyTeam } from '@/hooks/useTeam'
-import { SpecialtySelector } from '@/components/specialty/SpecialtySelector'
 import { useActivityTypes } from '@/hooks/useSpecialties'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -528,7 +527,7 @@ export function ProfilePage() {
               <Label>{t('profile.displayName')}</Label>
               <Input placeholder={t('profile.displayNamePlaceholder')} {...register('display_name')} />
             </div>
-            {/* Сфера деятельности (read-only, обновляется через SpecialtySelector) */}
+            {/* Сфера деятельности (read-only) */}
             {activityTypeName && (
               <div className="space-y-2">
                 <Label>{t('specialty.activityType')}</Label>
@@ -537,25 +536,15 @@ export function ProfilePage() {
                 </div>
               </div>
             )}
-            {/* Специальность */}
-            <SpecialtySelector
-              showActivityTypeName={false}
-              activityTypeId={activityTypeId}
-              specialtyId={specialtyId}
-              label={t('specialty.label')}
-              onChange={(atId, spId, atName, spName) => {
-                setActivityTypeId(atId)
-                setSpecialtyId(spId)
-                setActivityTypeName(atName)
-                setValue('profession', spName, { shouldDirty: true })
-              }}
-            />
-            {/* Профессия (свободный текст) */}
-            <div className="space-y-2">
-              <Label>{t('profile.profession')}</Label>
-              <Input placeholder={t('profile.professionPlaceholder')} {...register('profession')} />
-              {errors.profession && <p className="text-xs text-destructive">{errors.profession.message}</p>}
-            </div>
+            {/* Профессия (только отображение) */}
+            {watch('profession') && (
+              <div className="space-y-2">
+                <Label>{t('profile.profession')}</Label>
+                <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted/40 px-3 text-sm text-muted-foreground">
+                  {watch('profession')}
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>{t('profile.bio')}</Label>
