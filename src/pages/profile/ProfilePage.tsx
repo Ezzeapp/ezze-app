@@ -517,8 +517,57 @@ export function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Portfolio Card */}
+        {/* Main Info */}
         <Card className={cn("lg:col-span-2", profileTab !== 'main' && 'hidden')}>
+          <CardHeader><CardTitle className="text-base">{t('profile.basicInfo')}</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            {/* Имя (отображаемое имя / ФИО) */}
+            <div className="space-y-2">
+              <Label>{t('profile.displayName')}</Label>
+              <Input placeholder={t('profile.displayNamePlaceholder')} {...register('display_name')} />
+            </div>
+            {/* Сфера деятельности (read-only) */}
+            {activityTypeName && (
+              <div className="space-y-2">
+                <Label>{t('specialty.activityType')}</Label>
+                <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted/40 px-3 text-sm text-muted-foreground">
+                  {activityTypeName}
+                </div>
+              </div>
+            )}
+            {/* Профессия (только отображение) */}
+            {watch('profession') && (
+              <div className="space-y-2">
+                <Label>{t('profile.profession')}</Label>
+                <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted/40 px-3 text-sm text-muted-foreground">
+                  {watch('profession')}
+                </div>
+              </div>
+            )}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>{t('profile.bio')}</Label>
+                {aiConfig?.enabled && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs text-muted-foreground hover:text-primary"
+                    onClick={generateBio}
+                    disabled={generatingBio}
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    {generatingBio ? t('profile.generating') : t('profile.generate')}
+                  </Button>
+                )}
+              </div>
+              <Textarea rows={3} placeholder={t('profile.bioPlaceholder')} {...register('bio')} />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Portfolio Card — full width row below photo+info */}
+        <Card className={cn("lg:col-span-3", profileTab !== 'main' && 'hidden')}>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <ImagePlus className="h-4 w-4" />
@@ -541,7 +590,7 @@ export function ProfilePage() {
             {/* 3×3 sortable grid */}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePortfolioDragEnd}>
               <SortableContext items={portfolioOrder} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-2">
 
                   {/* Saved & sorted photos */}
                   {portfolioOrder.map(filename => (
@@ -592,55 +641,6 @@ export function ProfilePage() {
             {portfolioOrder.length + portfolioFiles.length >= MAX_PORTFOLIO && (
               <p className="text-xs text-muted-foreground">{t('profile.portfolioMax')}</p>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Main Info */}
-        <Card className={cn("lg:col-span-2", profileTab !== 'main' && 'hidden')}>
-          <CardHeader><CardTitle className="text-base">{t('profile.basicInfo')}</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            {/* Имя (отображаемое имя / ФИО) */}
-            <div className="space-y-2">
-              <Label>{t('profile.displayName')}</Label>
-              <Input placeholder={t('profile.displayNamePlaceholder')} {...register('display_name')} />
-            </div>
-            {/* Сфера деятельности (read-only) */}
-            {activityTypeName && (
-              <div className="space-y-2">
-                <Label>{t('specialty.activityType')}</Label>
-                <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted/40 px-3 text-sm text-muted-foreground">
-                  {activityTypeName}
-                </div>
-              </div>
-            )}
-            {/* Профессия (только отображение) */}
-            {watch('profession') && (
-              <div className="space-y-2">
-                <Label>{t('profile.profession')}</Label>
-                <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted/40 px-3 text-sm text-muted-foreground">
-                  {watch('profession')}
-                </div>
-              </div>
-            )}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>{t('profile.bio')}</Label>
-                {aiConfig?.enabled && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs text-muted-foreground hover:text-primary"
-                    onClick={generateBio}
-                    disabled={generatingBio}
-                  >
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    {generatingBio ? t('profile.generating') : t('profile.generate')}
-                  </Button>
-                )}
-              </div>
-              <Textarea rows={3} placeholder={t('profile.bioPlaceholder')} {...register('bio')} />
-            </div>
           </CardContent>
         </Card>
 
