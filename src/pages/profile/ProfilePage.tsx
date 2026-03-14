@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { Camera, Copy, ExternalLink, Globe, Instagram, Mail, MessageCircle, Phone, Send, BellRing, CheckCircle2, XCircle, ImagePlus, Trash2, MapPin, Navigation, Wand2, User, Settings, QrCode, ArrowLeftRight, Sparkles } from 'lucide-react'
+import { Camera, Copy, ExternalLink, Globe, Instagram, Mail, MessageCircle, Phone, Send, BellRing, CheckCircle2, XCircle, ImagePlus, Trash2, MapPin, Navigation, Wand2, User, Settings, QrCode, ArrowLeftRight, Sparkles, GripVertical, Loader2 } from 'lucide-react'
 import { buildClientBookingLink } from '@/lib/telegramWebApp'
 import { BOOKING_THEMES } from '@/lib/bookingThemes'
 import { useQueryClient } from '@tanstack/react-query'
@@ -26,6 +26,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { toast } from '@/components/shared/Toaster'
 import { cn, generateSlug, getFileUrl } from '@/lib/utils'
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor,
+  useSensor, useSensors, type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext, rectSortingStrategy, sortableKeyboardCoordinates,
+  useSortable, arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
 import { DataTransferSection } from '@/components/profile/DataTransferSection'
 import { FeatureGate } from '@/components/shared/FeatureGate'
@@ -50,6 +59,52 @@ const schema = z.object({
 })
 type FormValues = z.infer<typeof schema>
 
+const MAX_PORTFOLIO = 9
+
+// ─── Sortable portfolio item ──────────────────────────────────────────────────
+function SortablePortfolioItem({ id, url, isDeleting, onDelete }: {
+  id: string; url: string; isDeleting: boolean; onDelete: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  }
+  return (
+    <div ref={setNodeRef} style={style} className="relative group aspect-square">
+      <img
+        src={url}
+        alt="Portfolio"
+        className={cn('w-full h-full object-cover rounded-xl border-2 border-border', isDeleting && 'opacity-40')}
+      />
+      {/* Drag handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-1.5 left-1.5 p-1 rounded-md bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none"
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </div>
+      {/* Delete */}
+      {isDeleting ? (
+        <div className="absolute inset-0 rounded-xl flex items-center justify-center bg-black/20">
+          <Loader2 className="h-4 w-4 animate-spin text-white" />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onDelete}
+          className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+        >
+          <Trash2 className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function ProfilePage() {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
@@ -65,6 +120,8 @@ export function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [portfolioFiles, setPortfolioFiles] = useState<File[]>([])
   const [portfolioDeleting, setPortfolioDeleting] = useState<Set<string>>(new Set())
+  const [portfolioOrder, setPortfolioOrder] = useState<string[]>([])
+  const portfolioInputRef = useRef<HTMLInputElement>(null)
   const [activityTypeId, setActivityTypeId] = useState('')
   const [specialtyId, setSpecialtyId] = useState('')
   const [activityTypeName, setActivityTypeName] = useState('')
@@ -122,6 +179,7 @@ export function ProfilePage() {
         if (found) setActivityTypeName(found.name)
       }
       if (profile.specialty) setSpecialtyId(profile.specialty)
+      setPortfolioOrder(profile.portfolio ?? [])
     }
   }, [profile, reset, user?.name, activityTypes])
 
@@ -132,6 +190,21 @@ export function ProfilePage() {
   const watchAddress = watch('address')
   const bookingUrl = `${window.location.origin}/book/${bookingSlug}`
   const tgBookingUrl = buildClientBookingLink(bookingSlug)
+
+  // ── Portfolio DnD ────────────────────────────────────────────────────────
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+  const handlePortfolioDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    setPortfolioOrder(prev => {
+      const oldIdx = prev.indexOf(active.id as string)
+      const newIdx = prev.indexOf(over.id as string)
+      return arrayMove(prev, oldIdx, newIdx)
+    })
+  }
   const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(tgBookingUrl)}`
 
   // Строка для Google Maps из адреса + города
@@ -178,6 +251,7 @@ export function ProfilePage() {
       if (activityTypeId) payload.activity_type = activityTypeId
       if (specialtyId) payload.specialty = specialtyId
       if (portfolioFiles.length > 0) payload._portfolioFiles = portfolioFiles
+      payload.portfolio = portfolioOrder  // always save current order
 
       await upsert.mutateAsync({ id: profile?.id, data: payload })
       toast.success(t('common.saved'))
@@ -201,9 +275,7 @@ export function ProfilePage() {
   const onPortfolioAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
-    // Limit: max 8 photos total
-    const existing = profile?.portfolio?.length || 0
-    const allowed = Math.max(0, 8 - existing - portfolioFiles.length)
+    const allowed = Math.max(0, MAX_PORTFOLIO - portfolioOrder.length - portfolioFiles.length)
     setPortfolioFiles(prev => [...prev, ...files.slice(0, allowed)])
     e.target.value = ''
   }
@@ -212,7 +284,8 @@ export function ProfilePage() {
     if (!profile?.id) return
     setPortfolioDeleting(prev => new Set(prev).add(filename))
     try {
-      const newPortfolio = (profile.portfolio ?? []).filter((p: string) => p !== filename)
+      const newPortfolio = portfolioOrder.filter((p: string) => p !== filename)
+      setPortfolioOrder(newPortfolio)
       await upsert.mutateAsync({ id: profile.id, data: { portfolio: newPortfolio } })
       toast.success(t('profile.photoDeleted'))
     } catch {
@@ -454,65 +527,69 @@ export function ProfilePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-xs text-muted-foreground">{t('profile.portfolioHint')}</p>
-            {/* Existing photos */}
-            {((profile?.portfolio?.length || 0) > 0 || portfolioFiles.length > 0) && (
-              <div className="flex flex-wrap gap-2">
-                {/* Saved photos */}
-                {profile?.portfolio?.map((filename) => {
-                  const url = getFileUrl('master_profiles', filename)
-                  const isDeleting = portfolioDeleting.has(filename)
-                  return (
-                    <div key={filename} className="relative group">
+
+            {/* Hidden file input — triggered by empty slot clicks */}
+            <input
+              ref={portfolioInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="sr-only"
+              onChange={onPortfolioAdd}
+            />
+
+            {/* 3×3 sortable grid */}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePortfolioDragEnd}>
+              <SortableContext items={portfolioOrder} strategy={rectSortingStrategy}>
+                <div className="grid grid-cols-3 gap-2">
+
+                  {/* Saved & sorted photos */}
+                  {portfolioOrder.map(filename => (
+                    <SortablePortfolioItem
+                      key={filename}
+                      id={filename}
+                      url={getFileUrl('master_profiles', filename)}
+                      isDeleting={portfolioDeleting.has(filename)}
+                      onDelete={() => onPortfolioDelete(filename)}
+                    />
+                  ))}
+
+                  {/* Pending new photos (not yet saved) */}
+                  {portfolioFiles.map((file, i) => (
+                    <div key={`new-${i}`} className="relative group aspect-square">
                       <img
-                        src={url}
-                        alt="Portfolio"
-                        className={`h-20 w-20 object-cover rounded-lg border ${isDeleting ? 'opacity-50' : ''}`}
+                        src={URL.createObjectURL(file)}
+                        alt="New"
+                        className="w-full h-full object-cover rounded-xl border-2 border-primary/40 opacity-80"
                       />
                       <button
                         type="button"
-                        onClick={() => onPortfolioDelete(filename)}
-                        disabled={isDeleting}
-                        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                        onClick={() => setPortfolioFiles(prev => prev.filter((_, j) => j !== i))}
+                        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-sm"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
                     </div>
-                  )
-                })}
-                {/* Preview of new files */}
-                {portfolioFiles.map((file, i) => (
-                  <div key={i} className="relative group">
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt="New"
-                      className="h-20 w-20 object-cover rounded-lg border border-primary/50 opacity-80"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setPortfolioFiles(prev => prev.filter((_, j) => j !== i))}
-                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            {/* Upload button */}
-            {(profile?.portfolio?.length || 0) + portfolioFiles.length < 8 && (
-              <label className="flex items-center gap-2 w-fit cursor-pointer rounded-lg border-2 border-dashed border-border hover:border-primary px-4 py-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                <ImagePlus className="h-4 w-4" />
-                {t('profile.portfolioAdd')}
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="sr-only"
-                  onChange={onPortfolioAdd}
-                />
-              </label>
-            )}
-            {(profile?.portfolio?.length || 0) + portfolioFiles.length >= 8 && (
+                  ))}
+
+                  {/* Empty frames — clickable to add */}
+                  {portfolioOrder.length + portfolioFiles.length < MAX_PORTFOLIO &&
+                    Array.from({ length: MAX_PORTFOLIO - portfolioOrder.length - portfolioFiles.length }).map((_, i) => (
+                      <button
+                        key={`empty-${i}`}
+                        type="button"
+                        onClick={() => portfolioInputRef.current?.click()}
+                        className="aspect-square rounded-xl border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 flex items-center justify-center transition-colors group"
+                      >
+                        <ImagePlus className="h-6 w-6 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                      </button>
+                    ))
+                  }
+                </div>
+              </SortableContext>
+            </DndContext>
+
+            {portfolioOrder.length + portfolioFiles.length >= MAX_PORTFOLIO && (
               <p className="text-xs text-muted-foreground">{t('profile.portfolioMax')}</p>
             )}
           </CardContent>
