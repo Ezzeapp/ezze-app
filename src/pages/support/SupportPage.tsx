@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/shared/Toaster'
 import { cn } from '@/lib/utils'
-import { useSupportTickets, useCreateSupportTicket, type TicketType, type TicketStatus } from '@/hooks/useSupportTickets'
+import { useSupportTickets, useCreateSupportTicket, type TicketType, type TicketStatus, type SupportTicket } from '@/hooks/useSupportTickets'
 import dayjs from 'dayjs'
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ function typeColor(type: TicketType) {
 
 // ─── Ticket card ──────────────────────────────────────────────────────────────
 
-function TicketCard({ ticket }: { ticket: ReturnType<typeof useSupportTickets>['data'] extends Array<infer T> ? T : never }) {
+function TicketCard({ ticket }: { ticket: SupportTicket }) {
   const { t, i18n } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const typeLabel = t(`support.type${ticket.type.charAt(0).toUpperCase() + ticket.type.slice(1)}` as any)
