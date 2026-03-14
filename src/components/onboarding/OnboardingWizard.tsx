@@ -12,8 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cn, CURRENCIES, LANG_TO_CURRENCY } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { SERVICES_SEED } from '@/data/services-seed'
-import { PRODUCTS_SEED } from '@/data/products-seed'
 import { getCategoriesForSpecialty } from '@/data/specialty-category-map'
 import { toast } from '@/components/shared/Toaster'
 
@@ -117,6 +115,27 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   const [showProfSuggestions, setShowProfSuggestions] = useState(false)
   const [week,               setWeek]               = useState<WeekSchedule>(DEFAULT_WEEK)
   const profContainerRef = useRef<HTMLDivElement>(null)
+  const [catalogCounts, setCatalogCounts] = useState<{ svc: number; prod: number } | null>(null)
+
+  // Fetch counts from global catalog when profession changes
+  useEffect(() => {
+    if (!profession) { setCatalogCounts(null); return }
+    const { serviceCategories, productCategories } = getCategoriesForSpecialty('', profession)
+    if (serviceCategories.length === 0 && productCategories.length === 0) { setCatalogCounts(null); return }
+    let cancelled = false
+    ;(async () => {
+      const [svcRes, prodRes] = await Promise.all([
+        serviceCategories.length > 0
+          ? supabase.from('global_services').select('id', { count: 'exact', head: true }).in('category', serviceCategories)
+          : Promise.resolve({ count: 0 }),
+        productCategories.length > 0
+          ? supabase.from('global_products').select('id', { count: 'exact', head: true }).in('category', productCategories)
+          : Promise.resolve({ count: 0 }),
+      ])
+      if (!cancelled) setCatalogCounts({ svc: svcRes.count ?? 0, prod: prodRes.count ?? 0 })
+    })()
+    return () => { cancelled = true }
+  }, [profession])
 
   // ── Shared schedule time ──────────────────────────────────────────────────
   const [workStart, setWorkStart] = useState('07:00')
@@ -173,8 +192,18 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   const autoImport = async () => {
     if (!profession) return
     const { serviceCategories, productCategories } = getCategoriesForSpecialty('', profession)
-    const servicesToImport = SERVICES_SEED.filter((s) => serviceCategories.includes(s.category))
-    const productsToImport = PRODUCTS_SEED.filter((p) => productCategories.includes(p.category))
+
+    // Fetch from global catalog tables (not seed files)
+    const [svcRes, prodRes] = await Promise.all([
+      serviceCategories.length > 0
+        ? supabase.from('global_services').select('name, category').in('category', serviceCategories)
+        : Promise.resolve({ data: [] as { name: string; category: string | null }[] }),
+      productCategories.length > 0
+        ? supabase.from('global_products').select('name, category, unit').in('category', productCategories)
+        : Promise.resolve({ data: [] as { name: string; category: string | null; unit: string | null }[] }),
+    ])
+    const servicesToImport = svcRes.data ?? []
+    const productsToImport = prodRes.data ?? []
     if (servicesToImport.length === 0 && productsToImport.length === 0) return
     try {
       const { data: existingSvcCats } = await supabase
@@ -198,8 +227,8 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
         if (!existingSvcNames.has(svc.name.toLowerCase())) {
           try {
             await supabase.from('services').insert({
-              name: svc.name, duration_min: svc.duration_min || 60, master_id: user!.id,
-              category_id: categoryIdMap[svc.category.toLowerCase()] || undefined,
+              name: svc.name, duration_min: 60, master_id: user!.id,
+              category_id: categoryIdMap[(svc.category ?? '').toLowerCase()] || undefined,
               is_active: true, is_bookable: true,
             })
           } catch { /* ignore */ }
@@ -567,21 +596,15 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
                 </Select>
               </div>
 
-              {/* Auto-import notice */}
-              {profession && (() => {
-                const { serviceCategories, productCategories } = getCategoriesForSpecialty('', profession)
-                const svcCount  = SERVICES_SEED.filter((s) => serviceCategories.includes(s.category)).length
-                const prodCount = PRODUCTS_SEED.filter((p) => productCategories.includes(p.category)).length
-                if (svcCount === 0 && prodCount === 0) return null
-                return (
-                  <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 space-y-1">
-                    <p className="text-xs font-semibold text-primary">{t('onboarding.autoImportTitle')}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t('onboarding.autoImportDesc', { specialty: profession, svcCount, prodCount })}
-                    </p>
-                  </div>
-                )
-              })()}
+              {/* Auto-import notice — counts from global catalog */}
+              {profession && catalogCounts && (catalogCounts.svc > 0 || catalogCounts.prod > 0) && (
+                <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 space-y-1">
+                  <p className="text-xs font-semibold text-primary">{t('onboarding.autoImportTitle')}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t('onboarding.autoImportDesc', { specialty: profession, svcCount: catalogCounts.svc, prodCount: catalogCounts.prod })}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
