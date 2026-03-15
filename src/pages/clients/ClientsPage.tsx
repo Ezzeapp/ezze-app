@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, KeyboardEvent, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, CheckCircle2, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2, Gift, TrendingUp, TrendingDown } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, CheckCircle2, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2, Gift, TrendingUp, TrendingDown, Award, Crown, Gem } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -136,6 +136,15 @@ const REASON_ICONS: Record<string, React.ReactNode> = {
   birthday:    <Gift className="h-3.5 w-3.5 text-pink-500" />,
 }
 
+function LevelIcon({ level, className = 'h-4 w-4' }: { level: import('@/hooks/useLoyalty').LoyaltyLevel; className?: string }) {
+  switch (level) {
+    case 'premium': return <Gem     className={className} />
+    case 'vip':     return <Crown   className={className} />
+    case 'regular': return <Award   className={className} />
+    default:        return <Sparkles className={className} />
+  }
+}
+
 function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () => void }) {
   const { t, i18n } = useTranslation()
   const currency = useCurrency()
@@ -245,7 +254,10 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
                   <p className="text-xs text-muted-foreground">{t('clients.statsVisits')}</p>
                 </div>
                 <div className="rounded-lg bg-muted/50 p-3 text-center">
-                  <p className="text-2xl font-bold text-primary">{formatCurrency(stats.totalSpent, currency, i18n.language)}</p>
+                  <p className="text-xl font-bold text-primary leading-tight">
+                    {new Intl.NumberFormat(i18n.language).format(stats.totalSpent)}
+                    <span className="text-[10px] font-medium text-muted-foreground ml-1">{currency}</span>
+                  </p>
                   <p className="text-xs text-muted-foreground">{t('clients.statsSpent')}</p>
                 </div>
                 <div className="rounded-lg bg-muted/50 p-3 text-center">
@@ -301,8 +313,8 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
                 <p className="text-2xl font-bold text-primary">{loyaltyBalance}</p>
                 <p className="text-xs text-muted-foreground">{t('loyalty.pts')}</p>
               </div>
-              <div className={`rounded-lg p-3 text-center col-span-1 ${getLevelColor(level)}`}>
-                <p className="text-lg font-bold">{getLevelLabel(level)}</p>
+              <div className={`rounded-lg p-3 text-center col-span-1 flex flex-col items-center justify-center gap-1 ${getLevelColor(level)}`}>
+                <LevelIcon level={level} className="h-5 w-5" />
                 <p className="text-xs font-medium">{t(`loyalty.level_${level}`)}</p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3 text-center col-span-1">
@@ -775,8 +787,9 @@ export function ClientsPage() {
                           const color = getLevelColor(level)
                           return (
                             <>
-                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${color}`}>
-                                {getLevelLabel(level)} {t(`loyalty.level_${level}`)}
+                              <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${color}`}>
+                                <LevelIcon level={level} className="h-2.5 w-2.5" />
+                                {t(`loyalty.level_${level}`)}
                               </span>
                               {balance > 0 && (
                                 <span className="text-[10px] text-muted-foreground">{balance} {t('loyalty.pts')}</span>
@@ -878,8 +891,8 @@ export function ClientsPage() {
                           const level = getLoyaltyLevel(visits, loyaltySettings)
                           if (level === 'new') return null
                           return (
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${getLevelColor(level)}`}>
-                              {getLevelLabel(level)}
+                            <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${getLevelColor(level)}`}>
+                              <LevelIcon level={level} className="h-2.5 w-2.5" />
                             </span>
                           )
                         })()}
