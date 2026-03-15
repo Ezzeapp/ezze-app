@@ -102,7 +102,10 @@ async function sendClientKeyboard(chatId) {
     `👇 Используйте кнопки для быстрого доступа:`,
     {
       keyboard: [
-        [{ text: "📋 Мои записи" }, { text: "🎓 Стать мастером" }],
+        [
+          { text: "📋 Мои записи", style: "primary" },
+          { text: "🎓 Стать мастером", style: "success" },
+        ],
       ],
       resize_keyboard: true,
       persistent: true,
