@@ -435,6 +435,8 @@ async function processUpdate(update) {
             .from("master_profiles").select("profession").eq("booking_slug", slug).maybeSingle();
 
           if (profile) {
+            // Сбрасываем Menu Button — она появится только после сбора телефона и имени
+            await setUserMenuButton(chatId);
             // Запускаем сбор данных клиента
             pendingBookings.set(chatId, {
               slug,
