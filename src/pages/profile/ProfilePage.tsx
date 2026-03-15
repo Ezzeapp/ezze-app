@@ -883,6 +883,14 @@ export function ProfilePage() {
                         >
                           ↓ PNG
                         </a>
+                        <a
+                          href={tgBookingUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-md border hover:bg-accent transition-colors text-muted-foreground"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {t('profile.tgBookingHint')}
