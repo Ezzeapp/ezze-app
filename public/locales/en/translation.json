@@ -1266,6 +1266,18 @@
     "myLoyalty": "My loyalty",
     "referralTitle": "Invite a friend",
     "copyLink": "Copy link",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "reasonVisit": "For visit",
+    "reasonFirstVisit": "First visit",
+    "reasonReferral": "Referral",
+    "reasonManual": "Manual",
+    "reasonRedeem": "Redemption",
+    "reasonBirthday": "Birthday",
+    "pointsHistory": "Points history",
+    "awardPoints": "Award points",
+    "redeemPoints": "Redeem points",
+    "awarded": "Points awarded",
+    "noteOptional": "Note (optional)",
+    "noPoints": "No points activity yet"
   }
 }

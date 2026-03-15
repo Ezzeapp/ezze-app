@@ -1250,6 +1250,18 @@
     "myLoyalty": "Менин садықлығым",
     "referralTitle": "Досыңызды шақырыңыз",
     "copyLink": "Сілтемени нусқаlaw",
-    "copied": "Нусқаланды!"
+    "copied": "Нусқаланды!",
+    "reasonVisit": "Baryp kelgeni uchun",
+    "reasonFirstVisit": "Birinshi baryp keliw",
+    "reasonReferral": "Referal",
+    "reasonManual": "Qoldan",
+    "reasonRedeem": "Shegeriw",
+    "reasonBirthday": "Tuwılǵan kún",
+    "pointsHistory": "Ballar tariyxı",
+    "awardPoints": "Ball qosıw",
+    "redeemPoints": "Balldı shegeriw",
+    "awarded": "Ballar qosıldı",
+    "noteOptional": "Eskertpe (mıjbúriy emes)",
+    "noPoints": "Ball háreketi joq"
   }
 }

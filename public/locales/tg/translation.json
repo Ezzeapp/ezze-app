@@ -1250,6 +1250,18 @@
     "myLoyalty": "Содиқии ман",
     "referralTitle": "Дӯсти худро даъват кунед",
     "copyLink": "Нусхабардории истиноду",
-    "copied": "Нусхабардорӣ шуд!"
+    "copied": "Нусхабардорӣ шуд!",
+    "reasonVisit": "Барои ташриф",
+    "reasonFirstVisit": "Аввалин ташриф",
+    "reasonReferral": "Референс",
+    "reasonManual": "Дастӣ",
+    "reasonRedeem": "Хориҷ кардан",
+    "reasonBirthday": "Рӯзи таваллуд",
+    "pointsHistory": "Таърихи амтиӣзҳо",
+    "awardPoints": "Ҷамъ кардан",
+    "redeemPoints": "Хориҷ кардан",
+    "awarded": "Амтиӣзҳо ҷамъ карда шуданд",
+    "noteOptional": "Езоҳ (ихтиӣрӣ)",
+    "noPoints": "Ҳаракати амтиӣзҳо нест"
   }
 }

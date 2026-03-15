@@ -1266,6 +1266,18 @@
     "myLoyalty": "Моя лояльность",
     "referralTitle": "Пригласи друга",
     "copyLink": "Скопировать ссылку",
-    "copied": "Скопировано!"
+    "copied": "Скопировано!",
+    "reasonVisit": "За визит",
+    "reasonFirstVisit": "Первый визит",
+    "reasonReferral": "Реферал",
+    "reasonManual": "Вручную",
+    "reasonRedeem": "Списание",
+    "reasonBirthday": "День рождения",
+    "pointsHistory": "История баллов",
+    "awardPoints": "Начислить",
+    "redeemPoints": "Списать",
+    "awarded": "Баллы начислены",
+    "noteOptional": "Примечание (необяз.)",
+    "noPoints": "Движений по баллам нет"
   }
 }

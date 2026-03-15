@@ -1250,6 +1250,18 @@
     "myLoyalty": "Менің адалдығым",
     "referralTitle": "Досыңызды шақырыңыз",
     "copyLink": "Сілтемені көшіру",
-    "copied": "Көшірілді!"
+    "copied": "Көшірілді!",
+    "reasonVisit": "Барғаны үшін",
+    "reasonFirstVisit": "Бірінші бару",
+    "reasonReferral": "Реферал",
+    "reasonManual": "Қолмен",
+    "reasonRedeem": "Есептен шығару",
+    "reasonBirthday": "Туған күн",
+    "pointsHistory": "Балдар тарихы",
+    "awardPoints": "Балл есептеу",
+    "redeemPoints": "Балды есептен шығару",
+    "awarded": "Балл есептелді",
+    "noteOptional": "Ескертпе (міндетті емес)",
+    "noPoints": "Балл қозғалысы жоқ"
   }
 }

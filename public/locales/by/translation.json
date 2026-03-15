@@ -1250,6 +1250,18 @@
     "myLoyalty": "Мая лаяльнасць",
     "referralTitle": "Запрасіце сябра",
     "copyLink": "Скапіраваць спасылку",
-    "copied": "Скапіравана!"
+    "copied": "Скапіравана!",
+    "reasonVisit": "За візіт",
+    "reasonFirstVisit": "Першы візіт",
+    "reasonReferral": "Рэферал",
+    "reasonManual": "Уручную",
+    "reasonRedeem": "Спісанне",
+    "reasonBirthday": "Дзень нараджэння",
+    "pointsHistory": "Гісторыя балаў",
+    "awardPoints": "Начысліць",
+    "redeemPoints": "Спісаць",
+    "awarded": "Балы начыслены",
+    "noteOptional": "Заўвага (неабавязк.)",
+    "noPoints": "Рухаў па балах няма"
   }
 }

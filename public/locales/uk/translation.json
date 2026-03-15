@@ -1250,6 +1250,18 @@
     "myLoyalty": "Моя лояльність",
     "referralTitle": "Запросіть друга",
     "copyLink": "Скопіювати посилання",
-    "copied": "Скопійовано!"
+    "copied": "Скопійовано!",
+    "reasonVisit": "За візит",
+    "reasonFirstVisit": "Перший візит",
+    "reasonReferral": "Реферал",
+    "reasonManual": "Вручну",
+    "reasonRedeem": "Списання",
+    "reasonBirthday": "День народження",
+    "pointsHistory": "Історія балів",
+    "awardPoints": "Нарахувати",
+    "redeemPoints": "Списати",
+    "awarded": "Бали нараховані",
+    "noteOptional": "Примітка (необов.)",
+    "noPoints": "Рухів по балах немає"
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, KeyboardEvent, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, CheckCircle2, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2 } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, CheckCircle2, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2, Gift, TrendingUp, TrendingDown } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -33,9 +33,14 @@ import {
   useLoyaltySettings,
   useAllClientsLoyaltyBalances,
   useAllClientsDoneVisits,
+  useClientLoyaltyPoints,
+  useClientLoyaltyBalance,
+  useAddLoyaltyPoints,
   getLoyaltyLevel,
   getLevelLabel,
   getLevelColor,
+  getLevelDiscount,
+  type LoyaltyPoint,
 } from '@/hooks/useLoyalty'
 
 // Birthday helpers: store as YYYY-MM-DD, display/input as DD.MM.YYYY
@@ -122,23 +127,76 @@ function TagsInput({ value = [], onChange }: { value?: string[]; onChange: (tags
   )
 }
 
+const REASON_ICONS: Record<string, React.ReactNode> = {
+  visit:       <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />,
+  first_visit: <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />,
+  referral:    <Gift className="h-3.5 w-3.5 text-violet-500" />,
+  manual:      <TrendingUp className="h-3.5 w-3.5 text-blue-500" />,
+  redeem:      <TrendingDown className="h-3.5 w-3.5 text-orange-500" />,
+  birthday:    <Gift className="h-3.5 w-3.5 text-pink-500" />,
+}
+
 function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () => void }) {
   const { t, i18n } = useTranslation()
   const currency = useCurrency()
   const clientFullName = `${client.first_name} ${client.last_name || ''}`.trim()
   const { data: stats, isLoading } = useClientStats(client.id, clientFullName)
+  const { data: loyaltySettings } = useLoyaltySettings()
+  const { data: loyaltyBalance = 0 } = useClientLoyaltyBalance(client.id)
+  const { data: loyaltyPoints = [], isLoading: loyaltyLoading } = useClientLoyaltyPoints(client.id)
+  const addPoints = useAddLoyaltyPoints()
+
+  const [tab, setTab] = useState<'stats' | 'loyalty'>('stats')
+  const [manualAmount, setManualAmount] = useState('')
+  const [manualNote, setManualNote] = useState('')
+  const [manualMode, setManualMode] = useState<'earn' | 'redeem' | null>(null)
+
+  const visits = stats?.completedVisits ?? 0
+  const level = loyaltySettings ? getLoyaltyLevel(visits, loyaltySettings) : 'new'
+  const discount = loyaltySettings ? getLevelDiscount(level, loyaltySettings) : 0
 
   const STATUS_LABELS: Record<string, string> = {
     scheduled: t('appointments.status.scheduled'),
-    done: t('appointments.status.done'),
+    done:      t('appointments.status.done'),
     cancelled: t('appointments.status.cancelled'),
-    no_show: t('appointments.status.no_show'),
+    no_show:   t('appointments.status.no_show'),
   }
   const STATUS_COLORS: Record<string, string> = {
     scheduled: 'default',
-    done: 'success',
+    done:      'success',
     cancelled: 'destructive',
-    no_show: 'secondary',
+    no_show:   'secondary',
+  }
+
+  const reasonLabel = (r: string) => {
+    const map: Record<string, string> = {
+      visit:       t('loyalty.reasonVisit'),
+      first_visit: t('loyalty.reasonFirstVisit'),
+      referral:    t('loyalty.reasonReferral'),
+      manual:      t('loyalty.reasonManual'),
+      redeem:      t('loyalty.reasonRedeem'),
+      birthday:    t('loyalty.reasonBirthday'),
+    }
+    return map[r] ?? r
+  }
+
+  const handleManualSubmit = async () => {
+    const amt = parseInt(manualAmount)
+    if (!amt || amt <= 0) return
+    try {
+      await addPoints.mutateAsync({
+        clientId: client.id,
+        amount: manualMode === 'redeem' ? -amt : amt,
+        reason: 'manual',
+        note: manualNote.trim() || undefined,
+      })
+      toast.success(manualMode === 'redeem' ? t('loyalty.redeemed') : t('loyalty.awarded'))
+      setManualMode(null)
+      setManualAmount('')
+      setManualNote('')
+    } catch {
+      toast.error(t('common.saveError'))
+    }
   }
 
   return (
@@ -153,61 +211,195 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
           </DialogTitle>
         </DialogHeader>
 
-        {isLoading ? (
-          <div className="space-y-2 py-4">
-            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 rounded-lg" />)}
-          </div>
-        ) : stats ? (
+        {/* Tabs */}
+        <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
+          <button
+            onClick={() => setTab('stats')}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'stats' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <BarChart2 className="h-3.5 w-3.5 inline mr-1.5" />
+            {t('clients.history')}
+          </button>
+          {loyaltySettings?.enabled && (
+            <button
+              onClick={() => setTab('loyalty')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'loyalty' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <Gift className="h-3.5 w-3.5 inline mr-1.5" />
+              {t('loyalty.title')}
+            </button>
+          )}
+        </div>
+
+        {/* ── Tab: Stats ── */}
+        {tab === 'stats' && (
+          isLoading ? (
+            <div className="space-y-2 py-4">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 rounded-lg" />)}
+            </div>
+          ) : stats ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg bg-muted/50 p-3 text-center">
+                  <p className="text-2xl font-bold">{stats.totalVisits}</p>
+                  <p className="text-xs text-muted-foreground">{t('clients.statsVisits')}</p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3 text-center">
+                  <p className="text-2xl font-bold text-primary">{formatCurrency(stats.totalSpent, currency, i18n.language)}</p>
+                  <p className="text-xs text-muted-foreground">{t('clients.statsSpent')}</p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3 text-center">
+                  <p className="text-2xl font-bold text-emerald-600">{stats.completedVisits}</p>
+                  <p className="text-xs text-muted-foreground">{t('clients.statsDone')}</p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3 text-center">
+                  <p className="text-sm font-medium">{stats.lastVisit || '—'}</p>
+                  <p className="text-xs text-muted-foreground">{t('clients.statsLastVisit')}</p>
+                </div>
+              </div>
+
+              {stats.appointments.length > 0 ? (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  <p className="text-sm font-medium">{t('clients.history')}</p>
+                  {stats.appointments.map((appt) => {
+                    const svcName = (appt.notes || '').match(/^\[(.+)\]/)?.[1]
+                      || (appt as any).service?.name
+                      || appt.expand?.service?.name
+                      || '—'
+                    return (
+                      <div key={appt.id} className="flex items-center justify-between rounded-lg border p-2.5 text-sm">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">{svcName}</p>
+                            <p className="text-xs text-muted-foreground">{appt.date} {appt.start_time?.slice(0, 5)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {appt.price ? <span className="text-xs font-medium">{formatCurrency(appt.price, currency, i18n.language)}</span> : null}
+                          <Badge variant={STATUS_COLORS[appt.status] as any} className="text-xs">
+                            {STATUS_LABELS[appt.status]}
+                          </Badge>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">{t('clients.statsNoVisits')}</p>
+              )}
+            </div>
+          ) : null
+        )}
+
+        {/* ── Tab: Loyalty ── */}
+        {tab === 'loyalty' && loyaltySettings?.enabled && (
           <div className="space-y-4">
-            {/* Сводка */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="text-2xl font-bold">{stats.totalVisits}</p>
-                <p className="text-xs text-muted-foreground">{t('clients.statsVisits')}</p>
+            {/* Summary */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg bg-muted/50 p-3 text-center col-span-1">
+                <p className="text-2xl font-bold text-primary">{loyaltyBalance}</p>
+                <p className="text-xs text-muted-foreground">{t('loyalty.pts')}</p>
               </div>
-              <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="text-2xl font-bold text-primary">{formatCurrency(stats.totalSpent, currency, i18n.language)}</p>
-                <p className="text-xs text-muted-foreground">{t('clients.statsSpent')}</p>
+              <div className={`rounded-lg p-3 text-center col-span-1 ${getLevelColor(level)}`}>
+                <p className="text-lg font-bold">{getLevelLabel(level)}</p>
+                <p className="text-xs font-medium">{t(`loyalty.level_${level}`)}</p>
               </div>
-              <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="text-2xl font-bold text-emerald-600">{stats.completedVisits}</p>
-                <p className="text-xs text-muted-foreground">{t('clients.statsDone')}</p>
-              </div>
-              <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="text-sm font-medium">{stats.lastVisit || '—'}</p>
-                <p className="text-xs text-muted-foreground">{t('clients.statsLastVisit')}</p>
+              <div className="rounded-lg bg-muted/50 p-3 text-center col-span-1">
+                <p className="text-2xl font-bold">{discount > 0 ? `${discount}%` : '—'}</p>
+                <p className="text-xs text-muted-foreground">{t('loyalty.discountPct')}</p>
               </div>
             </div>
 
-            {/* История записей */}
-            {stats.appointments.length > 0 ? (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                <p className="text-sm font-medium">{t('clients.history')}</p>
-                {stats.appointments.map((appt) => (
-                  <div key={appt.id} className="flex items-center justify-between rounded-lg border p-2.5 text-sm">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-medium truncate">
-                          {(appt.notes || '').match(/^\[(.+)\]/)?.[1] || appt.expand?.service?.name || '—'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{appt.date} {appt.start_time}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {appt.price ? <span className="text-xs font-medium">{formatCurrency(appt.price, currency, i18n.language)}</span> : null}
-                      <Badge variant={STATUS_COLORS[appt.status] as any} className="text-xs">
-                        {STATUS_LABELS[appt.status]}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+            {/* Manual actions */}
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={manualMode === 'earn' ? 'default' : 'outline'}
+                className="flex-1 gap-1.5"
+                onClick={() => setManualMode(manualMode === 'earn' ? null : 'earn')}
+              >
+                <TrendingUp className="h-3.5 w-3.5" />
+                {t('loyalty.awardPoints')}
+              </Button>
+              <Button
+                size="sm"
+                variant={manualMode === 'redeem' ? 'default' : 'outline'}
+                className="flex-1 gap-1.5"
+                onClick={() => setManualMode(manualMode === 'redeem' ? null : 'redeem')}
+              >
+                <TrendingDown className="h-3.5 w-3.5" />
+                {t('loyalty.redeemPoints')}
+              </Button>
+            </div>
+
+            {manualMode && (
+              <div className="rounded-lg border p-3 space-y-3 bg-muted/30">
+                <p className="text-sm font-medium">
+                  {manualMode === 'earn' ? t('loyalty.awardPoints') : t('loyalty.redeemPoints')}
+                </p>
+                <Input
+                  type="number"
+                  min={1}
+                  placeholder={t('loyalty.pts')}
+                  value={manualAmount}
+                  onChange={e => setManualAmount(e.target.value)}
+                  className="h-9"
+                />
+                <Input
+                  placeholder={t('loyalty.noteOptional')}
+                  value={manualNote}
+                  onChange={e => setManualNote(e.target.value)}
+                  className="h-9"
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => setManualMode(null)} className="flex-1">
+                    {t('common.cancel')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1"
+                    disabled={!manualAmount || addPoints.isPending}
+                    onClick={handleManualSubmit}
+                  >
+                    {addPoints.isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                    {t('common.apply')}
+                  </Button>
+                </div>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">{t('clients.statsNoVisits')}</p>
             )}
+
+            {/* Points history */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">{t('loyalty.pointsHistory')}</p>
+              {loyaltyLoading ? (
+                <div className="space-y-1.5">
+                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-10 rounded-lg" />)}
+                </div>
+              ) : loyaltyPoints.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">{t('loyalty.noPoints')}</p>
+              ) : (
+                <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                  {loyaltyPoints.map((p: LoyaltyPoint) => (
+                    <div key={p.id} className="flex items-center gap-2.5 rounded-lg border px-3 py-2">
+                      <span className="shrink-0">{REASON_ICONS[p.reason] ?? <Gift className="h-3.5 w-3.5 text-muted-foreground" />}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium">{reasonLabel(p.reason)}</p>
+                        {p.note && <p className="text-[10px] text-muted-foreground truncate">{p.note}</p>}
+                        <p className="text-[10px] text-muted-foreground">
+                          {new Date(p.created_at).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <span className={`text-sm font-bold shrink-0 ${p.amount > 0 ? 'text-emerald-600' : 'text-orange-600'}`}>
+                        {p.amount > 0 ? '+' : ''}{p.amount}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        ) : null}
+        )}
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>

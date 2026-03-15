@@ -1250,6 +1250,18 @@
     "myLoyalty": "Mening sodiqligim",
     "referralTitle": "Do'stingizni taklif qiling",
     "copyLink": "Havolani nusxalash",
-    "copied": "Nusxalandi!"
+    "copied": "Nusxalandi!",
+    "reasonVisit": "Tashrif uchun",
+    "reasonFirstVisit": "Birinchi tashrif",
+    "reasonReferral": "Referal",
+    "reasonManual": "Qo'lda",
+    "reasonRedeem": "Hisobdan chiqarish",
+    "reasonBirthday": "Tug'ilgan kun",
+    "pointsHistory": "Ball tarixi",
+    "awardPoints": "Ball qo'shish",
+    "redeemPoints": "Ball hisobdan chiqarish",
+    "awarded": "Ball qo'shildi",
+    "noteOptional": "Izoh (ixtiyoriy)",
+    "noPoints": "Ball harakati yo'q"
   }
 }
