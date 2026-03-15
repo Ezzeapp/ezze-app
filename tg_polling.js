@@ -72,6 +72,21 @@ async function setUserMenuButton(chatId, text, url) {
   }
 }
 
+// Показывает постоянную клавиатуру клиента: "Мои записи" + "Стать мастером"
+async function sendClientKeyboard(chatId) {
+  await sendMessage(
+    chatId,
+    `👇 Используйте кнопки для быстрого доступа:`,
+    {
+      keyboard: [
+        [{ text: "📋 Мои записи" }, { text: "🎓 Стать мастером" }],
+      ],
+      resize_keyboard: true,
+      persistent: true,
+    }
+  );
+}
+
 // Отправляет inline кнопку "Записаться" с предзаполненными телефоном и именем в URL
 async function showBookingButton(chatId, slug, phone, name, tgUsername = '') {
   const params = new URLSearchParams({ tg_phone: phone, tg_name: name, tg_id: String(chatId) })
@@ -437,8 +452,6 @@ async function processUpdate(update) {
             .from("master_profiles").select("profession").eq("booking_slug", slug).maybeSingle();
 
           if (profile) {
-            // Сбрасываем Menu Button — она появится только после сбора телефона и имени
-            await setUserMenuButton(chatId);
             // Запускаем сбор данных клиента
             pendingBookings.set(chatId, {
               slug,
@@ -513,10 +526,25 @@ async function processUpdate(update) {
         const name = text.trim() || pending.tgName || firstName;
         const tgUsername = pending.tgUsername || '';
         pendingBookings.delete(chatId);
-        await setUserMenuButton(chatId, "Мои записи", `${APP_URL}/my`);
         await showBookingButton(chatId, pending.slug, pending.phone, name, tgUsername);
+        await sendClientKeyboard(chatId);
         return;
       }
+    }
+
+    // ── Кнопки клиентской клавиатуры ─────────────────────────────────────────
+    if (text === "📋 Мои записи") {
+      await sendMessageWithWebApp(chatId, "📋 Ваши записи:", "Открыть Мои записи", `${APP_URL}/my`);
+      return;
+    }
+    if (text === "🎓 Стать мастером") {
+      await sendMessageWithWebApp(
+        chatId,
+        `🎓 <b>Стать мастером в Ezze</b>\n\nПринимайте онлайн-записи от клиентов через удобный календарь.\n\nНажмите кнопку ниже, чтобы зарегистрироваться:`,
+        "📝 Зарегистрироваться",
+        `${APP_URL}/register`
+      );
+      return;
     }
 
     // AI: handle arbitrary (non-command) messages
