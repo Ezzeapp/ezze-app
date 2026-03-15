@@ -3,7 +3,7 @@
  * Запускать: node tg_polling.js
  */
 
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { createClient } from "@supabase/supabase-js";
 
 try {
@@ -30,7 +30,27 @@ let offset = 0;
 
 // Хранит состояние сбора данных клиента перед записью
 // chatId → { slug, masterProfession, step: 'waiting_phone'|'waiting_name', phone? }
-const pendingBookings = new Map();
+// Персистируется в файл — выживает рестарты бота
+const SESSIONS_FILE = "./tg_sessions.json";
+
+function loadPendingBookings() {
+  try {
+    const raw = readFileSync(SESSIONS_FILE, "utf8");
+    return new Map(Object.entries(JSON.parse(raw)));
+  } catch {
+    return new Map();
+  }
+}
+
+function savePendingBookings() {
+  try {
+    writeFileSync(SESSIONS_FILE, JSON.stringify(Object.fromEntries(pendingBookings)));
+  } catch (e) {
+    console.error("savePendingBookings error:", e.message);
+  }
+}
+
+const pendingBookings = loadPendingBookings();
 
 // Форматирует дату YYYY-MM-DD → "17 марта"
 function fmtDate(s) {
@@ -453,6 +473,7 @@ async function processUpdate(update) {
       pending.step = "waiting_name";
       pending.phone = phone;
       pending.tgName = contactName;
+      savePendingBookings();
       // Убираем keyboard и просим имя
       await sendMessage(
         chatId,
@@ -488,6 +509,7 @@ async function processUpdate(update) {
               step: "waiting_phone",
               tgUsername: message.from?.username || '', // никнейм Telegram
             });
+            savePendingBookings();
             await fetch(`${TG_API}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -578,6 +600,7 @@ async function processUpdate(update) {
         const name = text.trim() || pending.tgName || firstName;
         const tgUsername = pending.tgUsername || '';
         pendingBookings.delete(chatId);
+        savePendingBookings();
         await showBookingButton(chatId, pending.slug, pending.phone, name, tgUsername);
         await sendClientKeyboard(chatId);
         return;
