@@ -165,6 +165,12 @@ export function PublicBookingPage() {
     }
     if (tgId) setTgUserId(tgId)
 
+    // Предзаполнение из URL-параметров, установленных Telegram-ботом (после сбора контакта)
+    const tgPhone = searchParams.get('tg_phone')
+    const tgNameParam = searchParams.get('tg_name')
+    if (tgPhone) setValue('client_phone', tgPhone)
+    if (tgNameParam && !tgUser) setValue('client_name', tgNameParam)
+
     return cleanup
   }, [])
 

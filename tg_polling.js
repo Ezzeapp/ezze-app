@@ -28,6 +28,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 let offset = 0;
 
+// Хранит состояние сбора данных клиента перед записью
+// chatId → { slug, masterProfession, step: 'waiting_phone'|'waiting_name', phone? }
+const pendingBookings = new Map();
+
 async function sendMessage(chatId, text, replyMarkup) {
   const body = { chat_id: chatId, text, parse_mode: "HTML" };
   if (replyMarkup) body.reply_markup = replyMarkup;
@@ -66,6 +70,21 @@ async function setUserMenuButton(chatId, text, url) {
   } catch (e) {
     console.error("setUserMenuButton error:", e.message);
   }
+}
+
+// Отправляет inline кнопку "Записаться" с предзаполненными телефоном и именем в URL
+async function showBookingButton(chatId, slug, phone, name) {
+  const bookUrl = `${APP_URL}/book/${slug}?tg_phone=${encodeURIComponent(phone)}&tg_name=${encodeURIComponent(name)}&tg_id=${chatId}`;
+  await fetch(`${TG_API}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: `✅ <b>Отлично, ${name}!</b>\n\nВсё готово — нажмите кнопку ниже, чтобы выбрать услугу и удобное время:`,
+      parse_mode: "HTML",
+      reply_markup: { inline_keyboard: [[{ text: "📅 Записаться", web_app: { url: bookUrl } }]] },
+    }),
+  });
 }
 
 async function findMasterByChatId(chatId) {
@@ -378,6 +397,28 @@ async function handleAIMessage(chatId, text, masterProfile) {
 
 async function processUpdate(update) {
   const message = update.message;
+
+  // ── Обработка контакта (шаг 1: пользователь поделился телефоном) ──────────
+  if (message?.contact) {
+    const chatId = message.chat.id;
+    const pending = pendingBookings.get(chatId);
+    if (pending?.step === "waiting_phone") {
+      const phone = message.contact.phone_number;
+      const contactName = [message.contact.first_name, message.contact.last_name]
+        .filter(Boolean).join(" ");
+      pending.step = "waiting_name";
+      pending.phone = phone;
+      pending.tgName = contactName;
+      // Убираем keyboard и просим имя
+      await sendMessage(
+        chatId,
+        `📱 Номер получен!\n\nКак вас зовут?${contactName ? `\n\n<i>Можете просто написать: ${contactName}</i>` : ""}`,
+        { remove_keyboard: true }
+      );
+    }
+    return;
+  }
+
   if (message?.text) {
     const chatId = message.chat.id;
     const text = message.text;
@@ -394,16 +435,24 @@ async function processUpdate(update) {
             .from("master_profiles").select("profession").eq("booking_slug", slug).maybeSingle();
 
           if (profile) {
+            // Запускаем сбор данных клиента
+            pendingBookings.set(chatId, {
+              slug,
+              masterProfession: profile.profession || "Мастер",
+              step: "waiting_phone",
+            });
             await fetch(`${TG_API}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 chat_id: chatId,
-                text: `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nВы переходите к записи у мастера <b>${profile.profession || "Мастер"}</b>.\n\nНажмите кнопку ниже чтобы выбрать услугу и время:`,
+                text: `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nВы записываетесь к мастеру <b>${profile.profession || "Мастер"}</b>.\n\n📱 Для записи нам нужен ваш номер телефона.\nНажмите кнопку ниже:`,
                 parse_mode: "HTML",
-                reply_markup: { inline_keyboard: [
-                  [{ text: "📅 Записаться", web_app: { url: `${APP_URL}/book/${slug}` } }],
-                ]}
+                reply_markup: {
+                  keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
+                  resize_keyboard: true,
+                  one_time_keyboard: true,
+                },
               }),
             });
           } else {
@@ -451,6 +500,18 @@ async function processUpdate(update) {
     }
 
     if (text === "/menu") await sendClientMenu(chatId, firstName);
+
+    // ── Шаг 2: пользователь вводит имя для записи ────────────────────────────
+    if (!text.startsWith("/")) {
+      const pending = pendingBookings.get(chatId);
+      if (pending?.step === "waiting_name") {
+        const name = text.trim() || pending.tgName || firstName;
+        pendingBookings.delete(chatId);
+        await setUserMenuButton(chatId, "Мои записи", `${APP_URL}/my`);
+        await showBookingButton(chatId, pending.slug, pending.phone, name);
+        return;
+      }
+    }
 
     // AI: handle arbitrary (non-command) messages
     if (!text.startsWith("/")) {
