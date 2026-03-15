@@ -29,6 +29,25 @@ async function sendTg(chatId: string, text: string, _showMenu = false) {
   } catch (err) { console.error('sendTg error:', err) }
 }
 
+// Отправляет сообщение с inline кнопкой "❌ Отменить запись" (callback_data = cancel_appt_<id>)
+async function sendTgWithCancelButton(chatId: string, text: string, apptId: string) {
+  if (!chatId || !text) return
+  try {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: String(chatId),
+        text,
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [[{ text: '❌ Отменить запись', callback_data: `cancel_appt_${apptId}` }]],
+        },
+      }),
+    })
+  } catch (err) { console.error('sendTgWithCancelButton error:', err) }
+}
+
 function fmtDate(s: string): string {
   const months = ['января','февраля','марта','апреля','мая','июня',
                   'июля','августа','сентября','октября','ноября','декабря']
@@ -138,9 +157,8 @@ async function handleInsert(record: any) {
           `📅 <b>Дата:</b> ${date}\n🕐 <b>Время:</b> ${startTime}` +
           (endTime ? ` — ${endTime}` : '') +
           (prof.address ? `\n📍 <b>Адрес:</b> ${prof.address}` : '') +
-          `\n\nДо встречи! 🌟` +
-          (cancelLink ? `\n\n<i>❌ <a href="${cancelLink}">Отменить запись</a></i>` : '')
-      if (cMsg) await sendTg(clientTgId || clientTgUsr, cMsg, true)
+          `\n\nДо встречи! 🌟`
+      if (cMsg) await sendTgWithCancelButton(clientTgId || clientTgUsr, cMsg, record.id)
     }
   }
 }
@@ -193,9 +211,8 @@ async function handleUpdate(record: any, oldRecord: any) {
           `📅 <b>Дата:</b> ${date}\n🕐 <b>Время:</b> ${startTime}` +
           (endTime ? ` — ${endTime}` : '') +
           (prof.address ? `\n📍 <b>Адрес:</b> ${prof.address}` : '') +
-          `\n\nДо встречи! 🌟` +
-          (cancelLink ? `\n\n<i>❌ <a href="${cancelLink}">Отменить запись</a></i>` : '')
-      if (msg) await sendToClient(msg)
+          `\n\nДо встречи! 🌟`
+      if (msg) await sendTgWithCancelButton(clientTgId || clientTgUsr, msg, record.id)
     }
     return
   }
@@ -218,9 +235,8 @@ async function handleUpdate(record: any, oldRecord: any) {
       const msg = setting.template?.trim()
         ? applyTemplate(setting.template, { service: svcName, date, time: startTime, end_time: endTime, cancel_link: cancelLink, master_name: masterName })
         : `📅 <b>Запись перенесена!</b>\n\n✂️ <b>Услуга:</b> ${svcName}\nНовое время: <b>${date} в ${startTime}</b>` +
-          (endTime ? ` — ${endTime}` : '') +
-          (cancelLink ? `\n\n<i>❌ <a href="${cancelLink}">Отменить запись</a></i>` : '')
-      if (msg) await sendToClient(msg)
+          (endTime ? ` — ${endTime}` : '')
+      if (msg) await sendTgWithCancelButton(clientTgId || clientTgUsr, msg, record.id)
     }
   }
 }

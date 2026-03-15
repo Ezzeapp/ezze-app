@@ -32,6 +32,29 @@ let offset = 0;
 // chatId → { slug, masterProfession, step: 'waiting_phone'|'waiting_name', phone? }
 const pendingBookings = new Map();
 
+// Форматирует дату YYYY-MM-DD → "17 марта"
+function fmtDate(s) {
+  const months = ['января','февраля','марта','апреля','мая','июня',
+                  'июля','августа','сентября','октября','ноября','декабря'];
+  const d = (s ?? '').slice(0, 10).split('-');
+  if (d.length !== 3) return s;
+  const day = parseInt(d[2]), mon = parseInt(d[1]) - 1;
+  return (mon >= 0 && mon <= 11) ? `${day} ${months[mon]}` : s;
+}
+
+// Редактирует текст сообщения (inline кнопки убираются)
+async function editMessageText(chatId, messageId, text) {
+  try {
+    await fetch(`${TG_API}/editMessageText`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId, text, parse_mode: "HTML" }),
+    });
+  } catch (e) {
+    console.error("editMessageText error:", e.message);
+  }
+}
+
 async function sendMessage(chatId, text, replyMarkup) {
   const body = { chat_id: chatId, text, parse_mode: "HTML" };
   if (replyMarkup) body.reply_markup = replyMarkup;
@@ -570,14 +593,65 @@ async function processUpdate(update) {
   const callback = update.callback_query;
   if (callback) {
     const chatId = callback.message?.chat?.id;
+    const msgId  = callback.message?.message_id;
     if (!chatId) return;
+
+    // Отвечаем на callback (снимает индикатор загрузки на кнопке)
     await fetch(`${TG_API}/answerCallbackQuery`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ callback_query_id: callback.id }),
     });
+
     if (callback.data === "open_cabinet") {
       await sendMessageWithWebApp(chatId, "📋 Открываю ваши записи...", "Ezze", `${APP_URL}/my`);
+    }
+
+    // ── Отмена записи клиентом ────────────────────────────────────────────────
+    if (callback.data?.startsWith("cancel_appt_")) {
+      const apptId = callback.data.replace("cancel_appt_", "");
+
+      // Получаем запись
+      const { data: appt } = await supabase
+        .from("appointments")
+        .select("id, status, client_name, date, start_time, master_id")
+        .eq("id", apptId)
+        .maybeSingle();
+
+      if (!appt) {
+        await editMessageText(chatId, msgId, "❌ Запись не найдена.");
+        return;
+      }
+      if (appt.status === "cancelled") {
+        await editMessageText(chatId, msgId, "❌ <b>Запись уже была отменена ранее.</b>");
+        return;
+      }
+
+      // Отменяем в БД (триггер Supabase пошлёт клиенту стандартное «Запись отменена»)
+      await supabase.from("appointments").update({ status: "cancelled" }).eq("id", apptId);
+
+      // Редактируем исходное сообщение — убираем кнопку
+      await editMessageText(
+        chatId, msgId,
+        `❌ <b>Запись отменена.</b>\n\nЕсли захотите записаться снова — воспользуйтесь ссылкой мастера.`
+      );
+
+      // Уведомляем мастера
+      const { data: prof } = await supabase
+        .from("master_profiles")
+        .select("tg_chat_id, profession")
+        .eq("user_id", appt.master_id)
+        .maybeSingle();
+
+      if (prof?.tg_chat_id) {
+        await sendMessage(
+          prof.tg_chat_id,
+          `❌ <b>Клиент отменил запись</b>\n\n` +
+          `👤 <b>Клиент:</b> ${appt.client_name ?? "—"}\n` +
+          `📅 <b>Дата:</b> ${fmtDate(appt.date)}\n` +
+          `🕐 <b>Время:</b> ${appt.start_time ?? "—"}`
+        );
+      }
     }
   }
 }
