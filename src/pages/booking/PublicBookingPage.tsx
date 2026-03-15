@@ -168,12 +168,13 @@ export function PublicBookingPage() {
     }
     if (tgId) setTgUserId(tgId)
 
-    // Предзаполнение из URL-параметров, установленных Telegram-ботом (после сбора контакта)
+    // Предзаполнение из URL-параметров, установленных Telegram-ботом (после сбора контакта).
+    // tg_name — имя, явно введённое пользователем в боте — всегда перебивает профиль Telegram.
     const tgPhone = searchParams.get('tg_phone')
     const tgNameParam = searchParams.get('tg_name')
     const tgUsernameParam = searchParams.get('tg_username')
     if (tgPhone) setValue('client_phone', tgPhone)
-    if (tgNameParam && !tgUser) setValue('client_name', tgNameParam)
+    if (tgNameParam) setValue('client_name', tgNameParam)  // всегда приоритет над tgUser.first_name
     if (tgUsernameParam) {
       setTgNickname(tgUsernameParam)
       setValue('client_telegram', tgUsernameParam)
