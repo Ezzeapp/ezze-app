@@ -3,7 +3,7 @@ import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard, User, Users, Package, CalendarDays,
-  Settings, Zap, X, ShieldCheck, UsersRound, Tag, Star, CreditCard, LifeBuoy,
+  Settings, Zap, X, ShieldCheck, UsersRound, Tag, Star, CreditCard, LifeBuoy, Gift,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -90,6 +90,7 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
         <SidebarGroupLabel label={t('nav.groupMarketing')} />
         <NavItemGated icon={Tag}  label={t('nav.promoCodes')} to="/promo-codes" feature="promo_codes" onClick={onClose} />
         <NavItemGated icon={Star} label={t('nav.reviews')}    to="/reviews"     feature="reviews"    onClick={onClose} />
+        <SidebarNavItem icon={Gift} label={t('nav.loyalty')} to="/loyalty" onClick={onClose} />
 
         {/* ── Команда ── */}
         <SidebarGroupLabel label={t('nav.groupTeam')} />

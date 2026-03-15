@@ -8,6 +8,7 @@ import { AppointmentPreviewSheet } from '@/components/calendar/AppointmentPrevie
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import { useAppointments, useMonthAppointments, useCreateAppointmentWithServices, useUpdateAppointmentWithServices, useDeleteAppointment, getAppointmentServiceNames, getAppointmentServices, cleanAppointmentNotes } from '@/hooks/useAppointments'
+import { useAwardAppointmentPoints } from '@/hooks/useLoyalty'
 import { useClients } from '@/hooks/useClients'
 import { useServices } from '@/hooks/useServices'
 import { useProfile } from '@/hooks/useProfile'
@@ -138,6 +139,7 @@ export function CalendarPage() {
   const create = useCreateAppointmentWithServices()
   const update = useUpdateAppointmentWithServices()
   const del = useDeleteAppointment()
+  const awardPoints = useAwardAppointmentPoints()
   const { data: schedule } = useSchedule()
 
   const DOW_MAP: Record<number, string> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' }
@@ -216,6 +218,14 @@ export function CalendarPage() {
     try {
       await update.mutateAsync({ id: previewAppt.id, data: { status }, services: getAppointmentServices(previewAppt, services) })
       setPreviewAppt(prev => prev ? { ...prev, status } : prev)
+      // Award loyalty points when appointment is marked done
+      if (status === 'done' && previewAppt.client) {
+        awardPoints.mutate({
+          appointmentId: previewAppt.id,
+          clientId: previewAppt.client || null,
+          price: previewAppt.price || 0,
+        })
+      }
     } catch {
       toast.error(t('common.saveError'))
     }

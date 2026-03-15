@@ -29,6 +29,14 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { getFileUrl } from '@/lib/utils'
 import type { Client } from '@/types'
+import {
+  useLoyaltySettings,
+  useAllClientsLoyaltyBalances,
+  useAllClientsDoneVisits,
+  getLoyaltyLevel,
+  getLevelLabel,
+  getLevelColor,
+} from '@/hooks/useLoyalty'
 
 // Birthday helpers: store as YYYY-MM-DD, display/input as DD.MM.YYYY
 function maskBirthday(val: string): string {
@@ -251,6 +259,10 @@ export function ClientsPage() {
     if (!client.avatar) return null
     return getFileUrl('clients', client.avatar)
   }
+
+  const { data: loyaltySettings } = useLoyaltySettings()
+  const { data: loyaltyBalances = {} } = useAllClientsLoyaltyBalances()
+  const { data: clientVisits = {} } = useAllClientsDoneVisits()
 
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -562,6 +574,26 @@ export function ClientsPage() {
                         <Mail className="h-3 w-3" />{client.email}
                       </p>
                     )}
+                    {loyaltySettings?.enabled && (
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        {(() => {
+                          const visits = clientVisits[client.id] ?? 0
+                          const level = getLoyaltyLevel(visits, loyaltySettings)
+                          const balance = loyaltyBalances[client.id] ?? 0
+                          const color = getLevelColor(level)
+                          return (
+                            <>
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${color}`}>
+                                {getLevelLabel(level)} {t(`loyalty.level_${level}`)}
+                              </span>
+                              {balance > 0 && (
+                                <span className="text-[10px] text-muted-foreground">{balance} {t('loyalty.pts')}</span>
+                              )}
+                            </>
+                          )
+                        })()}
+                      </div>
+                    )}
                     {client.tags && client.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {client.tags.slice(0, 3).map((tag, i) => (
@@ -647,7 +679,19 @@ export function ClientsPage() {
                       </Avatar>
                     </td>
                     <td className="p-3">
-                      <span className="font-medium truncate">{client.first_name} {client.last_name}</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium truncate">{client.first_name} {client.last_name}</span>
+                        {loyaltySettings?.enabled && (() => {
+                          const visits = clientVisits[client.id] ?? 0
+                          const level = getLoyaltyLevel(visits, loyaltySettings)
+                          if (level === 'new') return null
+                          return (
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${getLevelColor(level)}`}>
+                              {getLevelLabel(level)}
+                            </span>
+                          )
+                        })()}
+                      </div>
                     </td>
                     <td className="p-3 text-muted-foreground">
                       {client.phone

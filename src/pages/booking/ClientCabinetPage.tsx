@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
-import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, Zap } from 'lucide-react'
+import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, Zap, Gift, Copy, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import {
   isTelegramMiniApp,
@@ -192,6 +192,8 @@ export function ClientCabinetPage() {
   const [telegramId, setTelegramId] = useState<string | null>(null)
   const [userName, setUserName] = useState('')
   const [tgTopPadding, setTgTopPadding] = useState(0)
+  const [loyaltySummary, setLoyaltySummary] = useState<any[]>([])
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (isTelegramMiniApp()) {
@@ -278,10 +280,26 @@ export function ClientCabinetPage() {
       })
 
       setAppointments(enriched)
+
+      // Load loyalty summary per master
+      const { data: loyaltyData } = await supabase
+        .rpc('get_client_loyalty_summary', { p_telegram_id: tgId })
+      setLoyaltySummary(loyaltyData || [])
     } catch (err) {
       console.error('Failed to load appointments:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleCopyReferral = async (clientId: string, masterSlug: string) => {
+    const url = `${window.location.origin}/book/${masterSlug}?ref=${clientId}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // fallback
     }
   }
 
@@ -344,6 +362,73 @@ export function ClientCabinetPage() {
           </div>
         </div>
       </div>
+
+      {/* Loyalty section */}
+      {loyaltySummary.filter(s => s.loyalty_enabled).map((s) => {
+        const visits = s.done_visits ?? 0
+        const balance = s.points_balance ?? 0
+        const level = visits >= s.level_premium_visits ? 'premium'
+          : visits >= s.level_vip_visits ? 'vip'
+          : visits >= s.level_regular_visits ? 'regular' : 'new'
+        const levelLabel = { new: `🆕 ${t('loyalty.level_new')}`, regular: `🥈 ${t('loyalty.level_regular')}`, vip: `🥇 ${t('loyalty.level_vip')}`, premium: `💎 ${t('loyalty.level_premium')}` }[level]
+        const nextVisits = level === 'new' ? s.level_regular_visits
+          : level === 'regular' ? s.level_vip_visits
+          : level === 'vip' ? s.level_premium_visits : null
+        const progressPct = nextVisits ? Math.min(100, Math.round((visits / nextVisits) * 100)) : 100
+
+        return (
+          <Card key={s.master_id} className="overflow-hidden">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Gift className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-sm">{t('loyalty.myLoyalty')}</span>
+                {s.master_profession && (
+                  <span className="text-xs text-muted-foreground ml-auto">{s.master_profession}</span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-primary/8 p-3 text-center">
+                  <p className="text-2xl font-bold text-primary">{balance}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t('loyalty.pts')}</p>
+                </div>
+                <div className="rounded-xl bg-muted p-3 text-center">
+                  <p className="text-lg font-bold">{levelLabel}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{visits} {t('loyalty.visitsCount')}</p>
+                </div>
+              </div>
+
+              {nextVisits && (
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{t('loyalty.toNextLevel')}</span>
+                    <span>{visits}/{nextVisits}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progressPct}%` }} />
+                  </div>
+                </div>
+              )}
+
+              {s.referral_enabled && s.client_id && s.master_slug && (
+                <div className="rounded-xl border border-dashed p-3 space-y-2">
+                  <p className="text-xs font-medium">{t('loyalty.referralTitle')}</p>
+                  <p className="text-xs text-muted-foreground">{t('loyalty.referralClientDesc', { bonus: s.referrer_bonus })}</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => handleCopyReferral(s.client_id, s.master_slug)}
+                  >
+                    {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied ? t('loyalty.copied') : t('loyalty.copyLink')}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
+      })}
 
       {/* Нет записей */}
       {appointments.length === 0 && (

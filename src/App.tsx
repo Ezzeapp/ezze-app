@@ -42,6 +42,7 @@ const ClientCabinetPage = lazy(() => import('@/pages/booking/ClientCabinetPage')
 const MiniAppLayout = lazy(() => import('@/components/layout/MiniAppLayout').then(m => ({ default: m.MiniAppLayout })))
 const TelegramEntryPage = lazy(() => import('@/pages/tg/TelegramEntryPage').then(m => ({ default: m.TelegramEntryPage })))
 const SupportPage = lazy(() => import('@/pages/support/SupportPage'))
+const LoyaltyPage = lazy(() => import('@/pages/loyalty/LoyaltyPage'))
 
 const router = createBrowserRouter([
   // Public routes
@@ -95,6 +96,7 @@ const router = createBrowserRouter([
       { path: 'reviews', element: <ReviewsPage /> },
       { path: 'billing', element: <BillingPage /> },
       { path: 'support', element: <SupportPage /> },
+      { path: 'loyalty', element: <LoyaltyPage /> },
     ],
   },
 

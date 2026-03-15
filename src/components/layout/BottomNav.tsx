@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard, CalendarDays, Users, MoreHorizontal, Plus,
-  Package, User, Settings, ShieldCheck, X, UsersRound, ChevronRight, Tag, Star, LogOut, CreditCard, LifeBuoy,
+  Package, User, Settings, ShieldCheck, X, UsersRound, ChevronRight, Tag, Star, LogOut, CreditCard, LifeBuoy, Gift,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -25,6 +25,7 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
     hasTeams     && { icon: UsersRound,  label: t('nav.team'),           to: '/team',           highlight: false },
     hasPromos    && { icon: Tag,         label: t('nav.promoCodes'),     to: '/promo-codes',    highlight: false },
     hasReviews   && { icon: Star,        label: t('nav.reviews'),        to: '/reviews',        highlight: false },
+    { icon: Gift,        label: t('nav.loyalty'),         to: '/loyalty',        highlight: false },
     { icon: CreditCard,  label: t('nav.billing'),        to: '/billing',        highlight: false },
     { icon: LifeBuoy,    label: t('nav.support'),        to: '/support',        highlight: false },
     { icon: Settings,    label: t('nav.settings'),       to: '/settings',       highlight: false },
