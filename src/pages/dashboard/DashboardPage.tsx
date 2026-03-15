@@ -23,10 +23,7 @@ type Period = 'today' | '3days' | 'week' | 'month' | 'quarter' | 'year' | 'custo
 interface PeriodOption { key: Period; labelKey: string }
 const PERIODS: PeriodOption[] = [
   { key: 'today',   labelKey: 'analytics.periodToday'   },
-  { key: '3days',   labelKey: 'analytics.period3Days'   },
-  { key: 'week',    labelKey: 'analytics.periodWeek'    },
   { key: 'month',   labelKey: 'analytics.periodMonth'   },
-  { key: 'quarter', labelKey: 'analytics.periodQuarter' },
   { key: 'year',    labelKey: 'analytics.periodYear'    },
 ]
 
