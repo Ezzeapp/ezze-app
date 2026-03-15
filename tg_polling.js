@@ -548,6 +548,29 @@ async function processUpdate(update) {
 
     if (text === "/menu") await sendClientMenuSmart(chatId, firstName);
 
+    // ── Шаг 1b: клиент написал текст вместо кнопки "Поделиться номером" ────────
+    if (!text.startsWith("/")) {
+      const pending = pendingBookings.get(chatId);
+      if (pending?.step === "waiting_phone") {
+        // Напоминаем нажать кнопку — текст не принимаем как номер
+        await fetch(`${TG_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `📱 Пожалуйста, нажмите кнопку <b>«Поделиться номером»</b> ниже — это нужно для записи.`,
+            parse_mode: "HTML",
+            reply_markup: {
+              keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
+              resize_keyboard: true,
+              one_time_keyboard: true,
+            },
+          }),
+        });
+        return;
+      }
+    }
+
     // ── Шаг 2: пользователь вводит имя для записи ────────────────────────────
     if (!text.startsWith("/")) {
       const pending = pendingBookings.get(chatId);
