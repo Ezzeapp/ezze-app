@@ -114,6 +114,28 @@ async function handleInsert(record: any) {
     await supabase.from('appointments').update({ cancel_token: tok }).eq('id', record.id)
   }
 
+  // Сохраняем telegram-данные клиента (service role — bypass RLS, публичная страница не может)
+  const clientPhone = record.client_phone ?? ''
+  const clientTelegramUsername = (record.client_telegram ?? '').replace('@', '')
+  const clientTelegramId = record.telegram_id ? String(record.telegram_id) : ''
+  if (clientPhone && (clientTelegramUsername || clientTelegramId)) {
+    try {
+      const telegramPatch: Record<string, string> = {}
+      if (clientTelegramUsername) telegramPatch.telegram = clientTelegramUsername
+      if (clientTelegramId) telegramPatch.tg_chat_id = clientTelegramId
+      // Ищем клиента по телефону и мастеру, обновляем telegram-поля
+      const { data: clientRow } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('master_id', masterId)
+        .eq('phone', clientPhone)
+        .maybeSingle()
+      if (clientRow?.id) {
+        await supabase.from('clients').update(telegramPatch).eq('id', clientRow.id)
+      }
+    } catch (e) { console.error('client telegram update error:', e) }
+  }
+
   // Notify master
   const mSetting = await getNotifSetting(masterId, 'new_appointment')
   const masterTgId = prof.tg_chat_id ?? ''
