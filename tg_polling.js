@@ -551,8 +551,8 @@ async function setupMenuButton() {
       body: JSON.stringify({
         menu_button: {
           type: "web_app",
-          text: "📱 Приложение",
-          web_app: { url: APP_URL },
+          text: "📋 Мои записи",
+          web_app: { url: `${APP_URL}/my` },
         },
       }),
     });
