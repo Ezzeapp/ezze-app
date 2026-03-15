@@ -242,9 +242,10 @@ async function handleUpdate(record: any, oldRecord: any) {
   if (record.status === 'cancelled') {
     const setting = await getNotifSetting(masterId, 'appointment_cancelled')
     if (setting.enabled) {
+      const bookAgainLine = slug ? `\n\nЗаписаться снова: ${APP_URL}/book/${slug}` : ''
       const msg = setting.template?.trim()
         ? applyTemplate(setting.template, { master_name: masterName, date, time: startTime, service: svcName, booking_slug: slug })
-        : `❌ <b>Запись отменена</b>\n\nВаша запись к <b>${masterName}</b> на ${date} в ${startTime} отменена.\n\nЗаписаться снова: ${APP_URL}/book/${slug}`
+        : `❌ <b>Запись отменена</b>\n\nВаша запись к <b>${masterName}</b> на ${date} в ${startTime} отменена.${bookAgainLine}`
       if (msg) await sendToClient(msg)
     }
     return

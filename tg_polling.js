@@ -593,7 +593,7 @@ async function processUpdate(update) {
     });
 
     if (callback.data === "open_cabinet") {
-      await sendMessageWithWebApp(chatId, "📋 Открываю ваши записи...", "Ezze", `${APP_URL}/my`);
+      await sendMessageWithWebApp(chatId, "📋 Открываю ваши записи...", "Ezze", `${APP_URL}/my?tg_id=${chatId}`);
     }
 
     // ── Отмена записи клиентом ────────────────────────────────────────────────
@@ -608,11 +608,15 @@ async function processUpdate(update) {
         .maybeSingle();
 
       if (!appt) {
-        await editMessageText(chatId, msgId, "❌ Запись не найдена.");
+        await editMessageText(chatId, msgId, "❌ Запись не найдена. Возможно, она была удалена.");
         return;
       }
       if (appt.status === "cancelled") {
         await editMessageText(chatId, msgId, "❌ <b>Запись уже была отменена ранее.</b>");
+        return;
+      }
+      if (appt.status === "done" || appt.status === "no_show") {
+        await editMessageText(chatId, msgId, "ℹ️ <b>Визит уже состоялся — отменить невозможно.</b>");
         return;
       }
 
@@ -666,7 +670,18 @@ async function sendClientMenuSmart(chatId, firstName) {
     .select("id", { count: "exact", head: true })
     .eq("telegram_id", String(chatId));
 
-  if ((count ?? 0) > 0) {
+  // Если записей нет — возможно, они были удалены. Проверяем таблицу clients.
+  let isKnownClient = (count ?? 0) > 0;
+  if (!isKnownClient) {
+    const { data: clientRecord } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("tg_chat_id", String(chatId))
+      .maybeSingle();
+    isKnownClient = !!clientRecord;
+  }
+
+  if (isKnownClient) {
     // Возвращающийся клиент — восстанавливаем клавиатуру
     await sendMessage(
       chatId,
