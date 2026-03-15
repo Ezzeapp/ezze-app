@@ -96,6 +96,7 @@ async function setUserMenuButton(chatId, text, url) {
 }
 
 // Показывает постоянную клавиатуру клиента: "Мои записи" + "Стать мастером"
+// Кнопки открывают Mini App напрямую, без промежуточного сообщения
 async function sendClientKeyboard(chatId) {
   await sendMessage(
     chatId,
@@ -103,8 +104,8 @@ async function sendClientKeyboard(chatId) {
     {
       keyboard: [
         [
-          { text: "📋 Мои записи", style: "primary" },
-          { text: "🎓 Стать мастером", style: "success" },
+          { text: "📋 Мои записи", style: "primary", web_app: { url: `${APP_URL}/my` } },
+          { text: "🎓 Стать мастером", style: "success", web_app: { url: `${APP_URL}/register` } },
         ],
       ],
       resize_keyboard: true,
@@ -560,21 +561,6 @@ async function processUpdate(update) {
       }
     }
 
-    // ── Кнопки клиентской клавиатуры ─────────────────────────────────────────
-    if (text === "📋 Мои записи") {
-      await sendMessageWithWebApp(chatId, "📋 Ваши записи:", "Открыть Мои записи", `${APP_URL}/my`);
-      return;
-    }
-    if (text === "🎓 Стать мастером") {
-      await sendMessageWithWebApp(
-        chatId,
-        `🎓 <b>Стать мастером в Ezze</b>\n\nПринимайте онлайн-записи от клиентов через удобный календарь.\n\nНажмите кнопку ниже, чтобы зарегистрироваться:`,
-        "📝 Зарегистрироваться",
-        `${APP_URL}/register`
-      );
-      return;
-    }
-
     // AI: handle arbitrary (non-command) messages
     if (!text.startsWith("/")) {
       const masterProfile = await findMasterByChatId(chatId);
@@ -688,8 +674,8 @@ async function sendClientMenuSmart(chatId, firstName) {
       {
         keyboard: [
           [
-            { text: "📋 Мои записи", style: "primary" },
-            { text: "🎓 Стать мастером", style: "success" },
+            { text: "📋 Мои записи", style: "primary", web_app: { url: `${APP_URL}/my` } },
+            { text: "🎓 Стать мастером", style: "success", web_app: { url: `${APP_URL}/register` } },
           ],
         ],
         resize_keyboard: true,
