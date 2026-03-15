@@ -452,6 +452,8 @@ async function processUpdate(update) {
             .from("master_profiles").select("profession").eq("booking_slug", slug).maybeSingle();
 
           if (profile) {
+            // Сбрасываем старую Menu Button (может остаться от предыдущих сессий)
+            await setUserMenuButton(chatId);
             // Запускаем сбор данных клиента
             pendingBookings.set(chatId, {
               slug,
