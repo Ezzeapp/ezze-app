@@ -1262,6 +1262,26 @@
     "redeemPoints": "Хориҷ кардан",
     "awarded": "Амтиӣзҳо ҷамъ карда шуданд",
     "noteOptional": "Езоҳ (ихтиӣрӣ)",
-    "noPoints": "Ҳаракати амтиӣзҳо нест"
+    "noPoints": "Ҳаракати амтиӣзҳо нест",
+    "reasonHoliday": "Holiday bonus",
+    "holidaysSection": "Holidays & special days",
+    "noHolidays": "No holidays yet. Add your first!",
+    "addHoliday": "Add holiday",
+    "editHoliday": "Edit holiday",
+    "holidayName": "Name",
+    "holidayNamePlaceholder": "e.g. New Year",
+    "holidayDateType": "Date type",
+    "holidayDateTypeAnnual": "Annual",
+    "holidayDateTypeOnce": "One-time",
+    "holidayDateValue": "Date",
+    "holidayDateValueHint": "Annual: MM-DD (e.g. 01-01). One-time: pick a date",
+    "holidayMultiplier": "Points multiplier",
+    "holidayMultiplierHint": "1 = no change, 2 = double points",
+    "holidayBonusPts": "Bonus points",
+    "holidayBonusPtsHint": "Extra flat points on top of regular earn",
+    "holidayDiscount": "Extra discount %",
+    "holidayDiscountHint": "Additional discount % on top of level discount",
+    "holidayActive": "Active",
+    "holidayInactive": "Inactive"
   }
 }

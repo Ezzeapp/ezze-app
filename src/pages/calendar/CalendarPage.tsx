@@ -224,6 +224,7 @@ export function CalendarPage() {
           appointmentId: previewAppt.id,
           clientId: previewAppt.client || null,
           price: previewAppt.price || 0,
+          date: previewAppt.date,
         })
       }
     } catch {

@@ -3,9 +3,10 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 
 // ── Keys ──────────────────────────────────────────────────────────────────────
-export const LOYALTY_SETTINGS_KEY = 'loyalty_settings'
-export const LOYALTY_POINTS_KEY   = 'loyalty_points'
-export const REFERRALS_KEY        = 'referrals'
+export const LOYALTY_SETTINGS_KEY  = 'loyalty_settings'
+export const LOYALTY_POINTS_KEY    = 'loyalty_points'
+export const REFERRALS_KEY         = 'referrals'
+export const LOYALTY_HOLIDAYS_KEY  = 'loyalty_holidays'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface LoyaltySettings {
@@ -47,6 +48,33 @@ export interface Referral {
   created_at: string
   referrer?: { first_name: string; last_name?: string }
   referred?: { first_name: string; last_name?: string }
+}
+
+export interface LoyaltyHoliday {
+  id: string
+  master_id: string
+  name: string
+  date_type: 'annual' | 'once'
+  date_value: string        // 'MM-DD' for annual, 'YYYY-MM-DD' for once
+  points_multiplier: number // 1.0 = no change, 2.0 = double
+  bonus_points: number
+  discount_pct: number
+  enabled: boolean
+  created_at: string
+}
+
+// Returns matching active holiday for a given 'YYYY-MM-DD' date
+export function getActiveHolidayForDate(
+  date: string,
+  holidays: LoyaltyHoliday[],
+): LoyaltyHoliday | null {
+  const mmdd = date.slice(5) // 'MM-DD' from 'YYYY-MM-DD'
+  return holidays.find(h => {
+    if (!h.enabled) return false
+    if (h.date_type === 'annual') return h.date_value === mmdd
+    if (h.date_type === 'once')   return h.date_value === date
+    return false
+  }) ?? null
 }
 
 export type LoyaltyLevel = 'new' | 'regular' | 'vip' | 'premium'
@@ -251,10 +279,12 @@ export function useAwardAppointmentPoints() {
       appointmentId,
       clientId,
       price,
+      date,
     }: {
       appointmentId: string
       clientId: string | null
       price: number
+      date?: string  // YYYY-MM-DD — for holiday matching
     }) => {
       if (!clientId || !user || price <= 0) return null
 
@@ -277,6 +307,17 @@ export function useAwardAppointmentPoints() {
 
       if (count && count > 0) return null
 
+      // Check for active holiday on this date
+      const { data: holidayRows } = await supabase
+        .from('loyalty_holidays')
+        .select('*')
+        .eq('master_id', user.id)
+        .eq('enabled', true)
+
+      const activeHoliday = date
+        ? getActiveHolidayForDate(date, (holidayRows || []) as LoyaltyHoliday[])
+        : null
+
       // Check if this is the first visit (for first_visit reason)
       const { count: prevDone } = await supabase
         .from('appointments')
@@ -287,7 +328,8 @@ export function useAwardAppointmentPoints() {
         .neq('id', appointmentId)
 
       const isFirstVisit = (prevDone ?? 0) === 0
-      const earnedPoints = calculateEarnedPoints(price, settings.earn_per_1000)
+      const multiplier = activeHoliday?.points_multiplier ?? 1
+      const earnedPoints = Math.floor(calculateEarnedPoints(price, settings.earn_per_1000) * multiplier)
       const inserts: any[] = []
 
       if (earnedPoints > 0) {
@@ -297,6 +339,18 @@ export function useAwardAppointmentPoints() {
           appointment_id: appointmentId,
           amount: earnedPoints,
           reason: isFirstVisit ? 'first_visit' : 'visit',
+        })
+      }
+
+      // Holiday flat bonus points (separate entry)
+      if (activeHoliday && activeHoliday.bonus_points > 0) {
+        inserts.push({
+          master_id: user.id,
+          client_id: clientId,
+          appointment_id: appointmentId,
+          amount: activeHoliday.bonus_points,
+          reason: 'holiday',
+          note: activeHoliday.name,
         })
       }
 
@@ -333,7 +387,7 @@ export function useAwardAppointmentPoints() {
         if (error) throw error
       }
 
-      return { earnedPoints, isFirstVisit }
+      return { earnedPoints, isFirstVisit, activeHoliday }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [LOYALTY_POINTS_KEY] })
@@ -452,5 +506,79 @@ export function useRewardReferral() {
       queryClient.invalidateQueries({ queryKey: [REFERRALS_KEY] })
       queryClient.invalidateQueries({ queryKey: [LOYALTY_POINTS_KEY] })
     },
+  })
+}
+
+// ── Holidays hooks ────────────────────────────────────────────────────────────
+export function useLoyaltyHolidays() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: [LOYALTY_HOLIDAYS_KEY, user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('loyalty_holidays')
+        .select('*')
+        .eq('master_id', user!.id)
+        .order('created_at', { ascending: true })
+      if (error) throw error
+      return (data || []) as LoyaltyHoliday[]
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
+export function useCreateLoyaltyHoliday() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Omit<LoyaltyHoliday, 'id' | 'master_id' | 'created_at'>) => {
+      const { data, error } = await supabase
+        .from('loyalty_holidays')
+        .insert({ ...payload, master_id: user!.id })
+        .select()
+        .single()
+      if (error) throw error
+      return data as LoyaltyHoliday
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [LOYALTY_HOLIDAYS_KEY] }),
+  })
+}
+
+export function useUpdateLoyaltyHoliday() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...payload
+    }: Partial<Omit<LoyaltyHoliday, 'master_id' | 'created_at'>> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('loyalty_holidays')
+        .update(payload)
+        .eq('id', id)
+        .eq('master_id', user!.id)
+        .select()
+        .single()
+      if (error) throw error
+      return data as LoyaltyHoliday
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [LOYALTY_HOLIDAYS_KEY] }),
+  })
+}
+
+export function useDeleteLoyaltyHoliday() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('loyalty_holidays')
+        .delete()
+        .eq('id', id)
+        .eq('master_id', user!.id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [LOYALTY_HOLIDAYS_KEY] }),
   })
 }

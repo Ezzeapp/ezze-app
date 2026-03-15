@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, KeyboardEvent, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, CheckCircle2, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2, Gift, TrendingUp, TrendingDown, Award, Crown, Gem } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, CheckCircle2, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2, Gift, TrendingUp, TrendingDown, Award, Crown, Gem, Star } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -134,6 +134,7 @@ const REASON_ICONS: Record<string, React.ReactNode> = {
   manual:      <TrendingUp className="h-3.5 w-3.5 text-blue-500" />,
   redeem:      <TrendingDown className="h-3.5 w-3.5 text-orange-500" />,
   birthday:    <Gift className="h-3.5 w-3.5 text-pink-500" />,
+  holiday:     <Star className="h-3.5 w-3.5 text-amber-500" />,
 }
 
 function LevelIcon({ level, className = 'h-4 w-4' }: { level: import('@/hooks/useLoyalty').LoyaltyLevel; className?: string }) {

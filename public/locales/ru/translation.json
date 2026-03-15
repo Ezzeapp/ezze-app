@@ -1278,6 +1278,26 @@
     "redeemPoints": "Списать",
     "awarded": "Баллы начислены",
     "noteOptional": "Примечание (необяз.)",
-    "noPoints": "Движений по баллам нет"
+    "noPoints": "Движений по баллам нет",
+    "reasonHoliday": "Праздничный бонус",
+    "holidaysSection": "Праздники и акции",
+    "noHolidays": "Нет праздников. Добавьте первый!",
+    "addHoliday": "Добавить праздник",
+    "editHoliday": "Редактировать праздник",
+    "holidayName": "Название",
+    "holidayNamePlaceholder": "Напр., Новый год",
+    "holidayDateType": "Тип даты",
+    "holidayDateTypeAnnual": "Ежегодно",
+    "holidayDateTypeOnce": "Один раз",
+    "holidayDateValue": "Дата",
+    "holidayDateValueHint": "Для ежегодных: ММ-ДД (напр. 01-01). Для разовых: выберите дату",
+    "holidayMultiplier": "Множитель баллов",
+    "holidayMultiplierHint": "1 — без изменений, 2 — двойные баллы",
+    "holidayBonusPts": "Бонусные баллы",
+    "holidayBonusPtsHint": "Дополнительные баллы сверх обычного начисления",
+    "holidayDiscount": "Доп. скидка %",
+    "holidayDiscountHint": "Процент скидки в праздник (сверх уровневой)",
+    "holidayActive": "Активно",
+    "holidayInactive": "Неактивно"
   }
 }

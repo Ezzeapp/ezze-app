@@ -1,20 +1,26 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Gift, ChevronDown, ChevronUp, Users, Loader2, UserPlus, Check } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Gift, ChevronDown, ChevronUp, Loader2, UserPlus, Check, Star, Pencil, Trash2, Plus, Award, Crown, Gem, CalendarDays } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { toast } from '@/components/shared/Toaster'
 import {
   useLoyaltySettings,
   useUpdateLoyaltySettings,
   useReferrals,
   useRewardReferral,
+  useLoyaltyHolidays,
+  useCreateLoyaltyHoliday,
+  useUpdateLoyaltyHoliday,
+  useDeleteLoyaltyHoliday,
   DEFAULT_LOYALTY_SETTINGS,
   type LoyaltySettings,
+  type LoyaltyHoliday,
 } from '@/hooks/useLoyalty'
 import dayjs from 'dayjs'
 
@@ -25,12 +31,18 @@ function NumInput({
   value,
   onChange,
   min = 1,
+  step = 1,
+  float = false,
+  className = 'h-9 w-28',
 }: {
   label: string
   hint?: string
   value: number
   onChange: (v: number) => void
   min?: number
+  step?: number
+  float?: boolean
+  className?: string
 }) {
   return (
     <div className="space-y-1">
@@ -39,12 +51,27 @@ function NumInput({
       <Input
         type="number"
         min={min}
+        step={step}
         value={value}
-        onChange={e => onChange(Math.max(min, parseInt(e.target.value) || min))}
-        className="h-9 w-28"
+        onChange={e => {
+          const v = float ? parseFloat(e.target.value) : parseInt(e.target.value)
+          onChange(Math.max(min, isNaN(v) ? min : v))
+        }}
+        className={className}
       />
     </div>
   )
+}
+
+// ── Holiday form default ───────────────────────────────────────────────────────
+const EMPTY_HOLIDAY: Omit<LoyaltyHoliday, 'id' | 'master_id' | 'created_at'> = {
+  name: '',
+  date_type: 'annual',
+  date_value: '',
+  points_multiplier: 1,
+  bonus_points: 0,
+  discount_pct: 0,
+  enabled: true,
 }
 
 // ── Section wrapper ────────────────────────────────────────────────────────────
@@ -79,8 +106,16 @@ export default function LoyaltyPage() {
   const update = useUpdateLoyaltySettings()
   const { data: referrals = [] } = useReferrals()
   const rewardReferral = useRewardReferral()
+  const { data: holidays = [] } = useLoyaltyHolidays()
+  const createHoliday = useCreateLoyaltyHoliday()
+  const updateHoliday = useUpdateLoyaltyHoliday()
+  const deleteHoliday = useDeleteLoyaltyHoliday()
 
   const [form, setForm] = useState<LoyaltySettings>(DEFAULT_LOYALTY_SETTINGS)
+
+  const [holidayModalOpen, setHolidayModalOpen] = useState(false)
+  const [editingHoliday, setEditingHoliday] = useState<LoyaltyHoliday | null>(null)
+  const [holidayForm, setHolidayForm] = useState<Omit<LoyaltyHoliday, 'id' | 'master_id' | 'created_at'>>(EMPTY_HOLIDAY)
 
   useEffect(() => {
     if (savedSettings) setForm(savedSettings)
@@ -113,6 +148,44 @@ export default function LoyaltyPage() {
       toast.error(t('common.saveError'))
     }
   }
+
+  const openCreateHoliday = () => {
+    setEditingHoliday(null)
+    setHolidayForm(EMPTY_HOLIDAY)
+    setHolidayModalOpen(true)
+  }
+  const openEditHoliday = (h: LoyaltyHoliday) => {
+    setEditingHoliday(h)
+    const { id, master_id, created_at, ...rest } = h
+    setHolidayForm(rest)
+    setHolidayModalOpen(true)
+  }
+  const handleSaveHoliday = async () => {
+    if (!holidayForm.name.trim() || !holidayForm.date_value.trim()) {
+      toast.error(t('common.saveError'))
+      return
+    }
+    try {
+      if (editingHoliday) {
+        await updateHoliday.mutateAsync({ id: editingHoliday.id, ...holidayForm })
+      } else {
+        await createHoliday.mutateAsync(holidayForm)
+      }
+      setHolidayModalOpen(false)
+      toast.success(t('loyalty.saved'))
+    } catch {
+      toast.error(t('common.saveError'))
+    }
+  }
+  const handleDeleteHoliday = async (id: string) => {
+    try {
+      await deleteHoliday.mutateAsync(id)
+    } catch {
+      toast.error(t('common.saveError'))
+    }
+  }
+  const setHol = <K extends keyof typeof holidayForm>(key: K, val: (typeof holidayForm)[K]) =>
+    setHolidayForm(prev => ({ ...prev, [key]: val }))
 
   if (isLoading) {
     return (
@@ -177,7 +250,7 @@ export default function LoyaltyPage() {
               {/* Regular */}
               <div className="rounded-lg border p-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-base">🥈</span>
+                  <Award className="h-4 w-4 text-blue-500" />
                   <span className="font-medium text-sm">{t('loyalty.levelRegular')}</span>
                 </div>
                 <div className="flex items-center gap-4 flex-wrap">
@@ -197,7 +270,7 @@ export default function LoyaltyPage() {
               {/* VIP */}
               <div className="rounded-lg border p-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-base">🥇</span>
+                  <Crown className="h-4 w-4 text-amber-500" />
                   <span className="font-medium text-sm">{t('loyalty.levelVip')}</span>
                 </div>
                 <div className="flex items-center gap-4 flex-wrap">
@@ -217,7 +290,7 @@ export default function LoyaltyPage() {
               {/* Premium */}
               <div className="rounded-lg border p-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-base">💎</span>
+                  <Gem className="h-4 w-4 text-violet-500" />
                   <span className="font-medium text-sm">{t('loyalty.levelPremium')}</span>
                 </div>
                 <div className="flex items-center gap-4 flex-wrap">
@@ -309,6 +382,61 @@ export default function LoyaltyPage() {
               </div>
             </Section>
           )}
+
+          {/* Holidays & Special Days */}
+          <Section title={t('loyalty.holidaysSection')} defaultOpen={false}>
+            <div className="space-y-2">
+              {holidays.map(h => {
+                const dateLabel = h.date_type === 'annual'
+                  ? `${t('loyalty.holidayDateTypeAnnual')} ${h.date_value}`
+                  : h.date_value
+                const bonuses = [
+                  h.points_multiplier !== 1 && `×${h.points_multiplier} ${t('loyalty.pts')}`,
+                  h.bonus_points > 0 && `+${h.bonus_points} ${t('loyalty.pts')}`,
+                  h.discount_pct > 0 && `−${h.discount_pct}%`,
+                ].filter(Boolean).join(' · ')
+                return (
+                  <div key={h.id} className="flex items-center gap-2.5 rounded-lg border p-3">
+                    <Star className="h-4 w-4 text-amber-500 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{h.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        <CalendarDays className="h-3 w-3 inline mr-1" />
+                        {dateLabel}
+                        {bonuses ? ` · ${bonuses}` : ''}
+                      </p>
+                    </div>
+                    {!h.enabled && (
+                      <Badge variant="outline" className="text-xs shrink-0">{t('loyalty.holidayInactive')}</Badge>
+                    )}
+                    <Button
+                      size="icon" variant="ghost" className="h-7 w-7 shrink-0"
+                      onClick={() => openEditHoliday(h)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon" variant="ghost" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
+                      onClick={() => handleDeleteHoliday(h.id)}
+                      disabled={deleteHoliday.isPending}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )
+              })}
+              {holidays.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-2">{t('loyalty.noHolidays')}</p>
+              )}
+              <Button
+                variant="outline" size="sm" className="w-full gap-2"
+                onClick={openCreateHoliday}
+              >
+                <Plus className="h-4 w-4" />
+                {t('loyalty.addHoliday')}
+              </Button>
+            </div>
+          </Section>
         </>
       )}
 
@@ -321,6 +449,129 @@ export default function LoyaltyPage() {
         {update.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
         {t('common.save')}
       </Button>
+
+      {/* Holiday modal */}
+      <Dialog open={holidayModalOpen} onOpenChange={setHolidayModalOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {editingHoliday ? t('loyalty.editHoliday') : t('loyalty.addHoliday')}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-1">
+            {/* Name */}
+            <div className="space-y-1.5">
+              <Label className="text-sm">{t('loyalty.holidayName')}</Label>
+              <Input
+                value={holidayForm.name}
+                onChange={e => setHol('name', e.target.value)}
+                placeholder={t('loyalty.holidayNamePlaceholder')}
+                className="h-9"
+              />
+            </div>
+
+            {/* Date type */}
+            <div className="space-y-1.5">
+              <Label className="text-sm">{t('loyalty.holidayDateType')}</Label>
+              <div className="flex gap-2">
+                {(['annual', 'once'] as const).map(type => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setHol('date_type', type)}
+                    className={`flex-1 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                      holidayForm.date_type === type
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'hover:bg-muted'
+                    }`}
+                  >
+                    {type === 'annual' ? t('loyalty.holidayDateTypeAnnual') : t('loyalty.holidayDateTypeOnce')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Date value */}
+            <div className="space-y-1.5">
+              <Label className="text-sm">{t('loyalty.holidayDateValue')}</Label>
+              {holidayForm.date_type === 'annual' ? (
+                <Input
+                  value={holidayForm.date_value}
+                  onChange={e => setHol('date_value', e.target.value)}
+                  placeholder="MM-DD"
+                  maxLength={5}
+                  className="h-9 font-mono"
+                />
+              ) : (
+                <Input
+                  type="date"
+                  value={holidayForm.date_value}
+                  onChange={e => setHol('date_value', e.target.value)}
+                  className="h-9"
+                />
+              )}
+              <p className="text-xs text-muted-foreground">{t('loyalty.holidayDateValueHint')}</p>
+            </div>
+
+            {/* Points multiplier */}
+            <NumInput
+              label={t('loyalty.holidayMultiplier')}
+              hint={t('loyalty.holidayMultiplierHint')}
+              value={holidayForm.points_multiplier}
+              onChange={v => setHol('points_multiplier', v)}
+              min={0}
+              step={0.5}
+              float
+              className="h-9 w-24"
+            />
+
+            {/* Bonus points */}
+            <NumInput
+              label={t('loyalty.holidayBonusPts')}
+              hint={t('loyalty.holidayBonusPtsHint')}
+              value={holidayForm.bonus_points}
+              onChange={v => setHol('bonus_points', v)}
+              min={0}
+              className="h-9 w-24"
+            />
+
+            {/* Discount */}
+            <NumInput
+              label={t('loyalty.holidayDiscount')}
+              hint={t('loyalty.holidayDiscountHint')}
+              value={holidayForm.discount_pct}
+              onChange={v => setHol('discount_pct', Math.min(100, v))}
+              min={0}
+              className="h-9 w-24"
+            />
+
+            {/* Enabled toggle */}
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-sm">{t('loyalty.holidayActive')}</Label>
+              <Switch
+                checked={holidayForm.enabled}
+                onCheckedChange={v => setHol('enabled', v)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setHolidayModalOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleSaveHoliday}
+              disabled={createHoliday.isPending || updateHoliday.isPending}
+            >
+              {(createHoliday.isPending || updateHoliday.isPending) && (
+                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+              )}
+              {t('common.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
