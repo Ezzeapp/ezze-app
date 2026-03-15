@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { Camera, Copy, ExternalLink, Globe, Instagram, Mail, MessageCircle, Phone, Send, BellRing, CheckCircle2, XCircle, ImagePlus, Trash2, MapPin, Navigation, Wand2, User, Settings, QrCode, ArrowLeftRight, Sparkles, GripVertical, Loader2 } from 'lucide-react'
+import { Camera, Copy, Download, ExternalLink, Globe, Instagram, Mail, MessageCircle, Phone, Send, BellRing, CheckCircle2, XCircle, ImagePlus, Trash2, MapPin, Navigation, Wand2, User, Settings, QrCode, ArrowLeftRight, Sparkles, GripVertical, Loader2 } from 'lucide-react'
 import { buildClientBookingLink } from '@/lib/telegramWebApp'
 import { BOOKING_THEMES } from '@/lib/bookingThemes'
 import { useQueryClient } from '@tanstack/react-query'
@@ -814,34 +814,35 @@ export function ProfilePage() {
                     <img
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(bookingUrl)}`}
                       alt={t('profile.qrAlt')}
-                      className="h-24 w-24 rounded-lg border bg-white shrink-0"
+                      className="h-20 w-20 rounded-lg border bg-white shrink-0"
                     />
-                    <div className="flex-1 space-y-2">
-                      <code className="text-xs break-all text-muted-foreground block">{bookingUrl}</code>
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <code className="text-xs truncate text-muted-foreground block">{bookingUrl}</code>
                       <div className="flex gap-1.5">
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="flex-1 text-xs"
+                          className="flex-1 text-xs min-w-0"
                           onClick={() => { navigator.clipboard.writeText(bookingUrl); toast.success(t('profile.linkCopied')) }}
                         >
-                          <Copy className="h-3 w-3 mr-1" />
-                          {t('profile.copy')}
+                          <Copy className="h-3 w-3 mr-1 shrink-0" />
+                          <span className="truncate">{t('profile.copy')}</span>
                         </Button>
                         <a
                           href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(bookingUrl)}&download=1`}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-md border text-xs hover:bg-accent transition-colors whitespace-nowrap"
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-md border text-xs hover:bg-accent transition-colors shrink-0"
+                          title="↓ PNG"
                         >
-                          ↓ PNG
+                          <Download className="h-3.5 w-3.5" />
                         </a>
                         <a
                           href={bookingUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-md border hover:bg-accent transition-colors text-muted-foreground"
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-md border hover:bg-accent transition-colors text-muted-foreground shrink-0"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
                         </a>
@@ -860,34 +861,34 @@ export function ProfilePage() {
                     <img
                       src={qrApiUrl}
                       alt="QR-код Telegram"
-                      className="h-24 w-24 rounded-lg border bg-white shrink-0"
+                      className="h-20 w-20 rounded-lg border bg-white shrink-0"
                     />
-                    <div className="flex-1 space-y-2">
-                      <code className="text-xs break-all text-muted-foreground block">{tgBookingUrl}</code>
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <code className="text-xs truncate text-muted-foreground block">{tgBookingUrl}</code>
                       <div className="flex gap-1.5">
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="flex-1 text-xs"
+                          className="flex-1 text-xs min-w-0"
                           onClick={() => { navigator.clipboard.writeText(tgBookingUrl); toast.success(t('profile.linkCopied')) }}
                         >
-                          <Copy className="h-3 w-3 mr-1" />
-                          {t('profile.copy')}
+                          <Copy className="h-3 w-3 mr-1 shrink-0" />
+                          <span className="truncate">{t('profile.copy')}</span>
                         </Button>
                         <a
                           href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(tgBookingUrl)}&download=1`}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-md border text-xs hover:bg-accent transition-colors whitespace-nowrap"
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-md border text-xs hover:bg-accent transition-colors shrink-0"
                         >
-                          ↓ PNG
+                          <Download className="h-3.5 w-3.5" />
                         </a>
                         <a
                           href={tgBookingUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-md border hover:bg-accent transition-colors text-muted-foreground"
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-md border hover:bg-accent transition-colors text-muted-foreground shrink-0"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
                         </a>
