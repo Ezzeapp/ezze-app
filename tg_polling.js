@@ -539,13 +539,13 @@ async function processUpdate(update) {
           }
           await sendMasterMenu(chatId, firstName, masterProfile);
         } else {
-          // Не мастер — показываем клиентское меню (Мои записи + Стать мастером)
-          await sendClientMenu(chatId, firstName);
+          // Не мастер — проверяем, записывался ли раньше (возвращающийся клиент)
+          await sendClientMenuSmart(chatId, firstName);
         }
       }
     }
 
-    if (text === "/menu") await sendClientMenu(chatId, firstName);
+    if (text === "/menu") await sendClientMenuSmart(chatId, firstName);
 
     // ── Шаг 2: пользователь вводит имя для записи ────────────────────────────
     if (!text.startsWith("/")) {
@@ -669,13 +669,45 @@ async function sendMasterMenu(chatId, firstName, masterProfile) {
 }
 
 // Клиентское меню: для всех кто не является мастером.
-// Menu Button "Мои записи" НЕ устанавливается здесь —
-// она появляется только после того, как клиент передал телефон и имя в процессе записи.
+// Если клиент уже записывался раньше — восстанавливаем клавиатуру с кнопками.
+// Если новый — просим перейти по ссылке мастера.
+async function sendClientMenuSmart(chatId, firstName) {
+  const greeting = `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>`;
+
+  // Проверяем, есть ли у клиента записи по telegram_id
+  const { count } = await supabase
+    .from("appointments")
+    .select("id", { count: "exact", head: true })
+    .eq("telegram_id", String(chatId));
+
+  if ((count ?? 0) > 0) {
+    // Возвращающийся клиент — восстанавливаем клавиатуру
+    await sendMessage(
+      chatId,
+      `${greeting}\n\nРады видеть вас снова! Используйте кнопки ниже:`,
+      {
+        keyboard: [
+          [
+            { text: "📋 Мои записи", style: "primary" },
+            { text: "🎓 Стать мастером", style: "success" },
+          ],
+        ],
+        resize_keyboard: true,
+        persistent: true,
+      }
+    );
+  } else {
+    // Новый клиент — просим перейти по ссылке мастера
+    await sendMessage(
+      chatId,
+      `${greeting}\n\nЧтобы записаться к мастеру, воспользуйтесь ссылкой мастера.`
+    );
+  }
+}
+
+// Оставляем для обратной совместимости
 async function sendClientMenu(chatId, firstName) {
-  await sendMessage(
-    chatId,
-    `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nЧтобы записаться к мастеру, воспользуйтесь ссылкой мастера.`
-  );
+  await sendClientMenuSmart(chatId, firstName);
 }
 
 async function poll() {
