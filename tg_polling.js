@@ -126,7 +126,7 @@ async function showBookingButton(chatId, slug, phone, name, tgUsername = '') {
       chat_id: chatId,
       text: `✅ <b>Отлично, ${name}!</b>\n\nВсё готово — нажмите кнопку ниже, чтобы выбрать услугу и удобное время:`,
       parse_mode: "HTML",
-      reply_markup: { inline_keyboard: [[{ text: "📅 Записаться", web_app: { url: bookUrl } }]] },
+      reply_markup: { inline_keyboard: [[{ text: "📅 Записаться", style: "primary", web_app: { url: bookUrl } }]] },
     }),
   });
 }

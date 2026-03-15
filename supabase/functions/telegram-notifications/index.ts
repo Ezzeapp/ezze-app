@@ -41,7 +41,7 @@ async function sendTgWithCancelButton(chatId: string, text: string, apptId: stri
         text,
         parse_mode: 'HTML',
         reply_markup: {
-          inline_keyboard: [[{ text: '❌ Отменить запись', callback_data: `cancel_appt_${apptId}` }]],
+          inline_keyboard: [[{ text: '❌ Отменить запись', style: 'danger', callback_data: `cancel_appt_${apptId}` }]],
         },
       }),
     })
