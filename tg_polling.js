@@ -51,12 +51,11 @@ async function sendMessageWithWebApp(chatId, text, buttonText, webAppUrl) {
   });
 }
 
-// Постоянная ReplyKeyboard для клиентов — прилипает к низу, не уезжает вверх
+// Постоянная ReplyKeyboard для клиентов — только "Мои бонусы", без Ezze
 function clientReplyKeyboard() {
   return {
     keyboard: [
       [
-        { text: "Ezze", web_app: { url: `${APP_URL}/my` } },
         { text: "💎 Мои бонусы", web_app: { url: `${APP_URL}/my` } },
       ],
     ],
@@ -78,16 +77,17 @@ function masterReplyKeyboard() {
   };
 }
 
-// Устанавливает кнопку меню индивидуально для конкретного пользователя
+// Устанавливает кнопку меню индивидуально для конкретного пользователя.
+// url = string → кнопка "Ezze" (WebApp); url = null → скрывает кнопку (default)
 async function setUserMenuButton(chatId, url) {
   try {
+    const menuButton = url
+      ? { type: "web_app", text: "Ezze", web_app: { url } }
+      : { type: "default" };
     await fetch(`${TG_API}/setChatMenuButton`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        menu_button: { type: "web_app", text: "Ezze", web_app: { url } },
-      }),
+      body: JSON.stringify({ chat_id: chatId, menu_button: menuButton }),
     });
   } catch (e) {
     console.error("setUserMenuButton error:", e.message);
@@ -525,7 +525,7 @@ async function sendMasterMenu(chatId, firstName, masterProfile) {
 // Клиентское меню: для всех кто не является мастером.
 // Устанавливаем постоянную ReplyKeyboard — она не уезжает вверх при новых сообщениях.
 async function sendClientMenu(chatId, firstName) {
-  await setUserMenuButton(chatId, `${APP_URL}/my`);
+  await setUserMenuButton(chatId, null); // клиентам кнопку Ezze не показываем
   await fetch(`${TG_API}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -567,21 +567,16 @@ async function deleteWebhook() {
 }
 
 // Устанавливает кнопку меню бота (рядом с полем ввода) — открывает Mini App напрямую
+// Глобальный дефолт — без кнопки Ezze; мастерам она устанавливается индивидуально при /start
 async function setupMenuButton() {
   try {
     const res = await fetch(`${TG_API}/setChatMenuButton`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        menu_button: {
-          type: "web_app",
-          text: "Ezze",
-          web_app: { url: `${APP_URL}/my` },
-        },
-      }),
+      body: JSON.stringify({ menu_button: { type: "default" } }),
     });
     const data = await res.json();
-    if (data.ok) console.log("✅ Menu button → WebApp configured");
+    if (data.ok) console.log("✅ Menu button → default (masters get Ezze on /start)");
     else console.error("setChatMenuButton error:", data.description);
   } catch (e) {
     console.error("setupMenuButton error:", e.message);

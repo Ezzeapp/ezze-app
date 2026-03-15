@@ -26,7 +26,6 @@ async function sendTg(chatId: string, text: string, showMenu = false) {
     body.reply_markup = {
       keyboard: [
         [
-          { text: 'Ezze', web_app: { url: `${APP_URL}/my` } },
           { text: '💎 Мои бонусы', web_app: { url: `${APP_URL}/my` } },
         ],
       ],
