@@ -556,11 +556,12 @@ async function sendMasterMenu(chatId, firstName, masterProfile) {
 }
 
 // Клиентское меню: для всех кто не является мастером.
+// Menu Button "Мои записи" НЕ устанавливается здесь —
+// она появляется только после того, как клиент передал телефон и имя в процессе записи.
 async function sendClientMenu(chatId, firstName) {
-  await setUserMenuButton(chatId, "Мои записи", `${APP_URL}/my`);
   await sendMessage(
     chatId,
-    `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nЗдесь вы можете посмотреть свои записи к мастерам.\n\nИспользуйте кнопку <b>Мои записи</b> рядом с полем ввода. 👇`
+    `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nЧтобы записаться к мастеру, воспользуйтесь ссылкой мастера.`
   );
 }
 
