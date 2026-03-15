@@ -732,7 +732,7 @@ export function ClientsPage() {
           {items.map((client) => {
             const isSelected = selectedIds.has(client.id)
             return (
-            <Card key={client.id} className={`hover:border-primary/40 transition-colors cursor-pointer ${isSelected ? 'border-primary/60 bg-primary/5' : ''}`} onClick={() => openEdit(client)}>
+            <Card key={client.id} className={`hover:border-primary/40 transition-colors cursor-pointer ${isSelected ? 'border-primary/60 bg-primary/5' : ''}`} onClick={() => setStatsClient(client)}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   {/* Чекбокс */}
@@ -804,16 +804,16 @@ export function ClientsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setStatsClient(client)}>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setStatsClient(client) }}>
                         <BarChart2 className="mr-2 h-4 w-4" />{t('clients.viewHistory')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => openEdit(client)}>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(client) }}>
                         <Edit className="mr-2 h-4 w-4" />{t('common.edit')}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive"
-                        onClick={() => setDeleteId(client.id)}
+                        onClick={(e) => { e.stopPropagation(); setDeleteId(client.id) }}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />{t('common.delete')}
                       </DropdownMenuItem>
