@@ -100,6 +100,8 @@ export interface Client extends BaseRecord {
   total_visits?: number
   avatar?: string
   last_visit?: string
+  telegram?: string    // Telegram @username (никнейм, read-only)
+  tg_chat_id?: string  // Telegram chat ID
 }
 
 export interface ServiceCategory extends BaseRecord {

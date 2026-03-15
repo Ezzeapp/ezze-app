@@ -109,6 +109,9 @@ export function PublicBookingPage() {
   // Reviews
   const [reviews, setReviews] = useState<Review[]>([])
 
+  // Telegram nickname (read-only, из URL param tg_username)
+  const [tgNickname, setTgNickname] = useState('')
+
   // Review form (shown after booking)
   const [reviewRating, setReviewRating] = useState(0)
   const [reviewComment, setReviewComment] = useState('')
@@ -168,8 +171,13 @@ export function PublicBookingPage() {
     // Предзаполнение из URL-параметров, установленных Telegram-ботом (после сбора контакта)
     const tgPhone = searchParams.get('tg_phone')
     const tgNameParam = searchParams.get('tg_name')
+    const tgUsernameParam = searchParams.get('tg_username')
     if (tgPhone) setValue('client_phone', tgPhone)
     if (tgNameParam && !tgUser) setValue('client_name', tgNameParam)
+    if (tgUsernameParam) {
+      setTgNickname(tgUsernameParam)
+      setValue('client_telegram', tgUsernameParam)
+    }
 
     return cleanup
   }, [])
@@ -558,12 +566,16 @@ export function PublicBookingPage() {
 
       if (existingClient) {
         clientId = existingClient.id
-        // Обновляем имя если изменилось
+        // Обновляем имя если изменилось + сохраняем telegram/tg_chat_id
+        const updatePayload: Record<string, string> = {}
         if (existingClient.first_name !== firstName) {
-          await supabase
-            .from('clients')
-            .update({ first_name: firstName, last_name: lastName || existingClient.last_name || '' })
-            .eq('id', existingClient.id)
+          updatePayload.first_name = firstName
+          updatePayload.last_name = lastName || (existingClient as any).last_name || ''
+        }
+        if (tgNickname) updatePayload.telegram = tgNickname
+        if (tgUserId) updatePayload.tg_chat_id = tgUserId
+        if (Object.keys(updatePayload).length > 0) {
+          await supabase.from('clients').update(updatePayload).eq('id', existingClient.id)
         }
       } else {
         // Клиент не найден — создаём
@@ -575,6 +587,8 @@ export function PublicBookingPage() {
             last_name: lastName,
             phone: values.client_phone,
             source: 'online_booking',
+            ...(tgNickname ? { telegram: tgNickname } : {}),
+            ...(tgUserId ? { tg_chat_id: tgUserId } : {}),
           })
           .select('id')
           .single()
@@ -1532,6 +1546,15 @@ export function PublicBookingPage() {
             )}
 
             <form id="booking-form" onSubmit={handleSubmit(onConfirm)} className="space-y-4">
+              {tgNickname && (
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground text-xs">Telegram</Label>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted text-sm text-muted-foreground select-none">
+                    <MessageCircle className="h-4 w-4 shrink-0" />
+                    <span>@{tgNickname}</span>
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>{t('booking.yourName')} *</Label>
                 <Input placeholder={t('auth.namePlaceholder')} {...register('client_name')} />

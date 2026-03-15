@@ -73,8 +73,10 @@ async function setUserMenuButton(chatId, text, url) {
 }
 
 // Отправляет inline кнопку "Записаться" с предзаполненными телефоном и именем в URL
-async function showBookingButton(chatId, slug, phone, name) {
-  const bookUrl = `${APP_URL}/book/${slug}?tg_phone=${encodeURIComponent(phone)}&tg_name=${encodeURIComponent(name)}&tg_id=${chatId}`;
+async function showBookingButton(chatId, slug, phone, name, tgUsername = '') {
+  const params = new URLSearchParams({ tg_phone: phone, tg_name: name, tg_id: String(chatId) })
+  if (tgUsername) params.set('tg_username', tgUsername)
+  const bookUrl = `${APP_URL}/book/${slug}?${params.toString()}`;
   await fetch(`${TG_API}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -442,6 +444,7 @@ async function processUpdate(update) {
               slug,
               masterProfession: profile.profession || "Мастер",
               step: "waiting_phone",
+              tgUsername: message.from?.username || '', // никнейм Telegram
             });
             await fetch(`${TG_API}/sendMessage`, {
               method: "POST",
@@ -508,9 +511,10 @@ async function processUpdate(update) {
       const pending = pendingBookings.get(chatId);
       if (pending?.step === "waiting_name") {
         const name = text.trim() || pending.tgName || firstName;
+        const tgUsername = pending.tgUsername || '';
         pendingBookings.delete(chatId);
         await setUserMenuButton(chatId, "Мои записи", `${APP_URL}/my`);
-        await showBookingButton(chatId, pending.slug, pending.phone, name);
+        await showBookingButton(chatId, pending.slug, pending.phone, name, tgUsername);
         return;
       }
     }

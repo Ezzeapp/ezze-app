@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, KeyboardEvent, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, CheckCircle2, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2, Gift, TrendingUp, TrendingDown, Award, Crown, Gem, Star } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, CheckCircle2, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2, Gift, TrendingUp, TrendingDown, Award, Crown, Gem, Star, Send } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -981,6 +981,16 @@ export function ClientsPage() {
                   onChange={handleAvatarChange}
                 />
               </div>
+
+              {editClient?.telegram && (
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground text-xs">Telegram</Label>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted text-sm text-muted-foreground select-none">
+                    <Send className="h-4 w-4 shrink-0" />
+                    <span>@{editClient.telegram.replace('@', '')}</span>
+                  </div>
+                </div>
+              )}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
