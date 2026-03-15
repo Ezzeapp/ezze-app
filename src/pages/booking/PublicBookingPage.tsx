@@ -1547,15 +1547,7 @@ export function PublicBookingPage() {
             )}
 
             <form id="booking-form" onSubmit={handleSubmit(onConfirm)} className="space-y-4">
-              {tgNickname && (
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground text-xs">Telegram</Label>
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted text-sm text-muted-foreground select-none">
-                    <MessageCircle className="h-4 w-4 shrink-0" />
-                    <span>@{tgNickname}</span>
-                  </div>
-                </div>
-              )}
+              {/* tgNickname передаётся скрыто через client_telegram — поле не отображается */}
               <div className="space-y-2">
                 <Label>{t('booking.yourName')} *</Label>
                 <Input placeholder={t('auth.namePlaceholder')} {...register('client_name')} />
