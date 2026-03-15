@@ -30,6 +30,26 @@ import { supabase } from '@/lib/supabase'
 import { getFileUrl } from '@/lib/utils'
 import type { Client } from '@/types'
 
+// Birthday helpers: store as YYYY-MM-DD, display/input as DD.MM.YYYY
+function maskBirthday(val: string): string {
+  const digits = val.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}.${digits.slice(2)}`
+  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`
+}
+function birthdayToDisplay(iso: string): string {
+  if (!iso || !iso.includes('-')) return ''
+  const [y, m, d] = iso.split('-')
+  if (!y || !m || !d) return ''
+  return `${d}.${m}.${y}`
+}
+function birthdayToISO(display: string): string {
+  if (!display || display.length !== 10) return ''
+  const [d, m, y] = display.split('.')
+  if (!d || !m || !y || y.length !== 4) return ''
+  return `${y}-${m}-${d}`
+}
+
 const schema = z.object({
   first_name: z.string().min(1),
   last_name: z.string().optional(),
@@ -279,7 +299,7 @@ export function ClientsPage() {
       last_name: c.last_name || '',
       phone: c.phone || '',
       email: c.email || '',
-      birthday: c.birthday || '',
+      birthday: c.birthday ? birthdayToDisplay(c.birthday) : '',
       notes: c.notes || '',
       source: c.source || '',
       tags: c.tags || [],
@@ -297,13 +317,15 @@ export function ClientsPage() {
   }
 
   const onSubmit = async (values: FormValues) => {
+    const birthdayISO = values.birthday ? birthdayToISO(values.birthday) : ''
+    const payload = { ...values, birthday: birthdayISO || undefined }
     try {
       let savedClient: Client
       if (editClient) {
-        savedClient = await update.mutateAsync({ id: editClient.id, data: values })
+        savedClient = await update.mutateAsync({ id: editClient.id, data: payload })
         toast.success(t('clients.updated'))
       } else {
-        savedClient = await create.mutateAsync(values as any)
+        savedClient = await create.mutateAsync(payload as any)
         toast.success(t('clients.created'))
       }
       // Upload avatar if changed
@@ -727,7 +749,20 @@ export function ClientsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>День рождения</Label>
-                  <Input type="date" {...register('birthday')} />
+                  <Controller
+                    name="birthday"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="01.01.2000"
+                        maxLength={10}
+                        value={field.value || ''}
+                        onChange={e => field.onChange(maskBirthday(e.target.value))}
+                      />
+                    )}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
