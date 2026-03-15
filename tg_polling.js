@@ -51,6 +51,20 @@ async function sendMessageWithWebApp(chatId, text, buttonText, webAppUrl) {
   });
 }
 
+// Постоянная ReplyKeyboard для клиентов — прилипает к низу, не уезжает вверх
+function clientReplyKeyboard() {
+  return {
+    keyboard: [
+      [
+        { text: "📋 Мои записи", web_app: { url: `${APP_URL}/my` } },
+        { text: "💎 Мои бонусы", web_app: { url: `${APP_URL}/my` } },
+      ],
+    ],
+    resize_keyboard: true,
+    persistent: true,
+  };
+}
+
 async function findMasterByChatId(chatId) {
   try {
     const { data, error } = await supabase
@@ -486,19 +500,16 @@ async function sendMasterMenu(chatId, firstName, masterProfile) {
 }
 
 // Клиентское меню: для всех кто не является мастером.
-// Показываем Мои записи + предложение стать мастером.
+// Устанавливаем постоянную ReplyKeyboard — она не уезжает вверх при новых сообщениях.
 async function sendClientMenu(chatId, firstName) {
   await fetch(`${TG_API}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chatId,
-      text: `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nЗдесь вы можете посмотреть свои записи к мастерам или зарегистрироваться как мастер на платформе <b>Ezze</b>.`,
+      text: `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nЗдесь вы можете посмотреть свои записи к мастерам.\n\n<i>Кнопки снизу всегда доступны 👇</i>`,
       parse_mode: "HTML",
-      reply_markup: { inline_keyboard: [
-        [{ text: "📋 Мои записи", web_app: { url: `${APP_URL}/my` } }],
-        [{ text: "🚀 Стать мастером", web_app: { url: `${APP_URL}/register` } }],
-      ]}
+      reply_markup: clientReplyKeyboard(),
     }),
   });
 }
@@ -531,7 +542,29 @@ async function deleteWebhook() {
   }
 }
 
+// Устанавливает кнопку меню бота (рядом с полем ввода) — открывает Mini App напрямую
+async function setupMenuButton() {
+  try {
+    const res = await fetch(`${TG_API}/setChatMenuButton`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        menu_button: {
+          type: "web_app",
+          text: "📱 Приложение",
+          web_app: { url: APP_URL },
+        },
+      }),
+    });
+    const data = await res.json();
+    if (data.ok) console.log("✅ Menu button → WebApp configured");
+    else console.error("setChatMenuButton error:", data.description);
+  } catch (e) {
+    console.error("setupMenuButton error:", e.message);
+  }
+}
+
 console.log("🤖 Telegram bot (Supabase) polling started...");
 console.log(`Supabase: ${SUPABASE_URL}`);
 console.log(`App URL: ${APP_URL}`);
-deleteWebhook().then(() => poll());
+deleteWebhook().then(() => setupMenuButton()).then(() => poll());

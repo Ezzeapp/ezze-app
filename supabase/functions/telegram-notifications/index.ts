@@ -18,11 +18,21 @@ const BOT_TOKEN = Deno.env.get('TG_BOT_TOKEN') ?? '8365728736:AAHdA_B9bVQQLqqCsJ
 
 // ── Telegram helpers ──────────────────────────────────────────────────────────
 
-async function sendTg(chatId: string, text: string, withCabinet = false) {
+// showMenu=true → устанавливает постоянную ReplyKeyboard клиенту (не уезжает вверх)
+async function sendTg(chatId: string, text: string, showMenu = false) {
   if (!chatId || !text) return
   const body: any = { chat_id: String(chatId), text, parse_mode: 'HTML' }
-  if (withCabinet) {
-    body.reply_markup = { inline_keyboard: [[{ text: '📋 Мои записи', web_app: { url: `${APP_URL}/my` } }]] }
+  if (showMenu) {
+    body.reply_markup = {
+      keyboard: [
+        [
+          { text: '📋 Мои записи', web_app: { url: `${APP_URL}/my` } },
+          { text: '💎 Мои бонусы', web_app: { url: `${APP_URL}/my` } },
+        ],
+      ],
+      resize_keyboard: true,
+      persistent: true,
+    }
   }
   try {
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
