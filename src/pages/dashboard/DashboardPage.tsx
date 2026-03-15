@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CalendarDays, Users, Package, TrendingUp, Clock, ArrowRight, Globe, CalendarRange, UsersRound } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -92,20 +92,6 @@ export function DashboardPage() {
   // Кастомный период
   const [customStart, setCustomStart] = useState(dayjs().startOf('month').format('YYYY-MM-DD'))
   const [customEnd, setCustomEnd] = useState(dayjs().format('YYYY-MM-DD'))
-  const [customOpen, setCustomOpen] = useState(false)
-  const customRef = useRef<HTMLDivElement>(null)
-
-  // Закрытие попапа кастомного периода по клику снаружи
-  useEffect(() => {
-    if (!customOpen) return
-    const handler = (e: MouseEvent) => {
-      if (customRef.current && !customRef.current.contains(e.target as Node)) {
-        setCustomOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [customOpen])
 
   const today = dayjs().format('YYYY-MM-DD')
   const todayStart = today
@@ -292,24 +278,24 @@ export function DashboardPage() {
         </div>
 
         {/* Переключатель периода — отдельная строка, всегда в блоке */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {PERIODS.map(p => (
-            <Button
-              key={p.key}
-              variant={period === p.key ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => { setPeriod(p.key); setCustomOpen(false) }}
-            >
-              {t(p.labelKey)}
-            </Button>
-          ))}
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {PERIODS.map(p => (
+              <Button
+                key={p.key}
+                variant={period === p.key ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setPeriod(p.key)}
+              >
+                {t(p.labelKey)}
+              </Button>
+            ))}
 
-          {/* Кнопка произвольного периода */}
-          <div className="relative" ref={customRef}>
+            {/* Кнопка произвольного периода */}
             <Button
               variant={period === 'custom' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setCustomOpen(v => !v)}
+              onClick={() => setPeriod('custom')}
               className="flex items-center gap-1.5"
             >
               <CalendarRange className="h-3.5 w-3.5" />
@@ -317,42 +303,30 @@ export function DashboardPage() {
                 ? `${dayjs(customStart).format('D MMM')} – ${dayjs(customEnd).format('D MMM')}`
                 : t('analytics.periodCustom')}
             </Button>
-
-            {/* Дропдаун кастомного периода */}
-            {customOpen && (
-              <div className="absolute left-0 top-full mt-1.5 z-50 bg-white dark:bg-zinc-900 border border-border rounded-xl shadow-xl p-4 flex flex-col gap-3 w-56 backdrop-blur-none">
-                <p className="text-xs font-semibold text-foreground">{t('analytics.periodCustom')}</p>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('analytics.customFrom')}</label>
-                  <input
-                    type="date"
-                    value={customStart}
-                    max={customEnd}
-                    onChange={e => setCustomStart(e.target.value)}
-                    className="h-8 px-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-1 focus:ring-primary w-full"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('analytics.customTo')}</label>
-                  <input
-                    type="date"
-                    value={customEnd}
-                    min={customStart}
-                    max={today}
-                    onChange={e => setCustomEnd(e.target.value)}
-                    className="h-8 px-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-1 focus:ring-primary w-full"
-                  />
-                </div>
-                <Button
-                  size="sm"
-                  className="w-full"
-                  onClick={() => { setPeriod('custom'); setCustomOpen(false) }}
-                >
-                  {t('common.apply')}
-                </Button>
-              </div>
-            )}
           </div>
+
+          {/* Инлайн поля дат — появляются под кнопками когда выбран произвольный период */}
+          {period === 'custom' && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">{t('analytics.customFrom')}</span>
+              <input
+                type="date"
+                value={customStart}
+                max={customEnd}
+                onChange={e => setCustomStart(e.target.value)}
+                className="h-8 px-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <span className="text-xs text-muted-foreground">{t('analytics.customTo')}</span>
+              <input
+                type="date"
+                value={customEnd}
+                min={customStart}
+                max={today}
+                onChange={e => setCustomEnd(e.target.value)}
+                className="h-8 px-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          )}
         </div>
       </div>
 
