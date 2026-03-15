@@ -51,38 +51,12 @@ async function sendMessageWithWebApp(chatId, text, buttonText, webAppUrl) {
   });
 }
 
-// Постоянная ReplyKeyboard для клиентов — только "Мои бонусы", без Ezze
-function clientReplyKeyboard() {
-  return {
-    keyboard: [
-      [
-        { text: "💎 Мои бонусы", web_app: { url: `${APP_URL}/my` } },
-      ],
-    ],
-    resize_keyboard: true,
-    persistent: true,
-  };
-}
-
-// Постоянная ReplyKeyboard для мастеров — открывает кабинет мастера
-function masterReplyKeyboard() {
-  return {
-    keyboard: [
-      [
-        { text: "Ezze", web_app: { url: `${APP_URL}/tg?start=master` } },
-      ],
-    ],
-    resize_keyboard: true,
-    persistent: true,
-  };
-}
-
-// Устанавливает кнопку меню индивидуально для конкретного пользователя.
-// url = string → кнопка "Ezze" (WebApp); url = null → скрывает кнопку (default)
-async function setUserMenuButton(chatId, url) {
+// Устанавливает Menu Button индивидуально для пользователя.
+// text + url → WebApp кнопка; без параметров → скрывает (default)
+async function setUserMenuButton(chatId, text, url) {
   try {
-    const menuButton = url
-      ? { type: "web_app", text: "Ezze", web_app: { url } }
+    const menuButton = (text && url)
+      ? { type: "web_app", text, web_app: { url } }
       : { type: "default" };
     await fetch(`${TG_API}/setChatMenuButton`, {
       method: "POST",
@@ -429,7 +403,6 @@ async function processUpdate(update) {
                 parse_mode: "HTML",
                 reply_markup: { inline_keyboard: [
                   [{ text: "📅 Записаться", web_app: { url: `${APP_URL}/book/${slug}` } }],
-                  [{ text: "Ezze", web_app: { url: `${APP_URL}/my` } }],
                 ]}
               }),
             });
@@ -514,28 +487,20 @@ async function processUpdate(update) {
 
 async function sendMasterMenu(chatId, firstName, masterProfile) {
   const masterName = masterProfile.profession || firstName || "Мастер";
-  await setUserMenuButton(chatId, `${APP_URL}/tg?start=master`);
+  await setUserMenuButton(chatId, "Ezze", `${APP_URL}/tg?start=master`);
   await sendMessage(
     chatId,
-    `👋 <b>Привет, ${masterName}!</b>\n\nРады видеть вас снова в <b>Ezze</b>.\n\nНажмите кнопку <b>Ezze</b> ниже, чтобы открыть кабинет мастера.`,
-    masterReplyKeyboard()
+    `👋 <b>Привет, ${masterName}!</b>\n\nРады видеть вас снова в <b>Ezze</b>.\n\nИспользуйте кнопку <b>Ezze</b> рядом с полем ввода, чтобы открыть кабинет мастера.`
   );
 }
 
 // Клиентское меню: для всех кто не является мастером.
-// Устанавливаем постоянную ReplyKeyboard — она не уезжает вверх при новых сообщениях.
 async function sendClientMenu(chatId, firstName) {
-  await setUserMenuButton(chatId, null); // клиентам кнопку Ezze не показываем
-  await fetch(`${TG_API}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nЗдесь вы можете посмотреть свои записи к мастерам.\n\n<i>Кнопки снизу всегда доступны 👇</i>`,
-      parse_mode: "HTML",
-      reply_markup: clientReplyKeyboard(),
-    }),
-  });
+  await setUserMenuButton(chatId, "Мои записи", `${APP_URL}/my`);
+  await sendMessage(
+    chatId,
+    `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nЗдесь вы можете посмотреть свои записи к мастерам.\n\nИспользуйте кнопку <b>Мои записи</b> рядом с полем ввода. 👇`
+  );
 }
 
 async function poll() {
