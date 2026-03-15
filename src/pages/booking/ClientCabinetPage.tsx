@@ -215,6 +215,7 @@ export function ClientCabinetPage() {
     }
 
     const tgId = getTelegramUserId()
+      || new URLSearchParams(window.location.search).get('tg_id')
     const tgName = getTelegramDisplayName()
 
     setTelegramId(tgId)

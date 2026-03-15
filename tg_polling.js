@@ -104,7 +104,7 @@ async function sendClientKeyboard(chatId) {
     {
       keyboard: [
         [
-          { text: "📋 Мои записи", style: "primary", web_app: { url: `${APP_URL}/my` } },
+          { text: "📋 Мои записи", style: "primary", web_app: { url: `${APP_URL}/my?tg_id=${chatId}` } },
           { text: "🎓 Стать мастером", style: "success", web_app: { url: `${APP_URL}/register` } },
         ],
       ],
@@ -674,7 +674,7 @@ async function sendClientMenuSmart(chatId, firstName) {
       {
         keyboard: [
           [
-            { text: "📋 Мои записи", style: "primary", web_app: { url: `${APP_URL}/my` } },
+            { text: "📋 Мои записи", style: "primary", web_app: { url: `${APP_URL}/my?tg_id=${chatId}` } },
             { text: "🎓 Стать мастером", style: "success", web_app: { url: `${APP_URL}/register` } },
           ],
         ],
