@@ -94,7 +94,7 @@ interface Props {
 export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
-  const [showWelcome, setShowWelcome] = useState(true)
+  const [showWelcome, setShowWelcome] = useState(false)
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [photoModalOpen, setPhotoModalOpen] = useState(false)
@@ -153,7 +153,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   // ── Reset on open ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!open) return
-    setShowWelcome(true)
+    setShowWelcome(false)
     setStep(0)
     setAvatarFile(null); setAvatarPreview(null)
     setDisplayName(prefill?.name || ''); setPhone(prefill?.phone || '')
