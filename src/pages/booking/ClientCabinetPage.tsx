@@ -397,7 +397,7 @@ export function ClientCabinetPage() {
 
         return (
           <Card key={s.master_id} className="overflow-hidden">
-            <CardContent className="px-6 py-5 space-y-3">
+            <div className="px-6 py-5 space-y-3">
               <div className="flex items-center gap-2">
                 <Gift className="h-4 w-4 text-primary" />
                 <span className="font-semibold text-sm">{t('loyalty.myLoyalty')}</span>
@@ -444,7 +444,7 @@ export function ClientCabinetPage() {
                   </Button>
                 </div>
               )}
-            </CardContent>
+            </div>
           </Card>
         )
       })}
@@ -528,7 +528,7 @@ function AppointmentCard({ appt, onCancel, onBookAgain }: AppointmentCardProps) 
 
   return (
     <Card className={isUpcoming ? 'border-primary/30' : ''}>
-      <CardContent className="px-6 py-5 space-y-3">
+      <div className="px-6 py-5 space-y-3">
         {/* Статус + дата */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-1.5">
@@ -592,7 +592,7 @@ function AppointmentCard({ appt, onCancel, onBookAgain }: AppointmentCardProps) 
             )}
           </div>
         )}
-      </CardContent>
+      </div>
     </Card>
   )
 }
