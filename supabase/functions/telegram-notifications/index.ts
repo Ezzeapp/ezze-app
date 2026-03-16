@@ -114,26 +114,56 @@ async function handleInsert(record: any) {
     await supabase.from('appointments').update({ cancel_token: tok }).eq('id', record.id)
   }
 
-  // Сохраняем telegram-данные клиента (service role — bypass RLS, публичная страница не может)
+  // Найти или создать клиента, обновить client_id в записи (service role — bypass RLS)
+  // Публичная страница бронирования не может INSERT в clients из-за RLS (auth.uid() ≠ master_id)
   const clientPhone = record.client_phone ?? ''
   const clientTelegramUsername = (record.client_telegram ?? '').replace('@', '')
   const clientTelegramId = record.telegram_id ? String(record.telegram_id) : ''
-  if (clientPhone && (clientTelegramUsername || clientTelegramId)) {
+  if (clientPhone) {
     try {
       const telegramPatch: Record<string, string> = {}
       if (clientTelegramUsername) telegramPatch.telegram = clientTelegramUsername
       if (clientTelegramId) telegramPatch.tg_chat_id = clientTelegramId
-      // Ищем клиента по телефону и мастеру, обновляем telegram-поля
-      const { data: clientRow } = await supabase
+
+      // Ищем клиента по телефону и мастеру
+      let { data: clientRow } = await supabase
         .from('clients')
         .select('id')
         .eq('master_id', masterId)
         .eq('phone', clientPhone)
         .maybeSingle()
+
       if (clientRow?.id) {
-        await supabase.from('clients').update(telegramPatch).eq('id', clientRow.id)
+        // Обновляем telegram-поля если есть
+        if (Object.keys(telegramPatch).length > 0) {
+          await supabase.from('clients').update(telegramPatch).eq('id', clientRow.id)
+        }
+      } else {
+        // Клиент не найден — создаём (публичная страница не смогла из-за RLS)
+        const nameParts = (record.client_name ?? '').trim().split(/\s+/)
+        const { data: newClient } = await supabase
+          .from('clients')
+          .insert({
+            master_id: masterId,
+            first_name: nameParts[0] || record.client_name || '',
+            last_name: nameParts.slice(1).join(' ') || '',
+            phone: clientPhone,
+            source: 'online_booking',
+            ...telegramPatch,
+          })
+          .select('id')
+          .single()
+        clientRow = newClient
       }
-    } catch (e) { console.error('client telegram update error:', e) }
+
+      // Если в записи нет client_id — ставим его
+      if (clientRow?.id && !record.client_id) {
+        await supabase
+          .from('appointments')
+          .update({ client_id: clientRow.id })
+          .eq('id', record.id)
+      }
+    } catch (e) { console.error('client find/create error:', e) }
   }
 
   // Notify master
