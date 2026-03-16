@@ -13,6 +13,7 @@ export interface SpecialtyCategoryMap {
 }
 
 export const SPECIALTY_CATEGORY_MAP: SpecialtyCategoryMap[] = [
+  // ── Красота и внешность ───────────────────────────────────────────────────
   {
     keywords: ['парикмахер', 'стрижк', 'барбер', 'волос', 'колорист', 'hair'],
     serviceCategories: ['Волосы', 'Барбер'],
@@ -51,7 +52,7 @@ export const SPECIALTY_CATEGORY_MAP: SpecialtyCategoryMap[] = [
   {
     keywords: ['татуир', 'татуаж', 'перманент', 'pmu', 'tattoo'],
     serviceCategories: ['Лицо', 'Тело'],
-    productCategories: ['Расходники'],
+    productCategories: ['Расходники', 'Тату и ПМУ'],
   },
   {
     keywords: ['груминг', 'зоо', 'pet', 'groo'],
@@ -59,15 +60,60 @@ export const SPECIALTY_CATEGORY_MAP: SpecialtyCategoryMap[] = [
     productCategories: ['Расходники'],
   },
   {
-    keywords: ['нутрицио', 'диетолог', 'тренер', 'фитнес', 'йог', 'fitness'],
+    keywords: ['ботокс', 'филлер', 'биоревит', 'мезотерап', 'инъекц', 'плазмолифт', 'нитев'],
+    serviceCategories: ['Эстетическая медицина', 'Лицо'],
+    productCategories: ['Расходники'],
+  },
+
+  // ── Здоровье и фитнес ─────────────────────────────────────────────────────
+  {
+    keywords: ['нутрицио', 'диетолог'],
+    serviceCategories: ['Здоровье'],
+    productCategories: [],
+  },
+  {
+    keywords: ['тренер', 'фитнес', 'пилатес', 'стретчинг', 'йог', 'fitness', 'танц'],
+    serviceCategories: ['Фитнес', 'Здоровье'],
+    productCategories: [],
+  },
+  {
+    keywords: ['остеопат', 'рефлексо', 'мануальн'],
     serviceCategories: ['Здоровье'],
     productCategories: ['Расходники'],
+  },
+
+  // ── Психология и коучинг ──────────────────────────────────────────────────
+  {
+    keywords: ['психолог', 'психотерап', 'арт-терап', 'нлп', 'коуч', 'coach', 'therapist'],
+    serviceCategories: ['Психология'],
+    productCategories: [],
+  },
+
+  // ── Образование и репетиторство ───────────────────────────────────────────
+  {
+    keywords: ['репетитор', 'учитель', 'преподават', 'тьютор', 'обучени', 'педагог', 'tutor', 'teacher'],
+    serviceCategories: ['Обучение'],
+    productCategories: [],
+  },
+
+  // ── Фото и видео ──────────────────────────────────────────────────────────
+  {
+    keywords: ['фотограф', 'видеограф', 'фотосессия', 'ретушь', 'photo', 'video'],
+    serviceCategories: ['Фото / Видео'],
+    productCategories: [],
+  },
+
+  // ── Детские услуги ────────────────────────────────────────────────────────
+  {
+    keywords: ['аниматор', 'логопед', 'няня', 'нянечк'],
+    serviceCategories: ['Детские услуги'],
+    productCategories: [],
   },
 ]
 
 /** Дефолтные категории если специальность не распознана */
 export const DEFAULT_SERVICE_CATEGORIES: string[] = []
-export const DEFAULT_PRODUCT_CATEGORIES: string[] = ['Расходники']
+export const DEFAULT_PRODUCT_CATEGORIES: string[] = []
 
 /**
  * Получить категории услуг и товаров для автоимпорта по названию активности/специальности
