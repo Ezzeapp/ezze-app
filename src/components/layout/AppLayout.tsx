@@ -47,12 +47,14 @@ export function AppLayout() {
   const showOnboarding = !onboardingDone && user && user.onboarded !== true
 
   // Данные для предзаполнения визарда (телефон и язык из Telegram-регистрации)
-  const [wizardPrefill] = useState<{ phone?: string; language?: string } | undefined>(() => {
+  const [wizardPrefill] = useState<{ phone?: string; language?: string; name?: string } | undefined>(() => {
     const phone = sessionStorage.getItem('ezze_prefill_phone') || ''
     const lang  = sessionStorage.getItem('ezze_prefill_lang')  || ''
+    const name  = sessionStorage.getItem('ezze_prefill_name')  || ''
     if (phone) sessionStorage.removeItem('ezze_prefill_phone')
     if (lang)  sessionStorage.removeItem('ezze_prefill_lang')
-    return (phone || lang) ? { phone: phone || undefined, language: lang || undefined } : undefined
+    if (name)  sessionStorage.removeItem('ezze_prefill_name')
+    return (phone || lang || name) ? { phone: phone || undefined, language: lang || undefined, name: name || undefined } : undefined
   })
 
   const handleOnboardingComplete = () => {
@@ -86,7 +88,7 @@ export function AppLayout() {
         <OnboardingWizard
           open={true}
           onComplete={handleOnboardingComplete}
-          prefill={wizardPrefill ? { ...wizardPrefill, name: user?.name || '' } : undefined}
+          prefill={wizardPrefill ? { ...wizardPrefill, name: wizardPrefill.name || user?.name || '' } : undefined}
         />
       )}
     </div>

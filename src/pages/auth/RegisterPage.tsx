@@ -127,7 +127,8 @@ export function RegisterPage() {
     const name = getTelegramDisplayName() || tgUser?.username || ''
 
     if (name.trim().length >= 2) {
-      // Сохраняем телефон и язык для онбординг-визарда
+      // Сохраняем имя, телефон и язык для онбординг-визарда
+      sessionStorage.setItem('ezze_prefill_name', name.trim())
       if (phoneParam) sessionStorage.setItem('ezze_prefill_phone', phoneParam)
       if (langParam)  sessionStorage.setItem('ezze_prefill_lang',  langParam)
 
@@ -202,7 +203,8 @@ export function RegisterPage() {
 
   const onSubmitTg = async (values: TgFormValues) => {
     if (!tgId) { toast.error('Telegram ID не найден'); return }
-    // Сохраняем телефон и язык для онбординг-визарда
+    // Сохраняем имя, телефон и язык для онбординг-визарда
+    sessionStorage.setItem('ezze_prefill_name', values.name.trim())
     if (phoneParam) sessionStorage.setItem('ezze_prefill_phone', phoneParam)
     if (langParam)  sessionStorage.setItem('ezze_prefill_lang',  langParam)
     try {
