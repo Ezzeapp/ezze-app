@@ -567,14 +567,21 @@ export function AdminAppearanceTab() {
             <Send className="h-4 w-4" />
             Telegram — кнопка меню
           </CardTitle>
-          <CardDescription>
-            Название кнопки, которая появляется рядом с полем ввода у клиентов и мастеров в боте. Максимум 16 символов.
+          <CardDescription className="space-y-1">
+            <span className="block">Название кнопки рядом с полем ввода. Макс. 16 символов.</span>
+            <span className="block text-xs">
+              <span className="font-medium text-foreground">@ezzeclient_bot</span> — для клиентов &nbsp;·&nbsp;
+              <span className="font-medium text-foreground">@ezzeapp_bot</span> — для мастеров
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">Кнопка для клиентов</Label>
+              <Label className="text-xs">
+                Кнопка для клиентов
+                <span className="ml-1.5 text-muted-foreground font-normal">(@ezzeclient_bot)</span>
+              </Label>
               <Input
                 value={tgClientLabel}
                 onChange={e => setTgClientLabel(e.target.value.slice(0, 16))}
@@ -584,7 +591,10 @@ export function AdminAppearanceTab() {
               <p className="text-xs text-muted-foreground">{tgClientLabel.length}/16</p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Кнопка для мастеров</Label>
+              <Label className="text-xs">
+                Кнопка для мастеров
+                <span className="ml-1.5 text-muted-foreground font-normal">(@ezzeapp_bot)</span>
+              </Label>
               <Input
                 value={tgMasterLabel}
                 onChange={e => setTgMasterLabel(e.target.value.slice(0, 16))}
