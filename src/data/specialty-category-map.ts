@@ -1,6 +1,8 @@
 /**
  * Маппинг вида деятельности (activityTypeName) к категориям услуг и товаров.
  * Используется при онбординге для автоматического импорта релевантных позиций.
+ *
+ * Категории соответствуют именам в таблицах global_services / global_products на VPS.
  */
 
 export interface SpecialtyCategoryMap {
@@ -16,98 +18,128 @@ export const SPECIALTY_CATEGORY_MAP: SpecialtyCategoryMap[] = [
   // ── Красота и внешность ───────────────────────────────────────────────────
   {
     keywords: ['парикмахер', 'стрижк', 'барбер', 'волос', 'колорист', 'hair'],
-    serviceCategories: ['Волосы', 'Барбер'],
-    productCategories: ['Уход за волосами', 'Краски и химия', 'Расходники', 'Инструменты'],
+    serviceCategories: ['Волосы'],
+    productCategories: ['Волосы', 'Барберинг', 'Расходники'],
   },
   {
     keywords: ['маникюр', 'педикюр', 'ноготь', 'ногт', 'nail'],
     serviceCategories: ['Ногти'],
-    productCategories: ['Ногтевой сервис', 'Косметика', 'Расходники', 'Инструменты'],
+    productCategories: ['Ногти', 'Расходники'],
   },
   {
     keywords: ['бровист', 'лешмейк', 'ресниц', 'brow', 'lash'],
-    serviceCategories: ['Брови и ресницы'],
-    productCategories: ['Краски и химия', 'Косметика', 'Расходники', 'Инструменты'],
+    serviceCategories: ['Брови и ресницы', 'Перманентный макияж'],
+    productCategories: ['Брови и ресницы', 'Расходники'],
   },
   {
     keywords: ['визажист', 'макияж', 'makeup', 'make-up'],
-    serviceCategories: ['Лицо'],
-    productCategories: ['Косметика', 'Расходники'],
+    serviceCategories: ['Макияж', 'Перманентный макияж'],
+    productCategories: ['Макияж', 'Расходники'],
   },
   {
     keywords: ['косметолог', 'эстетист', 'уход за лиц', 'косметик'],
-    serviceCategories: ['Лицо', 'Тело'],
-    productCategories: ['Косметика', 'Расходники'],
+    serviceCategories: ['Косметология', 'Эстетическая медицина'],
+    productCategories: ['Косметология', 'Расходники'],
   },
   {
     keywords: ['массаж', 'massage'],
-    serviceCategories: ['Тело', 'Здоровье'],
-    productCategories: ['Массаж и тело', 'Расходники'],
+    serviceCategories: ['Массаж'],
+    productCategories: ['Массаж', 'Спа и тело', 'Расходники'],
   },
   {
     keywords: ['депил', 'шугар', 'воск', 'эпиляц', 'wax'],
-    serviceCategories: ['Тело'],
-    productCategories: ['Депиляция', 'Расходники'],
+    serviceCategories: ['Эпиляция и депиляция'],
+    productCategories: ['Эпиляция', 'Расходники'],
   },
   {
-    keywords: ['татуир', 'татуаж', 'перманент', 'pmu', 'tattoo'],
-    serviceCategories: ['Лицо', 'Тело'],
-    productCategories: ['Расходники', 'Тату и ПМУ'],
+    keywords: ['татуир', 'tattoo', 'tatt'],
+    serviceCategories: ['Тату и пирсинг'],
+    productCategories: ['Тату', 'Расходники'],
+  },
+  {
+    keywords: ['татуаж', 'перманент', 'pmu'],
+    serviceCategories: ['Перманентный макияж'],
+    productCategories: ['Татуаж и перманент', 'Расходники'],
   },
   {
     keywords: ['груминг', 'зоо', 'pet', 'groo'],
-    serviceCategories: ['Зоогруминг'],
-    productCategories: ['Расходники'],
+    serviceCategories: ['Уход за животными'],
+    productCategories: ['Ветеринария', 'Расходники'],
   },
   {
     keywords: ['ботокс', 'филлер', 'биоревит', 'мезотерап', 'инъекц', 'плазмолифт', 'нитев'],
-    serviceCategories: ['Эстетическая медицина', 'Лицо'],
-    productCategories: ['Расходники'],
+    serviceCategories: ['Эстетическая медицина', 'Косметология'],
+    productCategories: ['Косметология', 'Медицина и здоровье', 'Расходники'],
   },
 
   // ── Здоровье и фитнес ─────────────────────────────────────────────────────
   {
     keywords: ['нутрицио', 'диетолог'],
-    serviceCategories: ['Здоровье'],
+    serviceCategories: ['Медицинские услуги', 'Фитнес'],
     productCategories: [],
   },
   {
-    keywords: ['тренер', 'фитнес', 'пилатес', 'стретчинг', 'йог', 'fitness', 'танц'],
-    serviceCategories: ['Фитнес', 'Здоровье'],
+    keywords: ['тренер', 'фитнес', 'fitness'],
+    serviceCategories: ['Фитнес', 'Фитнес и тренировки'],
+    productCategories: [],
+  },
+  {
+    keywords: ['пилатес', 'стретчинг', 'йог'],
+    serviceCategories: ['Йога и пилатес', 'Фитнес и тренировки'],
+    productCategories: [],
+  },
+  {
+    keywords: ['танц'],
+    serviceCategories: ['Танцы'],
     productCategories: [],
   },
   {
     keywords: ['остеопат', 'рефлексо', 'мануальн'],
-    serviceCategories: ['Здоровье'],
-    productCategories: ['Расходники'],
+    serviceCategories: ['Остеопатия и мануальная терапия', 'Медицинские услуги'],
+    productCategories: ['Медицина и здоровье', 'Расходники'],
   },
 
   // ── Психология и коучинг ──────────────────────────────────────────────────
   {
-    keywords: ['психолог', 'психотерап', 'арт-терап', 'нлп', 'коуч', 'coach', 'therapist'],
-    serviceCategories: ['Психология'],
+    keywords: ['психолог', 'психотерап', 'арт-терап', 'therapist'],
+    serviceCategories: ['Психология', 'Психология и психотерапия'],
+    productCategories: [],
+  },
+  {
+    keywords: ['нлп', 'коуч', 'coach'],
+    serviceCategories: ['Коучинг', 'Психология'],
     productCategories: [],
   },
 
   // ── Образование и репетиторство ───────────────────────────────────────────
   {
     keywords: ['репетитор', 'учитель', 'преподават', 'тьютор', 'обучени', 'педагог', 'tutor', 'teacher'],
-    serviceCategories: ['Обучение'],
+    serviceCategories: ['Обучение', 'Репетиторство'],
     productCategories: [],
   },
 
   // ── Фото и видео ──────────────────────────────────────────────────────────
   {
     keywords: ['фотограф', 'видеограф', 'фотосессия', 'ретушь', 'photo', 'video'],
-    serviceCategories: ['Фото / Видео'],
+    serviceCategories: ['Фото / Видео', 'Фотосъёмка', 'Видеосъёмка и монтаж'],
     productCategories: [],
   },
 
   // ── Детские услуги ────────────────────────────────────────────────────────
   {
-    keywords: ['аниматор', 'логопед', 'няня', 'нянечк'],
+    keywords: ['аниматор'],
     serviceCategories: ['Детские услуги'],
+    productCategories: ['Детские услуги'],
+  },
+  {
+    keywords: ['логопед'],
+    serviceCategories: ['Логопедия и дефектология', 'Детские услуги'],
     productCategories: [],
+  },
+  {
+    keywords: ['няня', 'нянечк'],
+    serviceCategories: ['Детские услуги'],
+    productCategories: ['Детские услуги'],
   },
 ]
 
