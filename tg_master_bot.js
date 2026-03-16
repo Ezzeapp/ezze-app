@@ -45,6 +45,63 @@ function normalizePhone(phone) {
   return (phone || "").replace(/\D/g, "");
 }
 
+// ── Многоязычные строки ───────────────────────────────────────────────────────
+
+const LANG_STRINGS = {
+  ru: {
+    phonePrompt:  `📱 Нажмите кнопку ниже, чтобы поделиться номером телефона:`,
+    shareBtn:     "📱 Поделиться номером",
+    remindShare:  `📱 Пожалуйста, нажмите кнопку <b>«Поделиться номером»</b> ниже.`,
+    found:        "✅ <b>Аккаунт найден!</b>",
+    notFound:     `❌ <b>Аккаунт не найден</b>\n\nМастер с таким номером телефона не зарегистрирован в системе.\n\nЗарегистрируйтесь — это займёт 2 минуты:`,
+    registerBtn:  "🚀 Зарегистрироваться",
+  },
+  uz: {
+    phonePrompt:  `📱 Telefon raqamingizni ulashish uchun quyidagi tugmani bosing:`,
+    shareBtn:     "📱 Raqamni ulashish",
+    remindShare:  `📱 Iltimos, quyidagi <b>«Raqamni ulashish»</b> tugmasini bosing.`,
+    found:        "✅ <b>Hisob topildi!</b>",
+    notFound:     `❌ <b>Hisob topilmadi</b>\n\nBu raqam bilan hech qanday usta ro'yxatdan o'tmagan.\n\nRo'yxatdan o'ting — bu 2 daqiqa oladi:`,
+    registerBtn:  "🚀 Ro'yxatdan o'tish",
+  },
+  en: {
+    phonePrompt:  `📱 Press the button below to share your phone number:`,
+    shareBtn:     "📱 Share phone number",
+    remindShare:  `📱 Please press the <b>«Share phone number»</b> button below.`,
+    found:        "✅ <b>Account found!</b>",
+    notFound:     `❌ <b>Account not found</b>\n\nNo master with this phone number is registered in the system.\n\nSign up — it takes only 2 minutes:`,
+    registerBtn:  "🚀 Sign up",
+  },
+  tg: {
+    phonePrompt:  `📱 Барои мубодилаи рақами телефон тугмаи зеринро пахш кунед:`,
+    shareBtn:     "📱 Мубодилаи рақам",
+    remindShare:  `📱 Лутфан тугмаи <b>«Мубодилаи рақам»</b>-ро пахш кунед.`,
+    found:        "✅ <b>Ҳисоб ёфт шуд!</b>",
+    notFound:     `❌ <b>Ҳисоб ёфт нашуд</b>\n\nАз ин рақами телефон ягон устои бақайдгирифта вуҷуд надорад.\n\nБақайд гиред — ин 2 дақиқа мегирад:`,
+    registerBtn:  "🚀 Бақайдгирӣ",
+  },
+  kz: {
+    phonePrompt:  `📱 Телефон нөміріңізді бөлісу үшін төмендегі түймені басыңыз:`,
+    shareBtn:     "📱 Нөмірді бөлісу",
+    remindShare:  `📱 Төмендегі <b>«Нөмірді бөлісу»</b> түймесін басыңыз.`,
+    found:        "✅ <b>Аккаунт табылды!</b>",
+    notFound:     `❌ <b>Аккаунт табылмады</b>\n\nБұл телефон нөмірімен тіркелген шебер жоқ.\n\nТіркеліңіз — бұл 2 минут алады:`,
+    registerBtn:  "🚀 Тіркелу",
+  },
+  kg: {
+    phonePrompt:  `📱 Телефон номериңизди бөлүшүү үчүн төмөндөгү баскычты басыңыз:`,
+    shareBtn:     "📱 Номерди бөлүшүү",
+    remindShare:  `📱 Төмөндөгү <b>«Номерди бөлүшүү»</b> баскычын басыңыз.`,
+    found:        "✅ <b>Аккаунт табылды!</b>",
+    notFound:     `❌ <b>Аккаунт табылган жок</b>\n\nБул телефон номери менен каттоодон өткөн чебер жок.\n\nКаттоодон өтүңүз — бул 2 мүнөт алат:`,
+    registerBtn:  "🚀 Каттоодон өтүү",
+  },
+};
+
+function getLang(pending) {
+  return LANG_STRINGS[pending?.lang] ? pending.lang : "ru";
+}
+
 // ── Мастерское меню ───────────────────────────────────────────────────────────
 
 async function sendMasterMenu(chatId, firstName, masterProfile) {
@@ -58,9 +115,96 @@ async function sendMasterMenu(chatId, firstName, masterProfile) {
   );
 }
 
+// ── Ответ на callback_query (убирает индикатор загрузки) ─────────────────────
+
+async function answerCbQuery(callbackQueryId, text = "") {
+  await fetch(`${bot.TG_API}/answerCallbackQuery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ callback_query_id: callbackQueryId, text }),
+  }).catch(() => {});
+}
+
+// ── Экран выбора языка ────────────────────────────────────────────────────────
+
+async function sendLangSelection(chatId, firstName) {
+  const name = firstName ? `, ${firstName}` : "";
+  await fetch(`${bot.TG_API}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text:
+        `👋 <b>Привет${name}!</b> / <b>Salom${name}!</b> / <b>Hi${name}!</b>\n\n` +
+        `Добро пожаловать в <b>Ezze</b> — сервис для мастеров красоты.\n\n` +
+        `🌐 <b>Выберите язык / Tilni tanlang / Choose language:</b>`,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🇷🇺 Русский",   callback_data: "lang_ru" },
+            { text: "🇺🇿 O'zbek",    callback_data: "lang_uz" },
+          ],
+          [
+            { text: "🇬🇧 English",   callback_data: "lang_en" },
+            { text: "🇹🇯 Тоҷикӣ",   callback_data: "lang_tg" },
+          ],
+          [
+            { text: "🇰🇿 Қазақша",  callback_data: "lang_kz" },
+            { text: "🇰🇬 Кыргызча", callback_data: "lang_kg" },
+          ],
+        ],
+      },
+    }),
+  });
+}
+
 // ── Обработка обновлений ──────────────────────────────────────────────────────
 
 async function processUpdate(update) {
+
+  // ── Callback query (выбор языка) ───────────────────────────────────────────
+  if (update.callback_query) {
+    const cb = update.callback_query;
+    const chatId = cb.message?.chat?.id || cb.from?.id;
+    const data = cb.data || "";
+
+    if (data.startsWith("lang_")) {
+      const lang = data.slice(5); // "ru", "uz", "en", "tg", "kz", "kg"
+      if (!LANG_STRINGS[lang]) {
+        await answerCbQuery(cb.id);
+        return;
+      }
+      const pending = pendingMasters.get(chatId);
+      if (pending?.step === "waiting_language") {
+        console.log(`🌐 [master] chat=${chatId} lang=${lang}`);
+        pendingMasters.set(chatId, { step: "waiting_phone", lang });
+        savePendingSessions();
+        await answerCbQuery(cb.id, "✓");
+        const s = LANG_STRINGS[lang];
+        await fetch(`${bot.TG_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: s.phonePrompt,
+            parse_mode: "HTML",
+            reply_markup: {
+              keyboard: [[{ text: s.shareBtn, request_contact: true }]],
+              resize_keyboard: true,
+              one_time_keyboard: true,
+            },
+          }),
+        });
+      } else {
+        await answerCbQuery(cb.id);
+      }
+    } else {
+      await answerCbQuery(cb.id);
+    }
+    return;
+  }
+
   const message = update.message;
 
   // ── Контакт (phone-onboarding шаг 2) ──────────────────────────────────────
@@ -68,6 +212,8 @@ async function processUpdate(update) {
     const chatId = message.chat.id;
     const pending = pendingMasters.get(chatId);
     if (pending?.step === "waiting_phone") {
+      const lang = getLang(pending);
+      const s = LANG_STRINGS[lang];
       const phoneDigits = normalizePhone(message.contact.phone_number);
       console.log(`📱 [master] chat=${chatId} phone_digits=${phoneDigits}`);
 
@@ -91,7 +237,7 @@ async function processUpdate(update) {
           .update({ tg_chat_id: String(chatId) }).eq("id", profile.id);
         profile.tg_chat_id = String(chatId);
         console.log(`✅ Linked chat=${chatId} to master profile id=${profile.id}`);
-        await bot.sendMessage(chatId, "✅ <b>Аккаунт найден!</b>", { remove_keyboard: true });
+        await bot.sendMessage(chatId, s.found, { remove_keyboard: true });
         await sendMasterMenu(chatId, message.contact.first_name || "", profile);
       } else {
         // Не найден — предлагаем регистрацию
@@ -100,14 +246,11 @@ async function processUpdate(update) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text:
-              `❌ <b>Аккаунт не найден</b>\n\n` +
-              `Мастер с таким номером телефона не зарегистрирован в системе.\n\n` +
-              `Зарегистрируйтесь — это займёт 2 минуты:`,
+            text: s.notFound,
             parse_mode: "HTML",
             reply_markup: {
               inline_keyboard: [[
-                { text: "🚀 Зарегистрироваться", web_app: { url: `${APP_URL}/register` } },
+                { text: s.registerBtn, web_app: { url: `${APP_URL}/register` } },
               ]],
               remove_keyboard: true,
             },
@@ -163,27 +306,11 @@ async function processUpdate(update) {
         }
         await sendMasterMenu(chatId, firstName, masterProfile);
       } else {
-        // Не найден — начинаем phone-onboarding
+        // Не найден — показываем выбор языка (шаг 1 онбординга)
         await bot.setUserMenuButton(chatId); // сброс к default
-        pendingMasters.set(chatId, { step: "waiting_phone" });
+        pendingMasters.set(chatId, { step: "waiting_language" });
         savePendingSessions();
-        await fetch(`${bot.TG_API}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text:
-              `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\n` +
-              `Добро пожаловать в <b>Ezze</b> — сервис для мастеров.\n\n` +
-              `📱 Нажмите кнопку ниже, чтобы поделиться номером телефона:`,
-            parse_mode: "HTML",
-            reply_markup: {
-              keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
-              resize_keyboard: true,
-              one_time_keyboard: true,
-            },
-          }),
-        });
+        await sendLangSelection(chatId, firstName);
       }
       return;
     }
@@ -192,20 +319,27 @@ async function processUpdate(update) {
     if (!text.startsWith("/")) {
       const pending = pendingMasters.get(chatId);
       if (pending?.step === "waiting_phone") {
+        const lang = getLang(pending);
+        const s = LANG_STRINGS[lang];
         await fetch(`${bot.TG_API}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: `📱 Пожалуйста, нажмите кнопку <b>«Поделиться номером»</b> ниже.`,
+            text: s.remindShare,
             parse_mode: "HTML",
             reply_markup: {
-              keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
+              keyboard: [[{ text: s.shareBtn, request_contact: true }]],
               resize_keyboard: true,
               one_time_keyboard: true,
             },
           }),
         });
+        return;
+      }
+      // ── Текст при ожидании выбора языка ─────────────────────────────────────
+      if (pending?.step === "waiting_language") {
+        await sendLangSelection(chatId, firstName);
         return;
       }
     }
