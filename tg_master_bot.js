@@ -202,7 +202,7 @@ async function processUpdate(update) {
             text: s.phonePrompt,
             parse_mode: "HTML",
             reply_markup: {
-              keyboard: [[{ text: s.shareBtn, request_contact: true, style: "success" }]],
+              keyboard: [[{ text: s.shareBtn, request_contact: true, style: "primary" }]],
               resize_keyboard: true,
               one_time_keyboard: true,
             },
@@ -310,7 +310,7 @@ async function processUpdate(update) {
             text: "👇",
             reply_markup: {
               inline_keyboard: [[
-                { text: s.registerBtn, web_app: { url: regUrl }, style: "success" },
+                { text: s.registerBtn, web_app: { url: regUrl }, style: "primary" },
               ]],
             },
           }),
@@ -388,7 +388,7 @@ async function processUpdate(update) {
             text: s.remindShare,
             parse_mode: "HTML",
             reply_markup: {
-              keyboard: [[{ text: s.shareBtn, request_contact: true, style: "success" }]],
+              keyboard: [[{ text: s.shareBtn, request_contact: true, style: "primary" }]],
               resize_keyboard: true,
               one_time_keyboard: true,
             },
