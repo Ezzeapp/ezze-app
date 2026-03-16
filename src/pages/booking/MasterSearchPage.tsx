@@ -41,7 +41,7 @@ export function MasterSearchPage() {
         .eq('is_public', true)
         .order('created_at', { ascending: false })
         .limit(200)
-      return (data ?? []) as MasterResult[]
+      return (data ?? []) as unknown as MasterResult[]
     },
     staleTime: 2 * 60_000,
   })
