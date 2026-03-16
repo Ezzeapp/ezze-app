@@ -50,7 +50,7 @@ function normalizePhone(phone) {
 const LANG_STRINGS = {
   ru: {
     phonePrompt:  `📱 Нажмите кнопку ниже, чтобы поделиться номером телефона:`,
-    shareBtn:     "🔵 Поделиться номером",
+    shareBtn:     "Поделиться номером",
     remindShare:  `📱 Пожалуйста, нажмите кнопку <b>«Поделиться номером»</b> ниже.`,
     found:        "✅ <b>Аккаунт найден!</b>",
     notFound:     `❌ <b>Аккаунт не найден</b>\n\nМастер с таким номером телефона не зарегистрирован в системе.\n\nЗарегистрируйтесь — это займёт 2 минуты:`,
@@ -59,7 +59,7 @@ const LANG_STRINGS = {
   },
   uz: {
     phonePrompt:  `📱 Telefon raqamingizni ulashish uchun quyidagi tugmani bosing:`,
-    shareBtn:     "🔵 Raqamni ulashish",
+    shareBtn:     "Raqamni ulashish",
     remindShare:  `📱 Iltimos, quyidagi <b>«Raqamni ulashish»</b> tugmasini bosing.`,
     found:        "✅ <b>Hisob topildi!</b>",
     notFound:     `❌ <b>Hisob topilmadi</b>\n\nBu raqam bilan hech qanday usta ro'yxatdan o'tmagan.\n\nRo'yxatdan o'ting — bu 2 daqiqa oladi:`,
@@ -68,7 +68,7 @@ const LANG_STRINGS = {
   },
   en: {
     phonePrompt:  `📱 Press the button below to share your phone number:`,
-    shareBtn:     "🔵 Share phone number",
+    shareBtn:     "Share phone number",
     remindShare:  `📱 Please press the <b>«Share phone number»</b> button below.`,
     found:        "✅ <b>Account found!</b>",
     notFound:     `❌ <b>Account not found</b>\n\nNo master with this phone number is registered in the system.\n\nSign up — it takes only 2 minutes:`,
@@ -77,7 +77,7 @@ const LANG_STRINGS = {
   },
   tg: {
     phonePrompt:  `📱 Барои мубодилаи рақами телефон тугмаи зеринро пахш кунед:`,
-    shareBtn:     "🔵 Мубодилаи рақам",
+    shareBtn:     "Мубодилаи рақам",
     remindShare:  `📱 Лутфан тугмаи <b>«Мубодилаи рақам»</b>-ро пахш кунед.`,
     found:        "✅ <b>Ҳисоб ёфт шуд!</b>",
     notFound:     `❌ <b>Ҳисоб ёфт нашуд</b>\n\nАз ин рақами телефон ягон устои бақайдгирифта вуҷуд надорад.\n\nБақайд гиред — ин 2 дақиқа мегирад:`,
@@ -86,7 +86,7 @@ const LANG_STRINGS = {
   },
   kz: {
     phonePrompt:  `📱 Телефон нөміріңізді бөлісу үшін төмендегі түймені басыңыз:`,
-    shareBtn:     "🔵 Нөмірді бөлісу",
+    shareBtn:     "Нөмірді бөлісу",
     remindShare:  `📱 Төмендегі <b>«Нөмірді бөлісу»</b> түймесін басыңыз.`,
     found:        "✅ <b>Аккаунт табылды!</b>",
     notFound:     `❌ <b>Аккаунт табылмады</b>\n\nБұл телефон нөмірімен тіркелген шебер жоқ.\n\nТіркеліңіз — бұл 2 минут алады:`,
@@ -95,7 +95,7 @@ const LANG_STRINGS = {
   },
   ky: {
     phonePrompt:  `📱 Телефон номериңизди бөлүшүү үчүн төмөндөгү баскычты басыңыз:`,
-    shareBtn:     "🔵 Номерди бөлүшүү",
+    shareBtn:     "Номерди бөлүшүү",
     remindShare:  `📱 Төмөндөгү <b>«Номерди бөлүшүү»</b> баскычын басыңыз.`,
     found:        "✅ <b>Аккаунт табылды!</b>",
     notFound:     `❌ <b>Аккаунт табылган жок</b>\n\nБул телефон номери менен каттоодон өткөн чебер жок.\n\nКаттоодон өтүңүз — бул 2 мүнөт алат:`,
