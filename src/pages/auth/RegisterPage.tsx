@@ -143,6 +143,13 @@ export function RegisterPage() {
           const { data: { user: sbUser } } = await supabase.auth.getUser()
           if (sbUser?.id) await saveTgProfile(sbUser.id)
 
+          // Уведомляем бот: отправить приветствие + установить кнопку меню
+          if (tgId) {
+            supabase.functions.invoke('tg-master-welcome', {
+              body: { tg_chat_id: String(tgId), name: name.trim(), lang: langParam || 'ru' },
+            }).catch(() => { /* non-critical */ })
+          }
+
           // Редирект произойдёт через isAuthenticated useEffect
         } catch (e: any) {
           const emailErr = e?.response?.data?.email?.code
@@ -215,6 +222,11 @@ export function RegisterPage() {
 
       const { data: { user: sbUser } } = await supabase.auth.getUser()
       if (sbUser?.id) await saveTgProfile(sbUser.id)
+
+      // Уведомляем бот: приветствие + кнопка меню
+      supabase.functions.invoke('tg-master-welcome', {
+        body: { tg_chat_id: String(tgId), name: values.name.trim(), lang: langParam || 'ru' },
+      }).catch(() => { /* non-critical */ })
 
       toast.success('Аккаунт создан!')
     } catch (e: any) {
