@@ -353,3 +353,52 @@ export function useUpdateAIConfig() {
     onSuccess: () => qc.invalidateQueries({ queryKey: [APP_SETTINGS_KEY, 'ai_config'] }),
   })
 }
+
+// ── Telegram Config ───────────────────────────────────────────────────────────
+
+export interface TgConfig {
+  client_label: string   // Название кнопки для клиента (default "Ezze")
+  master_label: string   // Название кнопки для мастера (default "Ezze")
+}
+
+export const DEFAULT_TG_CONFIG: TgConfig = {
+  client_label: 'Ezze',
+  master_label: 'Ezze',
+}
+
+export function useTgConfig() {
+  return useQuery({
+    queryKey: [APP_SETTINGS_KEY, 'tg_config'],
+    queryFn: async (): Promise<TgConfig> => {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'tg_config')
+        .maybeSingle()
+      if (!data?.value) return DEFAULT_TG_CONFIG
+      try {
+        return { ...DEFAULT_TG_CONFIG, ...JSON.parse(data.value) } as TgConfig
+      } catch {
+        return DEFAULT_TG_CONFIG
+      }
+    },
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useUpdateTgConfig() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (config: TgConfig) => {
+      const value = JSON.stringify(config)
+      const { data, error } = await supabase
+        .from('app_settings')
+        .upsert({ key: 'tg_config', value }, { onConflict: 'key' })
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [APP_SETTINGS_KEY, 'tg_config'] }),
+  })
+}

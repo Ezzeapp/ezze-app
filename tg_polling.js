@@ -115,9 +115,10 @@ async function setUserMenuButton(chatId, text, url) {
   }
 }
 
-// Устанавливает Menu Button "Ezze" для клиента — открывает Mini App "Мои записи"
+// Устанавливает Menu Button для клиента — открывает Mini App "Мои записи"
 async function setClientMenuButton(chatId) {
-  await setUserMenuButton(chatId, "Ezze", `${APP_URL}/my?tg_id=${chatId}`);
+  const cfg = await loadTgConfig();
+  await setUserMenuButton(chatId, cfg.client_label, `${APP_URL}/my?tg_id=${chatId}`);
 }
 
 // Отправляет inline кнопку "Записаться" с предзаполненными телефоном и именем в URL
@@ -181,6 +182,32 @@ async function autoFixMasterProfile(chatId, tgUsername) {
     console.error("autoFixMasterProfile error:", e.message);
     return null;
   }
+}
+
+// ── Tg Config ─────────────────────────────────────────────────────────────────
+
+let _cachedTgConfig = null;
+let _tgConfigLoadedAt = 0;
+
+async function loadTgConfig() {
+  const now = Date.now();
+  if (_cachedTgConfig !== null && now - _tgConfigLoadedAt < 5 * 60_000) {
+    return _cachedTgConfig;
+  }
+  try {
+    const { data } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "tg_config")
+      .maybeSingle();
+    if (data?.value) {
+      _cachedTgConfig = JSON.parse(data.value);
+      _tgConfigLoadedAt = now;
+    }
+  } catch (e) {
+    console.error("Failed to load tg_config:", e.message);
+  }
+  return _cachedTgConfig ?? { client_label: "Ezze", master_label: "Ezze" };
 }
 
 // ── AI / Claude helpers ──────────────────────────────────────────────────────
@@ -683,10 +710,12 @@ async function processUpdate(update) {
 
 async function sendMasterMenu(chatId, firstName, masterProfile) {
   const masterName = masterProfile.profession || firstName || "Мастер";
-  await setUserMenuButton(chatId, "Ezze", `${APP_URL}/tg?start=master`);
+  const cfg = await loadTgConfig();
+  const label = cfg.master_label;
+  await setUserMenuButton(chatId, label, `${APP_URL}/tg?start=master`);
   await sendMessage(
     chatId,
-    `👋 <b>Привет, ${masterName}!</b>\n\nРады видеть вас снова в <b>Ezze</b>.\n\nИспользуйте кнопку <b>Ezze</b> рядом с полем ввода, чтобы открыть кабинет мастера.`
+    `👋 <b>Привет, ${masterName}!</b>\n\nРады видеть вас снова в <b>Ezze</b>.\n\nИспользуйте кнопку <b>${label}</b> рядом с полем ввода, чтобы открыть кабинет мастера.`
   );
 }
 
@@ -714,11 +743,13 @@ async function sendClientMenuSmart(chatId, firstName) {
   }
 
   if (isKnownClient) {
-    // Возвращающийся клиент — ставим Menu Button "Ezze"
+    // Возвращающийся клиент — ставим Menu Button
+    const cfg = await loadTgConfig();
+    const clientLabel = cfg.client_label;
     await setClientMenuButton(chatId);
     await sendMessage(
       chatId,
-      `${greeting}\n\nРады видеть вас снова в <b>Ezze</b>!\n\nНажмите кнопку <b>Ezze</b> рядом с полем ввода, чтобы посмотреть ваши записи.`
+      `${greeting}\n\nРады видеть вас снова в <b>Ezze</b>!\n\nНажмите кнопку <b>${clientLabel}</b> рядом с полем ввода, чтобы посмотреть ваши записи.`
     );
   } else {
     // Новый клиент — просим перейти по ссылке мастера

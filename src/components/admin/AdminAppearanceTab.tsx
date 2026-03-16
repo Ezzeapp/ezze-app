@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Zap, Upload, Palette, Globe, ToggleLeft, ToggleRight, Users, Type } from 'lucide-react'
+import { Zap, Upload, Palette, Globe, ToggleLeft, ToggleRight, Users, Type, Send } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,9 @@ import {
   useAppSettings,
   useUpdateAppSetting,
   useUpdateAppLogo,
+  useTgConfig,
+  useUpdateTgConfig,
+  type TgConfig,
 } from '@/hooks/useAppSettings'
 
 // ── Цветовые пресеты ────────────────────────────────────────────────────────
@@ -131,6 +134,8 @@ export function AdminAppearanceTab() {
   const { data: settings, isLoading } = useAppSettings()
   const updateSetting = useUpdateAppSetting()
   const updateLogo = useUpdateAppLogo()
+  const { data: tgConfig } = useTgConfig()
+  const updateTgConfig = useUpdateTgConfig()
 
   // Branding state
   const [platformName, setPlatformName] = useState('')
@@ -153,6 +158,18 @@ export function AdminAppearanceTab() {
   const [defCurrency, setDefCurrency] = useState('')
   const [defTimezone, setDefTimezone] = useState('')
   const [defSaving, setDefSaving] = useState(false)
+
+  // Telegram state
+  const [tgClientLabel, setTgClientLabel] = useState('Ezze')
+  const [tgMasterLabel, setTgMasterLabel] = useState('Ezze')
+  const [tgSaving, setTgSaving] = useState(false)
+
+  useEffect(() => {
+    if (tgConfig) {
+      setTgClientLabel(tgConfig.client_label)
+      setTgMasterLabel(tgConfig.master_label)
+    }
+  }, [tgConfig])
 
   useEffect(() => {
     if (settings) {
@@ -246,6 +263,21 @@ export function AdminAppearanceTab() {
       toast.error(t('common.saveError'))
     } finally {
       setDefSaving(false)
+    }
+  }
+
+  async function saveTgConfig() {
+    setTgSaving(true)
+    try {
+      await updateTgConfig.mutateAsync({
+        client_label: tgClientLabel.trim() || 'Ezze',
+        master_label: tgMasterLabel.trim() || 'Ezze',
+      })
+      toast.success(t('common.saved'))
+    } catch {
+      toast.error(t('common.saveError'))
+    } finally {
+      setTgSaving(false)
     }
   }
 
@@ -523,6 +555,46 @@ export function AdminAppearanceTab() {
           </div>
 
           <Button onClick={saveDefaults} disabled={defSaving} size="sm">
+            {t('common.save')}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* ── Telegram кнопка меню ──────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Send className="h-4 w-4" />
+            Telegram — кнопка меню
+          </CardTitle>
+          <CardDescription>
+            Название кнопки, которая появляется рядом с полем ввода у клиентов и мастеров в боте. Максимум 16 символов.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Кнопка для клиентов</Label>
+              <Input
+                value={tgClientLabel}
+                onChange={e => setTgClientLabel(e.target.value.slice(0, 16))}
+                placeholder="Ezze"
+                maxLength={16}
+              />
+              <p className="text-xs text-muted-foreground">{tgClientLabel.length}/16</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Кнопка для мастеров</Label>
+              <Input
+                value={tgMasterLabel}
+                onChange={e => setTgMasterLabel(e.target.value.slice(0, 16))}
+                placeholder="Ezze"
+                maxLength={16}
+              />
+              <p className="text-xs text-muted-foreground">{tgMasterLabel.length}/16</p>
+            </div>
+          </div>
+          <Button onClick={saveTgConfig} disabled={tgSaving} size="sm">
             {t('common.save')}
           </Button>
         </CardContent>
