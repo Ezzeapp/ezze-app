@@ -40,6 +40,26 @@ async function sendTg(chatId: string, text: string, _showMenu = false) {
   await sendTgVia(chatId, text, true)
 }
 
+// Отправляет мастеру уведомление через МАСТЕРСКИЙ бот с кнопкой "❌ Отменить запись"
+// callback_data обрабатывает master bot (tg_master_bot.js)
+async function sendTgMasterWithCancelButton(chatId: string, text: string, apptId: string) {
+  if (!chatId || !text) return
+  try {
+    await fetch(`https://api.telegram.org/bot${MASTER_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: String(chatId),
+        text,
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [[{ text: '❌ Отменить запись', style: 'danger', callback_data: `cancel_appt_${apptId}` }]],
+        },
+      }),
+    })
+  } catch (err) { console.error('sendTgMasterWithCancelButton error:', err) }
+}
+
 // Отправляет сообщение с inline кнопкой "❌ Отменить запись" (callback_data = cancel_appt_<id>)
 // sendTgWithCancelButton идёт через КЛИЕНТСКИЙ бот (callback_data обрабатывает client bot)
 async function sendTgWithCancelButton(chatId: string, text: string, apptId: string) {
@@ -178,13 +198,22 @@ async function handleInsert(record: any) {
     } catch (e) { console.error('client find/create error:', e) }
   }
 
+  // Resolve client name — may be empty for manually created appointments (client selected by id)
+  let clientName = (record.client_name ?? '').trim()
+  if (!clientName && record.client_id) {
+    const { data: cl } = await supabase
+      .from('clients').select('first_name, last_name').eq('id', record.client_id).maybeSingle()
+    if (cl) clientName = [cl.first_name, cl.last_name].filter(Boolean).join(' ')
+  }
+  if (!clientName) clientName = '-'
+
   // Notify master
   const mSetting = await getNotifSetting(masterId, 'new_appointment')
   const masterTgId = prof.tg_chat_id ?? ''
   if (mSetting.enabled && masterTgId) {
-    let msg = mSetting.template?.trim()
+    const msg = mSetting.template?.trim()
       ? applyTemplate(mSetting.template, {
-          client_name: record.client_name ?? '-',
+          client_name: clientName,
           client_phone: record.client_phone ?? '-',
           client_email: record.client_email ?? '',
           service: svcName, price: svcPrice, duration: svcDuration,
@@ -192,7 +221,7 @@ async function handleInsert(record: any) {
           online: isOnline ? '1' : '',
         })
       : `🔔 <b>Новая запись!</b>\n\n` +
-        `👤 <b>Клиент:</b> ${record.client_name ?? '-'}\n` +
+        `👤 <b>Клиент:</b> ${clientName}\n` +
         (record.client_phone ? `📞 <b>Телефон:</b> ${record.client_phone}\n` : '') +
         `\n✂️ <b>Услуга:</b> ${svcName}\n` +
         (svcPrice ? `💰 <b>Стоимость:</b> ${svcPrice}\n` : '') +
@@ -200,7 +229,8 @@ async function handleInsert(record: any) {
         (endTime ? ` — ${endTime}` : '') +
         (record.notes ? `\n\n💬 <b>Комментарий:</b> ${record.notes}` : '') +
         `\n\n📌 <b>Источник:</b> ${isOnline ? '🌐 онлайн' : '📱 вручную'}`
-    if (msg) await sendTg(masterTgId, msg)
+    // Отправляем через мастерский бот с кнопкой "Отменить запись"
+    if (msg) await sendTgMasterWithCancelButton(masterTgId, msg, record.id)
   }
 
   // Confirm to client

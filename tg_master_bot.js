@@ -211,6 +211,50 @@ async function processUpdate(update) {
       } else {
         await answerCbQuery(cb.id);
       }
+
+    } else if (data.startsWith("cancel_appt_")) {
+      // ── Мастер отменяет запись прямо из уведомления ───────────────────────
+      const apptId = data.replace("cancel_appt_", "");
+      const msgId = cb.message?.message_id;
+      await answerCbQuery(cb.id, "⏳");
+
+      const { data: appt } = await supabase
+        .from("appointments")
+        .select("id, status, client_name, client_id, date, start_time")
+        .eq("id", apptId)
+        .maybeSingle();
+
+      if (!appt) {
+        if (msgId) await bot.editMessageText(chatId, msgId, "❌ Запись не найдена.");
+        return;
+      }
+      if (appt.status === "cancelled") {
+        if (msgId) await bot.editMessageText(chatId, msgId, "❌ <b>Запись уже была отменена ранее.</b>");
+        return;
+      }
+      if (appt.status === "done" || appt.status === "no_show") {
+        if (msgId) await bot.editMessageText(chatId, msgId, "ℹ️ <b>Визит уже состоялся — отменить невозможно.</b>");
+        return;
+      }
+
+      await supabase.from("appointments").update({ status: "cancelled" }).eq("id", apptId);
+      console.log(`🚫 [master] cancel appt ${apptId} by master chat=${chatId}`);
+
+      // Подтягиваем имя клиента если не было в записи
+      let clientName = (appt.client_name ?? "").trim();
+      if (!clientName && appt.client_id) {
+        const { data: cl } = await supabase
+          .from("clients").select("first_name, last_name").eq("id", appt.client_id).maybeSingle();
+        if (cl) clientName = [cl.first_name, cl.last_name].filter(Boolean).join(" ");
+      }
+
+      const cancelText =
+        `❌ <b>Запись отменена</b>\n\n` +
+        (clientName ? `👤 <b>Клиент:</b> ${clientName}\n` : "") +
+        `📅 <b>Дата:</b> ${appt.date ?? "—"}\n` +
+        `🕐 <b>Время:</b> ${appt.start_time ?? "—"}`;
+      if (msgId) await bot.editMessageText(chatId, msgId, cancelText);
+
     } else {
       await answerCbQuery(cb.id);
     }
@@ -254,18 +298,20 @@ async function processUpdate(update) {
       } else {
         // Не найден — предлагаем регистрацию (передаём язык и телефон)
         const regUrl = `${APP_URL}/register?lang=${lang}&phone=${encodeURIComponent(message.contact.phone_number)}`;
+        // Telegram API не позволяет совместить inline_keyboard и remove_keyboard в одном reply_markup.
+        // Шаг 1: убираем клавиатуру "Поделиться номером" + показываем текст "Аккаунт не найден"
+        await bot.sendMessage(chatId, s.notFound, { remove_keyboard: true });
+        // Шаг 2: отдельное сообщение с кнопкой регистрации (inline keyboard)
         await fetch(`${bot.TG_API}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: s.notFound,
-            parse_mode: "HTML",
+            text: "👇",
             reply_markup: {
               inline_keyboard: [[
                 { text: s.registerBtn, web_app: { url: regUrl }, style: "success" },
               ]],
-              remove_keyboard: true,
             },
           }),
         });
