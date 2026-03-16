@@ -5,6 +5,7 @@
  * Systemd: ezze-master-bot.service
  */
 
+import { readFileSync, writeFileSync } from "fs";
 import {
   supabase, APP_URL, MASTER_BOT_TOKEN,
   loadTgConfig, loadAIConfig,
@@ -15,6 +16,34 @@ import {
 } from "./tg_shared.js";
 
 const bot = createBotHelpers(MASTER_BOT_TOKEN);
+
+// ── Persistent sessions (для phone-onboarding flow) ───────────────────────────
+
+const SESSIONS_FILE = "./tg_master_sessions.json";
+
+function loadPendingSessions() {
+  try {
+    const raw = readFileSync(SESSIONS_FILE, "utf8");
+    return new Map(Object.entries(JSON.parse(raw)));
+  } catch {
+    return new Map();
+  }
+}
+
+function savePendingSessions() {
+  try {
+    writeFileSync(SESSIONS_FILE, JSON.stringify(Object.fromEntries(pendingMasters)));
+  } catch (e) {
+    console.error("savePendingSessions error:", e.message);
+  }
+}
+
+const pendingMasters = loadPendingSessions();
+
+// Нормализация номера: только цифры
+function normalizePhone(phone) {
+  return (phone || "").replace(/\D/g, "");
+}
 
 // ── Мастерское меню ───────────────────────────────────────────────────────────
 
@@ -33,6 +62,61 @@ async function sendMasterMenu(chatId, firstName, masterProfile) {
 
 async function processUpdate(update) {
   const message = update.message;
+
+  // ── Контакт (phone-onboarding шаг 2) ──────────────────────────────────────
+  if (message?.contact) {
+    const chatId = message.chat.id;
+    const pending = pendingMasters.get(chatId);
+    if (pending?.step === "waiting_phone") {
+      const phoneDigits = normalizePhone(message.contact.phone_number);
+      console.log(`📱 [master] chat=${chatId} phone_digits=${phoneDigits}`);
+
+      // Ищем мастера по телефону в master_profiles
+      const { data: profiles } = await supabase
+        .from("master_profiles").select("*").not("phone", "is", null);
+      const profile = (profiles || []).find(p => {
+        if (!p.phone) return false;
+        const stored = normalizePhone(p.phone);
+        return stored === phoneDigits
+          || stored.endsWith(phoneDigits)
+          || phoneDigits.endsWith(stored);
+      });
+
+      pendingMasters.delete(chatId);
+      savePendingSessions();
+
+      if (profile) {
+        // Нашли — привязываем tg_chat_id
+        await supabase.from("master_profiles")
+          .update({ tg_chat_id: String(chatId) }).eq("id", profile.id);
+        profile.tg_chat_id = String(chatId);
+        console.log(`✅ Linked chat=${chatId} to master profile id=${profile.id}`);
+        await bot.sendMessage(chatId, "✅ <b>Аккаунт найден!</b>", { remove_keyboard: true });
+        await sendMasterMenu(chatId, message.contact.first_name || "", profile);
+      } else {
+        // Не найден — предлагаем регистрацию
+        await fetch(`${bot.TG_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text:
+              `❌ <b>Аккаунт не найден</b>\n\n` +
+              `Мастер с таким номером телефона не зарегистрирован в системе.\n\n` +
+              `Зарегистрируйтесь — это займёт 2 минуты:`,
+            parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [[
+                { text: "🚀 Зарегистрироваться", web_app: { url: `${APP_URL}/register` } },
+              ]],
+              remove_keyboard: true,
+            },
+          }),
+        });
+      }
+    }
+    return;
+  }
 
   if (message?.text) {
     const chatId = message.chat.id;
@@ -79,8 +163,10 @@ async function processUpdate(update) {
         }
         await sendMasterMenu(chatId, firstName, masterProfile);
       } else {
-        // Не мастер — сбрасываем кнопку меню и показываем инструкцию по подключению
-        await bot.setUserMenuButton(chatId); // сброс к default (убирает старый лейбл)
+        // Не найден — начинаем phone-onboarding
+        await bot.setUserMenuButton(chatId); // сброс к default
+        pendingMasters.set(chatId, { step: "waiting_phone" });
+        savePendingSessions();
         await fetch(`${bot.TG_API}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -88,23 +174,40 @@ async function processUpdate(update) {
             chat_id: chatId,
             text:
               `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\n` +
-              `Этот бот предназначен для мастеров <b>Ezze</b>.\n\n` +
-              `Чтобы подключить Telegram к своему аккаунту мастера:\n` +
-              `1️⃣ Войдите в приложение\n` +
-              `2️⃣ Перейдите в <b>Профиль → Настройки</b>\n` +
-              `3️⃣ Нажмите <b>«Подключить Telegram»</b>\n\n` +
-              `Если у вас ещё нет аккаунта — зарегистрируйтесь на сайте.`,
+              `Добро пожаловать в <b>Ezze</b> — сервис для мастеров.\n\n` +
+              `📱 Нажмите кнопку ниже, чтобы поделиться номером телефона:`,
             parse_mode: "HTML",
-            disable_web_page_preview: true,
             reply_markup: {
-              inline_keyboard: [[
-                { text: "🚀 Открыть Ezze", url: APP_URL },
-              ]],
+              keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
+              resize_keyboard: true,
+              one_time_keyboard: true,
             },
           }),
         });
       }
       return;
+    }
+
+    // ── Текст при ожидании номера телефона ────────────────────────────────────
+    if (!text.startsWith("/")) {
+      const pending = pendingMasters.get(chatId);
+      if (pending?.step === "waiting_phone") {
+        await fetch(`${bot.TG_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `📱 Пожалуйста, нажмите кнопку <b>«Поделиться номером»</b> ниже.`,
+            parse_mode: "HTML",
+            reply_markup: {
+              keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
+              resize_keyboard: true,
+              one_time_keyboard: true,
+            },
+          }),
+        });
+        return;
+      }
     }
 
     // ── AI-сообщения от мастеров ──────────────────────────────────────────────

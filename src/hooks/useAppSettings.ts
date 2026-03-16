@@ -157,6 +157,8 @@ export interface AppSettings {
   font_size: 'small' | 'medium' | 'large'
   platform_name: string
   registration_open: boolean
+  web_registration_enabled: boolean  // false → /register только через Telegram Mini App
+  web_access_enabled: boolean        // false → /login только через Telegram Mini App
   default_language: string
   default_currency: string
   default_timezone: string
@@ -186,6 +188,8 @@ async function fetchAppSettings(): Promise<AppSettings> {
     font_size: (map.font_size as AppSettings['font_size']) ?? 'medium',
     platform_name: map.platform_name ?? 'Ezze',
     registration_open: map.registration_open !== 'false',
+    web_registration_enabled: map.web_registration_enabled !== 'false',
+    web_access_enabled: map.web_access_enabled !== 'false',
     default_language: map.default_language ?? 'ru',
     default_currency: map.default_currency ?? 'RUB',
     default_timezone: map.default_timezone ?? 'Europe/Moscow',

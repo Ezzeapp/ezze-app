@@ -153,6 +153,10 @@ export function AdminAppearanceTab() {
   // Registration state
   const [regSaving, setRegSaving] = useState(false)
 
+  // Web Access state
+  const [webRegSaving, setWebRegSaving] = useState(false)
+  const [webAccessSaving, setWebAccessSaving] = useState(false)
+
   // Defaults state
   const [defLang, setDefLang] = useState('')
   const [defCurrency, setDefCurrency] = useState('')
@@ -247,6 +251,34 @@ export function AdminAppearanceTab() {
       toast.error(t('common.saveError'))
     } finally {
       setRegSaving(false)
+    }
+  }
+
+  async function toggleWebRegistration() {
+    if (!settings) return
+    setWebRegSaving(true)
+    try {
+      const next = settings.web_registration_enabled ? 'false' : 'true'
+      await updateSetting.mutateAsync({ key: 'web_registration_enabled', value: next })
+      toast.success(t('common.saved'))
+    } catch {
+      toast.error(t('common.saveError'))
+    } finally {
+      setWebRegSaving(false)
+    }
+  }
+
+  async function toggleWebAccess() {
+    if (!settings) return
+    setWebAccessSaving(true)
+    try {
+      const next = settings.web_access_enabled ? 'false' : 'true'
+      await updateSetting.mutateAsync({ key: 'web_access_enabled', value: next })
+      toast.success(t('common.saved'))
+    } catch {
+      toast.error(t('common.saveError'))
+    } finally {
+      setWebAccessSaving(false)
     }
   }
 
@@ -491,7 +523,58 @@ export function AdminAppearanceTab() {
         </CardContent>
       </Card>
 
-      {/* ── 6. Настройки по умолчанию ──────────────────────────────────── */}
+      {/* ── 6. Веб-доступ ───────────────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Globe className="h-4 w-4" />
+            Веб-доступ
+          </CardTitle>
+          <CardDescription>Управление доступом через браузер vs Telegram Mini App</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {/* Web Registration toggle */}
+          <button
+            onClick={toggleWebRegistration}
+            disabled={webRegSaving}
+            className="flex items-center gap-3 w-full p-3 rounded-xl border hover:bg-muted/40 transition-colors text-left"
+          >
+            {settings?.web_registration_enabled
+              ? <ToggleRight className="h-6 w-6 text-primary shrink-0" />
+              : <ToggleLeft className="h-6 w-6 text-muted-foreground shrink-0" />
+            }
+            <div>
+              <p className="text-sm font-medium">Веб-регистрация</p>
+              <p className="text-xs text-muted-foreground">
+                {settings?.web_registration_enabled
+                  ? 'Регистрация доступна в браузере и Telegram'
+                  : 'Регистрация только через Telegram (@ezzeapp_bot)'}
+              </p>
+            </div>
+          </button>
+          {/* Web Access toggle */}
+          <button
+            onClick={toggleWebAccess}
+            disabled={webAccessSaving}
+            className="flex items-center gap-3 w-full p-3 rounded-xl border hover:bg-muted/40 transition-colors text-left"
+          >
+            {settings?.web_access_enabled
+              ? <ToggleRight className="h-6 w-6 text-primary shrink-0" />
+              : <ToggleLeft className="h-6 w-6 text-muted-foreground shrink-0" />
+            }
+            <div>
+              <p className="text-sm font-medium">Веб-приложение</p>
+              <p className="text-xs text-muted-foreground">
+                {settings?.web_access_enabled
+                  ? 'Вход доступен в браузере и Telegram'
+                  : 'Вход только через Telegram Mini App'}
+              </p>
+            </div>
+          </button>
+        </CardContent>
+      </Card>
+
+      {/* ── 7. Настройки по умолчанию ──────────────────────────────────── */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
