@@ -140,7 +140,8 @@ export function AdminUsersTab() {
     return (users ?? []).filter(u => {
       const matchSearch = !q ||
         (u.name || '').toLowerCase().includes(q) ||
-        (u.email || '').toLowerCase().includes(q)
+        (u.email || '').toLowerCase().includes(q) ||
+        ((u as any).telegram || '').toLowerCase().includes(q)
       const matchPlan = planFilter === 'all' || ((u as any).plan || 'free') === planFilter
       return matchSearch && matchPlan
     })
@@ -404,7 +405,7 @@ export function AdminUsersTab() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground truncate leading-tight">
-                    {u.email} · {dayjs((u as any).created_at).format('DD.MM.YYYY')}
+                    {u.email}{(u as any).telegram ? ` · ${(u as any).telegram}` : ''} · {dayjs((u as any).created_at).format('DD.MM.YYYY')}
                   </p>
 
                   {/* Mobile controls row */}
