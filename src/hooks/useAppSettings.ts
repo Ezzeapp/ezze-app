@@ -363,11 +363,13 @@ export function useUpdateAIConfig() {
 export interface TgConfig {
   client_label: string   // Название кнопки для клиента (default "Ezze")
   master_label: string   // Название кнопки для мастера (default "Ezze")
+  welcome_text?: string  // Текст приветствия при /start. Используй {name} для имени мастера.
 }
 
 export const DEFAULT_TG_CONFIG: TgConfig = {
   client_label: 'Ezze',
   master_label: 'Ezze',
+  welcome_text: '👋 <b>Привет, {name}!</b>\n\nДобро пожаловать в <b>Ezze</b> — сервис для мастеров красоты.\n\n🌐 <b>Выберите язык:</b>',
 }
 
 export function useTgConfig() {

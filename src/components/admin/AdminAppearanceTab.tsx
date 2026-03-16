@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/shared/Toaster'
@@ -15,6 +16,7 @@ import {
   useUpdateAppLogo,
   useTgConfig,
   useUpdateTgConfig,
+  DEFAULT_TG_CONFIG,
   type TgConfig,
 } from '@/hooks/useAppSettings'
 
@@ -166,12 +168,14 @@ export function AdminAppearanceTab() {
   // Telegram state
   const [tgClientLabel, setTgClientLabel] = useState('Ezze')
   const [tgMasterLabel, setTgMasterLabel] = useState('Ezze')
+  const [tgWelcomeText, setTgWelcomeText] = useState(DEFAULT_TG_CONFIG.welcome_text ?? '')
   const [tgSaving, setTgSaving] = useState(false)
 
   useEffect(() => {
     if (tgConfig) {
       setTgClientLabel(tgConfig.client_label)
       setTgMasterLabel(tgConfig.master_label)
+      setTgWelcomeText(tgConfig.welcome_text ?? DEFAULT_TG_CONFIG.welcome_text ?? '')
     }
   }, [tgConfig])
 
@@ -304,6 +308,7 @@ export function AdminAppearanceTab() {
       await updateTgConfig.mutateAsync({
         client_label: tgClientLabel.trim() || 'Ezze',
         master_label: tgMasterLabel.trim() || 'Ezze',
+        welcome_text: tgWelcomeText.trim() || DEFAULT_TG_CONFIG.welcome_text,
       })
       toast.success(t('common.saved'))
     } catch {
@@ -687,6 +692,24 @@ export function AdminAppearanceTab() {
               <p className="text-xs text-muted-foreground">{tgMasterLabel.length}/16</p>
             </div>
           </div>
+
+          {/* Текст приветствия */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">
+              Текст приветствия при первом запуске бота
+            </Label>
+            <Textarea
+              value={tgWelcomeText}
+              onChange={e => setTgWelcomeText(e.target.value)}
+              placeholder={DEFAULT_TG_CONFIG.welcome_text}
+              rows={5}
+              className="text-sm font-mono resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              Используй <code className="bg-muted px-1 rounded text-xs">{'{'+'name'+'}'}</code> для подстановки имени мастера. Поддерживается HTML-разметка Telegram: <code className="bg-muted px-1 rounded text-xs">&lt;b&gt;</code>, <code className="bg-muted px-1 rounded text-xs">&lt;i&gt;</code>.
+            </p>
+          </div>
+
           <Button onClick={saveTgConfig} disabled={tgSaving} size="sm">
             {t('common.save')}
           </Button>
