@@ -494,9 +494,8 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
                     onChange={(e) => {
                       setProfessionQuery(e.target.value)
                       setProfession(e.target.value)
-                      setShowProfSuggestions(true)
+                      setShowProfSuggestions(e.target.value.trim().length > 0)
                     }}
-                    onFocus={() => setShowProfSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowProfSuggestions(false), 150)}
                     placeholder="Парикмахер, Тренер, Репетитор..."
                     autoFocus
