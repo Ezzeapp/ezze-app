@@ -46,6 +46,15 @@ export function AppLayout() {
   // Show onboarding if: user exists, not previously onboarded in DB, and not dismissed this session
   const showOnboarding = !onboardingDone && user && user.onboarded !== true
 
+  // Данные для предзаполнения визарда (телефон и язык из Telegram-регистрации)
+  const [wizardPrefill] = useState<{ phone?: string; language?: string } | undefined>(() => {
+    const phone = sessionStorage.getItem('ezze_prefill_phone') || ''
+    const lang  = sessionStorage.getItem('ezze_prefill_lang')  || ''
+    if (phone) sessionStorage.removeItem('ezze_prefill_phone')
+    if (lang)  sessionStorage.removeItem('ezze_prefill_lang')
+    return (phone || lang) ? { phone: phone || undefined, language: lang || undefined } : undefined
+  })
+
   const handleOnboardingComplete = () => {
     if (lsKey) localStorage.setItem(lsKey, '1')
     setOnboardingDone(true)
@@ -74,7 +83,11 @@ export function AppLayout() {
       <BottomNav />
 
       {showOnboarding && (
-        <OnboardingWizard open={true} onComplete={handleOnboardingComplete} />
+        <OnboardingWizard
+          open={true}
+          onComplete={handleOnboardingComplete}
+          prefill={wizardPrefill}
+        />
       )}
     </div>
   )

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -39,11 +39,13 @@ type TgFormValues = z.infer<typeof tgSchema>
 // ── Компонент ──────────────────────────────────────────────────────────────
 
 export function RegisterPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { register: registerUser, isAuthenticated, isLoading: authLoading } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const inviteCode = searchParams.get('invite')
+  const inviteCode  = searchParams.get('invite')
+  const langParam   = searchParams.get('lang')   // язык выбранный в боте
+  const phoneParam  = searchParams.get('phone')  // телефон из бота
   const [loading, setLoading] = useState(false)
 
   // Redirect when auth state becomes valid
@@ -52,13 +54,23 @@ export function RegisterPage() {
       navigate(inviteCode ? `/join/${inviteCode}` : '/dashboard', { replace: true })
     }
   }, [isAuthenticated, authLoading, navigate, inviteCode])
+
+  // Применяем язык из бота немедленно
+  useEffect(() => {
+    if (langParam) {
+      i18n.changeLanguage(langParam)
+      // Сохраняем язык для визарда (AppLayout прочитает)
+      sessionStorage.setItem('ezze_prefill_lang', langParam)
+    }
+  }, [langParam, i18n])
+
   const { data: appSettings } = useAppSettings()
   const platformName = appSettings?.platform_name ?? 'Ezze'
   const logoUrl = appSettings?.logo_url
 
-  const isTg    = isTelegramMiniApp()
-  const tgUser  = isTg ? getTelegramUser() : null
-  const tgId    = isTg ? getTelegramUserId() : null
+  const isTg   = isTelegramMiniApp()
+  const tgUser = isTg ? getTelegramUser() : null
+  const tgId   = isTg ? getTelegramUserId() : null
 
   // ── Telegram: проверяем — вдруг уже зарегистрирован ──────────────────────
   const [tgChecking, setTgChecking] = useState(isTg)
@@ -80,10 +92,86 @@ export function RegisterPage() {
         navigate('/dashboard', { replace: true })
       })
       .catch(() => {
-        // Не найден — покажем форму регистрации
+        // Не найден — продолжаем (авто-регистрация)
         setTgChecking(false)
       })
   }, [isTg, navigate])
+
+  // ── Авто-регистрация через Telegram (без формы) ───────────────────────────
+  const [autoRegistering, setAutoRegistering] = useState(false)
+  const [showTgForm, setShowTgForm] = useState(false) // показать форму как fallback
+
+  const saveTgProfile = useCallback(async (userId: string) => {
+    if (!tgId || !userId) return
+    try {
+      const { data: existing } = await supabase
+        .from('master_profiles').select('id').eq('user_id', userId).maybeSingle()
+      if (existing) {
+        await supabase.from('master_profiles').update({
+          tg_chat_id: tgId,
+          ...(tgUser?.username ? { telegram: '@' + tgUser.username } : {}),
+        }).eq('id', existing.id)
+      } else {
+        await supabase.from('master_profiles').insert({
+          user_id: userId,
+          tg_chat_id: tgId,
+          telegram: tgUser?.username ? '@' + tgUser.username : '',
+        })
+      }
+    } catch { /* non-critical */ }
+  }, [tgId, tgUser])
+
+  useEffect(() => {
+    if (tgChecking || !isTg || !tgId) return
+
+    const name = getTelegramDisplayName() || tgUser?.username || ''
+
+    if (name.trim().length >= 2) {
+      // Сохраняем телефон и язык для онбординг-визарда
+      if (phoneParam) sessionStorage.setItem('ezze_prefill_phone', phoneParam)
+      if (langParam)  sessionStorage.setItem('ezze_prefill_lang',  langParam)
+
+      setAutoRegistering(true)
+      ;(async () => {
+        try {
+          setLoading(true)
+          const email    = `tg_${tgId}@ezze.site`
+          const password = crypto.randomUUID()
+          await registerUser(email, password, name.trim())
+
+          const { data: { user: sbUser } } = await supabase.auth.getUser()
+          if (sbUser?.id) await saveTgProfile(sbUser.id)
+
+          // Редирект произойдёт через isAuthenticated useEffect
+        } catch (e: any) {
+          const emailErr = e?.response?.data?.email?.code
+          if (emailErr === 'validation_not_unique') {
+            // Аккаунт уже есть — пробуем войти
+            const initData = window.Telegram?.WebApp?.initData
+            if (initData) {
+              try {
+                const r = await fetch('/api/tg-auth', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ initData }),
+                })
+                if (r.ok) { navigate('/dashboard', { replace: true }); return }
+              } catch {}
+            }
+          }
+          // Авто-регистрация не удалась → показываем форму
+          setAutoRegistering(false)
+          setShowTgForm(true)
+        } finally {
+          setLoading(false)
+        }
+      })()
+    } else {
+      // Имя слишком короткое → показываем форму ввода
+      setShowTgForm(true)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tgChecking])
 
   // ── Стандартная форма (email + password) ──────────────────────────────────
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
@@ -95,7 +183,6 @@ export function RegisterPage() {
       setLoading(true)
       await registerUser(values.email, values.password, values.name)
       toast.success(t('auth.registerSuccess'))
-      // Navigation handled by useEffect above when isAuthenticated becomes true
     } catch (e: any) {
       const msg = e?.response?.data?.email?.message || t('auth.registerError')
       toast.error(msg)
@@ -103,7 +190,7 @@ export function RegisterPage() {
     }
   }
 
-  // ── Telegram-форма (только имя) ───────────────────────────────────────────
+  // ── Telegram-форма fallback (только имя) ──────────────────────────────────
   const {
     register: tgRegister,
     handleSubmit: tgHandleSubmit,
@@ -115,43 +202,20 @@ export function RegisterPage() {
 
   const onSubmitTg = async (values: TgFormValues) => {
     if (!tgId) { toast.error('Telegram ID не найден'); return }
+    // Сохраняем телефон и язык для онбординг-визарда
+    if (phoneParam) sessionStorage.setItem('ezze_prefill_phone', phoneParam)
+    if (langParam)  sessionStorage.setItem('ezze_prefill_lang',  langParam)
     try {
       setLoading(true)
-
       const email    = `tg_${tgId}@ezze.site`
       const password = crypto.randomUUID()
-
       await registerUser(email, password, values.name)
 
-      // Прописываем tg_chat_id в master_profiles (создаём или обновляем)
-      try {
-        const { data: { user: sbUser } } = await supabase.auth.getUser()
-        const userId = sbUser?.id
-        if (userId && tgId) {
-          const { data: existing } = await supabase
-            .from('master_profiles')
-            .select('id')
-            .eq('user_id', userId)
-            .maybeSingle()
-          if (existing) {
-            await supabase.from('master_profiles').update({
-              tg_chat_id: tgId,
-              ...(tgUser?.username ? { telegram: '@' + tgUser.username } : {}),
-            }).eq('id', existing.id)
-          } else {
-            await supabase.from('master_profiles').insert({
-              user_id: userId,
-              tg_chat_id: tgId,
-              telegram: tgUser?.username ? '@' + tgUser.username : '',
-            })
-          }
-        }
-      } catch { /* non-critical */ }
+      const { data: { user: sbUser } } = await supabase.auth.getUser()
+      if (sbUser?.id) await saveTgProfile(sbUser.id)
 
       toast.success('Аккаунт создан!')
-      // Navigation handled by useEffect above when isAuthenticated becomes true
     } catch (e: any) {
-      // Если email уже занят — значит аккаунт есть, пробуем войти
       const emailErr = e?.response?.data?.email?.code
       if (emailErr === 'validation_not_unique') {
         const initData = window.Telegram?.WebApp?.initData
@@ -162,10 +226,7 @@ export function RegisterPage() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ initData }),
             })
-            if (r.ok) {
-              navigate('/dashboard', { replace: true })
-              return
-            }
+            if (r.ok) { navigate('/dashboard', { replace: true }); return }
           } catch {}
         }
         toast.error('Аккаунт уже существует')
@@ -223,11 +284,11 @@ export function RegisterPage() {
     )
   }
 
-  // ── Проверяем Telegram ────────────────────────────────────────────────────
-  if (tgChecking) return <LoadingSpinner fullScreen />
+  // ── Проверка / авто-регистрация — показываем спиннер ─────────────────────
+  if (tgChecking || autoRegistering) return <LoadingSpinner fullScreen />
 
-  // ── Telegram-форма ────────────────────────────────────────────────────────
-  if (isTg && tgId) {
+  // ── Telegram-форма (fallback: короткое имя или ошибка авто-регистрации) ───
+  if (isTg && tgId && showTgForm) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-sm">

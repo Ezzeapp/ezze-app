@@ -88,7 +88,7 @@ const LANG_STRINGS = {
     notFound:     `❌ <b>Аккаунт табылмады</b>\n\nБұл телефон нөмірімен тіркелген шебер жоқ.\n\nТіркеліңіз — бұл 2 минут алады:`,
     registerBtn:  "🚀 Тіркелу",
   },
-  kg: {
+  ky: {
     phonePrompt:  `📱 Телефон номериңизди бөлүшүү үчүн төмөндөгү баскычты басыңыз:`,
     shareBtn:     "📱 Номерди бөлүшүү",
     remindShare:  `📱 Төмөндөгү <b>«Номерди бөлүшүү»</b> баскычын басыңыз.`,
@@ -151,7 +151,7 @@ async function sendLangSelection(chatId, firstName) {
           ],
           [
             { text: "🇰🇿 Қазақша",  callback_data: "lang_kz" },
-            { text: "🇰🇬 Кыргызча", callback_data: "lang_kg" },
+            { text: "🇰🇬 Кыргызча", callback_data: "lang_ky" },
           ],
         ],
       },
@@ -240,7 +240,8 @@ async function processUpdate(update) {
         await bot.sendMessage(chatId, s.found, { remove_keyboard: true });
         await sendMasterMenu(chatId, message.contact.first_name || "", profile);
       } else {
-        // Не найден — предлагаем регистрацию
+        // Не найден — предлагаем регистрацию (передаём язык и телефон)
+        const regUrl = `${APP_URL}/register?lang=${lang}&phone=${encodeURIComponent(message.contact.phone_number)}`;
         await fetch(`${bot.TG_API}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -250,7 +251,7 @@ async function processUpdate(update) {
             parse_mode: "HTML",
             reply_markup: {
               inline_keyboard: [[
-                { text: s.registerBtn, web_app: { url: `${APP_URL}/register` } },
+                { text: s.registerBtn, web_app: { url: regUrl } },
               ]],
               remove_keyboard: true,
             },
