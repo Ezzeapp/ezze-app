@@ -298,23 +298,35 @@ async function processUpdate(update) {
       } else {
         // Не найден — предлагаем регистрацию (передаём язык и телефон)
         const regUrl = `${APP_URL}/register?lang=${lang}&phone=${encodeURIComponent(message.contact.phone_number)}`;
-        // Telegram API не позволяет совместить inline_keyboard и remove_keyboard в одном reply_markup.
-        // Шаг 1: убираем клавиатуру "Поделиться номером" + показываем текст "Аккаунт не найден"
-        await bot.sendMessage(chatId, s.notFound, { remove_keyboard: true });
-        // Шаг 2: отдельное сообщение с кнопкой регистрации (inline keyboard)
-        await fetch(`${bot.TG_API}/sendMessage`, {
+        // Шаг 1: убираем клавиатуру + показываем "Аккаунт не найден", получаем message_id
+        const sentRes = await fetch(`${bot.TG_API}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: "👇",
-            reply_markup: {
-              inline_keyboard: [[
-                { text: s.registerBtn, web_app: { url: regUrl }, style: "primary" },
-              ]],
-            },
+            text: s.notFound,
+            parse_mode: "HTML",
+            reply_markup: { remove_keyboard: true },
           }),
         });
+        const sentData = await sentRes.json();
+        const sentMsgId = sentData?.result?.message_id;
+        // Шаг 2: добавляем кнопку "Зарегистрироваться" к тому же сообщению
+        if (sentMsgId) {
+          await fetch(`${bot.TG_API}/editMessageReplyMarkup`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              message_id: sentMsgId,
+              reply_markup: {
+                inline_keyboard: [[
+                  { text: s.registerBtn, web_app: { url: regUrl }, style: "primary" },
+                ]],
+              },
+            }),
+          });
+        }
       }
     }
     return;
