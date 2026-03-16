@@ -79,10 +79,30 @@ async function processUpdate(update) {
         }
         await sendMasterMenu(chatId, firstName, masterProfile);
       } else {
-        // Не мастер — направляем в клиентский бот
-        await bot.sendMessage(chatId,
-          `👋 <b>Привет, ${firstName}!</b>\n\nЭтот бот предназначен для мастеров.\n\nЕсли вы хотите записаться к мастеру, перейдите по ссылке записи от вашего мастера.`
-        );
+        // Не мастер — сбрасываем кнопку меню и показываем инструкцию по подключению
+        await bot.setUserMenuButton(chatId); // сброс к default (убирает старый лейбл)
+        await fetch(`${bot.TG_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text:
+              `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\n` +
+              `Этот бот предназначен для мастеров <b>Ezze</b>.\n\n` +
+              `Чтобы подключить Telegram к своему аккаунту мастера:\n` +
+              `1️⃣ Войдите в приложение\n` +
+              `2️⃣ Перейдите в <b>Профиль → Настройки</b>\n` +
+              `3️⃣ Нажмите <b>«Подключить Telegram»</b>\n\n` +
+              `Если у вас ещё нет аккаунта — зарегистрируйтесь на сайте.`,
+            parse_mode: "HTML",
+            disable_web_page_preview: true,
+            reply_markup: {
+              inline_keyboard: [[
+                { text: "🚀 Открыть Ezze", url: APP_URL },
+              ]],
+            },
+          }),
+        });
       }
       return;
     }
