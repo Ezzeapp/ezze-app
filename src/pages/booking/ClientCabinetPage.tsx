@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
-import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, Zap, Gift, Copy, Check } from 'lucide-react'
+import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, Zap, Gift, Copy, Check, Sun, Moon } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import {
   isTelegramMiniApp,
@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
+import { getStoredTheme, setTheme } from '@/stores/themeStore'
 import type { Appointment } from '@/types'
 
 // ── Telegram Login Widget (браузерный) ────────────────────────────────────────
@@ -194,6 +195,12 @@ export function ClientCabinetPage() {
   const [tgTopPadding, setTgTopPadding] = useState(0)
   const [loyaltySummary, setLoyaltySummary] = useState<any[]>([])
   const [copied, setCopied] = useState(false)
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    const t = getStoredTheme()
+    return t === 'system'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : t
+  })
 
   useEffect(() => {
     if (isTelegramMiniApp()) {
@@ -358,7 +365,18 @@ export function ClientCabinetPage() {
               <p className="text-xs text-muted-foreground">{t('cabinet.personalCabinet')}</p>
             </div>
           </div>
-          <div className="shrink-0">
+          <div className="shrink-0 flex items-center gap-1">
+            <button
+              onClick={() => {
+                const next = theme === 'dark' ? 'light' : 'dark'
+                setTheme(next)
+                setThemeState(next)
+              }}
+              className="h-9 w-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
             <LanguageSwitcher />
           </div>
         </div>
