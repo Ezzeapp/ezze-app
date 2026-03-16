@@ -115,23 +115,9 @@ async function setUserMenuButton(chatId, text, url) {
   }
 }
 
-// Показывает постоянную клавиатуру клиента: "Мои записи" + "Стать мастером"
-// Кнопки открывают Mini App напрямую, без промежуточного сообщения
-async function sendClientKeyboard(chatId) {
-  await sendMessage(
-    chatId,
-    `👇 Используйте кнопки для быстрого доступа:`,
-    {
-      keyboard: [
-        [
-          { text: "📋 Мои записи", style: "primary", web_app: { url: `${APP_URL}/my?tg_id=${chatId}` } },
-          { text: "🎓 Стать мастером", style: "success", web_app: { url: `${APP_URL}/register` } },
-        ],
-      ],
-      resize_keyboard: true,
-      persistent: true,
-    }
-  );
+// Устанавливает Menu Button "Ezze" для клиента — открывает Mini App "Мои записи"
+async function setClientMenuButton(chatId) {
+  await setUserMenuButton(chatId, "Ezze", `${APP_URL}/my?tg_id=${chatId}`);
 }
 
 // Отправляет inline кнопку "Записаться" с предзаполненными телефоном и именем в URL
@@ -602,7 +588,7 @@ async function processUpdate(update) {
         pendingBookings.delete(chatId);
         savePendingBookings();
         await showBookingButton(chatId, pending.slug, pending.phone, name, tgUsername);
-        await sendClientKeyboard(chatId);
+        await setClientMenuButton(chatId);
         return;
       }
     }
@@ -728,20 +714,11 @@ async function sendClientMenuSmart(chatId, firstName) {
   }
 
   if (isKnownClient) {
-    // Возвращающийся клиент — восстанавливаем клавиатуру
+    // Возвращающийся клиент — ставим Menu Button "Ezze"
+    await setClientMenuButton(chatId);
     await sendMessage(
       chatId,
-      `${greeting}\n\nРады видеть вас снова! Используйте кнопки ниже:`,
-      {
-        keyboard: [
-          [
-            { text: "📋 Мои записи", style: "primary", web_app: { url: `${APP_URL}/my?tg_id=${chatId}` } },
-            { text: "🎓 Стать мастером", style: "success", web_app: { url: `${APP_URL}/register` } },
-          ],
-        ],
-        resize_keyboard: true,
-        persistent: true,
-      }
+      `${greeting}\n\nРады видеть вас снова в <b>Ezze</b>!\n\nНажмите кнопку <b>Ezze</b> рядом с полем ввода, чтобы посмотреть ваши записи.`
     );
   } else {
     // Новый клиент — просим перейти по ссылке мастера
