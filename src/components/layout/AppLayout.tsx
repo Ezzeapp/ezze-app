@@ -86,7 +86,7 @@ export function AppLayout() {
         <OnboardingWizard
           open={true}
           onComplete={handleOnboardingComplete}
-          prefill={wizardPrefill}
+          prefill={wizardPrefill ? { ...wizardPrefill, name: user?.name || '' } : undefined}
         />
       )}
     </div>

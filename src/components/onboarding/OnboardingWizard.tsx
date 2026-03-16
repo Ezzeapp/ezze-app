@@ -448,19 +448,33 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
 
               <div className="space-y-1.5">
                 <Label className="text-xs">{t('profile.displayName')}</Label>
-                <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={t('profile.displayNamePlaceholder')} autoFocus />
+                <Input
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder={t('profile.displayNamePlaceholder')}
+                  readOnly={!!prefill?.name}
+                  autoFocus={!prefill?.name}
+                  className={cn(prefill?.name && "bg-muted/40 cursor-default select-text")}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t('profile.phone')}</Label>
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998 99 000-00-00" type="tel" />
+                <Input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+998 99 000-00-00"
+                  type="tel"
+                  readOnly={!!prefill?.phone}
+                  className={cn(prefill?.phone && "bg-muted/40 cursor-default select-text")}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t('profile.city')}</Label>
-                <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder={t('profile.cityPlaceholder')} />
+                <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ташкент" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t('profile.address')}</Label>
-                <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('profile.addressPlaceholder')} />
+                <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="ул. Амира Темура 11" />
               </div>
             </div>
           )}
