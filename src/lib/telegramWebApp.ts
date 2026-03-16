@@ -178,19 +178,14 @@ export function hapticImpact(): void {
 
 /**
  * Сформировать ссылку для клиентов.
- * Формат: t.me/ezzeapp_bot?start=book_{slug}
- * Бот принимает параметр и отвечает кнопкой со ссылкой на бронирование.
- *
- * В продакшене (при наличии настроенного Mini App в BotFather + HTTPS):
- * можно переключить на t.me/ezzeapp_bot/app?startapp=book_{slug}
+ * Клиентский бот: @ezzeclient_bot
+ * Формат: t.me/ezzeclient_bot?start=book_{slug}
  */
 export function buildClientBookingLink(bookingSlug: string): string {
-  return `https://t.me/ezzeapp_bot?start=book_${bookingSlug}`
+  return `https://t.me/ezzeclient_bot?start=book_${bookingSlug}`
 }
 
 /** Сформировать ссылку на личный кабинет клиента */
 export function buildClientCabinetLink(): string {
-  // В продакшене с Mini App: https://t.me/ezzeapp_bot/app
-  // Пока — обычная ссылка на страницу /my
-  return `https://t.me/ezzeapp_bot`
+  return `https://t.me/ezzeclient_bot`
 }

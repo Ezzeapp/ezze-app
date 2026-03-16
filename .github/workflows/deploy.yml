@@ -58,23 +58,25 @@ jobs:
           key: ${{ secrets.DEPLOY_KEY }}
           script: cd /app/supabase && docker compose restart functions
 
-      # ── Deploy Telegram bot + restart ────────────────────────────
-      - name: Deploy tg_polling.js to VPS
+      # ── Deploy Telegram bots ──────────────────────────────────────
+      - name: Deploy bot files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
-          source: 'tg_polling.js'
+          source: 'tg_shared.js,tg_master_bot.js,tg_client_bot.js'
           target: '/app/ezze-app/'
 
-      - name: Restart Telegram bot service
+      - name: Restart both bot services
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
-          script: systemctl restart ezze-app-tg-bot
+          script: |
+            systemctl restart ezze-master-bot
+            systemctl restart ezze-client-bot
 
       - name: Notify success
         run: echo "✅ Deployed successfully to https://ezze.site"

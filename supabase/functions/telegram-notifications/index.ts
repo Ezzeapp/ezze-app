@@ -14,26 +14,38 @@ const supabase = createClient(
 )
 
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://ezze.site'
-const BOT_TOKEN = Deno.env.get('TG_BOT_TOKEN') ?? '8365728736:AAHdA_B9bVQQLqqCsJsSzBk9ej2Mocsw_7M'
+// Мастерский бот (@ezzeapp_bot) — уведомления мастерам
+const MASTER_BOT_TOKEN = Deno.env.get('TG_BOT_TOKEN') ?? '8365728736:AAHdA_B9bVQQLqqCsJsSzBk9ej2Mocsw_7M'
+// Клиентский бот (@ezzeclient_bot) — уведомления клиентам
+const CLIENT_BOT_TOKEN = Deno.env.get('TG_CLIENT_BOT_TOKEN') ?? '8767615503:AAF7hZEf6wZqZk_CDd42_ceLAqltdrjcbY0'
 
 // ── Telegram helpers ──────────────────────────────────────────────────────────
 
-async function sendTg(chatId: string, text: string, _showMenu = false) {
+// Отправляет сообщение через нужный бот
+// toMaster=true → @ezzeapp_bot, toMaster=false → @ezzeclient_bot
+async function sendTgVia(chatId: string, text: string, toMaster: boolean) {
   if (!chatId || !text) return
+  const token = toMaster ? MASTER_BOT_TOKEN : CLIENT_BOT_TOKEN
   try {
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: String(chatId), text, parse_mode: 'HTML' }),
     })
-  } catch (err) { console.error('sendTg error:', err) }
+  } catch (err) { console.error('sendTgVia error:', err) }
+}
+
+// Обратная совместимость — по умолчанию через мастерский бот (для уведомлений мастеру)
+async function sendTg(chatId: string, text: string, _showMenu = false) {
+  await sendTgVia(chatId, text, true)
 }
 
 // Отправляет сообщение с inline кнопкой "❌ Отменить запись" (callback_data = cancel_appt_<id>)
+// sendTgWithCancelButton идёт через КЛИЕНТСКИЙ бот (callback_data обрабатывает client bot)
 async function sendTgWithCancelButton(chatId: string, text: string, apptId: string) {
   if (!chatId || !text) return
   try {
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${CLIENT_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -243,7 +255,7 @@ async function handleUpdate(record: any, oldRecord: any) {
   }
 
   const sendToClient = async (msg: string) => {
-    await sendTg(clientTgId || clientTgUsr, msg, true)
+    await sendTgVia(clientTgId || clientTgUsr, msg, false) // клиентский бот
   }
 
   // Master confirmed the appointment (confirmed_at changed from null to a value)
@@ -352,7 +364,7 @@ async function handleReminders() {
           ? applyTemplate(cRS.template, { master_name: masterName, service: svcName, time: startTime, hours_label: hoursLabel, address: prof.address ?? '' })
           : `⏰ <b>Напоминание!</b> Через ${hoursLabel} у вас запись:\n\n👤 <b>Мастер:</b> ${masterName}\n✂️ <b>Услуга:</b> ${svcName}\n🕐 <b>Время:</b> ${startTime}` +
             (prof.address ? `\n📍 <b>Адрес:</b> ${prof.address}` : '')
-        if (msg) await sendTg(clientTgId || clientTgUsr, msg, true)
+        if (msg) await sendTgVia(clientTgId || clientTgUsr, msg, false) // клиентский бот
       }
     }
   }
