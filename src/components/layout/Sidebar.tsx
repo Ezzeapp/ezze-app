@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  LayoutDashboard, User, Users, Package, CalendarDays,
+  LayoutDashboard, User, Users, Package, CalendarDays, Clock,
   Settings, Zap, X, ShieldCheck, UsersRound, Tag, Star, CreditCard, LifeBuoy, Gift,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -78,9 +78,10 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
 
         {/* ── Основное ── */}
         <SidebarGroupLabel label={t('nav.groupMain')} />
-        <NavItemGated icon={LayoutDashboard} label={t('nav.dashboard')} to="/dashboard" feature={null}      onClick={onClose} />
+        <NavItemGated icon={LayoutDashboard} label={t('nav.dashboard')} to="/dashboard" feature={null}       onClick={onClose} />
         <NavItemGated icon={CalendarDays}    label={t('nav.calendar')}  to="/calendar"  feature="calendar"  onClick={onClose} />
         <NavItemGated icon={Users}           label={t('nav.clients')}   to="/clients"   feature="clients"   onClick={onClose} />
+        <NavItemGated icon={Clock}           label={t('nav.schedule')}  to="/schedule"  feature="schedule"  onClick={onClose} />
         {/* ── Каталог ── */}
         <SidebarGroupLabel label={t('nav.groupCatalog')} />
         <NavItemGated icon={ServiceIcon} label={t('nav.services')}  to="/services"  feature={null}       onClick={onClose} />
