@@ -135,9 +135,9 @@ async function sendLangSelection(chatId, firstName) {
     body: JSON.stringify({
       chat_id: chatId,
       text:
-        `👋 <b>Привет${name}!</b> / <b>Salom${name}!</b> / <b>Hi${name}!</b>\n\n` +
+        `👋 <b>Привет${name}!</b>\n\n` +
         `Добро пожаловать в <b>Ezze</b> — сервис для мастеров красоты.\n\n` +
-        `🌐 <b>Выберите язык / Tilni tanlang / Choose language:</b>`,
+        `🌐 <b>Выберите язык:</b>`,
       parse_mode: "HTML",
       reply_markup: {
         inline_keyboard: [
