@@ -39,6 +39,7 @@ const PublicBookingPage = lazy(() => import('@/pages/booking/PublicBookingPage')
 const CancelBookingPage = lazy(() => import('@/pages/booking/CancelBookingPage').then(m => ({ default: m.CancelBookingPage })))
 const TeamBookingPage = lazy(() => import('@/pages/booking/TeamBookingPage').then(m => ({ default: m.TeamBookingPage })))
 const ClientCabinetPage = lazy(() => import('@/pages/booking/ClientCabinetPage').then(m => ({ default: m.ClientCabinetPage })))
+const MasterSearchPage = lazy(() => import('@/pages/booking/MasterSearchPage').then(m => ({ default: m.MasterSearchPage })))
 const MiniAppLayout = lazy(() => import('@/components/layout/MiniAppLayout').then(m => ({ default: m.MiniAppLayout })))
 const TelegramEntryPage = lazy(() => import('@/pages/tg/TelegramEntryPage').then(m => ({ default: m.TelegramEntryPage })))
 const SupportPage = lazy(() => import('@/pages/support/SupportPage'))
@@ -61,6 +62,9 @@ const router = createBrowserRouter([
       { index: true, element: <ClientCabinetPage /> },
     ],
   },
+
+  // Master search (public, for clients in Telegram)
+  { path: '/search', element: <MasterSearchPage /> },
 
   // Telegram Mini App entry (no auth required — авторизует через tg-auth и редиректит)
   {

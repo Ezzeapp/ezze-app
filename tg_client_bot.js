@@ -81,19 +81,60 @@ async function sendClientMenuSmart(chatId, firstName) {
     isKnownClient = !!clientRecord;
   }
 
+  // Также считаем зарегистрированным, если есть сохранённая сессия
+  const savedSession = pendingBookings.get(chatId);
+  if (!isKnownClient && savedSession?.mode === "registered") {
+    isKnownClient = true;
+  }
+
   if (isKnownClient) {
     const cfg = await loadTgConfig();
     await setClientMenuButton(chatId);
-    await bot.sendMessage(
-      chatId,
-      `${greeting}\n\nРады видеть вас снова в <b>Ezze</b>!\n\nНажмите кнопку <b>${cfg.client_label}</b> рядом с полем ввода, чтобы посмотреть ваши записи.`
-    );
+    const searchUrl = buildSearchUrl(chatId, savedSession);
+    await fetch(`${bot.TG_API}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: `${greeting}\n\nРады видеть вас снова в <b>Ezze</b>!\n\nНажмите кнопку <b>${cfg.client_label}</b>, чтобы посмотреть ваши записи, или найдите нового мастера:`,
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [[
+            { text: "🔍 Найти мастера", style: "primary", web_app: { url: searchUrl } },
+          ]],
+        },
+      }),
+    });
   } else {
-    await bot.sendMessage(
-      chatId,
-      `${greeting}\n\nЧтобы записаться к мастеру, воспользуйтесь ссылкой мастера.`
-    );
+    // Новый клиент — запускаем регистрацию
+    pendingBookings.set(chatId, {
+      step: "waiting_phone",
+      mode: "registration",
+      tgUsername: "",
+    });
+    savePendingBookings();
+    await fetch(`${bot.TG_API}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: `${greeting}\n\nДобро пожаловать в <b>Ezze</b>!\n\n📱 Для начала поделитесь вашим номером телефона:`,
+        parse_mode: "HTML",
+        reply_markup: {
+          keyboard: [[{ text: "📱 Поделиться номером", request_contact: true, style: "primary" }]],
+          resize_keyboard: true,
+          one_time_keyboard: true,
+        },
+      }),
+    });
   }
+}
+
+function buildSearchUrl(chatId, session) {
+  const params = new URLSearchParams({ tg_id: String(chatId) });
+  if (session?.phone) params.set("tg_phone", session.phone);
+  if (session?.name)  params.set("tg_name",  session.name);
+  return `${APP_URL}/search?${params.toString()}`;
 }
 
 // ── Обработка обновлений ──────────────────────────────────────────────────────
@@ -167,6 +208,11 @@ async function processUpdate(update) {
       }
 
       // /start без book_ → возвращающийся клиент или новый
+      // сохраняем tgUsername в текущую сессию регистрации (если она запускается)
+      const existingSession = pendingBookings.get(chatId);
+      if (existingSession && existingSession.mode !== "registered") {
+        existingSession.tgUsername = message.from?.username || '';
+      }
       await sendClientMenuSmart(chatId, firstName);
       return;
     }
@@ -204,10 +250,39 @@ async function processUpdate(update) {
       if (pending?.step === "waiting_name") {
         const name = text.trim() || pending.tgName || firstName;
         const tgUsername = pending.tgUsername || '';
-        pendingBookings.delete(chatId);
-        savePendingBookings();
-        await showBookingButton(chatId, pending.slug, pending.phone, name, tgUsername);
-        await setClientMenuButton(chatId);
+
+        if (pending.mode === "registration") {
+          // Регистрация без мастера — сохраняем сессию, показываем поиск
+          pendingBookings.set(chatId, {
+            mode: "registered",
+            phone: pending.phone,
+            name,
+            tgUsername,
+          });
+          savePendingBookings();
+          await setClientMenuButton(chatId);
+          const searchUrl = buildSearchUrl(chatId, { phone: pending.phone, name });
+          await fetch(`${bot.TG_API}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `✅ <b>Регистрация успешна, ${name}!</b>\n\nТеперь найдите мастера и запишитесь на приём:`,
+              parse_mode: "HTML",
+              reply_markup: {
+                inline_keyboard: [[
+                  { text: "🔍 Найти мастера", style: "primary", web_app: { url: searchUrl } },
+                ]],
+              },
+            }),
+          });
+        } else {
+          // Запись к конкретному мастеру
+          pendingBookings.delete(chatId);
+          savePendingBookings();
+          await showBookingButton(chatId, pending.slug, pending.phone, name, tgUsername);
+          await setClientMenuButton(chatId);
+        }
         return;
       }
     }

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
-import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, Zap, Gift, Copy, Check, Sun, Moon } from 'lucide-react'
+import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, Zap, Gift, Copy, Check, Sun, Moon, Search } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import {
   isTelegramMiniApp,
@@ -381,6 +381,18 @@ export function ClientCabinetPage() {
           </div>
         </div>
       </div>
+
+      {/* Find master button */}
+      {telegramId && (
+        <button
+          type="button"
+          onClick={() => navigate(`/search?tg_id=${telegramId}`)}
+          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all"
+        >
+          <Search className="h-4 w-4" />
+          Найти мастера
+        </button>
+      )}
 
       {/* Loyalty section */}
       {loyaltySummary.filter(s => s.loyalty_enabled).map((s) => {
