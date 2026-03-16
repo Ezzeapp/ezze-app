@@ -343,7 +343,7 @@ export function ClientCabinetPage() {
       className="bg-background"
       style={{ minHeight: 'var(--tg-viewport-stable-height, 100dvh)' }}
     >
-      <div className="max-w-lg mx-auto px-4 pb-4 space-y-6">
+      <div className="max-w-lg mx-auto px-4 pb-8 space-y-5">
       {/* Шапка */}
       <div style={{ paddingTop: tgTopPadding > 0 ? `${tgTopPadding + 8}px` : isTelegramMiniApp() ? '36px' : '12px' }}>
         <div className="flex items-center justify-between gap-3">
@@ -379,7 +379,7 @@ export function ClientCabinetPage() {
 
         return (
           <Card key={s.master_id} className="overflow-hidden">
-            <CardContent className="p-4 space-y-3">
+            <CardContent className="p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <Gift className="h-4 w-4 text-primary" />
                 <span className="font-semibold text-sm">{t('loyalty.myLoyalty')}</span>
@@ -510,7 +510,7 @@ function AppointmentCard({ appt, onCancel, onBookAgain }: AppointmentCardProps) 
 
   return (
     <Card className={isUpcoming ? 'border-primary/30' : ''}>
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-5 space-y-3">
         {/* Статус + дата */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-1.5">
