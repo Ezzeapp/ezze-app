@@ -90,17 +90,16 @@ async function sendClientMenuSmart(chatId, firstName) {
   if (isKnownClient) {
     const cfg = await loadTgConfig();
     await setClientMenuButton(chatId);
-    const searchUrl = buildSearchUrl(chatId, savedSession);
     await fetch(`${bot.TG_API}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `${greeting}\n\nРады видеть вас снова в <b>Ezze</b>!\n\nНажмите кнопку <b>${cfg.client_label}</b>, чтобы посмотреть ваши записи, или найдите нового мастера:`,
+        text: `${greeting}\n\nРады видеть вас снова в <b>Ezze</b>!\n\nНажмите кнопку ниже, чтобы открыть личный кабинет:`,
         parse_mode: "HTML",
         reply_markup: {
           inline_keyboard: [[
-            { text: "🔍 Найти мастера", style: "primary", web_app: { url: searchUrl } },
+            { text: "📋 Мой кабинет", style: "primary", web_app: { url: `${APP_URL}/my?tg_id=${chatId}` } },
           ]],
         },
       }),
@@ -261,17 +260,16 @@ async function processUpdate(update) {
           });
           savePendingBookings();
           await setClientMenuButton(chatId);
-          const searchUrl = buildSearchUrl(chatId, { phone: pending.phone, name });
           await fetch(`${bot.TG_API}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: chatId,
-              text: `✅ <b>Регистрация успешна, ${name}!</b>\n\nТеперь найдите мастера и запишитесь на приём:`,
+              text: `✅ <b>Регистрация успешна, ${name}!</b>\n\nОткройте личный кабинет, чтобы найти мастера и записаться на приём:`,
               parse_mode: "HTML",
               reply_markup: {
                 inline_keyboard: [[
-                  { text: "🔍 Найти мастера", style: "primary", web_app: { url: searchUrl } },
+                  { text: "📋 Мой кабинет", style: "primary", web_app: { url: `${APP_URL}/my?tg_id=${chatId}` } },
                 ]],
               },
             }),
