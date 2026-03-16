@@ -78,7 +78,8 @@ export function useUpsertFeatureFlag() {
     mutationFn: async (flag: FeatureFlag) => {
       const { data, error } = await supabase
         .from('feature_flags')
-        .upsert(flag, { onConflict: 'key' })
+        // flag_name — legacy NOT NULL column; pass key as fallback value
+        .upsert({ ...flag, flag_name: flag.key }, { onConflict: 'key' })
         .select()
         .single()
       if (error) throw error
