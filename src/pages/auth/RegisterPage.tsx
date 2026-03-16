@@ -127,8 +127,9 @@ export function RegisterPage() {
     const name = getTelegramDisplayName() || tgUser?.username || ''
 
     if (name.trim().length >= 2) {
-      // Сохраняем имя, телефон и язык для онбординг-визарда
+      // Сохраняем имя, телефон, язык и tg_id для онбординг-визарда и уведомления
       sessionStorage.setItem('ezze_prefill_name', name.trim())
+      sessionStorage.setItem('ezze_tg_notify_id', String(tgId))
       if (phoneParam) sessionStorage.setItem('ezze_prefill_phone', phoneParam)
       if (langParam)  sessionStorage.setItem('ezze_prefill_lang',  langParam)
 
@@ -143,12 +144,7 @@ export function RegisterPage() {
           const { data: { user: sbUser } } = await supabase.auth.getUser()
           if (sbUser?.id) await saveTgProfile(sbUser.id)
 
-          // Уведомляем бот: отправить приветствие + установить кнопку меню
-          if (tgId) {
-            supabase.functions.invoke('tg-master-welcome', {
-              body: { tg_chat_id: String(tgId), name: name.trim(), lang: langParam || 'ru' },
-            }).catch(() => { /* non-critical */ })
-          }
+          // Уведомление бота отправим после завершения онбординг-визарда (AppLayout)
 
           // Редирект произойдёт через isAuthenticated useEffect
         } catch (e: any) {
@@ -212,6 +208,7 @@ export function RegisterPage() {
     if (!tgId) { toast.error('Telegram ID не найден'); return }
     // Сохраняем имя, телефон и язык для онбординг-визарда
     sessionStorage.setItem('ezze_prefill_name', values.name.trim())
+    sessionStorage.setItem('ezze_tg_notify_id', String(tgId))
     if (phoneParam) sessionStorage.setItem('ezze_prefill_phone', phoneParam)
     if (langParam)  sessionStorage.setItem('ezze_prefill_lang',  langParam)
     try {
@@ -223,11 +220,7 @@ export function RegisterPage() {
       const { data: { user: sbUser } } = await supabase.auth.getUser()
       if (sbUser?.id) await saveTgProfile(sbUser.id)
 
-      // Уведомляем бот: приветствие + кнопка меню
-      supabase.functions.invoke('tg-master-welcome', {
-        body: { tg_chat_id: String(tgId), name: values.name.trim(), lang: langParam || 'ru' },
-      }).catch(() => { /* non-critical */ })
-
+      // Уведомление бота отправим после завершения онбординг-визарда (AppLayout)
       toast.success('Аккаунт создан!')
     } catch (e: any) {
       const emailErr = e?.response?.data?.email?.code

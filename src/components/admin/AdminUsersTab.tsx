@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Shield, ShieldOff, Search, Download, Users, TrendingUp, UserCheck2, Ban, Trash2, AlertTriangle, CheckSquare, Lock } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/contexts/AuthContext'
 import { useUsers, useToggleUserAdmin, useUpdateUserPlan, useToggleUserDisabled, useDeleteUser } from '@/hooks/useUsers'
+import { supabase } from '@/lib/supabase'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -32,8 +34,27 @@ export function AdminUsersTab() {
   const updatePlan = useUpdateUserPlan()
   const toggleDisabled = useToggleUserDisabled()
   const deleteUser = useDeleteUser()
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [planFilter, setPlanFilter] = useState<FeaturePlan | 'all'>('all')
+
+  // ── Realtime: refresh user list on INSERT / UPDATE / DELETE ─────────────────
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-users-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'users' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['users'] })
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [queryClient])
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)

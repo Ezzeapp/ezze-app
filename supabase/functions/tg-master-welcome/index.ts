@@ -24,32 +24,32 @@ const TEXTS: Record<string, { welcome: (name: string) => string; openApp: string
   ru: {
     welcome: (name) =>
       `🎉 <b>Добро пожаловать${name ? ', ' + name : ''}!</b>\n\nВы успешно зарегистрировались в Ezze.\nОткройте приложение, чтобы завершить настройку профиля.`,
-    openApp: '🚀 Открыть приложение',
+    openApp: '🔵 Открыть приложение',
   },
   uz: {
     welcome: (name) =>
       `🎉 <b>Xush kelibsiz${name ? ', ' + name : ''}!</b>\n\nSiz Ezzega muvaffaqiyatli ro'yxatdan o'tdingiz.\nProfilni sozlash uchun ilovani oching.`,
-    openApp: '🚀 Ilovani ochish',
+    openApp: '🔵 Ilovani ochish',
   },
   en: {
     welcome: (name) =>
       `🎉 <b>Welcome${name ? ', ' + name : ''}!</b>\n\nYou have successfully registered in Ezze.\nOpen the app to set up your profile.`,
-    openApp: '🚀 Open App',
+    openApp: '🔵 Open App',
   },
   tg: {
     welcome: (name) =>
       `🎉 <b>Хуш омадед${name ? ', ' + name : ''}!</b>\n\nШумо бо муваффақият дар Ezze ба қайд гирифта шудед.\nБарои танзими профил барномаро кушоед.`,
-    openApp: '🚀 Кушодани барнома',
+    openApp: '🔵 Кушодани барнома',
   },
   kz: {
     welcome: (name) =>
       `🎉 <b>Қош келдіңіз${name ? ', ' + name : ''}!</b>\n\nСіз Ezze-ге сәтті тіркелдіңіз.\nПрофильді реттеу үшін қолданбаны ашыңыз.`,
-    openApp: '🚀 Қолданбаны ашу',
+    openApp: '🔵 Қолданбаны ашу',
   },
   ky: {
     welcome: (name) =>
       `🎉 <b>Кош келдиңиз${name ? ', ' + name : ''}!</b>\n\nСиз Ezzege ийгиликтүү катталдыңыз.\nПрофилиңизди орнотуу үшүн колдонмону ачыңыз.`,
-    openApp: '🚀 Колдонмону ачуу',
+    openApp: '🔵 Колдонмону ачуу',
   },
 }
 

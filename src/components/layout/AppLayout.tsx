@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { initMiniApp, isTelegramMiniApp } from '@/lib/telegramWebApp'
 import { useAppointmentsRealtime } from '@/hooks/useAppointmentsRealtime'
+import { supabase } from '@/lib/supabase'
 
 const inTelegram = isTelegramMiniApp()
 
@@ -61,6 +62,17 @@ export function AppLayout() {
     if (lsKey) localStorage.setItem(lsKey, '1')
     setOnboardingDone(true)
     queryClient.invalidateQueries({ queryKey: ['master_profile'] })
+
+    // Отправить приветствие в Telegram после завершения онбординга
+    const tgNotifyId = sessionStorage.getItem('ezze_tg_notify_id')
+    if (tgNotifyId) {
+      sessionStorage.removeItem('ezze_tg_notify_id')
+      const name = wizardPrefill?.name || user?.name || ''
+      const lang = wizardPrefill?.language || 'ru'
+      supabase.functions.invoke('tg-master-welcome', {
+        body: { tg_chat_id: tgNotifyId, name, lang },
+      }).catch(() => { /* non-critical */ })
+    }
   }
 
   return (
