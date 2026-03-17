@@ -48,6 +48,8 @@ export function RegisterPage() {
   const phoneParam  = searchParams.get('phone')  // телефон из бота
   const [loading, setLoading] = useState(false)
 
+  const isTg   = isTelegramMiniApp()
+
   // Redirect when auth state becomes valid (not in TG context — tg-auth handles it there)
   useEffect(() => {
     if (isTg) return
@@ -69,7 +71,6 @@ export function RegisterPage() {
   const platformName = appSettings?.platform_name ?? 'Ezze'
   const logoUrl = appSettings?.logo_url
 
-  const isTg   = isTelegramMiniApp()
   const tgUser = isTg ? getTelegramUser() : null
   const tgId   = isTg ? getTelegramUserId() : null
 
