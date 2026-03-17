@@ -203,7 +203,7 @@ export function RegisterPage() {
     formState: { errors: tgErrors },
   } = useForm<TgFormValues>({
     resolver: zodResolver(tgSchema),
-    defaultValues: { name: getTelegramDisplayName() || tgUser?.username || '' },
+    defaultValues: { name: '' },
   })
 
   const onSubmitTg = async (values: TgFormValues) => {
@@ -329,6 +329,7 @@ export function RegisterPage() {
                   <Input
                     id="tg-name"
                     placeholder="Имя мастера"
+                    required
                     {...tgRegister('name')}
                   />
                   {tgErrors.name && (
