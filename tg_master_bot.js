@@ -202,7 +202,7 @@ async function processUpdate(update) {
             text: s.phonePrompt,
             parse_mode: "HTML",
             reply_markup: {
-              keyboard: [[{ text: s.shareBtn, request_contact: true }]],
+              keyboard: [[{ text: s.shareBtn, request_contact: true, style: "primary" }]],
               resize_keyboard: true,
               one_time_keyboard: true,
             },
@@ -472,7 +472,7 @@ async function processUpdate(update) {
             text: s.remindShare,
             parse_mode: "HTML",
             reply_markup: {
-              keyboard: [[{ text: s.shareBtn, request_contact: true }]],
+              keyboard: [[{ text: s.shareBtn, request_contact: true, style: "primary" }]],
               resize_keyboard: true,
               one_time_keyboard: true,
             },
