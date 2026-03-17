@@ -304,37 +304,22 @@ async function processUpdate(update) {
         await bot.sendMessage(chatId, s.found, { remove_keyboard: true });
         await sendMasterMenu(chatId, message.contact.first_name || "", profile);
       } else {
-        // Не найден — сначала убираем reply keyboard, потом показываем кнопку регистрации
+        // Не найден — одно сообщение: текст + inline кнопка регистрации
         const regUrl = `${APP_URL}/register?lang=${lang}&phone=${encodeURIComponent(message.contact.phone_number)}`;
-        // Шаг 1: убираем reply keyboard + отправляем notFound, запоминаем message_id
-        const sentRes = await fetch(`${bot.TG_API}/sendMessage`, {
+        await fetch(`${bot.TG_API}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
             text: s.notFound,
             parse_mode: "HTML",
-            reply_markup: { remove_keyboard: true },
+            reply_markup: {
+              inline_keyboard: [[
+                { text: s.registerBtn, web_app: { url: regUrl }, style: "primary" },
+              ]],
+            },
           }),
         });
-        const sentData = await sentRes.json();
-        const sentMsgId = sentData?.result?.message_id;
-        // Шаг 2: добавляем кнопку «Зарегистрироваться» к тому же сообщению
-        if (sentMsgId) {
-          await fetch(`${bot.TG_API}/editMessageReplyMarkup`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              message_id: sentMsgId,
-              reply_markup: {
-                inline_keyboard: [[
-                  { text: s.registerBtn, web_app: { url: regUrl }, style: "primary" },
-                ]],
-              },
-            }),
-          });
-        }
       }
     }
     return;
