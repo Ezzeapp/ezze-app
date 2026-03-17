@@ -223,7 +223,7 @@ Deno.serve(async (req: Request) => {
         '❌ <b>Аккаунт не найден</b>\n\nВаш Telegram не привязан ни к одному аккаунту в системе Ezze.\n\nЧтобы начать — зарегистрируйтесь:',
         {
           inline_keyboard: [[
-            { text: '📝 Зарегистрироваться', web_app: { url: `${appUrl}/register` } },
+            { text: '📝 Зарегистрироваться', web_app: { url: `${appUrl}/register` }, style: 'primary' },
           ]],
         }
       )

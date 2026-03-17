@@ -233,7 +233,7 @@ Deno.serve(async (req: Request) => {
           parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [[
-              { text: '📝 Зарегистрироваться', web_app: { url: `${appUrl}/register` } },
+              { text: '📝 Зарегистрироваться', web_app: { url: `${appUrl}/register` }, style: 'primary' },
             ]],
           },
         }),
