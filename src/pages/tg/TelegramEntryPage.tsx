@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
  * Логика маршрутизации:
  *  1. startapp=book_{slug}  → /book/{slug}      (клиент записывается)
  *  2. startapp=master       → tg-auth → /dashboard  (мастер — полный кабинет)
+ *     При ошибке/удалении — экран "аккаунт не найден" (НЕ в клиентский кабинет)
  *  3. (auto-detect по tg_id):
  *       tg_id найден в master_profiles → tg-auth → /dashboard
  *       иначе → /my  (клиентский кабинет)
@@ -42,8 +43,10 @@ export function TelegramEntryPage() {
     }
 
     // ── 2. Явный параметр: кабинет мастера → авторизуем ──
+    // Если авторизация не удалась (аккаунт удалён, initData отсутствует,
+    // любая ошибка) — показываем экран "аккаунт не найден", а НЕ клиентский кабинет.
     if (startParam === 'master') {
-      doTgAuth(navigate, setNotFound)
+      doTgAuth(navigate, setNotFound, /* masterOnly */ true)
       return
     }
 
@@ -64,7 +67,7 @@ export function TelegramEntryPage() {
       .then(({ data }) => {
         if (data) {
           // Нашли — это мастер, авторизуем
-          doTgAuth(navigate, setNotFound)
+          doTgAuth(navigate, setNotFound, false)
         } else {
           // Не нашли — это клиент
           navigate('/my', { replace: true })
@@ -82,8 +85,9 @@ export function TelegramEntryPage() {
         <div className="space-y-2">
           <h2 className="text-lg font-bold">Аккаунт не найден</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Ваш Telegram не привязан ни к одному аккаунту в системе.<br />
-            Пожалуйста, зарегистрируйтесь, чтобы начать работу.
+            Ваш аккаунт мастера не найден в системе.<br />
+            Возможно, он был удалён. Для уточнения обратитесь к администратору.<br />
+            Вы можете зарегистрироваться снова.
           </p>
         </div>
         <div className="flex flex-col gap-2 w-full max-w-xs">
@@ -105,13 +109,24 @@ export function TelegramEntryPage() {
   return <LoadingSpinner fullScreen />
 }
 
+/**
+ * @param masterOnly  true  → все ошибки показывают notFound (не /my)
+ *                   false → при ошибке не-404 → /my (авто-детект поток)
+ */
 async function doTgAuth(
   navigate: ReturnType<typeof useNavigate>,
   setNotFound: (v: boolean) => void,
+  masterOnly: boolean,
 ) {
   const initData = window.Telegram?.WebApp?.initData
+
   if (!initData) {
-    navigate('/my', { replace: true })
+    // Нет initData — в браузере или Telegram не передал данные
+    if (masterOnly) {
+      setNotFound(true)
+    } else {
+      navigate('/my', { replace: true })
+    }
     return
   }
 
@@ -120,15 +135,18 @@ async function doTgAuth(
       body: { initData },
     })
     const status = (error as any)?.status ?? 0
+
     if (error || !data) {
-      if (status === 404) {
-        // Аккаунт удалён / не существует — показываем экран
+      if (status === 404 || masterOnly) {
+        // 404 = аккаунт не найден / удалён
+        // masterOnly = любая ошибка при явном start=master → тот же экран
         setNotFound(true)
         return
       }
       navigate('/my', { replace: true })
       return
     }
+
     if (data?.access_token && data?.refresh_token) {
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: data.access_token,
@@ -143,5 +161,10 @@ async function doTgAuth(
     // fall through
   }
 
-  navigate('/my', { replace: true })
+  // Финальный фолбэк
+  if (masterOnly) {
+    setNotFound(true)
+  } else {
+    navigate('/my', { replace: true })
+  }
 }

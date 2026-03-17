@@ -143,6 +143,17 @@ Deno.serve(async (req: Request) => {
     })
   }
 
+  // ── Pre-step: Grab tg_chat_id before deletion (for TG notification) ──────────
+  const { data: masterProfileSnap } = await supabaseAdmin
+    .from('master_profiles')
+    .select('tg_chat_id')
+    .eq('user_id', userId)
+    .maybeSingle()
+  const tgChatId: string | null = masterProfileSnap?.tg_chat_id ?? null
+
+  const botToken   = Deno.env.get('TG_BOT_TOKEN') ?? ''
+  const appUrl     = Deno.env.get('APP_URL') ?? 'https://ezze.site'
+
   try {
     // ── Step 1: email_log via appointments ────────────────────────────────────
     const apptIds = await collectIds('appointments', 'master_id', userId)
@@ -192,6 +203,41 @@ Deno.serve(async (req: Request) => {
     if (deleteAuthError) {
       // Log but don't fail — public data is already cleaned up
       console.error('[admin-delete-user] auth.admin.deleteUser error:', deleteAuthError.message)
+    }
+
+    // ── Step 12: Telegram notification to deleted master ─────────────────────
+    if (tgChatId && botToken) {
+      const tgApi = `https://api.telegram.org/bot${botToken}`
+
+      // Reset the per-user menu button to default (no more master cabinet link)
+      await fetch(`${tgApi}/setChatMenuButton`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: tgChatId,
+          menu_button: { type: 'default' },
+        }),
+      }).catch(() => {})
+
+      // Send deletion notification message with Register button
+      await fetch(`${tgApi}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: tgChatId,
+          text:
+            `🚫 <b>Ваша учётная запись удалена</b>\n\n` +
+            `Ваш аккаунт мастера в <b>Ezze</b> был удалён администратором.\n\n` +
+            `📞 <b>По всем вопросам обращайтесь к администратору платформы.</b>\n\n` +
+            `Если хотите, вы можете зарегистрироваться снова:`,
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [[
+              { text: '📝 Зарегистрироваться', web_app: { url: `${appUrl}/register` } },
+            ]],
+          },
+        }),
+      }).catch(() => {})
     }
 
     return new Response(JSON.stringify({ message: 'ok' }), {
