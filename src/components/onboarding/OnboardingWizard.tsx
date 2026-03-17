@@ -298,7 +298,10 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   const handleFinish = async () => {
     setLoading(true)
     try {
-      await supabase.from('users').update({ language, timezone, onboarded: true }).eq('id', user!.id)
+      await supabase.from('users').update({
+        language, timezone, onboarded: true,
+        ...(displayName.trim() ? { name: displayName.trim() } : {}),
+      }).eq('id', user!.id)
       if (language !== i18n.language) i18n.changeLanguage(language)
       const profileData: Record<string, any> = {
         display_name: displayName.trim() || undefined,
