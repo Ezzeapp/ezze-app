@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
 import { Send, Zap } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -47,6 +48,8 @@ export function RegisterPage() {
   const langParam   = searchParams.get('lang')   // язык выбранный в боте
   const phoneParam  = searchParams.get('phone')  // телефон из бота
   const [loading, setLoading] = useState(false)
+  const [showWizard, setShowWizard] = useState(false)
+  const [wizardName, setWizardName] = useState('')
 
   const isTg   = isTelegramMiniApp()
 
@@ -222,9 +225,8 @@ export function RegisterPage() {
       const { data: { user: sbUser } } = await supabase.auth.getUser()
       if (sbUser?.id) await saveTgProfile(sbUser.id)
 
-      // Уведомление бота отправим после завершения онбординг-визарда (AppLayout)
-      toast.success('Аккаунт создан!')
-      navigate('/dashboard', { replace: true })
+      setWizardName(values.name.trim())
+      setShowWizard(true)
     } catch (e: any) {
       const emailErr = e?.response?.data?.email?.code
       if (emailErr === 'validation_not_unique') {
@@ -296,6 +298,17 @@ export function RegisterPage() {
 
   // ── Проверка / авто-регистрация — показываем спиннер ─────────────────────
   if (tgChecking || autoRegistering) return <LoadingSpinner fullScreen />
+
+  // ── Онбординг сразу после регистрации ──────────────────────────────────────
+  if (showWizard) {
+    return (
+      <OnboardingWizard
+        open={true}
+        onComplete={() => navigate('/dashboard', { replace: true })}
+        prefill={{ name: wizardName, phone: phoneParam || '' }}
+      />
+    )
+  }
 
   // ── Telegram-форма (fallback: короткое имя или ошибка авто-регистрации) ───
   if (isTg && tgId && showTgForm) {
