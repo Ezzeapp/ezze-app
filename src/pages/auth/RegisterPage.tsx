@@ -224,6 +224,7 @@ export function RegisterPage() {
 
       // Уведомление бота отправим после завершения онбординг-визарда (AppLayout)
       toast.success('Аккаунт создан!')
+      navigate('/dashboard', { replace: true })
     } catch (e: any) {
       const emailErr = e?.response?.data?.email?.code
       if (emailErr === 'validation_not_unique') {
