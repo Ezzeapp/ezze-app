@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, Users, Package, TrendingUp, Clock, ArrowRight, Globe, CalendarRange, UsersRound } from 'lucide-react'
+import { CalendarDays, Users, Package, TrendingUp, Clock, ArrowRight, Globe, CalendarRange, UsersRound, BarChart2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -16,6 +16,8 @@ import { useAllServiceMaterials } from '@/hooks/useServiceMaterials'
 import { useMyTeam, useTeamMembers } from '@/hooks/useTeam'
 import { formatCurrency } from '@/lib/utils'
 import { FeatureGate } from '@/components/shared/FeatureGate'
+import { ReportsTab } from '@/components/dashboard/ReportsTab'
+import { cn } from '@/lib/utils'
 import dayjs from 'dayjs'
 
 type Period = 'today' | '3days' | 'week' | 'month' | 'quarter' | 'year' | 'custom'
@@ -88,6 +90,7 @@ export function DashboardPage() {
   const { t, i18n } = useTranslation()
   const currency = useCurrency()
   const ServiceIcon = useProfileIcon()
+  const [view, setView] = useState<'overview' | 'reports'>('overview')
   const [period, setPeriod] = useState<Period>('today')
   // Кастомный период
   const [customStart, setCustomStart] = useState(dayjs().startOf('month').format('YYYY-MM-DD'))
@@ -271,14 +274,47 @@ export function DashboardPage() {
             <h1 className="text-xl sm:text-2xl font-semibold">{t('dashboard.title')}</h1>
             <p className="text-muted-foreground text-sm mt-0.5 capitalize">
               {dayjs().format('dddd, D MMMM YYYY')}
-              <span className="mx-1.5 text-muted-foreground/40">·</span>
-              <span className="text-foreground/70 font-medium">{periodLabel}</span>
+              {view === 'overview' && (
+                <>
+                  <span className="mx-1.5 text-muted-foreground/40">·</span>
+                  <span className="text-foreground/70 font-medium">{periodLabel}</span>
+                </>
+              )}
             </p>
           </div>
         </div>
 
+        {/* View tab switcher */}
+        <div className="flex gap-1 bg-muted/50 p-1 rounded-lg w-fit">
+          <button
+            type="button"
+            onClick={() => setView('overview')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+              view === 'overview'
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {t('dashboard.title')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setView('reports')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+              view === 'reports'
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <BarChart2 className="h-3.5 w-3.5" />
+            Отчёты
+          </button>
+        </div>
+
         {/* Переключатель периода — отдельная строка, всегда в блоке */}
-        <div className="space-y-2">
+        {view === 'overview' && <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-1.5">
             {PERIODS.map(p => (
               <Button
@@ -327,8 +363,14 @@ export function DashboardPage() {
               />
             </div>
           )}
-        </div>
+        </div>}
       </div>
+
+      {/* Отчёты */}
+      {view === 'reports' && <ReportsTab />}
+
+      {/* Обзор — метрики за период */}
+      {view === 'overview' && <>
 
       {/* Метрики за период — 2 колонки на мобильном, 4 на md+ */}
       <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
@@ -772,6 +814,8 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      </>}
     </div>
   )
 }

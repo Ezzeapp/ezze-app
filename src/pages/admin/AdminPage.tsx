@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
-import { Shield, Zap, Users, BookOpen, Palette, CreditCard, Mail, Bot, UserCheck } from 'lucide-react'
+import { Shield, Zap, Users, BookOpen, Palette, CreditCard, Mail, Bot, UserCheck, BarChart2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
@@ -13,8 +13,9 @@ import { AdminBillingTab } from '@/components/admin/AdminBillingTab'
 import { AdminEmailTab } from '@/components/admin/AdminEmailTab'
 import { AdminAITab } from '@/components/admin/AdminAITab'
 import { AdminTgClientsTab } from '@/components/admin/AdminTgClientsTab'
+import { AdminReportsTab } from '@/components/admin/AdminReportsTab'
 
-type Tab = 'features' | 'users' | 'catalogs' | 'appearance' | 'billing' | 'email' | 'ai' | 'tg_clients'
+type Tab = 'features' | 'users' | 'catalogs' | 'appearance' | 'billing' | 'email' | 'ai' | 'tg_clients' | 'reports'
 
 export function AdminPage() {
   const { t } = useTranslation()
@@ -35,6 +36,7 @@ export function AdminPage() {
     { id: 'email',      label: t('admin.tabEmail'),      icon: Mail },
     { id: 'ai',         label: t('admin.tabAI'),         icon: Bot },
     { id: 'tg_clients', label: 'Клиенты',                icon: UserCheck },
+    { id: 'reports',    label: 'Отчёты',                 icon: BarChart2  },
   ]
 
   return (
@@ -77,6 +79,7 @@ export function AdminPage() {
         {tab === 'email'      && <AdminEmailTab />}
         {tab === 'ai'         && <AdminAITab />}
         {tab === 'tg_clients' && <AdminTgClientsTab />}
+        {tab === 'reports'    && <AdminReportsTab />}
       </div>
     </div>
   )
