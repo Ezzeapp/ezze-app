@@ -328,8 +328,11 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
     }
   }
 
+  const [nameError, setNameError] = useState(false)
+
   const handleNext = () => {
-    if (step === 0 && !displayName.trim()) return // имя обязательно
+    if (step === 0 && !displayName.trim()) { setNameError(true); return }
+    setNameError(false)
     if (step === 1 && !profession.trim()) return // профессия обязательна
     if (step < STEPS.length - 1) setStep((s) => s + 1)
     else handleFinish()
@@ -451,11 +454,14 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
                 <Label className="text-xs">{t('profile.displayName')}</Label>
                 <Input
                   value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  onChange={(e) => { setDisplayName(e.target.value); setNameError(false) }}
                   placeholder={t('profile.displayNamePlaceholder')}
                   autoFocus
-                  required
+                  className={nameError ? 'border-destructive focus-visible:ring-destructive' : ''}
                 />
+                {nameError && (
+                  <p className="text-xs text-destructive">Пожалуйста, введите ваше имя</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t('profile.phone')}</Label>
