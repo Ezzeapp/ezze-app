@@ -60,6 +60,7 @@ export function AdminTgClientsTab() {
   const [editName, setEditName]       = useState('')
   const [editPhone, setEditPhone]     = useState('')
   const [deleteKey, setDeleteKey]     = useState<string | null>(null)
+  const [deleteApptCount, setDeleteApptCount] = useState(0)
   const [saving, setSaving]           = useState(false)
 
   // ── Запросы ──────────────────────────────────────────────────────────────────
@@ -234,23 +235,41 @@ export function AdminTgClientsTab() {
     }
   }
 
+  const openDeleteConfirm = async (client: UnifiedClient) => {
+    // Проверяем кол-во записей (только для клиентов мастера)
+    let apptCount = 0
+    if (client.source === 'master' && client.masterId) {
+      const { count } = await supabase
+        .from('appointments')
+        .select('id', { count: 'exact', head: true })
+        .eq('client_id', client.masterId)
+      apptCount = count ?? 0
+    }
+    setDeleteApptCount(apptCount)
+    setDeleteKey(client.key)
+  }
+
   const handleDelete = async () => {
     if (!deleteKey) return
     const client = unified.find(c => c.key === deleteKey)
     if (!client) return
     try {
       if (client.source === 'platform' && client.platformId) {
-        const { error } = await supabase.from('tg_clients').delete().eq('id', client.platformId)
+        const { error, count } = await supabase
+          .from('tg_clients').delete({ count: 'exact' }).eq('id', client.platformId)
         if (error) throw error
+        if ((count ?? 0) === 0) throw new Error('Нет доступа или клиент не найден')
         qc.invalidateQueries({ queryKey: ['admin_tg_clients'] })
       } else if (client.source === 'master' && client.masterId) {
-        const { error } = await supabase.from('clients').delete().eq('id', client.masterId)
+        const { error, count } = await supabase
+          .from('clients').delete({ count: 'exact' }).eq('id', client.masterId)
         if (error) throw error
+        if ((count ?? 0) === 0) throw new Error('Нет доступа или клиент не найден')
         qc.invalidateQueries({ queryKey: ['admin_master_clients'] })
       }
       toast.success('Клиент удалён')
-    } catch {
-      toast.error('Ошибка при удалении')
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Ошибка при удалении')
     }
     setDeleteKey(null)
   }
@@ -297,9 +316,18 @@ export function AdminTgClientsTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setDeleteKey(null)}>
           <div className="bg-background rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold">Удалить клиента?</h3>
-            <p className="text-sm text-muted-foreground">
-              <strong>{deleteTarget.name}</strong> будет удалён безвозвратно.
-            </p>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p><strong className="text-foreground">{deleteTarget.name}</strong> будет удалён безвозвратно.</p>
+              {deleteApptCount > 0 && (
+                <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-amber-800 dark:text-amber-300 text-xs">
+                  ⚠️ У клиента <strong>{deleteApptCount}</strong> {deleteApptCount === 1 ? 'запись' : deleteApptCount < 5 ? 'записи' : 'записей'}.
+                  Сами записи сохранятся, но потеряют привязку к клиенту.
+                </div>
+              )}
+              {deleteTarget.source === 'platform' && (
+                <p className="text-xs">Данные из Telegram-бота будут удалены. Клиент сможет зарегистрироваться заново.</p>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setDeleteKey(null)}>Отмена</Button>
               <Button variant="destructive" className="flex-1" onClick={handleDelete}>Удалить</Button>
@@ -461,7 +489,7 @@ export function AdminTgClientsTab() {
 
                     {/* Удалить */}
                     <button
-                      onClick={() => setDeleteKey(client.key)}
+                      onClick={() => openDeleteConfirm(client)}
                       title="Удалить"
                       className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                     >
