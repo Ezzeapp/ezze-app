@@ -32,11 +32,6 @@ const schema = z.object({
 })
 type FormValues = z.infer<typeof schema>
 
-const tgSchema = z.object({
-  name: z.string().min(2),
-})
-type TgFormValues = z.infer<typeof tgSchema>
-
 // ── Компонент ──────────────────────────────────────────────────────────────
 
 export function RegisterPage() {
@@ -104,7 +99,6 @@ export function RegisterPage() {
 
   // ── Авто-регистрация через Telegram (без формы) ───────────────────────────
   const [autoRegistering, setAutoRegistering] = useState(false)
-  const [showTgForm, setShowTgForm] = useState(false) // показать форму как fallback
 
   const saveTgProfile = useCallback(async (userId: string) => {
     if (!tgId || !userId) return
@@ -129,56 +123,51 @@ export function RegisterPage() {
   useEffect(() => {
     if (tgChecking || !isTg || !tgId) return
 
-    const name = getTelegramDisplayName() || tgUser?.username || ''
+    // Используем любое доступное имя, fallback — 'Мастер'
+    const rawName = getTelegramDisplayName() || tgUser?.username || ''
+    const name = rawName.trim().length >= 2 ? rawName.trim() : (tgUser?.username || 'Мастер')
 
-    if (name.trim().length >= 2) {
-      // Сохраняем имя, телефон, язык и tg_id для онбординг-визарда и уведомления
-      sessionStorage.setItem('ezze_prefill_name', name.trim())
-      sessionStorage.setItem('ezze_tg_notify_id', String(tgId))
-      if (phoneParam) sessionStorage.setItem('ezze_prefill_phone', phoneParam)
-      if (langParam)  sessionStorage.setItem('ezze_prefill_lang',  langParam)
+    sessionStorage.setItem('ezze_prefill_name', name)
+    sessionStorage.setItem('ezze_tg_notify_id', String(tgId))
+    if (phoneParam) sessionStorage.setItem('ezze_prefill_phone', phoneParam)
+    if (langParam)  sessionStorage.setItem('ezze_prefill_lang',  langParam)
 
-      setAutoRegistering(true)
-      ;(async () => {
-        try {
-          setLoading(true)
-          const email    = `tg_${tgId}@ezze.site`
-          const password = crypto.randomUUID()
-          await registerUser(email, password, name.trim())
+    setAutoRegistering(true)
+    ;(async () => {
+      try {
+        setLoading(true)
+        const email    = `tg_${tgId}@ezze.site`
+        const password = crypto.randomUUID()
+        await registerUser(email, password, name)
 
-          const { data: { user: sbUser } } = await supabase.auth.getUser()
-          if (sbUser?.id) await saveTgProfile(sbUser.id)
+        const { data: { user: sbUser } } = await supabase.auth.getUser()
+        if (sbUser?.id) await saveTgProfile(sbUser.id)
 
-          // Уведомление бота отправим после завершения онбординг-визарда (AppLayout)
-
-          // Редирект произойдёт через isAuthenticated useEffect
-        } catch (e: any) {
-          const emailErr = e?.response?.data?.email?.code
-          if (emailErr === 'validation_not_unique') {
-            // Аккаунт уже есть — пробуем войти
-            const initData = window.Telegram?.WebApp?.initData
-            if (initData) {
-              try {
-                const r = await fetch('/api/tg-auth', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ initData }),
-                })
-                if (r.ok) { navigate('/dashboard', { replace: true }); return }
-              } catch {}
-            }
+        setWizardName(name)
+        setAutoRegistering(false)
+        setShowWizard(true)
+      } catch (e: any) {
+        const emailErr = e?.response?.data?.email?.code
+        if (emailErr === 'validation_not_unique') {
+          // Аккаунт уже есть — пробуем войти
+          const initData = window.Telegram?.WebApp?.initData
+          if (initData) {
+            try {
+              const r = await fetch('/api/tg-auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ initData }),
+              })
+              if (r.ok) { navigate('/dashboard', { replace: true }); return }
+            } catch {}
           }
-          // Авто-регистрация не удалась → показываем форму
-          setAutoRegistering(false)
-          setShowTgForm(true)
-        } finally {
-          setLoading(false)
         }
-      })()
-    } else {
-      // Имя слишком короткое → показываем форму ввода
-      setShowTgForm(true)
-    }
+        toast.error('Ошибка регистрации')
+        setAutoRegistering(false)
+      } finally {
+        setLoading(false)
+      }
+    })()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tgChecking])
 
@@ -195,57 +184,6 @@ export function RegisterPage() {
     } catch (e: any) {
       const msg = e?.response?.data?.email?.message || t('auth.registerError')
       toast.error(msg)
-      setLoading(false)
-    }
-  }
-
-  // ── Telegram-форма fallback (только имя) ──────────────────────────────────
-  const {
-    register: tgRegister,
-    handleSubmit: tgHandleSubmit,
-    formState: { errors: tgErrors },
-  } = useForm<TgFormValues>({
-    resolver: zodResolver(tgSchema),
-    defaultValues: { name: '' },
-  })
-
-  const onSubmitTg = async (values: TgFormValues) => {
-    if (!tgId) { toast.error('Telegram ID не найден'); return }
-    // Сохраняем имя, телефон и язык для онбординг-визарда
-    sessionStorage.setItem('ezze_prefill_name', values.name.trim())
-    sessionStorage.setItem('ezze_tg_notify_id', String(tgId))
-    if (phoneParam) sessionStorage.setItem('ezze_prefill_phone', phoneParam)
-    if (langParam)  sessionStorage.setItem('ezze_prefill_lang',  langParam)
-    try {
-      setLoading(true)
-      const email    = `tg_${tgId}@ezze.site`
-      const password = crypto.randomUUID()
-      await registerUser(email, password, values.name)
-
-      const { data: { user: sbUser } } = await supabase.auth.getUser()
-      if (sbUser?.id) await saveTgProfile(sbUser.id)
-
-      setWizardName(values.name.trim())
-      setShowWizard(true)
-    } catch (e: any) {
-      const emailErr = e?.response?.data?.email?.code
-      if (emailErr === 'validation_not_unique') {
-        const initData = window.Telegram?.WebApp?.initData
-        if (initData) {
-          try {
-            const r = await fetch('/api/tg-auth', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ initData }),
-            })
-            if (r.ok) { navigate('/dashboard', { replace: true }); return }
-          } catch {}
-        }
-        toast.error('Аккаунт уже существует')
-      } else {
-        toast.error('Ошибка регистрации')
-      }
-    } finally {
       setLoading(false)
     }
   }
@@ -307,62 +245,6 @@ export function RegisterPage() {
         onComplete={() => navigate('/dashboard', { replace: true })}
         prefill={{ name: wizardName, phone: phoneParam || '' }}
       />
-    )
-  }
-
-  // ── Telegram-форма (fallback: короткое имя или ошибка авто-регистрации) ───
-  if (isTg && tgId && showTgForm) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="w-full max-w-sm">
-          <div className="flex justify-center mb-8">
-            <div className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary overflow-hidden">
-                {logoUrl
-                  ? <img src={logoUrl} alt="" className="h-10 w-10 object-cover" />
-                  : <Zap className="h-5 w-5 text-primary-foreground" />
-                }
-              </div>
-              <span className="text-2xl font-bold">{platformName}</span>
-            </div>
-          </div>
-
-          <Card className="shadow-lg">
-            <CardHeader className="text-center">
-              <CardTitle>
-                {tgUser?.first_name
-                  ? `Привет, ${tgUser.first_name}! 👋`
-                  : 'Создать аккаунт'}
-              </CardTitle>
-              <CardDescription>Введите ваше имя для профиля мастера</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={tgHandleSubmit(onSubmitTg)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="tg-name">Ваше имя</Label>
-                  <Input
-                    id="tg-name"
-                    placeholder="Имя мастера"
-                    required
-                    {...tgRegister('name')}
-                  />
-                  {tgErrors.name && (
-                    <p className="text-xs text-destructive">Минимум 2 символа</p>
-                  )}
-                </div>
-
-                <Button type="submit" className="w-full" loading={loading}>
-                  Создать аккаунт
-                </Button>
-              </form>
-
-              <p className="mt-4 text-center text-xs text-muted-foreground">
-                Email и пароль можно добавить позже в настройках профиля
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
     )
   }
 
