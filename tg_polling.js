@@ -170,13 +170,8 @@ async function autoFixMasterProfile(chatId, tgUsername) {
       }
       return profile;
     } else {
-      const create = { user_id: user.id, tg_chat_id: String(chatId) };
-      if (tgUsername) create.telegram = "@" + tgUsername;
-      const { data: newProfile, error } = await supabase
-        .from("master_profiles").insert(create).select().single();
-      if (error) { console.error("autoFix create error:", error.message); return null; }
-      console.log(`✅ autoFix: created master_profiles with tg_chat_id=${chatId}`);
-      return newProfile;
+      // Профиль мастера не найден (удалён) — возвращаем null, не создаём
+      return null;
     }
   } catch (e) {
     console.error("autoFixMasterProfile error:", e.message);

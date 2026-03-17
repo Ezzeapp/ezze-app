@@ -87,6 +87,7 @@ export interface TelegramWebApp {
   openLink: (url: string) => void
   openTelegramLink: (url: string) => void
   sendData: (data: string) => void
+  requestContact: (callback: (shared: boolean, response: { contact?: { phone_number: string; first_name?: string } } | null) => void) => void
   switchInlineQuery: (query: string, choose_chat_types?: string[]) => void
   HapticFeedback: {
     impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void

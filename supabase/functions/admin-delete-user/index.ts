@@ -205,6 +205,21 @@ Deno.serve(async (req: Request) => {
       console.error('[admin-delete-user] auth.admin.deleteUser error:', deleteAuthError.message)
     }
 
+    // ── Step 11b: Delete TG auth user (tg_{chatId}@ezze.site) if exists ──────
+    if (tgChatId) {
+      try {
+        const tgEmail = `tg_${tgChatId}@ezze.site`
+        const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
+        const tgAuthUser = usersData?.users?.find((u: { email?: string }) => u.email === tgEmail)
+        if (tgAuthUser) {
+          await supabaseAdmin.auth.admin.deleteUser(tgAuthUser.id)
+          console.log(`[admin-delete-user] deleted TG auth user: ${tgEmail}`)
+        }
+      } catch (e) {
+        console.error('[admin-delete-user] TG auth user delete error:', String(e))
+      }
+    }
+
     // ── Step 12: Telegram notification to deleted master ─────────────────────
     if (tgChatId && botToken) {
       const tgApi = `https://api.telegram.org/bot${botToken}`
@@ -233,7 +248,7 @@ Deno.serve(async (req: Request) => {
           parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [[
-              { text: '📝 Зарегистрироваться', web_app: { url: `${appUrl}/register` }, style: 'primary' },
+              { text: '📝 Зарегистрироваться', callback_data: 'start_registration' },
             ]],
           },
         }),

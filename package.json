@@ -8,7 +8,10 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "email-worker": "node scripts/email-worker.js"
+    "email-worker": "node scripts/email-worker.js",
+    "bot:restart": "ssh root@72.62.119.187 'systemctl restart ezze-master-bot.service && systemctl status ezze-master-bot.service --no-pager'",
+    "bot:status": "ssh root@72.62.119.187 'systemctl status ezze-master-bot.service --no-pager'",
+    "bot:logs": "ssh root@72.62.119.187 'journalctl -u ezze-master-bot.service -n 50 --no-pager'"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

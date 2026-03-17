@@ -202,7 +202,7 @@ async function processUpdate(update) {
             text: s.phonePrompt,
             parse_mode: "HTML",
             reply_markup: {
-              keyboard: [[{ text: s.shareBtn, request_contact: true, style: "primary" }]],
+              keyboard: [[{ text: s.shareBtn, request_contact: true }]],
               resize_keyboard: true,
               one_time_keyboard: true,
             },
@@ -211,6 +211,14 @@ async function processUpdate(update) {
       } else {
         await answerCbQuery(cb.id);
       }
+
+    } else if (data === "start_registration") {
+      // Удалённый мастер хочет зарегистрироваться заново → запускаем онбординг
+      await answerCbQuery(cb.id, "✓");
+      await bot.setUserMenuButton(chatId); // сброс кнопки меню
+      pendingMasters.set(chatId, { step: "waiting_language" });
+      savePendingSessions();
+      await sendLangSelection(chatId, cb.from?.first_name || "");
 
     } else if (data.startsWith("cancel_appt_")) {
       // ── Мастер отменяет запись прямо из уведомления ───────────────────────
@@ -296,9 +304,8 @@ async function processUpdate(update) {
         await bot.sendMessage(chatId, s.found, { remove_keyboard: true });
         await sendMasterMenu(chatId, message.contact.first_name || "", profile);
       } else {
-        // Не найден — предлагаем регистрацию (передаём язык и телефон)
+        // Не найден — сначала убираем reply keyboard, потом показываем кнопку регистрации
         const regUrl = `${APP_URL}/register?lang=${lang}&phone=${encodeURIComponent(message.contact.phone_number)}`;
-        // one_time_keyboard:true уже скрыло клавиатуру после нажатия — отправляем одно сообщение
         await fetch(`${bot.TG_API}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -307,6 +314,17 @@ async function processUpdate(update) {
             text: s.notFound,
             parse_mode: "HTML",
             reply_markup: {
+              remove_keyboard: true,
+            },
+          }),
+        });
+        await fetch(`${bot.TG_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: "👇",
+            reply_markup: {
               inline_keyboard: [[
                 { text: s.registerBtn, web_app: { url: regUrl }, style: "primary" },
               ]],
@@ -314,6 +332,70 @@ async function processUpdate(update) {
           }),
         });
       }
+    }
+    return;
+  }
+
+  // ── web_app_data — телефон из PhoneSharePage (/tg/phone) ────────────────────
+  if (message?.web_app_data) {
+    const chatId = message.chat.id;
+    const pending = pendingMasters.get(chatId);
+    let phone = "", lang = getLang(pending);
+    try {
+      const parsed = JSON.parse(message.web_app_data.data);
+      phone = parsed.phone || "";
+      if (parsed.lang && LANG_STRINGS[parsed.lang]) lang = parsed.lang;
+    } catch { /* ignore */ }
+
+    if (!phone) return;
+    const s = LANG_STRINGS[lang];
+    const phoneDigits = normalizePhone(phone);
+    console.log(`📱 [master/webapp] chat=${chatId} phone_digits=${phoneDigits}`);
+
+    const { data: profiles } = await supabase
+      .from("master_profiles").select("*").not("phone", "is", null);
+    const profile = (profiles || []).find(p => {
+      if (!p.phone) return false;
+      const stored = normalizePhone(p.phone);
+      return stored === phoneDigits
+        || stored.endsWith(phoneDigits)
+        || phoneDigits.endsWith(stored);
+    });
+
+    pendingMasters.delete(chatId);
+    savePendingSessions();
+
+    if (profile) {
+      await supabase.from("master_profiles")
+        .update({ tg_chat_id: String(chatId) }).eq("id", profile.id);
+      profile.tg_chat_id = String(chatId);
+      console.log(`✅ [webapp] Linked chat=${chatId} to master profile id=${profile.id}`);
+      await bot.sendMessage(chatId, s.found);
+      await sendMasterMenu(chatId, message.from?.first_name || "", profile);
+    } else {
+      const regUrl = `${APP_URL}/register?lang=${lang}&phone=${encodeURIComponent(phone)}`;
+      await fetch(`${bot.TG_API}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: s.notFound,
+          parse_mode: "HTML",
+        }),
+      });
+      await fetch(`${bot.TG_API}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: "👇",
+          reply_markup: {
+            inline_keyboard: [[
+              { text: s.registerBtn, web_app: { url: regUrl }, style: "primary" },
+            ]],
+          },
+        }),
+      });
     }
     return;
   }
@@ -386,7 +468,7 @@ async function processUpdate(update) {
             text: s.remindShare,
             parse_mode: "HTML",
             reply_markup: {
-              keyboard: [[{ text: s.shareBtn, request_contact: true, style: "primary" }]],
+              keyboard: [[{ text: s.shareBtn, request_contact: true }]],
               resize_keyboard: true,
               one_time_keyboard: true,
             },

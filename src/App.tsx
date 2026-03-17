@@ -42,6 +42,7 @@ const ClientCabinetPage = lazy(() => import('@/pages/booking/ClientCabinetPage')
 const MasterSearchPage = lazy(() => import('@/pages/booking/MasterSearchPage').then(m => ({ default: m.MasterSearchPage })))
 const MiniAppLayout = lazy(() => import('@/components/layout/MiniAppLayout').then(m => ({ default: m.MiniAppLayout })))
 const TelegramEntryPage = lazy(() => import('@/pages/tg/TelegramEntryPage').then(m => ({ default: m.TelegramEntryPage })))
+const PhoneSharePage = lazy(() => import('@/pages/tg/PhoneSharePage').then(m => ({ default: m.PhoneSharePage })))
 const SupportPage = lazy(() => import('@/pages/support/SupportPage'))
 const LoyaltyPage = lazy(() => import('@/pages/loyalty/LoyaltyPage'))
 
@@ -72,6 +73,7 @@ const router = createBrowserRouter([
     element: <MiniAppLayout />,
     children: [
       { index: true, element: <TelegramEntryPage /> },
+      { path: 'phone', element: <PhoneSharePage /> },
     ],
   },
 

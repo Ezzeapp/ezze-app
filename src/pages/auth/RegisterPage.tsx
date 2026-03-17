@@ -48,12 +48,13 @@ export function RegisterPage() {
   const phoneParam  = searchParams.get('phone')  // телефон из бота
   const [loading, setLoading] = useState(false)
 
-  // Redirect when auth state becomes valid
+  // Redirect when auth state becomes valid (not in TG context — tg-auth handles it there)
   useEffect(() => {
+    if (isTg) return
     if (!authLoading && isAuthenticated) {
       navigate(inviteCode ? `/join/${inviteCode}` : '/dashboard', { replace: true })
     }
-  }, [isAuthenticated, authLoading, navigate, inviteCode])
+  }, [isAuthenticated, authLoading, navigate, inviteCode, isTg])
 
   // Применяем язык из бота немедленно
   useEffect(() => {

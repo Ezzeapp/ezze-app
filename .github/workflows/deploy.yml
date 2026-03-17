@@ -65,7 +65,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
-          source: 'tg_shared.js,tg_master_bot.js,tg_client_bot.js'
+          source: 'tg_shared.js,tg_master_bot.js,tg_client_bot.js,tg_polling.js'
           target: '/app/ezze-app/'
 
       - name: Restart both bot services
