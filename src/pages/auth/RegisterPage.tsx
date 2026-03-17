@@ -243,7 +243,7 @@ export function RegisterPage() {
       <OnboardingWizard
         open={true}
         onComplete={() => navigate('/dashboard', { replace: true })}
-        prefill={{ name: wizardName, phone: phoneParam || '' }}
+        prefill={{ name: '', phone: phoneParam || '' }}
       />
     )
   }

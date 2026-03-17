@@ -329,6 +329,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   }
 
   const handleNext = () => {
+    if (step === 0 && !displayName.trim()) return // имя обязательно
     if (step === 1 && !profession.trim()) return // профессия обязательна
     if (step < STEPS.length - 1) setStep((s) => s + 1)
     else handleFinish()
@@ -452,9 +453,8 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder={t('profile.displayNamePlaceholder')}
-                  readOnly={!!prefill?.name}
-                  autoFocus={!prefill?.name}
-                  className={cn(prefill?.name && "bg-muted/40 cursor-default select-text")}
+                  autoFocus
+                  required
                 />
               </div>
               <div className="space-y-1.5">
