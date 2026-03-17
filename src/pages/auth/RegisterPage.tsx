@@ -125,7 +125,7 @@ export function RegisterPage() {
 
     // Используем любое доступное имя, fallback — 'Мастер'
     const rawName = getTelegramDisplayName() || tgUser?.username || ''
-    const name = rawName.trim().length >= 2 ? rawName.trim() : (tgUser?.username || 'Мастер')
+    const name = rawName.trim().length >= 2 ? rawName.trim() : (tgUser?.username || 'Новый пользователь')
 
     sessionStorage.setItem('ezze_prefill_name', name)
     sessionStorage.setItem('ezze_tg_notify_id', String(tgId))

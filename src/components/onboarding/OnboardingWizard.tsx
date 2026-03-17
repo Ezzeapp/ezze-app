@@ -302,6 +302,8 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
         language, timezone, onboarded: true,
         ...(displayName.trim() ? { name: displayName.trim() } : {}),
       }).eq('id', user!.id)
+      // Ставим localStorage ключ чтобы AppLayout не показал визард повторно
+      localStorage.setItem(`ezze_onboarded_${user!.id}`, '1')
       if (language !== i18n.language) i18n.changeLanguage(language)
       const profileData: Record<string, any> = {
         display_name: displayName.trim() || undefined,
