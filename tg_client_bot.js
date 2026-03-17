@@ -3,6 +3,13 @@
  * Бот: @ezzeclient_bot | Token: TG_CLIENT_BOT_TOKEN
  * Запуск: node tg_client_bot.js
  * Systemd: ezze-client-bot.service
+ *
+ * Сценарий 1: Клиент открывает бота сам (/start без параметра)
+ *   → регистрация (телефон → имя) → запись в tg_clients → личный кабинет
+ *
+ * Сценарий 2: Клиент переходит по ссылке мастера (/start book_SLUG)
+ *   → уже в tg_clients? → сразу кнопка "Записаться" (без повторного ввода)
+ *   → не в tg_clients? → регистрация → запись в tg_clients → кнопка "Записаться"
  */
 
 import { readFileSync, writeFileSync } from "fs";
@@ -42,6 +49,30 @@ function savePendingBookings() {
 
 const pendingBookings = loadPendingBookings();
 
+// ── tg_clients: сохранение/поиск платформенных клиентов ───────────────────────
+
+/** Ищет клиента в tg_clients по tg_chat_id. Возвращает запись или null. */
+async function findTgClient(chatId) {
+  const { data } = await supabase
+    .from("tg_clients")
+    .select("id, name, phone, tg_username")
+    .eq("tg_chat_id", String(chatId))
+    .maybeSingle();
+  return data ?? null;
+}
+
+/** Сохраняет/обновляет клиента в tg_clients. */
+async function saveTgClient(chatId, name, phone, tgUsername = null) {
+  const { error } = await supabase.from("tg_clients").upsert({
+    tg_chat_id:  String(chatId),
+    name,
+    phone,
+    tg_username: tgUsername || null,
+    updated_at:  new Date().toISOString(),
+  }, { onConflict: "tg_chat_id" });
+  if (error) console.error("saveTgClient error:", error.message);
+}
+
 // ── Клиентские хелперы ────────────────────────────────────────────────────────
 
 async function setClientMenuButton(chatId) {
@@ -68,20 +99,28 @@ async function showBookingButton(chatId, slug, phone, name, tgUsername = '') {
 async function sendClientMenuSmart(chatId, firstName) {
   const greeting = `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>`;
 
-  // Проверяем, есть ли у клиента записи по telegram_id
+  // 1. Есть ли активные/прошлые записи по telegram_id?
   const { count } = await supabase
     .from("appointments")
     .select("id", { count: "exact", head: true })
     .eq("telegram_id", String(chatId));
 
   let isKnownClient = (count ?? 0) > 0;
+
+  // 2. Есть ли запись в clients.tg_chat_id (старый механизм)?
   if (!isKnownClient) {
     const { data: clientRecord } = await supabase
       .from("clients").select("id").eq("tg_chat_id", String(chatId)).maybeSingle();
     isKnownClient = !!clientRecord;
   }
 
-  // Также считаем зарегистрированным, если есть сохранённая сессия
+  // 3. Зарегистрирован в tg_clients (платформенная регистрация)?
+  if (!isKnownClient) {
+    const tgClient = await findTgClient(chatId);
+    isKnownClient = !!tgClient;
+  }
+
+  // 4. Есть ли сохранённая JSON-сессия (резервный вариант)?
   const savedSession = pendingBookings.get(chatId);
   if (!isKnownClient && savedSession?.mode === "registered") {
     isKnownClient = true;
@@ -129,13 +168,6 @@ async function sendClientMenuSmart(chatId, firstName) {
   }
 }
 
-function buildSearchUrl(chatId, session) {
-  const params = new URLSearchParams({ tg_id: String(chatId) });
-  if (session?.phone) params.set("tg_phone", session.phone);
-  if (session?.name)  params.set("tg_name",  session.name);
-  return `${APP_URL}/search?${params.toString()}`;
-}
-
 // ── Обработка обновлений ──────────────────────────────────────────────────────
 
 async function processUpdate(update) {
@@ -172,12 +204,27 @@ async function processUpdate(update) {
     if (text.startsWith("/start")) {
       const param = text.split(" ")[1] || "";
 
+      // ── Сценарий 2: ссылка мастера /start book_SLUG ───────────────────────
       if (param.startsWith("book_")) {
         const slug = param.slice(5);
         const { data: profile } = await supabase
           .from("master_profiles").select("profession").eq("booking_slug", slug).maybeSingle();
 
-        if (profile) {
+        if (!profile) {
+          await bot.sendMessage(chatId, `❌ Мастер не найден или страница записи закрыта.`);
+          return;
+        }
+
+        // Проверяем, зарегистрирован ли уже в tg_clients
+        const tgClient = await findTgClient(chatId);
+
+        if (tgClient?.phone && tgClient?.name) {
+          // ✅ Уже зарегистрирован → сразу кнопка записи, без повторного ввода
+          console.log(`👤 [client] chat=${chatId} already in tg_clients → skip registration`);
+          await showBookingButton(chatId, slug, tgClient.phone, tgClient.name, tgClient.tg_username || '');
+          await setClientMenuButton(chatId);
+        } else {
+          // Новый клиент → стандартный флоу регистрации + запись
           await bot.setUserMenuButton(chatId); // сброс старой кнопки
           pendingBookings.set(chatId, {
             slug,
@@ -200,14 +247,11 @@ async function processUpdate(update) {
               },
             }),
           });
-        } else {
-          await bot.sendMessage(chatId, `❌ Мастер не найден или страница записи закрыта.`);
         }
         return;
       }
 
-      // /start без book_ → возвращающийся клиент или новый
-      // сохраняем tgUsername в текущую сессию регистрации (если она запускается)
+      // ── Сценарий 1: /start без параметра ─────────────────────────────────
       const existingSession = pendingBookings.get(chatId);
       if (existingSession && existingSession.mode !== "registered") {
         existingSession.tgUsername = message.from?.username || '';
@@ -250,8 +294,11 @@ async function processUpdate(update) {
         const name = text.trim() || pending.tgName || firstName;
         const tgUsername = pending.tgUsername || '';
 
+        // ✅ Сохраняем клиента в tg_clients (оба сценария — регистрация и запись через ссылку)
+        await saveTgClient(chatId, name, pending.phone, tgUsername);
+
         if (pending.mode === "registration") {
-          // Регистрация без мастера — сохраняем сессию, показываем поиск
+          // Сценарий 1: регистрация без мастера → обновляем JSON-сессию, показываем кабинет
           pendingBookings.set(chatId, {
             mode: "registered",
             phone: pending.phone,
@@ -275,7 +322,7 @@ async function processUpdate(update) {
             }),
           });
         } else {
-          // Запись к конкретному мастеру
+          // Сценарий 2: запись к конкретному мастеру
           pendingBookings.delete(chatId);
           savePendingBookings();
           await showBookingButton(chatId, pending.slug, pending.phone, name, tgUsername);
