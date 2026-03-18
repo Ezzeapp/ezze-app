@@ -100,7 +100,7 @@ export function RegisterPage() {
   // ── Авто-регистрация через Telegram (без формы) ───────────────────────────
   const [autoRegistering, setAutoRegistering] = useState(false)
 
-  const saveTgProfile = useCallback(async (userId: string) => {
+  const saveTgProfile = useCallback(async (userId: string, displayName?: string) => {
     if (!tgId || !userId) return
     try {
       const { data: existing } = await supabase
@@ -109,12 +109,14 @@ export function RegisterPage() {
         await supabase.from('master_profiles').update({
           tg_chat_id: tgId,
           ...(tgUser?.username ? { telegram: '@' + tgUser.username } : {}),
+          ...(displayName ? { display_name: displayName } : {}),
         }).eq('id', existing.id)
       } else {
         await supabase.from('master_profiles').insert({
           user_id: userId,
           tg_chat_id: tgId,
           telegram: tgUser?.username ? '@' + tgUser.username : '',
+          ...(displayName ? { display_name: displayName } : {}),
         })
       }
     } catch { /* non-critical */ }
@@ -141,7 +143,7 @@ export function RegisterPage() {
         await registerUser(email, password, name)
 
         const { data: { user: sbUser } } = await supabase.auth.getUser()
-        if (sbUser?.id) await saveTgProfile(sbUser.id)
+        if (sbUser?.id) await saveTgProfile(sbUser.id, name)
 
         setWizardName(name)
         setAutoRegistering(false)
