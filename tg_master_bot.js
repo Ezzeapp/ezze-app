@@ -117,7 +117,8 @@ async function sendMasterMenu(chatId, firstName, masterProfile) {
   await bot.setUserMenuButton(chatId, label, `${APP_URL}/tg?start=master`);
   await bot.sendMessage(
     chatId,
-    `👋 <b>Привет, ${masterName}!</b>\n\nРады видеть вас снова в <b>Ezze</b>.\n\nИспользуйте кнопку <b>${label}</b> рядом с полем ввода, чтобы открыть кабинет мастера.`
+    `👋 <b>Привет, ${masterName}!</b>\n\nРады видеть вас снова в <b>Ezze</b>.\n\nИспользуйте кнопку <b>${label}</b> рядом с полем ввода, чтобы открыть кабинет мастера.`,
+    { remove_keyboard: true }
   );
 }
 

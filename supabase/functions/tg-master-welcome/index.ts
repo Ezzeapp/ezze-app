@@ -88,6 +88,7 @@ async function setChatMenuButton(chatId: string, label: string) {
 }
 
 async function sendWelcomeMessage(chatId: string, text: string, openAppLabel: string) {
+  // Сначала убираем reply-клавиатуру (если осталась кнопка "Поделиться номером")
   await fetch(`${TG_API_URL}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -95,6 +96,16 @@ async function sendWelcomeMessage(chatId: string, text: string, openAppLabel: st
       chat_id: chatId,
       text,
       parse_mode: 'HTML',
+      reply_markup: { remove_keyboard: true },
+    }),
+  })
+  // Затем отправляем inline-кнопку отдельным сообщением
+  await fetch(`${TG_API_URL}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: openAppLabel,
       reply_markup: {
         inline_keyboard: [[
           { text: openAppLabel, web_app: { url: `${APP_URL}/dashboard` }, style: 'primary' },
