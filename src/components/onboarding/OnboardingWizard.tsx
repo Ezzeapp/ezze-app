@@ -323,6 +323,15 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
       }
       await saveSchedule()
       await autoImport()
+      // Отправить TG welcome (меню + сообщение с кнопкой) — только для TG регистрации
+      const tgNotifyId = sessionStorage.getItem('ezze_tg_notify_id')
+      if (tgNotifyId) {
+        sessionStorage.removeItem('ezze_tg_notify_id')
+        const lang = sessionStorage.getItem('ezze_prefill_lang') || language || 'ru'
+        supabase.functions.invoke('tg-master-welcome', {
+          body: { tg_chat_id: tgNotifyId, name: displayName.trim(), lang },
+        }).catch(() => {})
+      }
       onComplete()
     } catch (err: any) {
       console.error('Onboarding error:', err)
