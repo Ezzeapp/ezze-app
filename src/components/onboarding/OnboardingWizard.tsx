@@ -543,10 +543,10 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
                     const q = professionQuery.trim()
                     const filtered = dbProfessions.filter((p) =>
                       matchesProfession(p, q)
-                    ).slice(0, 8)
+                    )
                     if (!filtered.length) return null
                     return (
-                      <div className="absolute z-50 top-full mt-1 w-full bg-white dark:bg-zinc-900 border rounded-lg shadow-xl overflow-hidden">
+                      <div className="absolute z-50 top-full mt-1 w-full bg-white dark:bg-zinc-900 border rounded-lg shadow-xl overflow-y-auto max-h-48">
                         {filtered.map((p) => (
                           <button
                             key={p}
