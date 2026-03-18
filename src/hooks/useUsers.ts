@@ -10,7 +10,7 @@ export function useUsers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('users')
-        .select('id, name, email, is_admin, plan, onboarded, disabled, created_at, master_profiles(avatar, display_name, profession, telegram)')
+        .select('id, email, is_admin, plan, onboarded, disabled, created_at, master_profiles(avatar, display_name, profession, telegram)')
         .order('created_at', { ascending: false })
       if (error) throw error
       // Normalize: flatten master_profiles join and add name/avatar aliases
@@ -18,7 +18,7 @@ export function useUsers() {
         const mp = Array.isArray(u.master_profiles) ? u.master_profiles[0] : u.master_profiles
         return {
           ...u,
-          name: mp?.display_name || mp?.profession || u.name || '',
+          name: mp?.display_name || mp?.profession || 'Новый пользователь',
           telegram: mp?.telegram ?? null,
           avatar: mp?.avatar ?? null,
           master_profiles: undefined,
