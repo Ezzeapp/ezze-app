@@ -705,7 +705,7 @@ export function ProfilePage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />{t('profile.phone')}</Label>
-                <Input placeholder="+998 00 000 00 00" {...register('phone')} />
+                <Input placeholder="+998 00 000 00 00" {...register('phone')} readOnly={!!profile?.tg_chat_id} className={profile?.tg_chat_id ? 'bg-muted/40 cursor-not-allowed' : ''} />
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />{t('profile.website')}</Label>
@@ -717,7 +717,7 @@ export function ProfilePage() {
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5"><Send className="h-3.5 w-3.5" />Telegram</Label>
-                <Input placeholder="@username" {...register('telegram')} />
+                <Input placeholder="@username" {...register('telegram')} readOnly={!!profile?.tg_chat_id} className={profile?.tg_chat_id ? 'bg-muted/40 cursor-not-allowed' : ''} />
                 {profile?.tg_chat_id ? (
                   <p className="text-xs text-emerald-600 flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3 shrink-0" />
