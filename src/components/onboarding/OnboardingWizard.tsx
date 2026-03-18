@@ -117,6 +117,16 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   const fileInputRef   = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
+  // ── Professions from DB ───────────────────────────────────────────────────
+  const [dbProfessions, setDbProfessions] = useState<string[]>(PROFESSION_SUGGESTIONS)
+  useEffect(() => {
+    supabase.from('specialties').select('name').order('name').then(({ data }) => {
+      if (data && data.length > 0) {
+        setDbProfessions(data.map((r: any) => r.name).filter(Boolean))
+      }
+    })
+  }, [])
+
   // ── Step 2 ────────────────────────────────────────────────────────────────
   const [profession,         setProfession]         = useState(prefill?.profession || '')
   const [professionQuery,    setProfessionQuery]    = useState(prefill?.profession || '')
@@ -531,7 +541,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
                   />
                   {showProfSuggestions && (() => {
                     const q = professionQuery.trim()
-                    const filtered = PROFESSION_SUGGESTIONS.filter((p) =>
+                    const filtered = dbProfessions.filter((p) =>
                       matchesProfession(p, q)
                     ).slice(0, 8)
                     if (!filtered.length) return null
