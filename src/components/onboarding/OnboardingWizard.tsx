@@ -122,7 +122,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   useEffect(() => {
     supabase.from('specialties').select('name').order('name').then(({ data }) => {
       if (data && data.length > 0) {
-        setDbProfessions(data.map((r: any) => r.name).filter(Boolean))
+        setDbProfessions([...new Set(data.map((r: any) => r.name).filter(Boolean))])
       }
     })
   }, [])
@@ -546,7 +546,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
                     )
                     if (!filtered.length) return null
                     return (
-                      <div className="absolute z-50 top-full mt-1 w-full bg-white dark:bg-zinc-900 border rounded-lg shadow-xl overflow-y-auto max-h-48">
+                      <div className="absolute z-50 top-full mt-1 w-full bg-white dark:bg-zinc-900 border rounded-lg shadow-xl overflow-y-auto max-h-48 overscroll-contain">
                         {filtered.map((p) => (
                           <button
                             key={p}
