@@ -73,7 +73,15 @@ const PROFESSION_SUGGESTIONS = [
   'Фотограф', 'Видеограф', 'Дизайнер', 'Веб-разработчик', 'SMM-специалист',
   'Стилист', 'Швея', 'Портной', 'Ювелир',
   'Юрист', 'Бухгалтер', 'Переводчик', 'Ветеринар',
+  'Автомеханик', 'Сантехник', 'Электрик', 'Строитель', 'Плотник', 'Сварщик',
 ]
+
+// Поиск по началу каждого слова в профессии
+function matchesProfession(p: string, q: string): boolean {
+  if (!q) return true
+  const query = q.toLowerCase()
+  return p.toLowerCase().split(/\s+/).some(word => word.startsWith(query))
+}
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 interface WizardPrefill {
@@ -522,9 +530,9 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
                     className={cn(!profession.trim() && 'border-destructive/50 focus-visible:ring-destructive/30')}
                   />
                   {showProfSuggestions && (() => {
-                    const q = professionQuery.trim().toLowerCase()
+                    const q = professionQuery.trim()
                     const filtered = PROFESSION_SUGGESTIONS.filter((p) =>
-                      !q || p.toLowerCase().includes(q)
+                      matchesProfession(p, q)
                     ).slice(0, 8)
                     if (!filtered.length) return null
                     return (
