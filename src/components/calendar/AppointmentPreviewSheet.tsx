@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { CalendarDays, UserCircle, Banknote, Trash2, Pencil, MessageSquare, CheckCircle2, Clock } from 'lucide-react'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { Button } from '@/components/ui/button'
 import { cn, formatCurrency } from '@/lib/utils'
 import { useCurrency } from '@/hooks/useCurrency'
@@ -115,6 +116,7 @@ export function AppointmentPreviewSheet({
           'lg:hidden',
         )}
       >
+        <VisuallyHidden><DialogTitle>Запись</DialogTitle></VisuallyHidden>
         {/* Drag handle + кнопка удалить */}
         <div
           className="relative flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"

@@ -7,7 +7,8 @@ import dayjs from 'dayjs'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useClients } from '@/hooks/useClients'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { formatCurrency } from '@/lib/utils'
 import { useCurrency } from '@/hooks/useCurrency'
 import type { Appointment, Client } from '@/types'
@@ -98,6 +99,7 @@ export function GlobalSearch({ open, onClose }: Props) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="p-0 gap-0 max-w-lg overflow-hidden">
+        <VisuallyHidden><DialogTitle>Поиск</DialogTitle></VisuallyHidden>
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b">
           <Search className="h-4 w-4 text-muted-foreground shrink-0" />
