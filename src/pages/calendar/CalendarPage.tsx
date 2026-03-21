@@ -704,9 +704,10 @@ export function CalendarPage() {
                     return (
                       <tr
                         key={a.id}
-                        className={`group transition-colors hover:bg-accent/40 ${selected.has(a.id) ? 'bg-primary/5' : ''}`}
+                        className={`group transition-colors hover:bg-accent/40 cursor-pointer ${selected.has(a.id) ? 'bg-primary/5' : ''}`}
+                        onClick={() => openPreview(a)}
                       >
-                        <td className="p-3">
+                        <td className="p-3" onClick={e => e.stopPropagation()}>
                           <input
                             type="checkbox"
                             checked={selected.has(a.id)}
@@ -738,7 +739,7 @@ export function CalendarPage() {
                         <td className="p-3 text-right font-medium whitespace-nowrap">
                           {a.price != null ? `${a.price} ₽` : '—'}
                         </td>
-                        <td className="p-3">
+                        <td className="p-3" onClick={e => e.stopPropagation()}>
                           <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               variant="ghost"
