@@ -324,9 +324,10 @@ export function ServicesPage() {
   const getCategoryById = (id: string | undefined): ServiceCategory | undefined =>
     id ? categoryMap.get(id) : undefined
 
+  const [priceDisplay, setPriceDisplay] = useState('')
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { is_active: true, is_bookable: true, duration_min: 60, price: '' as any },
+    defaultValues: { is_active: true, is_bookable: true, duration_min: 60, price: 0 },
   })
 
   const isActive = watch('is_active')
@@ -335,7 +336,8 @@ export function ServicesPage() {
 
   const openCreate = () => {
     setEditService(null)
-    reset({ is_active: true, is_bookable: true, duration_min: 60, price: '' as any, name: '', description: '', category: '__none__' })
+    reset({ is_active: true, is_bookable: true, duration_min: 60, price: 0, name: '', description: '', category: '__none__' })
+    setPriceDisplay('')
     setSelectedCatId('__none__')
     setCatSearch('')
     setActiveTab('main')
@@ -345,16 +347,18 @@ export function ServicesPage() {
 
   const openEdit = (s: Service) => {
     setEditService(s)
+    const price = s.price ?? 0
     reset({
       name: s.name,
       description: s.description || '',
       duration_min: s.duration_min,
-      price: (s.price || '') as any,
+      price,
       price_max: s.price_max,
       category: s.category || '__none__',
       is_active: s.is_active,
       is_bookable: s.is_bookable,
     })
+    setPriceDisplay(price > 0 ? String(price) : '')
     setSelectedCatId(s.category || '__none__')
     setCatSearch('')
     setActiveTab('main')
@@ -765,36 +769,26 @@ export function ServicesPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>{t('services.price')}</Label>
-                    {(() => {
-                      const { onChange: rhfOnChange, ...priceRest } = register('price', {
-                        setValueAs: (v) => {
-                          if (v === '' || v === undefined || v === null) return 0
-                          const n = Number(String(v).replace(/\D/g, ''))
-                          return isNaN(n) ? 0 : n
-                        },
-                      })
-                      return (
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="0"
-                          {...priceRest}
-                          onKeyDown={(e) => {
-                            if (
-                              !/^\d$/.test(e.key) &&
-                              !['Backspace','Delete','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key) &&
-                              !e.ctrlKey && !e.metaKey
-                            ) {
-                              e.preventDefault()
-                            }
-                          }}
-                          onChange={(e) => {
-                            e.target.value = e.target.value.replace(/\D/g, '')
-                            rhfOnChange(e)
-                          }}
-                        />
-                      )
-                    })()}
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="0"
+                      value={priceDisplay}
+                      onKeyDown={(e) => {
+                        if (
+                          !/^\d$/.test(e.key) &&
+                          !['Backspace','Delete','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key) &&
+                          !e.ctrlKey && !e.metaKey
+                        ) {
+                          e.preventDefault()
+                        }
+                      }}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, '')
+                        setPriceDisplay(digits)
+                        setValue('price', digits === '' ? 0 : Number(digits), { shouldValidate: true, shouldDirty: true })
+                      }}
+                    />
                   </div>
                 </div>
 
