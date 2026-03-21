@@ -45,7 +45,7 @@ const schema = z.object({
   description: z.string().optional(),
   duration_min: z.number().min(5).max(480),
   price: z.number().min(0),
-  price_max: z.number().optional(),
+  price_max: z.number().nullish(),
   category: z.string().optional(),
   is_active: z.boolean(),
   is_bookable: z.boolean(),
@@ -353,7 +353,7 @@ export function ServicesPage() {
       description: s.description || '',
       duration_min: s.duration_min,
       price,
-      price_max: s.price_max,
+      price_max: s.price_max ?? undefined,
       category: s.category || '__none__',
       is_active: s.is_active,
       is_bookable: s.is_bookable,
@@ -367,7 +367,7 @@ export function ServicesPage() {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      const submitData = { ...values, category: selectedCatId === '__none__' ? '' : selectedCatId }
+      const submitData = { ...values, price_max: values.price_max ?? undefined, category: selectedCatId === '__none__' ? '' : selectedCatId }
       if (editService) {
         await update.mutateAsync({ id: editService.id, data: submitData })
         toast.success(t('services.updated'))
@@ -740,7 +740,7 @@ export function ServicesPage() {
             </TabsList>
 
             <TabsContent value="main" className="max-sm:flex-1 max-sm:overflow-y-auto max-sm:pb-2">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-3">
+              <form onSubmit={handleSubmit(onSubmit, (errs) => { console.error('Form validation errors:', errs); toast.error(t('common.saveError')) })} className="space-y-4 pt-3">
                 <div className="space-y-2">
                   <Label>{t('services.name')} *</Label>
                   <Input {...register('name')} />
