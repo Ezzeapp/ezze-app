@@ -705,7 +705,7 @@ export function CalendarPage() {
                       <tr
                         key={a.id}
                         className={`group transition-colors hover:bg-accent/40 cursor-pointer ${selected.has(a.id) ? 'bg-primary/5' : ''}`}
-                        onClick={() => openPreview(a)}
+                        onClick={() => window.innerWidth >= 1024 ? openEdit(a) : openPreview(a)}
                       >
                         <td className="p-3" onClick={e => e.stopPropagation()}>
                           <input
