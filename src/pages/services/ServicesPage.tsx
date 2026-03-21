@@ -935,6 +935,7 @@ export function ServicesPage() {
                   <ServiceMaterialsTab serviceId={editService.id} />
                   <DialogFooter className="mt-4">
                     <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>
+                    <Button type="button" onClick={() => setDialogOpen(false)}>{t('common.save')}</Button>
                   </DialogFooter>
                 </>
               ) : (
