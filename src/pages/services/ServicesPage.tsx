@@ -44,7 +44,7 @@ const schema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   duration_min: z.number().min(5).max(480),
-  price: z.number().min(0),
+  price: z.preprocess((v) => (v === '' || v === undefined || v === null ? 0 : Number(v)), z.number().min(0)),
   price_max: z.number().optional(),
   category: z.string().optional(),
   is_active: z.boolean(),
@@ -326,7 +326,7 @@ export function ServicesPage() {
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { is_active: true, is_bookable: true, duration_min: 60, price: 0 },
+    defaultValues: { is_active: true, is_bookable: true, duration_min: 60, price: '' as any },
   })
 
   const isActive = watch('is_active')
@@ -335,7 +335,7 @@ export function ServicesPage() {
 
   const openCreate = () => {
     setEditService(null)
-    reset({ is_active: true, is_bookable: true, duration_min: 60, price: 0, name: '', description: '', category: '__none__' })
+    reset({ is_active: true, is_bookable: true, duration_min: 60, price: '' as any, name: '', description: '', category: '__none__' })
     setSelectedCatId('__none__')
     setCatSearch('')
     setActiveTab('main')
@@ -765,7 +765,22 @@ export function ServicesPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>{t('services.price')}</Label>
-                    <Input type="number" min={0} {...register('price', { valueAsNumber: true })} />
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="0"
+                      {...register('price')}
+                      onKeyDown={(e) => {
+                        if (!/[\d]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) {
+                          e.preventDefault()
+                        }
+                      }}
+                      onPaste={(e) => {
+                        e.preventDefault()
+                        const text = e.clipboardData.getData('text').replace(/\D/g, '')
+                        if (text) document.execCommand('insertText', false, text)
+                      }}
+                    />
                   </div>
                 </div>
 
