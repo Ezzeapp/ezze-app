@@ -737,7 +737,7 @@ export function CalendarPage() {
                           </span>
                         </td>
                         <td className="p-3 text-right font-medium whitespace-nowrap">
-                          {a.price != null ? `${a.price} ₽` : '—'}
+                          {a.price != null ? formatCurrency(a.price, currency) : '—'}
                         </td>
                         <td className="p-3" onClick={e => e.stopPropagation()}>
                           <div className="flex items-center gap-1 justify-end">
