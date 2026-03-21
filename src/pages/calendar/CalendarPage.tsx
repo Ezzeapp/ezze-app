@@ -855,12 +855,12 @@ export function CalendarPage() {
                             <TooltipTrigger asChild>
                               <div
                                 draggable
-                                className={`text-xs p-1 rounded border mb-0.5 cursor-grab active:cursor-grabbing select-none relative ${STATUS_COLORS[a.status]} ${isDragging && dragApptRef.current?.id === a.id ? 'opacity-40' : ''}`}
+                                className={`text-xs p-1 rounded border mb-0.5 cursor-grab active:cursor-grabbing select-none relative group/appt ${STATUS_COLORS[a.status]} ${isDragging && dragApptRef.current?.id === a.id ? 'opacity-40' : ''}`}
                                 onClick={(e) => { e.stopPropagation(); if (!isDragging) openEdit(a) }}
                                 onDragStart={(e) => handleDragStart(e, a)}
                                 onDragEnd={handleDragEnd}
                               >
-                                <div className="font-medium truncate pr-3">
+                                <div className="font-medium truncate pr-12">
                                   {a.expand?.client
                                     ? `${a.expand.client.first_name} ${a.expand.client.last_name || ''}`
                                     : a.client_name || t('dashboard.guestClient')}
@@ -869,8 +869,27 @@ export function CalendarPage() {
                                   {getAppointmentServiceNames(a, services)}
                                 </div>
                                 {a.booked_via === 'online' && (
-                                  <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-sky-400 ring-1 ring-white dark:ring-zinc-800" />
+                                  <span className="absolute top-0.5 right-12 w-2 h-2 rounded-full bg-sky-400 ring-1 ring-white dark:ring-zinc-800" />
                                 )}
+                                <div
+                                  className="absolute top-0.5 right-0.5 flex gap-0.5 opacity-0 group-hover/appt:opacity-100 transition-opacity"
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  <button
+                                    className="p-0.5 rounded hover:bg-black/10"
+                                    onClick={() => openEdit(a)}
+                                    title={t('common.edit')}
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    className="p-0.5 rounded hover:bg-black/10"
+                                    onClick={() => setDeleteId(a.id)}
+                                    title={t('common.delete')}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
                               </div>
                             </TooltipTrigger>
                             <TooltipContent side="right" className="p-3 bg-background border shadow-lg">
