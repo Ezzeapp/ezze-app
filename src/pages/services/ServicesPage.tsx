@@ -44,7 +44,7 @@ const schema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   duration_min: z.number().min(5).max(480),
-  price: z.preprocess((v) => (v === '' || v === undefined || v === null ? 0 : Number(v)), z.number().min(0)),
+  price: z.number().min(0),
   price_max: z.number().optional(),
   category: z.string().optional(),
   is_active: z.boolean(),
@@ -326,7 +326,7 @@ export function ServicesPage() {
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { is_active: true, is_bookable: true, duration_min: 60, price: '' as any },
+    defaultValues: { is_active: true, is_bookable: true, duration_min: 60, price: 0 },
   })
 
   const isActive = watch('is_active')
@@ -335,7 +335,7 @@ export function ServicesPage() {
 
   const openCreate = () => {
     setEditService(null)
-    reset({ is_active: true, is_bookable: true, duration_min: 60, price: '' as any, name: '', description: '', category: '__none__' })
+    reset({ is_active: true, is_bookable: true, duration_min: 60, price: 0, name: '', description: '', category: '__none__' })
     setSelectedCatId('__none__')
     setCatSearch('')
     setActiveTab('main')
@@ -349,7 +349,7 @@ export function ServicesPage() {
       name: s.name,
       description: s.description || '',
       duration_min: s.duration_min,
-      price: s.price,
+      price: s.price ?? 0,
       price_max: s.price_max,
       category: s.category || '__none__',
       is_active: s.is_active,
@@ -769,16 +769,24 @@ export function ServicesPage() {
                       type="text"
                       inputMode="numeric"
                       placeholder="0"
-                      {...register('price')}
+                      {...register('price', {
+                        setValueAs: (v) => {
+                          if (v === '' || v === undefined || v === null) return 0
+                          const n = Number(String(v).replace(/\D/g, ''))
+                          return isNaN(n) ? 0 : n
+                        },
+                      })}
                       onKeyDown={(e) => {
-                        if (!/[\d]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) {
+                        if (
+                          !/^\d$/.test(e.key) &&
+                          !['Backspace','Delete','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key) &&
+                          !e.ctrlKey && !e.metaKey
+                        ) {
                           e.preventDefault()
                         }
                       }}
-                      onPaste={(e) => {
-                        e.preventDefault()
-                        const text = e.clipboardData.getData('text').replace(/\D/g, '')
-                        if (text) document.execCommand('insertText', false, text)
+                      onChange={(e) => {
+                        e.target.value = e.target.value.replace(/\D/g, '')
                       }}
                     />
                   </div>
