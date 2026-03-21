@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, MoreVertical, Trash2, Edit, Clock, DollarSign, Tags, X, Pencil, Download, Search, Square, CheckSquare, Check, ChevronsUpDown, ArrowUpDown } from 'lucide-react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useServicesPage, useServices, useServiceCategories, useServicesNoCatCount, useCreateService, useUpdateService, useDeleteService, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/hooks/useServices'
@@ -325,7 +325,7 @@ export function ServicesPage() {
     id ? categoryMap.get(id) : undefined
 
   const [priceDisplay, setPriceDisplay] = useState('')
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, setValue, control, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { is_active: true, is_bookable: true, duration_min: 60, price: 0 },
   })
@@ -769,25 +769,32 @@ export function ServicesPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>{t('services.price')}</Label>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="0"
-                      value={priceDisplay}
-                      onKeyDown={(e) => {
-                        if (
-                          !/^\d$/.test(e.key) &&
-                          !['Backspace','Delete','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key) &&
-                          !e.ctrlKey && !e.metaKey
-                        ) {
-                          e.preventDefault()
-                        }
-                      }}
-                      onChange={(e) => {
-                        const digits = e.target.value.replace(/\D/g, '')
-                        setPriceDisplay(digits)
-                        setValue('price', digits === '' ? 0 : Number(digits), { shouldValidate: true, shouldDirty: true })
-                      }}
+                    <Controller
+                      name="price"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="0"
+                          value={priceDisplay}
+                          onKeyDown={(e) => {
+                            if (
+                              !/^\d$/.test(e.key) &&
+                              !['Backspace','Delete','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key) &&
+                              !e.ctrlKey && !e.metaKey
+                            ) {
+                              e.preventDefault()
+                            }
+                          }}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, '')
+                            setPriceDisplay(digits)
+                            field.onChange(digits === '' ? 0 : Number(digits))
+                          }}
+                          onBlur={field.onBlur}
+                        />
+                      )}
                     />
                   </div>
                 </div>
