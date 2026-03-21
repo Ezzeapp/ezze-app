@@ -740,7 +740,7 @@ export function CalendarPage() {
                           {a.price != null ? `${a.price} ₽` : '—'}
                         </td>
                         <td className="p-3" onClick={e => e.stopPropagation()}>
-                          <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-1 justify-end">
                             <Button
                               variant="ghost"
                               size="icon"
