@@ -801,55 +801,9 @@ export function ProfilePage() {
               <Input placeholder="my-studio" {...register('booking_slug')} />
               {errors.booking_slug && <p className="text-xs text-destructive">{errors.booking_slug.message}</p>}
             </div>
-            {/* QR-коды для клиентов */}
+            {/* QR-код Telegram Mini App для клиентов */}
             {isPublic && (
               <div className="space-y-3">
-                {/* Веб-ссылка — для всех */}
-                <div className="p-3 rounded-lg border bg-muted/30 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <QrCode className="h-4 w-4 text-primary" />
-                    <p className="text-xs font-medium">{t('profile.qrWeb')}</p>
-                  </div>
-                  <div className="flex gap-3 items-center">
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(bookingUrl)}`}
-                      alt={t('profile.qrAlt')}
-                      className="h-20 w-20 rounded-lg border bg-white shrink-0"
-                    />
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <code className="text-xs truncate text-muted-foreground block">{bookingUrl}</code>
-                      <div className="flex gap-1.5">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 text-xs min-w-0"
-                          onClick={() => { navigator.clipboard.writeText(bookingUrl); toast.success(t('profile.linkCopied')) }}
-                        >
-                          <Copy className="h-3 w-3 mr-1 shrink-0" />
-                          <span className="truncate">{t('profile.copy')}</span>
-                        </Button>
-                        <a
-                          href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(bookingUrl)}&download=1`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-md border text-xs hover:bg-accent transition-colors shrink-0"
-                          title="↓ PNG"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                        </a>
-                        <a
-                          href={bookingUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-md border hover:bg-accent transition-colors text-muted-foreground shrink-0"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
                 {/* Telegram Mini App — только Pro */}
                 <FeatureGate feature="client_cabinet">
                 <div className="p-3 rounded-lg border bg-[#2AABEE]/5 border-[#2AABEE]/20 space-y-3">

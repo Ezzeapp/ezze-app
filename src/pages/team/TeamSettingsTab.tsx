@@ -101,8 +101,7 @@ export function TeamSettingsTab({ team }: Props) {
   const bookingUrl = `${window.location.origin}/book/team/${slug}`
   const tgBookingUrl = buildTeamBookingLink(slug)
 
-  const webQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(bookingUrl)}`
-  const tgQrUrl  = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(tgBookingUrl)}`
+  const tgQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(tgBookingUrl)}`
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(bookingUrl).then(() => {
@@ -268,101 +267,57 @@ export function TeamSettingsTab({ team }: Props) {
               </div>
             </div>
 
-            {/* QR-коды для клиентов */}
+            {/* Telegram QR для клиентов */}
             {isPublic && (
-              <div className="space-y-2 pt-1">
-                <p className="text-xs font-medium text-muted-foreground">{t('team.settings.qrForClients')}</p>
-
-                {/* Веб QR */}
-                <div className="p-3 rounded-lg border bg-muted/30 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <QrCode className="h-4 w-4 text-primary" />
-                    <p className="text-xs font-medium">{t('profile.qrWeb')}</p>
-                  </div>
-                  <div className="flex gap-3 items-center">
-                    <img
-                      src={webQrUrl}
-                      alt="QR веб"
-                      className="h-20 w-20 rounded-lg border bg-white shrink-0"
-                    />
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <code className="text-xs truncate text-muted-foreground block">{bookingUrl}</code>
-                      <div className="flex gap-1.5">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 text-xs min-w-0"
-                          onClick={handleCopyLink}
-                        >
-                          <Copy className="h-3 w-3 mr-1 shrink-0" />
-                          <span className="truncate">{t('profile.copy')}</span>
-                        </Button>
-                        <a
-                          href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(bookingUrl)}&download=1`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-md border text-xs hover:bg-accent transition-colors shrink-0"
-                          title={t('common.download')}
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                        </a>
-                      </div>
-                    </div>
-                  </div>
+              <div className="p-3 rounded-lg border bg-[#2AABEE]/5 border-[#2AABEE]/20 space-y-2">
+                <div className="flex items-center gap-2">
+                  <QrCode className="h-4 w-4 text-[#2AABEE]" />
+                  <p className="text-xs font-medium text-[#2AABEE]">{t('profile.qrTelegram')}</p>
                 </div>
-
-                {/* Telegram QR */}
-                <div className="p-3 rounded-lg border bg-[#2AABEE]/5 border-[#2AABEE]/20 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <QrCode className="h-4 w-4 text-[#2AABEE]" />
-                    <p className="text-xs font-medium text-[#2AABEE]">{t('profile.qrTelegram')}</p>
-                  </div>
-                  <div className="flex gap-3 items-center">
-                    <img
-                      src={tgQrUrl}
-                      alt="QR Telegram"
-                      className="h-20 w-20 rounded-lg border bg-white shrink-0"
-                    />
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <code className="text-xs truncate text-muted-foreground block">{tgBookingUrl}</code>
-                      <div className="flex gap-1.5">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 text-xs min-w-0"
-                          onClick={() => {
-                            navigator.clipboard.writeText(tgBookingUrl)
-                            setCopiedTg(true)
-                            toast.success(t('team.settings.linkCopied'))
-                            setTimeout(() => setCopiedTg(false), 2000)
-                          }}
-                        >
-                          {copiedTg
-                            ? <Check className="h-3 w-3 mr-1 shrink-0 text-emerald-500" />
-                            : <Copy className="h-3 w-3 mr-1 shrink-0" />}
-                          <span className="truncate">{t('profile.copy')}</span>
-                        </Button>
-                        <a
-                          href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(tgBookingUrl)}&download=1`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-md border text-xs hover:bg-accent transition-colors shrink-0"
-                          title={t('common.download')}
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                        </a>
-                        <a
-                          href={tgBookingUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-md border hover:bg-accent transition-colors text-muted-foreground shrink-0"
-                          title={t('common.open')}
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      </div>
+                <div className="flex gap-3 items-center">
+                  <img
+                    src={tgQrUrl}
+                    alt="QR Telegram"
+                    className="h-20 w-20 rounded-lg border bg-white shrink-0"
+                  />
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <code className="text-xs truncate text-muted-foreground block">{tgBookingUrl}</code>
+                    <div className="flex gap-1.5">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 text-xs min-w-0"
+                        onClick={() => {
+                          navigator.clipboard.writeText(tgBookingUrl)
+                          setCopiedTg(true)
+                          toast.success(t('team.settings.linkCopied'))
+                          setTimeout(() => setCopiedTg(false), 2000)
+                        }}
+                      >
+                        {copiedTg
+                          ? <Check className="h-3 w-3 mr-1 shrink-0 text-emerald-500" />
+                          : <Copy className="h-3 w-3 mr-1 shrink-0" />}
+                        <span className="truncate">{t('profile.copy')}</span>
+                      </Button>
+                      <a
+                        href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(tgBookingUrl)}&download=1`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-md border text-xs hover:bg-accent transition-colors shrink-0"
+                        title={t('common.download')}
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </a>
+                      <a
+                        href={tgBookingUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-md border hover:bg-accent transition-colors text-muted-foreground shrink-0"
+                        title={t('common.open')}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
                     </div>
                   </div>
                 </div>
