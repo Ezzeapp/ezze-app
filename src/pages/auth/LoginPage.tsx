@@ -235,32 +235,8 @@ export function LoginPage() {
           </CardHeader>
           <CardContent className="space-y-4">
 
-            {/* Telegram widget */}
-            {tgAuthLoading ? (
-              <div className="flex flex-col items-center gap-2 py-2">
-                <LoadingSpinner />
-                <p className="text-xs text-muted-foreground">Входим через Telegram...</p>
-              </div>
-            ) : tgNotFound ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-3 text-center space-y-2">
-                <p className="text-sm text-amber-800 dark:text-amber-300">
-                  Аккаунт с этим Telegram не найден.
-                </p>
-                <a
-                  href="https://t.me/ezzeapp_bot"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block text-xs font-medium text-primary hover:underline"
-                >
-                  Зарегистрироваться через @ezzeapp_bot →
-                </a>
-              </div>
-            ) : (
-              <TelegramLoginWidget onAuth={handleTelegramWidgetAuth} />
-            )}
-
-            {/* Divider */}
-            <div className="relative">
+            {/* Divider removed - email/password only */}
+            <div className="hidden relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>

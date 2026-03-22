@@ -156,8 +156,7 @@ export function AdminAppearanceTab() {
   const [regSaving, setRegSaving] = useState(false)
 
   // Web Access state
-  const [webRegSaving, setWebRegSaving] = useState(false)
-  const [webAccessSaving, setWebAccessSaving] = useState(false)
+  const [webSaving, setWebSaving] = useState(false)
 
   // Defaults state
   const [defLang, setDefLang] = useState('')
@@ -258,31 +257,20 @@ export function AdminAppearanceTab() {
     }
   }
 
-  async function toggleWebRegistration() {
-    if (!settings) return
-    setWebRegSaving(true)
-    try {
-      const next = settings.web_registration_enabled ? 'false' : 'true'
-      await updateSetting.mutateAsync({ key: 'web_registration_enabled', value: next })
-      toast.success(t('common.saved'))
-    } catch {
-      toast.error(t('common.saveError'))
-    } finally {
-      setWebRegSaving(false)
-    }
-  }
-
   async function toggleWebAccess() {
     if (!settings) return
-    setWebAccessSaving(true)
+    setWebSaving(true)
+    const next = (settings.web_registration_enabled && settings.web_access_enabled) ? 'false' : 'true'
     try {
-      const next = settings.web_access_enabled ? 'false' : 'true'
-      await updateSetting.mutateAsync({ key: 'web_access_enabled', value: next })
+      await Promise.all([
+        updateSetting.mutateAsync({ key: 'web_registration_enabled', value: next }),
+        updateSetting.mutateAsync({ key: 'web_access_enabled', value: next }),
+      ])
       toast.success(t('common.saved'))
     } catch {
       toast.error(t('common.saveError'))
     } finally {
-      setWebAccessSaving(false)
+      setWebSaving(false)
     }
   }
 
@@ -537,42 +525,22 @@ export function AdminAppearanceTab() {
           </CardTitle>
           <CardDescription>Управление доступом через браузер vs Telegram Mini App</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {/* Web Registration toggle */}
-          <button
-            onClick={toggleWebRegistration}
-            disabled={webRegSaving}
-            className="flex items-center gap-3 w-full p-3 rounded-xl border hover:bg-muted/40 transition-colors text-left"
-          >
-            {settings?.web_registration_enabled
-              ? <ToggleRight className="h-6 w-6 text-primary shrink-0" />
-              : <ToggleLeft className="h-6 w-6 text-muted-foreground shrink-0" />
-            }
-            <div>
-              <p className="text-sm font-medium">Веб-регистрация</p>
-              <p className="text-xs text-muted-foreground">
-                {settings?.web_registration_enabled
-                  ? 'Регистрация доступна в браузере и Telegram'
-                  : 'Регистрация только через Telegram (@ezzeapp_bot)'}
-              </p>
-            </div>
-          </button>
-          {/* Web Access toggle */}
+        <CardContent>
           <button
             onClick={toggleWebAccess}
-            disabled={webAccessSaving}
+            disabled={webSaving}
             className="flex items-center gap-3 w-full p-3 rounded-xl border hover:bg-muted/40 transition-colors text-left"
           >
-            {settings?.web_access_enabled
+            {(settings?.web_registration_enabled && settings?.web_access_enabled)
               ? <ToggleRight className="h-6 w-6 text-primary shrink-0" />
               : <ToggleLeft className="h-6 w-6 text-muted-foreground shrink-0" />
             }
             <div>
-              <p className="text-sm font-medium">Веб-приложение</p>
+              <p className="text-sm font-medium">Веб-доступ</p>
               <p className="text-xs text-muted-foreground">
-                {settings?.web_access_enabled
-                  ? 'Вход доступен в браузере и Telegram'
-                  : 'Вход только через Telegram Mini App'}
+                {(settings?.web_registration_enabled && settings?.web_access_enabled)
+                  ? 'Регистрация и вход доступны через браузер и Telegram'
+                  : 'Доступ только через Telegram Mini App'}
               </p>
             </div>
           </button>
