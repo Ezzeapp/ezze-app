@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { uploadFile } from '@/lib/storage'
 import { useAuth } from '@/contexts/AuthContext'
@@ -99,6 +100,24 @@ export function usePublicTeamMembers(teamId: string) {
 // ── Участники команды (для владельца) ────────────────────────────────────────
 
 export function useTeamMembers(teamId: string) {
+  const queryClient = useQueryClient()
+
+  // Realtime: мгновенное обновление при изменении участников
+  useEffect(() => {
+    if (!teamId) return
+    const channel = supabase
+      .channel(`team_members_${teamId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'team_members', filter: `team_id=eq.${teamId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: [TEAM_MEMBERS_KEY, teamId] })
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [teamId, queryClient])
+
   return useQuery({
     queryKey: [TEAM_MEMBERS_KEY, teamId],
     queryFn: async () => {
