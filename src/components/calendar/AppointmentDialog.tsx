@@ -594,8 +594,6 @@ export function AppointmentDialog({
   // ── Рендер ────────────────────────────────────────────────────────────────
 
   // ── Блок УСЛУГИ (переиспользуется в обоих колонках) ───────────────────────
-  // При новой записи услуги заблокированы до выбора времени
-  const svcsLocked = !editAppt && !duplicateFrom && !selectedTime
 
   const servicesBlock = (
     <section className="relative">
@@ -650,13 +648,13 @@ export function AppointmentDialog({
                   type="button"
                   onPointerDown={e => {
                     e.preventDefault()
-                    if (!wouldBlock && !svcsLocked) {
+                    if (!wouldBlock) {
                       toggleSvc(svc)
                       closeSvcDropdown()
                     }
                   }}
                   className={`w-full text-left px-3 py-2.5 flex items-center gap-3 border-b last:border-b-0 transition-colors
-                    ${isSel ? 'bg-primary/8' : (wouldBlock || svcsLocked) ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/60'}`}
+                    ${isSel ? 'bg-primary/8' : wouldBlock ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/60'}`}
                 >
                   {svc.expand?.category?.color && (
                     <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: svc.expand.category.color }} />
@@ -714,13 +712,6 @@ export function AppointmentDialog({
         </div>
       )}
 
-      {/* Подсказка: выберите время сначала */}
-      {svcsLocked && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground py-4 justify-center">
-          <Clock className="h-4 w-4 shrink-0" />
-          <span>{t('appointments.selectTimeFirst')}</span>
-        </div>
-      )}
     </section>
   )
 
@@ -1008,7 +999,7 @@ export function AppointmentDialog({
                 {t('booking.slotBusy')}
               </span>
             </div>
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-1 max-h-[160px] overflow-y-auto pr-1">
               {slots.map(slot => {
                 const isChosen = selectedTime === slot.time
                 const isDisabled = slot.busy
@@ -1021,7 +1012,7 @@ export function AppointmentDialog({
                       setSelectedTime(slot.time)
                       setSvcBlockedWarning(null)
                     }}
-                    className={`py-2 rounded-lg border text-xs font-medium transition-all
+                    className={`py-1.5 rounded-lg border text-xs font-medium transition-all
                       ${isDisabled
                         ? 'border-border bg-muted/40 text-muted-foreground/40 cursor-not-allowed line-through'
                         : isChosen
@@ -1111,16 +1102,16 @@ export function AppointmentDialog({
         {(() => {
           // ── Шаги квиза для мобайла ───────────────────────────────
           const stepLabels = [
-            `${t('appointments.date')} / ${t('appointments.time')}`,
             t('appointments.service'),
+            `${t('appointments.date')} / ${t('appointments.time')}`,
             t('appointments.client'),
             t('appointments.total'),
           ]
 
           // Кастомные блоки только для нужного шага
           const mobileStepCanNext: boolean[] = [
-            !!selectedDate && !!selectedTime, // шаг 0: дата И время
-            selectedSvcs.length > 0,          // шаг 1: услуга
+            selectedSvcs.length > 0,          // шаг 0: услуга
+            !!selectedDate && !!selectedTime,  // шаг 1: дата И время
             true,                             // шаг 2: клиент (опционально)
             true,                             // шаг 3: итого (всегда можно сохранить)
           ]
@@ -1159,8 +1150,11 @@ export function AppointmentDialog({
 
                 {/* Контент шага */}
                 <div key={mobileStep} className={`flex-1 overflow-y-auto px-5 pb-3 space-y-4 ${stepDir === 'forward' ? 'animate-slide-from-right' : 'animate-slide-from-left'}`}>
-                  {/* Шаг 0 — Дата + Время (объединены) */}
-                  {mobileStep === 0 && (
+                  {/* Шаг 0 — Услуга */}
+                  {mobileStep === 0 && servicesBlock}
+
+                  {/* Шаг 1 — Дата + Время (объединены) */}
+                  {mobileStep === 1 && (
                     <>
                       <section>
                         <div className="flex items-center justify-between mb-2">
@@ -1232,7 +1226,7 @@ export function AppointmentDialog({
                                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded border-2 border-primary bg-primary/10 inline-block" />{t('booking.slotFree')}</span>
                                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded border border-border bg-muted inline-block" />{t('booking.slotBusy')}</span>
                               </div>
-                              <div className="grid grid-cols-4 gap-1.5">
+                              <div className="grid grid-cols-4 gap-1 max-h-[160px] overflow-y-auto pr-1">
                                 {slots.map(slot => {
                                   const isChosen = selectedTime === slot.time
                                   const isDisabled = slot.busy
@@ -1242,12 +1236,12 @@ export function AppointmentDialog({
                                         if (isDisabled) return;
                                         setSelectedTime(slot.time);
                                         setSvcBlockedWarning(null);
-                                        if (!editAppt && mobileStep === 0) {
+                                        if (!editAppt && mobileStep === 1) {
                                           setStepDir('forward');
-                                          setTimeout(() => setMobileStep(1), 300);
+                                          setTimeout(() => setMobileStep(2), 300);
                                         }
                                       }}
-                                      className={`py-2 rounded-lg border text-xs font-medium transition-all
+                                      className={`py-1.5 rounded-lg border text-xs font-medium transition-all
                                         ${isDisabled ? 'border-border bg-muted/40 text-muted-foreground/40 cursor-not-allowed line-through'
                                           : isChosen ? 'border-primary bg-primary text-primary-foreground shadow-sm scale-105'
                                           : 'border-border hover:border-primary/60 hover:bg-primary/5 active:scale-95'}`}>
@@ -1265,9 +1259,9 @@ export function AppointmentDialog({
                                     <p className="text-xs text-muted-foreground">{selectedTime ? t('appointments.nextFree') : t('appointments.nearestFree')}:</p>
                                     <button type="button" onClick={() => {
                                       setSelectedTime(nextFree.time);
-                                      if (!editAppt && mobileStep === 0) {
+                                      if (!editAppt && mobileStep === 1) {
                                         setStepDir('forward');
-                                        setTimeout(() => setMobileStep(1), 300);
+                                        setTimeout(() => setMobileStep(2), 300);
                                       }
                                     }} className="text-xs font-semibold text-primary hover:underline">{nextFree.time}</button>
                                   </div>
@@ -1280,9 +1274,6 @@ export function AppointmentDialog({
                       </section>
                     </>
                   )}
-
-                  {/* Шаг 1 — Услуга */}
-                  {mobileStep === 1 && servicesBlock}
 
                   {/* Шаг 2 — Клиент */}
                   {mobileStep === 2 && clientBlock}
@@ -1485,7 +1476,7 @@ export function AppointmentDialog({
                 </div>
 
                 {/* Итоговая мини-плашка — если дата+время выбраны */}
-                {selectedDate && selectedTime && mobileStep >= 1 && mobileStep < 3 && (
+                {selectedDate && selectedTime && mobileStep === 2 && (
                   <div className="shrink-0 mx-5 mb-2 rounded-xl border bg-muted/30 px-3 py-2 flex items-center gap-2 text-xs">
                     <CalendarCheck className="h-3.5 w-3.5 text-primary shrink-0" />
                     <span className="font-medium text-foreground">{dayjs(selectedDate).format('D MMM')}</span>
@@ -1524,10 +1515,10 @@ export function AppointmentDialog({
 
               {/* ── ДЕСКТОП (lg+) — двухколоночный ──────────────────── */}
               <div className="hidden lg:flex flex-1 overflow-hidden flex-row min-h-0">
-                {/* Левая колонка — Дата, Время, Услуги (50%) */}
+                {/* Левая колонка — Услуги, Дата, Время (50%) */}
                 <div className="px-5 py-4 space-y-5 border-r" style={{ width: '50%', overflow: svcSearch ? 'visible' : 'auto' }}>
-                  {dateTimeBlock}
                   {servicesBlock}
+                  {dateTimeBlock}
                 </div>
 
                 {/* Правая колонка (50%) */}
