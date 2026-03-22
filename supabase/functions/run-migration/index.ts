@@ -1,8 +1,6 @@
 /**
  * One-time migration runner — 005_team_members_join_policy
  * DELETE this function after use!
- *
- * Call: GET /functions/v1/run-migration?secret=ezze-migrate-2026
  */
 
 Deno.serve(async (req: Request) => {
@@ -11,62 +9,64 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403 })
   }
 
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabaseUrl  = Deno.env.get('SUPABASE_URL') ?? 'NOT_SET'
+  const serviceKey   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? 'NOT_SET'
+  const anonKey      = Deno.env.get('SUPABASE_ANON_KEY') ?? 'NOT_SET'
+  const jwtSecret    = Deno.env.get('SUPABASE_JWT_SECRET') ?? 'NOT_SET'
+
+  const debug: Record<string, unknown> = {
+    supabaseUrl,
+    serviceKeyLen: serviceKey.length,
+    serviceKeyStart: serviceKey.slice(0, 30),
+    anonKeyLen: anonKey.length,
+    jwtSecretSet: jwtSecret !== 'NOT_SET',
+  }
 
   const sql1 = `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='team_members' AND policyname='team_members_self_insert') THEN CREATE POLICY "team_members_self_insert" ON public.team_members FOR INSERT WITH CHECK (user_id = auth.uid()); END IF; END $$`
   const sql2 = `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='team_members' AND policyname='team_members_self_update') THEN CREATE POLICY "team_members_self_update" ON public.team_members FOR UPDATE USING (user_id = auth.uid()); END IF; END $$`
 
   const log: Record<string, unknown> = {}
-  const debug: Record<string, unknown> = {}
 
-  // Try internal Docker network endpoints first, then public
-  const endpoints = [
-    'http://meta:8080',
-    'http://supabase-meta:8080',
-    'http://localhost:5555',
+  // Try multiple path variants for pg-meta
+  const paths = [
+    `${supabaseUrl}/pg-meta/v1/query`,
+    `${supabaseUrl}/api/pg-meta/v1/query`,
+    `http://meta:8080/v1/query`,
+    `http://supabase-meta:8080/v1/query`,
   ]
 
-  let workingEndpoint = ''
-  for (const ep of endpoints) {
-    try {
-      const r = await fetch(`${ep}/v1/version`, {
-        headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` },
-        signal: AbortSignal.timeout(2000),
-      })
-      if (r.ok || r.status === 401) {
-        workingEndpoint = ep
-        debug['endpoint_probe'] = `${ep} → ${r.status}`
-        break
-      }
-    } catch (_) {
-      debug[`probe_${ep}`] = 'unreachable'
-    }
-  }
-
-  if (!workingEndpoint) {
-    // Fall back to public URL
-    workingEndpoint = Deno.env.get('SUPABASE_URL')! + '/pg-meta'
-    debug['using_fallback'] = workingEndpoint
-  }
-
   for (const [name, query] of [['insert_policy', sql1], ['update_policy', sql2]] as const) {
-    try {
-      const res = await fetch(`${workingEndpoint}/v1/query`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': serviceKey,
-          'Authorization': `Bearer ${serviceKey}`,
-        },
-        body: JSON.stringify({ query }),
-      })
-      log[name] = { status: res.status, body: await res.text() }
-    } catch (e) {
-      log[name] = { error: String(e) }
+    let done = false
+    for (const path of paths) {
+      if (done) break
+      try {
+        const res = await fetch(path, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': serviceKey,
+            'Authorization': `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({ query }),
+          signal: AbortSignal.timeout(5000),
+        })
+        const body = await res.text()
+        if (res.ok) {
+          log[name] = { path, status: res.status, body }
+          done = true
+        } else if (res.status !== 404) {
+          log[name] = { path, status: res.status, body }
+        }
+      } catch (e) {
+        // unreachable, try next
+      }
+    }
+    if (!done && !log[name]) {
+      log[name] = { error: 'all endpoints failed' }
     }
   }
 
-  return new Response(JSON.stringify({ log, debug }, null, 2), {
+  return new Response(JSON.stringify({ debug, log }, null, 2), {
     headers: { 'Content-Type': 'application/json' },
   })
 })
