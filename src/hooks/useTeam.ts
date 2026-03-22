@@ -218,18 +218,16 @@ export function useRemoveTeamMember() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (memberId: string) => {
-      const { data, error } = await supabase
+    mutationFn: async ({ memberId, teamId }: { memberId: string; teamId: string }) => {
+      const { error } = await supabase
         .from('team_members')
         .update({ status: 'removed' })
         .eq('id', memberId)
-        .select()
-        .single()
       if (error) throw error
-      return data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [TEAM_MEMBERS_KEY] })
+    onSuccess: (_data, { teamId }) => {
+      queryClient.invalidateQueries({ queryKey: [TEAM_MEMBERS_KEY, teamId] })
+      queryClient.refetchQueries({ queryKey: [TEAM_MEMBERS_KEY, teamId] })
     },
   })
 }
@@ -289,28 +287,20 @@ export function useLeaveTeam() {
 
   return useMutation({
     mutationFn: async () => {
-      // Находим свою запись участника
-      const { data: membership, error: findErr } = await supabase
-        .from('team_members')
-        .select('id')
-        .eq('user_id', user!.id)
-        .eq('status', 'active')
-        .maybeSingle()
-      if (findErr) throw findErr
-      if (!membership) throw new Error('membership_not_found')
-
+      // Один запрос: обновляем статус своей активной записи участника
       const { data, error } = await supabase
         .from('team_members')
         .update({ status: 'removed' })
-        .eq('id', membership.id)
-        .select()
-        .single()
+        .eq('user_id', user!.id)
+        .eq('status', 'active')
+        .select('id')
       if (error) throw error
-      return data
+      if (!data || data.length === 0) throw new Error('membership_not_found')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [TEAM_KEY] })
       queryClient.invalidateQueries({ queryKey: [TEAM_MEMBERS_KEY] })
+      queryClient.refetchQueries({ queryKey: [TEAM_KEY] })
     },
   })
 }

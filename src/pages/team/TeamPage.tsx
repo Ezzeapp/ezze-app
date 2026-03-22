@@ -357,7 +357,7 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
   const handleRemoveConfirmed = async () => {
     if (!confirmRemoveId) return
     try {
-      await removeM.mutateAsync(confirmRemoveId)
+      await removeM.mutateAsync({ memberId: confirmRemoveId, teamId: team.id })
       toast.success(t('team.removeSuccess'))
     } catch {
       toast.error(t('common.saveError'))
