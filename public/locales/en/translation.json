@@ -149,8 +149,9 @@
     "inviteInactive": "Inactive",
     "inviteExpiredLabel": "Expired",
     "inviteUsed": "Used",
-    "copyCode": "Copy link",
+    "copyCode": "Copy code",
     "inviteLinkReady": "Invite link ready!",
+    "inviteCodeReady": "Invite code created!",
     "customCodePlaceholder": "Custom code (optional, auto if empty)",
     "deactivate": "Deactivate",
     "settings": {

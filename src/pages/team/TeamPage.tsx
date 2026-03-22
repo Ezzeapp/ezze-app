@@ -259,8 +259,7 @@ function InviteRow({ invite }: { invite: any }) {
   const isActive = invite.is_active && !isExpired && !isExhausted
 
   const handleCopy = async () => {
-    const joinUrl = `${window.location.origin}/join/${invite.code}`
-    await navigator.clipboard.writeText(joinUrl)
+    await navigator.clipboard.writeText(invite.code)
     setCopied(true)
     toast.success(t('team.inviteCodeCopied'))
     setTimeout(() => setCopied(false), 2000)
@@ -339,7 +338,7 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
       const inv = await createInvite.mutateAsync({
         teamId: team.id,
         maxUses: maxUsesValue,
-        expiryDays: 30,
+        expiryDays: 3,
       })
       setNewInviteCode(inv.code)
     } catch {
@@ -349,8 +348,7 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
 
   const handleCopyNew = async () => {
     if (!newInviteCode) return
-    const joinUrl = `${window.location.origin}/join/${newInviteCode}`
-    await navigator.clipboard.writeText(joinUrl)
+    await navigator.clipboard.writeText(newInviteCode)
     setCopiedNew(true)
     toast.success(t('team.inviteCodeCopied'))
     setTimeout(() => { setCopiedNew(false); setNewInviteCode(null) }, 3000)
@@ -399,11 +397,11 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
 
           {newInviteCode && (
             <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800 space-y-1.5">
-              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">{t('team.inviteLinkReady')}</p>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">{t('team.inviteCodeReady')}</p>
               <div className="flex items-center gap-2">
                 <KeyRound className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span className="font-mono text-xs text-emerald-700 dark:text-emerald-400 flex-1 truncate">
-                  {window.location.origin}/join/{newInviteCode}
+                <span className="font-mono text-sm font-bold tracking-widest text-emerald-700 dark:text-emerald-400 flex-1">
+                  {newInviteCode}
                 </span>
                 <Button size="sm" variant="ghost" className="h-7 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-100 shrink-0" onClick={handleCopyNew}>
                   {copiedNew ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
