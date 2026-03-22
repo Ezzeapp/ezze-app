@@ -23,6 +23,27 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   return `${String(h).padStart(2, '0')}:${m}`
 })
 
+function formatDateInput(v: string): string {
+  const digits = v.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}.${digits.slice(2)}`
+  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`
+}
+
+function displayToISO(v: string): string {
+  if (!v || v.length < 10) return ''
+  const [d, m, y] = v.split('.')
+  if (!d || !m || !y || y.length < 4) return ''
+  return `${y}-${m}-${d}`
+}
+
+function isoToDisplay(iso: string): string {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-')
+  if (!y || !m || !d) return ''
+  return `${d}.${m}.${y}`
+}
+
 /**
  * Содержимое страницы расписания — без <form> враппера.
  * Используется как вкладка в ProfilePage и как standalone SchedulePage.
@@ -39,6 +60,8 @@ export function ScheduleTab() {
   const createBlock = useCreateDateBlock()
   const deleteBlock = useDeleteDateBlock()
   const [blockForm, setBlockForm] = useState({ date_from: '', date_to: '', label: '' })
+  const [blockFromDisplay, setBlockFromDisplay] = useState('')
+  const [blockToDisplay, setBlockToDisplay] = useState('')
 
   const handleAddBlock = async () => {
     if (!blockForm.date_from || !blockForm.date_to) return
@@ -49,6 +72,8 @@ export function ScheduleTab() {
     try {
       await createBlock.mutateAsync({ ...blockForm, all_day: true } as any)
       setBlockForm({ date_from: '', date_to: '', label: '' })
+      setBlockFromDisplay('')
+      setBlockToDisplay('')
       toast.success('Период заблокирован')
     } catch {
       toast.error(t('common.saveError'))
@@ -223,19 +248,31 @@ export function ScheduleTab() {
               <div className="space-y-1">
                 <Label className="text-xs">С даты</Label>
                 <Input
-                  type="date"
-                  className="w-38"
-                  value={blockForm.date_from}
-                  onChange={(e) => setBlockForm(f => ({ ...f, date_from: e.target.value }))}
+                  type="text"
+                  className="w-36"
+                  placeholder="01.01.2000"
+                  maxLength={10}
+                  value={blockFromDisplay}
+                  onChange={(e) => {
+                    const formatted = formatDateInput(e.target.value)
+                    setBlockFromDisplay(formatted)
+                    setBlockForm(f => ({ ...f, date_from: displayToISO(formatted) }))
+                  }}
                 />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">По дату</Label>
                 <Input
-                  type="date"
-                  className="w-38"
-                  value={blockForm.date_to}
-                  onChange={(e) => setBlockForm(f => ({ ...f, date_to: e.target.value }))}
+                  type="text"
+                  className="w-36"
+                  placeholder="01.01.2000"
+                  maxLength={10}
+                  value={blockToDisplay}
+                  onChange={(e) => {
+                    const formatted = formatDateInput(e.target.value)
+                    setBlockToDisplay(formatted)
+                    setBlockForm(f => ({ ...f, date_to: displayToISO(formatted) }))
+                  }}
                 />
               </div>
               <div className="space-y-1 flex-1 min-w-32">
