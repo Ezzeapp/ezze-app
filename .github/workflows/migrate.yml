@@ -1,0 +1,50 @@
+name: Run DB Migration (one-time)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply team_members join policies
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            cd /app/supabase
+            docker compose exec -T db psql -U postgres -d postgres << 'EOSQL'
+            DO $$
+            BEGIN
+              IF NOT EXISTS (
+                SELECT 1 FROM pg_policies
+                WHERE schemaname = 'public'
+                  AND tablename  = 'team_members'
+                  AND policyname = 'team_members_self_insert'
+              ) THEN
+                CREATE POLICY "team_members_self_insert" ON public.team_members
+                  FOR INSERT WITH CHECK (user_id = auth.uid());
+                RAISE NOTICE 'Created team_members_self_insert';
+              ELSE
+                RAISE NOTICE 'team_members_self_insert already exists';
+              END IF;
+
+              IF NOT EXISTS (
+                SELECT 1 FROM pg_policies
+                WHERE schemaname = 'public'
+                  AND tablename  = 'team_members'
+                  AND policyname = 'team_members_self_update'
+              ) THEN
+                CREATE POLICY "team_members_self_update" ON public.team_members
+                  FOR UPDATE USING (user_id = auth.uid());
+                RAISE NOTICE 'Created team_members_self_update';
+              ELSE
+                RAISE NOTICE 'team_members_self_update already exists';
+              END IF;
+            END $$;
+
+            SELECT policyname, cmd, qual FROM pg_policies
+            WHERE schemaname = 'public' AND tablename = 'team_members';
+            EOSQL
