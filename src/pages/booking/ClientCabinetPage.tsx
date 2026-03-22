@@ -14,6 +14,7 @@ import {
   isTelegramMiniApp,
   getTelegramUserId,
   getTelegramDisplayName,
+  getTelegramStartParam,
 } from '@/lib/telegramWebApp'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -103,6 +104,16 @@ export function ClientCabinetPage() {
 
   // ── Инициализация ───────────────────────────────────────────────────────────
   useEffect(() => {
+    // Если запущено через Telegram с параметром team_{slug} — переходим на страницу команды
+    const startParam = getTelegramStartParam()
+    if (startParam && startParam.startsWith('team_')) {
+      const teamSlug = startParam.replace(/^team_/, '')
+      if (teamSlug) {
+        navigate(`/book/team/${teamSlug}`)
+        return
+      }
+    }
+
     if (isTelegramMiniApp()) {
       const tg = window.Telegram?.WebApp
       if (tg) {

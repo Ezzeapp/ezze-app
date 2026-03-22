@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ChevronRight, Users, Zap } from 'lucide-react'
 import { useTeamBySlug, usePublicTeamMembers } from '@/hooks/useTeam'
@@ -7,12 +7,25 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { getFileUrl } from '@/lib/utils'
+import { initMiniApp, isTelegramMiniApp } from '@/lib/telegramWebApp'
 import type { MasterProfile } from '@/types'
 
 export function TeamBookingPage() {
   const { teamSlug = '' } = useParams<{ teamSlug: string }>()
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  // Инициализируем Telegram Mini App при открытии
+  useEffect(() => {
+    if (isTelegramMiniApp()) {
+      initMiniApp()
+    }
+  }, [])
+
+  // Параметры Telegram пользователя из URL (если переданы через бота)
+  const tgId   = searchParams.get('tg_id')   ?? undefined
+  const tgName = searchParams.get('tg_name') ?? undefined
 
   const { data: team, isLoading: teamLoading } = useTeamBySlug(teamSlug)
   const { data: members = [], isLoading: membersLoading } = usePublicTeamMembers(team?.id ?? '')
@@ -136,7 +149,12 @@ export function TeamBookingPage() {
                 <button
                   key={profile.id}
                   type="button"
-                  onClick={() => navigate(`/book/${profile.booking_slug}?team=${teamSlug}`)}
+                  onClick={() => {
+                  const params = new URLSearchParams({ team: teamSlug })
+                  if (tgId)   params.set('tg_id', tgId)
+                  if (tgName) params.set('tg_name', tgName)
+                  navigate(`/book/${profile.booking_slug}?${params.toString()}`)
+                }}
                   className="w-full text-left"
                 >
                   <Card className="hover:border-primary/60 hover:shadow-sm transition-all cursor-pointer">

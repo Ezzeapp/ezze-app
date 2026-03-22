@@ -186,6 +186,14 @@ export function buildClientBookingLink(bookingSlug: string): string {
   return `https://t.me/ezzeclient_bot?start=book_${bookingSlug}`
 }
 
+/**
+ * Сформировать ссылку на публичную запись команды через Telegram Mini App.
+ * Формат: t.me/ezzeclient_bot?start=team_{teamSlug}
+ */
+export function buildTeamBookingLink(teamSlug: string): string {
+  return `https://t.me/ezzeclient_bot?start=team_${teamSlug}`
+}
+
 /** Сформировать ссылку на личный кабинет клиента */
 export function buildClientCabinetLink(): string {
   return `https://t.me/ezzeclient_bot`

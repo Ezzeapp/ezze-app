@@ -79,6 +79,7 @@
     "today": "Today",
     "copy": "Copy",
     "open": "Open",
+    "download": "Download",
     "nothingFound": "Nothing found",
     "confirm": "Confirm"
   },
@@ -163,6 +164,8 @@
       "publicBooking": "Public booking",
       "publicBookingHint": "Clients will be able to book via the shared team page",
       "bookingLink": "Booking page link",
+      "qrForClients": "QR codes for clients",
+      "linkCopied": "Link copied",
       "dangerZone": "Danger zone"
     },
     "joinedAt": "Member since",
