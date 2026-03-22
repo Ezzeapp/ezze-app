@@ -108,8 +108,12 @@ export function ScheduleTab() {
   }
 
   const addBreak = async (dow: number) => {
-    await createBreak.mutateAsync({ day_of_week: dow, start_time: '13:00', end_time: '14:00', is_recurring: true })
-    toast.success(t('schedule.breakAdded'))
+    try {
+      await createBreak.mutateAsync({ day_of_week: String(dow), start_time: '13:00', end_time: '14:00' } as any)
+      toast.success(t('schedule.breakAdded'))
+    } catch {
+      toast.error(t('common.saveError'))
+    }
   }
 
   if (isLoading) return (
@@ -199,7 +203,7 @@ export function ScheduleTab() {
             {breaks.map((b) => (
               <div key={b.id} className="flex items-center gap-3 p-2 border rounded-lg">
                 <span className="text-sm text-muted-foreground w-8">
-                  {t(`schedule.days.${DAYS[b.day_of_week === 0 ? 6 : b.day_of_week - 1]}`)}
+                  {t(`schedule.days.${DAYS[Number(b.day_of_week) === 0 ? 6 : Number(b.day_of_week) - 1]}`)}
                 </span>
                 <span className="text-sm font-mono">{b.start_time} — {b.end_time}</span>
                 {b.label && <span className="text-xs text-muted-foreground">{b.label}</span>}
