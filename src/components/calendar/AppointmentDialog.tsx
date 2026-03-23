@@ -579,7 +579,8 @@ export function AppointmentDialog({
     if (!editAppt) draft.clear()
   }
 
-  const canSave = selectedSvcs.length > 0 && !!selectedDate && !!selectedTime
+  const hasClient = !!selectedClient || (isGuest && !!guestName)
+  const canSave = selectedSvcs.length > 0 && !!selectedDate && !!selectedTime && hasClient
 
   // Мобильный квиз: шаги 0=Дата, 1=Время, 2=Услуга, 3=Детали
   const [mobileStep, setMobileStep] = useState(0)
@@ -1476,7 +1477,7 @@ export function AppointmentDialog({
                       {t('common.next') || 'Далее'}<ChevronRight className="h-4 w-4" />
                     </Button>
                   ) : (
-                    <Button type="button" className="ml-auto" loading={isLoading} disabled={selectedSvcs.length === 0 || isLoading} onClick={handleSubmit}>
+                    <Button type="button" className="ml-auto" loading={isLoading} disabled={!canSave || isLoading} onClick={handleSubmit}>
                       {t('common.save')}
                       {finalPrice > 0 && <Badge variant="secondary" className="ml-2 text-xs font-semibold">{formatCurrency(finalPrice, currency, i18n.language)}</Badge>}
                       {finalPrice === 0 && totalBasePrice > 0 && <Badge variant="secondary" className="ml-2 text-xs font-semibold">{formatCurrency(totalBasePrice, currency, i18n.language)}</Badge>}
