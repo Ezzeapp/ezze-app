@@ -1060,7 +1060,7 @@ export function AppointmentDialog({
       {/* Мобиле: полноэкранный снизу вверх. Десктоп: центрированный диалог */}
       <DialogContent
         mobileFullscreen
-        className="w-full p-0 overflow-hidden flex flex-col sm:max-w-xl lg:max-w-3xl sm:h-[88vh] sm:max-h-[88vh]"
+        className="w-full p-0 overflow-hidden flex flex-col sm:max-w-xl lg:max-w-3xl sm:h-[72vh] sm:max-h-[72vh]"
       >
 
         {/* Заголовок */}
@@ -1460,7 +1460,7 @@ export function AppointmentDialog({
                 )}
 
                 {/* Мобайл-футер: кнопки Назад / Далее / Сохранить */}
-                <div className="shrink-0 border-t px-5 py-3 flex items-center gap-2">
+                <div className="lg:hidden shrink-0 border-t px-5 py-3 flex items-center gap-2">
                   {mobileStep > 0 ? (
                     <Button type="button" variant="outline" onClick={() => { setStepDir('back'); setMobileStep(s => s - 1) }} className="gap-1">
                       <ChevronLeft className="h-4 w-4" />{t('common.back') || 'Назад'}
@@ -1476,10 +1476,10 @@ export function AppointmentDialog({
                       {t('common.next') || 'Далее'}<ChevronRight className="h-4 w-4" />
                     </Button>
                   ) : (
-                    <Button type="button" className="ml-auto" loading={isLoading} disabled={!canSave} onClick={handleSubmit}>
+                    <Button type="button" className="ml-auto" loading={isLoading} disabled={selectedSvcs.length === 0 || isLoading} onClick={handleSubmit}>
                       {t('common.save')}
-                      {finalPrice > 0 && canSave && <Badge variant="secondary" className="ml-2 text-xs font-semibold">{formatCurrency(finalPrice, currency, i18n.language)}</Badge>}
-                      {finalPrice === 0 && totalBasePrice > 0 && canSave && <Badge variant="secondary" className="ml-2 text-xs font-semibold">{formatCurrency(totalBasePrice, currency, i18n.language)}</Badge>}
+                      {finalPrice > 0 && <Badge variant="secondary" className="ml-2 text-xs font-semibold">{formatCurrency(finalPrice, currency, i18n.language)}</Badge>}
+                      {finalPrice === 0 && totalBasePrice > 0 && <Badge variant="secondary" className="ml-2 text-xs font-semibold">{formatCurrency(totalBasePrice, currency, i18n.language)}</Badge>}
                     </Button>
                   )}
                 </div>
