@@ -732,10 +732,10 @@ export function ServicesPage() {
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="max-sm:flex-1 max-sm:flex max-sm:flex-col max-sm:overflow-hidden">
-            <TabsList className="w-full shrink-0">
-              <TabsTrigger value="main" className="flex-1">{t('services.name')}</TabsTrigger>
+            <TabsList className="w-full shrink-0 grid grid-cols-2">
+              <TabsTrigger value="main">{t('services.name')}</TabsTrigger>
               {hasServiceMaterials && (
-                <TabsTrigger value="materials" className="flex-1">{t('services.materialsTab')}</TabsTrigger>
+                <TabsTrigger value="materials">{t('services.materialsTab')}</TabsTrigger>
               )}
             </TabsList>
 
