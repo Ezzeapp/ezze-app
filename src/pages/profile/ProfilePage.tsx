@@ -772,29 +772,6 @@ export function ProfilePage() {
                 onCheckedChange={(v) => setValue('is_public', v, { shouldDirty: true })}
               />
             </div>
-            {/* Тема оформления */}
-            <div className="space-y-2">
-              <Label>{t('profile.theme')}</Label>
-              <div className="flex gap-2 flex-wrap">
-                {BOOKING_THEMES.map(theme => (
-                  <button
-                    key={theme.id}
-                    type="button"
-                    title={theme.label}
-                    onClick={() => setValue('booking_theme', theme.id, { shouldDirty: true })}
-                    className={`h-8 w-8 rounded-full border-2 transition-all ${
-                      bookingTheme === theme.id
-                        ? 'border-foreground scale-110 shadow-md'
-                        : 'border-transparent hover:border-foreground/30 hover:scale-105'
-                    }`}
-                    style={{ backgroundColor: `hsl(${theme.primary})` }}
-                  />
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {BOOKING_THEMES.find(t => t.id === bookingTheme)?.label}
-              </p>
-            </div>
 
             <div className="space-y-2">
               <Label>{t('profile.bookingSlug')}</Label>
