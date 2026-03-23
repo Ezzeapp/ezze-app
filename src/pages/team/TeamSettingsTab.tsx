@@ -234,39 +234,6 @@ export function TeamSettingsTab({ team }: Props) {
               />
             </div>
 
-            {/* Ссылка на публичную страницу */}
-            <div className={`rounded-lg border bg-muted/40 p-3 space-y-2 transition-opacity ${!isPublic ? 'opacity-40' : ''}`}>
-              <p className="text-xs text-muted-foreground font-medium">{t('team.settings.bookingLink')}</p>
-              <div className="flex items-center gap-2">
-                <p className="text-xs font-mono text-foreground flex-1 min-w-0 truncate">
-                  {bookingUrl}
-                </p>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 shrink-0"
-                  onClick={handleCopyLink}
-                  disabled={!isPublic}
-                  title={t('common.copy')}
-                >
-                  {copied
-                    ? <Check className="h-3.5 w-3.5 text-emerald-500" />
-                    : <Copy className="h-3.5 w-3.5" />}
-                </Button>
-                <a
-                  href={bookingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md hover:bg-accent transition-colors ${!isPublic ? 'pointer-events-none' : ''}`}
-                  title={t('common.open')}
-                  tabIndex={!isPublic ? -1 : undefined}
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-              </div>
-            </div>
-
             {/* Telegram QR для клиентов */}
             {isPublic && (
               <div className="p-3 rounded-lg border bg-[#2AABEE]/5 border-[#2AABEE]/20 space-y-2">
