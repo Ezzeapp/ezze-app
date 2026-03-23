@@ -245,7 +245,7 @@ export function TeamSettingsTab({ team }: Props) {
                   <img
                     src={tgQrUrl}
                     alt="QR Telegram"
-                    className="h-20 w-20 rounded-lg border bg-white shrink-0"
+                    className="h-20 w-20 border bg-white p-1.5 shrink-0"
                   />
                   <div className="flex-1 min-w-0 space-y-2">
                     <code className="text-xs truncate text-muted-foreground block">{tgBookingUrl}</code>
