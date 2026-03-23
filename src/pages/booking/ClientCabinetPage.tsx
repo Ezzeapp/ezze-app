@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import {
   Calendar, Clock, CheckCircle, XCircle, AlertCircle, CalendarClock,
-  Zap, Gift, Copy, Check, Sun, Moon, Search, User,
+  Zap, Gift, Copy, Check, Sun, Moon, Search, User, Users,
   ChevronRight, X,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -65,6 +65,14 @@ interface MasterResult {
   profession: string | null
   avatar: string | null
   user: { name: string } | null
+}
+
+interface TeamResult {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  logo: string | null
 }
 
 type Tab = 'appointments' | 'search' | 'profile'
@@ -203,6 +211,29 @@ export function ClientCabinetPage() {
     staleTime: 2 * 60_000,
   })
 
+  const { data: allTeams = [], isLoading: teamsLoading } = useQuery<TeamResult[]>({
+    queryKey: ['public_teams_cabinet'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('teams')
+        .select('id, name, slug, description, logo')
+        .eq('is_public', true)
+        .order('name')
+      return (data ?? []) as TeamResult[]
+    },
+    enabled: tab === 'search',
+    staleTime: 2 * 60_000,
+  })
+
+  const filteredTeams = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return allTeams
+    return allTeams.filter(t =>
+      t.name.toLowerCase().includes(q) ||
+      (t.description ?? '').toLowerCase().includes(q)
+    )
+  }, [allTeams, searchQuery])
+
   // Мастера, к которым клиент ходил раньше (избранные)
   const visitedSlugs = useMemo(() => {
     const slugs = new Set<string>()
@@ -252,6 +283,13 @@ export function ClientCabinetPage() {
     if (telegramId) params.set('tg_id', telegramId)
     if (userName)   params.set('tg_name', userName)
     navigate(`/book/${slug}?${params.toString()}`)
+  }
+
+  const openTeam = (slug: string) => {
+    const params = new URLSearchParams()
+    if (telegramId) params.set('tg_id', telegramId)
+    if (userName)   params.set('tg_name', userName)
+    navigate(`/book/team/${slug}?${params.toString()}`)
   }
 
   // ── Экран без авторизации ───────────────────────────────────────────────────
@@ -392,8 +430,8 @@ export function ClientCabinetPage() {
                 </div>
               )}
 
-              {/* Список мастеров */}
-              {mastersLoading ? (
+              {/* Список команд и мастеров */}
+              {(mastersLoading || teamsLoading) ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="flex items-center gap-3 py-2">
                     <Skeleton className="h-11 w-11 rounded-full" />
@@ -403,14 +441,36 @@ export function ClientCabinetPage() {
                     </div>
                   </div>
                 ))
-              ) : filteredMasters.filter(m => searchQuery || !visitedSlugs.has(m.booking_slug)).length === 0 && !searchQuery ? (
+              ) : filteredTeams.length === 0 && filteredMasters.filter(m => searchQuery || !visitedSlugs.has(m.booking_slug)).length === 0 && !searchQuery ? (
                 <p className="text-center text-sm text-muted-foreground py-8">Нет доступных мастеров</p>
               ) : (
-                filteredMasters
-                  .filter(m => searchQuery || !visitedSlugs.has(m.booking_slug))
-                  .map(m => (
-                    <MasterCard key={m.booking_slug} master={m} onClick={() => openBooking(m.booking_slug)} />
-                  ))
+                <>
+                  {/* Команды */}
+                  {filteredTeams.length > 0 && (
+                    <>
+                      {(filteredMasters.length > 0 || visitedSlugs.size > 0) && (
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Команды</p>
+                      )}
+                      {filteredTeams.map(team => (
+                        <TeamCard key={team.id} team={team} onClick={() => openTeam(team.slug)} />
+                      ))}
+                    </>
+                  )}
+
+                  {/* Мастера */}
+                  {filteredMasters.filter(m => searchQuery || !visitedSlugs.has(m.booking_slug)).length > 0 && (
+                    <>
+                      {filteredTeams.length > 0 && (
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-1">Мастера</p>
+                      )}
+                      {filteredMasters
+                        .filter(m => searchQuery || !visitedSlugs.has(m.booking_slug))
+                        .map(m => (
+                          <MasterCard key={m.booking_slug} master={m} onClick={() => openBooking(m.booking_slug)} />
+                        ))}
+                    </>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -614,6 +674,35 @@ function AppointmentCard({ appt, onCancel, onReschedule, onBookAgain }: Appointm
 }
 
 // ── Карточка мастера ──────────────────────────────────────────────────────────
+function TeamCard({ team, onClick }: { team: TeamResult; onClick: () => void }) {
+  const logoUrl = team.logo ? getFileUrl('teams', team.logo) : undefined
+  const initials = team.name.slice(0, 2).toUpperCase()
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center gap-3 py-2.5 px-1 hover:bg-muted/50 active:bg-muted rounded-xl transition-colors text-left"
+    >
+      <div className="h-11 w-11 shrink-0 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+        {logoUrl
+          ? <img src={logoUrl} alt={team.name} className="h-11 w-11 object-cover" />
+          : <span className="text-sm font-semibold text-primary">{initials}</span>
+        }
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <p className="font-medium text-sm truncate">{team.name}</p>
+          <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] font-medium text-primary/70 bg-primary/10 rounded-full px-1.5 py-0.5 leading-none">
+            <Users className="h-2.5 w-2.5" />команда
+          </span>
+        </div>
+        {team.description && <p className="text-xs text-muted-foreground truncate">{team.description}</p>}
+      </div>
+      <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+    </button>
+  )
+}
+
 function MasterCard({ master, isFav, onClick }: { master: MasterResult; isFav?: boolean; onClick: () => void }) {
   const name      = master.user?.name ?? 'Мастер'
   const avatarUrl = master.avatar ? getFileUrl('master_profiles', master.avatar) : undefined
