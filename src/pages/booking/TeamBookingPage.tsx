@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ChevronRight, Users, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Users, Zap } from 'lucide-react'
 import { useTeamBySlug, usePublicTeamMembers } from '@/hooks/useTeam'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
@@ -86,6 +86,14 @@ export function TeamBookingPage() {
       {/* Шапка команды */}
       <div className="border-b py-6 px-4 bg-background">
         <div className="max-w-2xl mx-auto">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {t('common.back')}
+          </button>
           <div className="flex items-center gap-4">
             {/* Логотип/иконка команды */}
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">

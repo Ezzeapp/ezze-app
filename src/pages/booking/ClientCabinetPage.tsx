@@ -101,6 +101,7 @@ export function ClientCabinetPage() {
   const [loading, setLoading]           = useState(true)
   const [telegramId, setTelegramId]     = useState<string | null>(null)
   const [userName, setUserName]         = useState('')
+  const [telegramPhone, setTelegramPhone] = useState('')
   const [tgTopPadding, setTgTopPadding] = useState(0)
   const [loyaltySummary, setLoyaltySummary] = useState<any[]>([])
   const [copied, setCopied]             = useState(false)
@@ -137,10 +138,12 @@ export function ClientCabinetPage() {
       }
     }
     const params = new URLSearchParams(window.location.search)
-    const tgId   = getTelegramUserId() || params.get('tg_id')
-    const tgName = getTelegramDisplayName() || params.get('tg_name') || ''
+    const tgId    = getTelegramUserId() || params.get('tg_id')
+    const tgName  = getTelegramDisplayName() || params.get('tg_name') || ''
+    const tgPhone = params.get('tg_phone') || ''
     setTelegramId(tgId)
     setUserName(tgName)
+    setTelegramPhone(tgPhone)
     if (tgId) {
       loadData(tgId)
     } else if (import.meta.env.DEV) {
@@ -280,15 +283,17 @@ export function ClientCabinetPage() {
 
   const openBooking = (slug: string) => {
     const params = new URLSearchParams()
-    if (telegramId) params.set('tg_id', telegramId)
-    if (userName)   params.set('tg_name', userName)
+    if (telegramId)    params.set('tg_id',    telegramId)
+    if (userName)      params.set('tg_name',  userName)
+    if (telegramPhone) params.set('tg_phone', telegramPhone)
     navigate(`/book/${slug}?${params.toString()}`)
   }
 
   const openTeam = (slug: string) => {
     const params = new URLSearchParams()
-    if (telegramId) params.set('tg_id', telegramId)
-    if (userName)   params.set('tg_name', userName)
+    if (telegramId)    params.set('tg_id',    telegramId)
+    if (userName)      params.set('tg_name',  userName)
+    if (telegramPhone) params.set('tg_phone', telegramPhone)
     navigate(`/book/team/${slug}?${params.toString()}`)
   }
 
