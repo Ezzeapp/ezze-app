@@ -36,10 +36,16 @@ export function TeamBookingPage() {
 
   // Стабильная строка из ID участников + владелец команды
   const memberIdsKey = useMemo(() => {
-    const ids = members.map(m => m.user).filter(Boolean)
-    // Владелец команды не в team_members — добавляем первым
-    if (team?.owner && !ids.includes(team.owner)) {
-      ids.unshift(team.owner)
+    // m.user после Supabase join — объект { id, ... }, а не UUID-строка
+    const ids = members.map(m => {
+      const u = m.user as any
+      return (u && typeof u === 'object') ? u.id : u
+    }).filter(Boolean) as string[]
+    // team.owner тоже может быть объектом после join owner:users(*)
+    const ownerRaw = team?.owner as any
+    const ownerId: string | undefined = (ownerRaw && typeof ownerRaw === 'object') ? ownerRaw.id : ownerRaw
+    if (ownerId && !ids.includes(ownerId)) {
+      ids.unshift(ownerId)
     }
     return ids.join(',')
   }, [members, team?.owner])
@@ -131,9 +137,15 @@ export function TeamBookingPage() {
         ) : (
           <div className="space-y-3">
             {profiles.map(profile => {
-              const member = members.find(m => m.user === profile.user)
+              const profileUserId = (profile.user as any)?.id ?? (profile as any).user_id ?? profile.user
+              const member = members.find(m => {
+                const mu = m.user as any
+                return ((mu && typeof mu === 'object') ? mu.id : mu) === profileUserId
+              })
               // Для владельца member будет undefined — берём из team.expand.owner
-              const isOwner = profile.user === team?.owner
+              const ownerRaw2 = team?.owner as any
+              const ownerId2 = (ownerRaw2 && typeof ownerRaw2 === 'object') ? ownerRaw2.id : ownerRaw2
+              const isOwner = profileUserId === ownerId2
               const ownerUser = isOwner ? (team?.expand as any)?.owner : null
               const displayName =
                 member?.expand?.user?.name ??
