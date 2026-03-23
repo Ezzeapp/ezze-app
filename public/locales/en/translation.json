@@ -562,7 +562,8 @@
     "tabNote": "Note",
     "tabRecurring": "Repeat",
     "selectTimeFirst": "Select a time first",
-    "tabDetails": "Details"
+    "tabDetails": "Details",
+    "summary": "Summary"
   },
   "calendar": {
     "week": "Week",

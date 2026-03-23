@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Search, Clock, X, Percent, User, UserPlus, CalendarCheck, ChevronLeft, ChevronRight, Copy, ArrowRightLeft, Plus, CreditCard, StickyNote, Repeat, Info, Printer } from 'lucide-react'
 import dayjs from 'dayjs'
@@ -1060,7 +1060,7 @@ export function AppointmentDialog({
       {/* Мобиле: полноэкранный снизу вверх. Десктоп: центрированный диалог */}
       <DialogContent
         mobileFullscreen
-        className="w-full p-0 overflow-hidden flex flex-col sm:max-w-xl sm:h-[88vh] sm:max-h-[88vh]"
+        className="w-full p-0 overflow-hidden flex flex-col sm:max-w-xl lg:max-w-3xl sm:h-[88vh] sm:max-h-[88vh]"
       >
 
         {/* Заголовок */}
@@ -1119,7 +1119,9 @@ export function AppointmentDialog({
           return (
             <>
               {/* ── WIZARD (все экраны) ─────────────────────────── */}
-              <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 flex flex-col min-h-0 lg:flex-row lg:overflow-hidden">
+                {/* Левая колонка: шаги визарда */}
+                <div className="flex flex-col min-h-0 flex-1 lg:flex-none lg:w-[60%] lg:border-r">
                 {/* Прогресс-бар — компактный */}
                 <div className="shrink-0 px-5 pt-3 pb-2">
                   <div className="flex items-center">
@@ -1543,7 +1545,129 @@ export function AppointmentDialog({
                     </Button>
                   )}
                 </div>
-              </div>
+                </div>{/* end left column */}
+
+                {/* Правая панель: live summary (только десктоп) */}
+                <div className="hidden lg:flex flex-col w-[40%] overflow-y-auto bg-muted/20">
+                  <div className="px-5 py-3 border-b shrink-0">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('appointments.summary')}</p>
+                  </div>
+                  <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+
+                    {/* Услуги */}
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                        {t('appointments.service')}
+                        {totalDuration > 0 && <span className="font-normal normal-case text-muted-foreground/60">· {formatDuration(totalDuration, t)}</span>}
+                      </p>
+                      {selectedSvcs.length === 0 ? (
+                        <p className="text-sm text-muted-foreground/40 italic">—</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {selectedSvcs.map(svc => (
+                            <div key={svc.id} className="flex items-start justify-between gap-2">
+                              <span className="text-sm text-foreground leading-snug">{svc.name}</span>
+                              <div className="shrink-0 text-right text-xs text-muted-foreground">
+                                <div>{formatDuration(svc.duration_min, t)}</div>
+                                {svc.price > 0 && <div className="font-medium text-foreground">{formatCurrency(svc.price, currency, i18n.language)}</div>}
+                              </div>
+                            </div>
+                          ))}
+                          {selectedSvcs.length > 1 && totalBasePrice > 0 && (
+                            <div className="flex items-center justify-between text-xs font-semibold pt-1.5 border-t text-foreground/80">
+                              <span>{t('appointments.total')}</span>
+                              <span>{formatCurrency(totalBasePrice, currency, i18n.language)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Дата / Время */}
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
+                        {t('appointments.date')} / {t('appointments.time')}
+                      </p>
+                      <p className="text-sm font-medium text-foreground">{dayjs(selectedDate).format('D MMM, dddd')}</p>
+                      {selectedTime ? (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {selectedTime}
+                          {totalDuration > 0 && <span className="text-muted-foreground/60"> → {minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)}</span>}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground/40 italic mt-0.5">{t('appointments.time')}...</p>
+                      )}
+                    </div>
+
+                    {/* Клиент */}
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
+                        {t('appointments.client')}
+                      </p>
+                      {selectedClient ? (
+                        <div className="flex items-center gap-2">
+                          <div className="h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center shrink-0 text-primary font-semibold text-xs">
+                            {selectedClient.first_name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{selectedClient.first_name} {selectedClient.last_name || ''}</p>
+                            {selectedClient.phone && <p className="text-xs text-muted-foreground">{selectedClient.phone}</p>}
+                          </div>
+                        </div>
+                      ) : guestName ? (
+                        <p className="text-sm text-foreground">{guestName}{guestPhone && <span className="text-xs text-muted-foreground ml-1.5">{guestPhone}</span>}</p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground/40 italic">{t('appointments.guestClient')}</p>
+                      )}
+                    </div>
+
+                    {/* Цена */}
+                    {(totalBasePrice > 0 || parseFloat(priceInput) > 0) && (
+                      <div className="pt-3 border-t">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{t('appointments.total')}</p>
+                          {paymentMethod && (
+                            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                              {({ cash: t('appointments.paymentCash'), card: t('appointments.paymentCard'), transfer: t('appointments.paymentTransfer'), other: t('appointments.paymentOther') } as Record<string, string>)[paymentMethod]}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
+                            <span className="text-sm text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
+                          )}
+                          <span className={`text-xl font-bold ${effectiveSurcharge > 0 ? 'text-orange-500' : effectiveDiscount > 0 ? 'text-emerald-600' : 'text-foreground'}`}>
+                            {formatCurrency(finalPrice > 0 ? finalPrice : (parseFloat(priceInput) || totalBasePrice), currency, i18n.language)}
+                          </span>
+                          {effectiveDiscount > 0 && <Badge variant="secondary" className="text-xs text-emerald-600">−{effectiveDiscount}%</Badge>}
+                          {effectiveSurcharge > 0 && <Badge variant="secondary" className="text-xs text-orange-500">+{effectiveSurcharge}%</Badge>}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Заметка */}
+                    {notes.trim() && (
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{t('appointments.tabNote')}</p>
+                        <p className="text-xs text-muted-foreground italic line-clamp-3">{notes.trim()}</p>
+                      </div>
+                    )}
+
+                  </div>
+
+                  {/* Кнопка сохранить */}
+                  <div className="shrink-0 border-t px-5 py-3">
+                    <Button type="button" className="w-full" loading={isLoading} disabled={!canSave} onClick={handleSubmit}>
+                      {t('common.save')}
+                      {(finalPrice > 0 || totalBasePrice > 0) && canSave && (
+                        <Badge variant="secondary" className="ml-2 text-xs font-semibold">
+                          {formatCurrency(finalPrice > 0 ? finalPrice : totalBasePrice, currency, i18n.language)}
+                        </Badge>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>{/* end outer wizard */}
 
             </>
           )

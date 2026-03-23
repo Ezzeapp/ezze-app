@@ -562,7 +562,8 @@
     "tabPayment": "Оплата",
     "tabNote": "Заметка",
     "tabRecurring": "Повтор",
-    "tabDetails": "Детали"
+    "tabDetails": "Детали",
+    "summary": "Итог"
   },
   "calendar": {
     "week": "Неделя",
