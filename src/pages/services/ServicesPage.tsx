@@ -327,7 +327,7 @@ export function ServicesPage() {
   const [priceDisplay, setPriceDisplay] = useState('')
   const { register, handleSubmit, reset, setValue, control, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { is_active: true, is_bookable: true, duration_min: 60, price: 0 },
+    defaultValues: { is_active: true, is_bookable: true, duration_min: 30, price: 0 },
   })
 
   const isActive = watch('is_active')
@@ -336,7 +336,7 @@ export function ServicesPage() {
 
   const openCreate = () => {
     setEditService(null)
-    reset({ is_active: true, is_bookable: true, duration_min: 60, price: 0, name: '', description: '', category: '__none__' })
+    reset({ is_active: true, is_bookable: true, duration_min: 30, price: 0, name: '', description: '', category: '__none__' })
     setPriceDisplay('')
     setSelectedCatId('__none__')
     setCatSearch('')
