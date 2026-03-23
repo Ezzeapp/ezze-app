@@ -660,7 +660,9 @@
     "selectedCount": "Selected: {{count}}",
     "globalServicesEmpty": "Global services catalog is empty. Add services in Admin → Catalogs.",
     "globalProductsEmpty": "Global products catalog is empty. Add products in Admin → Catalogs.",
-    "importDefaultCategory": "General"
+    "importDefaultCategory": "General",
+    "importToCategory": "To category",
+    "importCategoryPlaceholder": "From catalog (default)"
   },
   "booking": {
     "notFound": "Page not found",

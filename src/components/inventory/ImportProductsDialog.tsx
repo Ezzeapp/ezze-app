@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Search, Download, Check, Package, ChevronDown, ChevronRight } from 'lucide-react'
+import { Search, Download, Check, Package, ChevronDown, ChevronRight, Tag } from 'lucide-react'
 import { useGlobalProducts } from '@/hooks/useGlobalCatalogs'
-import { useCreateInventoryItem } from '@/hooks/useInventory'
+import { useCreateInventoryItem, useInventory } from '@/hooks/useInventory'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -23,9 +23,17 @@ export function ImportProductsDialog({ open, onClose }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set())
+  const [targetCategory, setTargetCategory] = useState<string>('')
 
   const { data: products, isLoading } = useGlobalProducts()
+  const { data: myItems } = useInventory()
   const createItem = useCreateInventoryItem()
+
+  // Уникальные категории из существующего инвентаря пользователя
+  const existingCategories = useMemo(() => {
+    const cats = (myItems ?? []).map(i => i.category).filter(Boolean) as string[]
+    return [...new Set(cats)].sort()
+  }, [myItems])
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
@@ -82,7 +90,7 @@ export function ImportProductsDialog({ open, onClose }: Props) {
         await createItem.mutateAsync({
           name: p.name,
           description: p.description || undefined,
-          category: p.category || undefined,
+          category: targetCategory.trim() || p.category || undefined,
           unit: p.unit || undefined,
           quantity: 0,
           cost_price: p.price || undefined,
@@ -139,6 +147,30 @@ export function ImportProductsDialog({ open, onClose }: Props) {
             {selected.size > 0 && (
               <Badge variant="secondary" className="text-xs">{t('catalog.selectedCount', { count: selected.size })}</Badge>
             )}
+          </div>
+        )}
+
+        {/* Category selector */}
+        {allFilteredProducts.length > 0 && (
+          <div className="px-6 pb-3 shrink-0 flex items-center gap-2 border-b">
+            <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span className="text-xs text-muted-foreground shrink-0">{t('catalog.importToCategory')}:</span>
+            <div className="flex-1 relative">
+              <Input
+                list="inv-categories-list"
+                value={targetCategory}
+                onChange={e => setTargetCategory(e.target.value)}
+                placeholder={t('catalog.importCategoryPlaceholder')}
+                className="h-7 text-xs pr-2"
+              />
+              {existingCategories.length > 0 && (
+                <datalist id="inv-categories-list">
+                  {existingCategories.map(cat => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
+              )}
+            </div>
           </div>
         )}
 

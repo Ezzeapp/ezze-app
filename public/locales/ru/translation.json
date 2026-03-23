@@ -936,7 +936,9 @@
     "selectedCount": "Выбрано: {{count}}",
     "globalServicesEmpty": "Глобальный справочник услуг пуст. Добавьте услуги в разделе Администратор → Справочники.",
     "globalProductsEmpty": "Глобальный справочник товаров пуст. Добавьте товары в разделе Администратор → Справочники.",
-    "importDefaultCategory": "Общее"
+    "importDefaultCategory": "Общее",
+    "importToCategory": "В категорию",
+    "importCategoryPlaceholder": "Из справочника (по умолчанию)"
   },
   "booking": {
     "notFound": "Страница не найдена",

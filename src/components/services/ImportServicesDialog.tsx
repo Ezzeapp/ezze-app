@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Search, Download, Check, Scissors, ChevronDown, ChevronRight } from 'lucide-react'
+import { Search, Download, Check, Scissors, ChevronDown, ChevronRight, Tag } from 'lucide-react'
 import { useGlobalServices } from '@/hooks/useGlobalCatalogs'
-import { useCreateService } from '@/hooks/useServices'
+import { useCreateService, useServiceCategories } from '@/hooks/useServices'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/shared/Toaster'
@@ -23,8 +24,10 @@ export function ImportServicesDialog({ open, onClose }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set())
+  const [targetCategoryId, setTargetCategoryId] = useState<string>('__none__')
 
   const { data: services, isLoading } = useGlobalServices()
+  const { data: myCategories } = useServiceCategories()
   const createService = useCreateService()
 
   const toggleSelect = (id: string) => {
@@ -86,6 +89,7 @@ export function ImportServicesDialog({ open, onClose }: Props) {
           price: s.price || undefined,
           is_active: true,
           is_bookable: true,
+          category: targetCategoryId !== '__none__' ? targetCategoryId : '__none__',
         } as any)
         count++
       } catch {
@@ -138,6 +142,25 @@ export function ImportServicesDialog({ open, onClose }: Props) {
             {selected.size > 0 && (
               <Badge variant="secondary" className="text-xs">{t('catalog.selectedCount', { count: selected.size })}</Badge>
             )}
+          </div>
+        )}
+
+        {/* Category selector */}
+        {allFilteredServices.length > 0 && (
+          <div className="px-6 pb-3 shrink-0 flex items-center gap-2 border-b">
+            <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span className="text-xs text-muted-foreground shrink-0">{t('catalog.importToCategory')}:</span>
+            <Select value={targetCategoryId} onValueChange={setTargetCategoryId}>
+              <SelectTrigger className="h-7 text-xs flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">{t('catalog.noCategory')}</SelectItem>
+                {(myCategories ?? []).map(cat => (
+                  <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
 
