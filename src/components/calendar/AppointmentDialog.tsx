@@ -1582,16 +1582,24 @@ export function AppointmentDialog({
 
                   </div>
 
-                  {/* Кнопка сохранить */}
+                  {/* Навигация: Далее / Сохранить */}
                   <div className="shrink-0 border-t px-5 py-3">
-                    <Button type="button" className="w-full" loading={isLoading} disabled={!canSave} onClick={handleSubmit}>
-                      {t('common.save')}
-                      {(finalPrice > 0 || totalBasePrice > 0) && canSave && (
-                        <Badge variant="secondary" className="ml-2 text-xs font-semibold">
-                          {formatCurrency(finalPrice > 0 ? finalPrice : totalBasePrice, currency, i18n.language)}
-                        </Badge>
-                      )}
-                    </Button>
+                    {mobileStep < MOBILE_STEPS - 1 ? (
+                      <Button type="button" className="w-full gap-1"
+                        disabled={!mobileStepCanNext[mobileStep]}
+                        onClick={() => { setStepDir('forward'); setMobileStep(s => s + 1) }}>
+                        {t('common.next') || 'Далее'}<ChevronRight className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button type="button" className="w-full" loading={isLoading} disabled={!canSave} onClick={handleSubmit}>
+                        {t('common.save')}
+                        {(finalPrice > 0 || totalBasePrice > 0) && canSave && (
+                          <Badge variant="secondary" className="ml-2 text-xs font-semibold">
+                            {formatCurrency(finalPrice > 0 ? finalPrice : totalBasePrice, currency, i18n.language)}
+                          </Badge>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>{/* end outer wizard */}
