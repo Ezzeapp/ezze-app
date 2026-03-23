@@ -52,13 +52,13 @@ function PaymentDialog({ plan, onClose }: PaymentDialogProps) {
 
   const handlePayme = () => {
     if (!settings?.payme_merchant_id || !user?.id) return
-    const url = buildPaymeUrl(settings.payme_merchant_id, user.id, plan, i18n.language)
+    const url = buildPaymeUrl(settings.payme_merchant_id, user.id, plan, priceUZS, i18n.language)
     window.open(url, '_blank')
   }
 
   const handleClick = () => {
     if (!settings?.click_service_id || !settings?.click_merchant_id || !user?.id) return
-    const url = buildClickUrl(settings.click_service_id, settings.click_merchant_id, user.id, plan)
+    const url = buildClickUrl(settings.click_service_id, settings.click_merchant_id, user.id, plan, priceUZS)
     window.open(url, '_blank')
   }
 
@@ -302,7 +302,7 @@ function SubscriptionHistory() {
                 <div>
                   <p className="text-sm font-medium">{t(`billing.plan.${sub.plan}`)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {sub.provider.toUpperCase()} · {dayjs(sub.created).format('DD.MM.YYYY')}
+                    {sub.provider.toUpperCase()} · {dayjs(sub.created_at).format('DD.MM.YYYY')}
                   </p>
                 </div>
                 <div className="text-right">

@@ -440,8 +440,9 @@ function SubscriptionsTable() {
               </thead>
               <tbody className="divide-y">
                 {data.items.map(sub => {
-                  const userRec  = sub.expand?.user
-                  const userName = userRec?.name || userRec?.email || sub.user.slice(0, 8)
+                  // sub.user — объект из Supabase join select('*, user:users(*)')
+                  const userRec  = sub.user
+                  const userName = (userRec as any)?.email || (userRec as any)?.name || sub.user_id?.slice(0, 8) || sub.id.slice(0, 8)
                   return (
                     <tr key={sub.id} className="hover:bg-muted/30 transition-colors">
                       <td className="p-3 font-medium truncate max-w-[120px]">{userName}</td>

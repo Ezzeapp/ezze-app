@@ -7,43 +7,36 @@
  *
  * Params string (semicolon-separated):
  *   m=MERCHANT_ID;ac.user_id=USER_ID;ac.plan=PLAN;a=AMOUNT_TIYINS;l=LANG
+ *
+ * ВАЖНО: amountUzs должна точно совпадать с plan_prices в Supabase,
+ *         иначе Payme Edge Function отклонит платёж.
  */
 
 const PAYME_BASE_URL = 'https://checkout.paycom.uz'
-
-/** Цены планов в тийинах (UZS × 100) */
-export const PLAN_PRICES_TIYINS: Record<string, number> = {
-  pro:        9_900_000,   // 99 000 UZS
-  enterprise: 29_900_000,  // 299 000 UZS
-}
-
-/** Цены планов в UZS (для отображения) */
-export const PLAN_PRICES_UZS: Record<string, number> = {
-  pro:        99_000,
-  enterprise: 299_000,
-}
 
 /**
  * Строит URL для оплаты через Payme.
  * @param merchantId  — Payme Merchant ID (из app_settings.payme_merchant_id)
  * @param userId      — ID пользователя в нашей БД
  * @param plan        — 'pro' | 'enterprise'
+ * @param amountUzs   — Сумма в UZS (берётся из usePlanPrices() — должна совпадать с Supabase)
  * @param lang        — 'ru' | 'uz' | 'en' (язык страницы оплаты)
  */
 export function buildPaymeUrl(
   merchantId: string,
   userId: string,
   plan: string,
+  amountUzs: number,
   lang = 'ru',
 ): string {
-  const amount = PLAN_PRICES_TIYINS[plan]
-  if (!amount) throw new Error(`Unknown plan: ${plan}`)
+  // Payme работает в тийинах (1 UZS = 100 тийинов)
+  const amountTiyins = amountUzs * 100
 
   const params = [
     `m=${merchantId}`,
     `ac.user_id=${userId}`,
     `ac.plan=${plan}`,
-    `a=${amount}`,
+    `a=${amountTiyins}`,
     `l=${lang}`,
   ].join(';')
 

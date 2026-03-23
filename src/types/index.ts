@@ -414,21 +414,24 @@ export type SubscriptionStatus = 'pending' | 'active' | 'cancelled' | 'expired'
 export type SubscriptionProvider = 'payme' | 'click'
 export type SubscriptionPlan = 'pro' | 'enterprise'
 
-export interface Subscription extends BaseRecord {
-  user:                    string
+export interface Subscription {
+  id:                      string
+  created_at:              string
+  user_id:                 string
+  /** Joined user record — available when querying with select('*, user:users(*)') */
+  user?:                   User
   plan:                    SubscriptionPlan
   amount_uzs:              number
   provider:                SubscriptionProvider
   status:                  SubscriptionStatus
   provider_transaction_id: string
   period_months:           number
-  expires_at:              string
+  expires_at?:             string
   create_time_ms:          number
   perform_time_ms?:        number
   cancel_time_ms?:         number
   cancel_reason?:          number
+  /** Payme transaction state: 1=created, 2=completed, -1=cancelled, -2=cancelled_after */
+  state?:                  number
   raw_payload?:            unknown
-  expand?: {
-    user?: User
-  }
 }
