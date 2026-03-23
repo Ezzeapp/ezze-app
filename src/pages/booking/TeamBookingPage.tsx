@@ -35,23 +35,18 @@ export function TeamBookingPage() {
   const [profilesLoading, setProfilesLoading] = useState(false)
 
   // Стабильная строка из ID участников + владелец команды
+  // Используем raw-колонки: team_members.user_id и teams.owner_id
   const memberIdsKey = useMemo(() => {
-    // m.user после Supabase join — объект { id, ... }, а не UUID-строка
-    const ids = members.map(m => {
-      const u = m.user as any
-      return (u && typeof u === 'object') ? u.id : u
-    }).filter(Boolean) as string[]
-    // team.owner тоже может быть объектом после join owner:users(*)
-    const ownerRaw = team?.owner as any
-    const ownerId: string | undefined = (ownerRaw && typeof ownerRaw === 'object') ? ownerRaw.id : ownerRaw
+    const ids = members.map(m => (m as any).user_id).filter(Boolean) as string[]
+    const ownerId: string | undefined = (team as any)?.owner_id
     if (ownerId && !ids.includes(ownerId)) {
       ids.unshift(ownerId)
     }
     return ids.join(',')
-  }, [members, team?.owner])
+  }, [members, team])
 
   useEffect(() => {
-    if (!memberIdsKey) { setProfiles([]); return }
+    if (!memberIdsKey) { setProfiles([]); setProfilesLoading(false); return }
     const userIds = memberIdsKey.split(',')
 
     setProfilesLoading(true)
@@ -59,12 +54,12 @@ export function TeamBookingPage() {
       .from('master_profiles')
       .select('*, user:users(id, name, avatar, email)')
       .in('user_id', userIds)
-      .eq('is_public', true)
       .then(({ data, error }) => {
-        if (error) { setProfiles([]); return }
-        setProfiles((data ?? []) as unknown as MasterProfile[])
         setProfilesLoading(false)
-      }, () => {
+        if (error) { console.error('TeamBookingPage profiles error:', error); setProfiles([]); return }
+        setProfiles((data ?? []) as unknown as MasterProfile[])
+      }, (err) => {
+        console.error('TeamBookingPage profiles catch:', err)
         setProfiles([])
         setProfilesLoading(false)
       })
@@ -137,20 +132,16 @@ export function TeamBookingPage() {
         ) : (
           <div className="space-y-3">
             {profiles.map(profile => {
-              const profileUserId = (profile.user as any)?.id ?? (profile as any).user_id ?? profile.user
-              const member = members.find(m => {
-                const mu = m.user as any
-                return ((mu && typeof mu === 'object') ? mu.id : mu) === profileUserId
-              })
-              // Для владельца member будет undefined — берём из team.expand.owner
-              const ownerRaw2 = team?.owner as any
-              const ownerId2 = (ownerRaw2 && typeof ownerRaw2 === 'object') ? ownerRaw2.id : ownerRaw2
-              const isOwner = profileUserId === ownerId2
+              const profileUserId = (profile as any).user_id
+              const member = members.find(m => (m as any).user_id === profileUserId)
+              const isOwner = profileUserId === (team as any)?.owner_id
               const ownerUser = isOwner ? (team?.expand as any)?.owner : null
+              const memberUser = (member as any)?.user  // joined object from user:users(*)
               const displayName =
-                member?.expand?.user?.name ??
+                (memberUser && typeof memberUser === 'object' ? memberUser.name : null) ??
                 ownerUser?.name ??
-                (profile as any).expand?.user?.name ??
+                (profile as any).user?.name ??
+                profile.profession ??
                 '—'
 
               const avatarUrl = profile.avatar
