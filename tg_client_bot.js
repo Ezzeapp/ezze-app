@@ -116,7 +116,7 @@ async function showTeamBookingButton(chatId, teamSlug, phone, name, tgUsername =
       chat_id: chatId,
       text: `✅ <b>Отлично, ${name}!</b>\n\nНажмите кнопку ниже, чтобы выбрать мастера и записаться:`,
       parse_mode: "HTML",
-      reply_markup: { inline_keyboard: [[{ text: "👥 Выбрать мастера", web_app: { url: teamUrl } }]] },
+      reply_markup: { inline_keyboard: [[{ text: "👥 Выбрать мастера", style: "primary", web_app: { url: teamUrl } }]] },
     }),
   });
 }
