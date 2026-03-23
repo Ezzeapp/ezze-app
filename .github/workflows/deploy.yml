@@ -39,6 +39,30 @@ jobs:
           target: '/var/www/ezze-app/'
           strip_components: 1
 
+      # ── Apply DB migrations ──────────────────────────────────────
+      - name: Copy migrations to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          source: 'supabase/migrations/*.sql'
+          target: '/tmp/ezze-migrations/'
+          strip_components: 2
+
+      - name: Apply DB migrations
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            cd /app/supabase
+            for f in $(ls /tmp/ezze-migrations/*.sql | sort); do
+              echo "Applying $f..."
+              docker compose exec -T db psql -U postgres -d postgres < "$f" || true
+            done
+
       # ── Deploy Edge Functions ─────────────────────────────────────
       - name: Deploy Edge Functions to VPS
         uses: appleboy/scp-action@v0.1.7

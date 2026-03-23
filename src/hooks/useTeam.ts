@@ -65,12 +65,12 @@ export function useTeamBySlug(slug: string) {
     queryFn: async () => {
       const { data } = await supabase
         .from('teams')
-        .select('*, owner:users(*)')
+        .select('id, name, slug, description, logo, is_public, currency, owner_id, created_at, updated_at, owner:users(*)')
         .eq('slug', slug)
         .eq('is_public', true)
         .maybeSingle()
       if (!data) return null
-      return { ...data, expand: { owner: (data as any).owner } } as Team
+      return { ...data, expand: { owner: (data as any).owner } } as unknown as Team
     },
     enabled: !!slug,
     staleTime: 5 * 60_000,
@@ -85,7 +85,7 @@ export function usePublicTeamMembers(teamId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('team_members')
-        .select('*, user:users(*)')
+        .select('id, team_id, user_id, role, status, joined_at, user:users(*)')
         .eq('team_id', teamId)
         .eq('status', 'active')
         .order('joined_at')
