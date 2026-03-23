@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Check, Zap, Crown, Building2, CreditCard, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
 import dayjs from 'dayjs'
 import { useAuth } from '@/contexts/AuthContext'
-import { useAppSettings, usePlanPrices, DEFAULT_PLAN_PRICES, usePlanLimits, DEFAULT_PLAN_LIMITS } from '@/hooks/useAppSettings'
+import { useAppSettings, usePlanPrices, DEFAULT_PLAN_PRICES, usePlanLimits, DEFAULT_PLAN_LIMITS, usePlanFeatures, DEFAULT_PLAN_FEATURES, type PlanFeaturesConfig } from '@/hooks/useAppSettings'
 import { useMySubscription, useSubscriptionHistory } from '@/hooks/useSubscription'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -23,39 +23,12 @@ interface PlanConfig {
   id: PlanId
   icon: React.ComponentType<{ className?: string }>
   color: string
-  /** Статические фичи (не лимиты) — i18n ключи */
-  staticFeatures: string[]
 }
 
 const PLANS: PlanConfig[] = [
-  {
-    id: 'free',
-    icon: Zap,
-    color: 'text-muted-foreground',
-    staticFeatures: [],
-  },
-  {
-    id: 'pro',
-    icon: Crown,
-    color: 'text-primary',
-    staticFeatures: [
-      'billing.feat.telegram',
-      'billing.feat.email',
-      'billing.feat.analytics',
-    ],
-  },
-  {
-    id: 'enterprise',
-    icon: Building2,
-    color: 'text-amber-600',
-    staticFeatures: [
-      'billing.feat.telegram',
-      'billing.feat.email',
-      'billing.feat.analytics',
-      'billing.feat.team',
-      'billing.feat.support',
-    ],
-  },
+  { id: 'free',       icon: Zap,       color: 'text-muted-foreground' },
+  { id: 'pro',        icon: Crown,     color: 'text-primary' },
+  { id: 'enterprise', icon: Building2, color: 'text-amber-600' },
 ]
 
 // ── Диалог выбора провайдера ──────────────────────────────────────────────────
@@ -191,9 +164,10 @@ interface PlanCardProps {
 }
 
 function PlanCard({ plan, currentPlan, onUpgrade }: PlanCardProps) {
-  const { t, i18n }           = useTranslation()
-  const { data: planPrices }  = usePlanPrices()
-  const { data: planLimits }  = usePlanLimits()
+  const { t, i18n }              = useTranslation()
+  const { data: planPrices }     = usePlanPrices()
+  const { data: planLimits }     = usePlanLimits()
+  const { data: planFeaturesData } = usePlanFeatures()
 
   const PlanIcon    = plan.icon
   const prices      = planPrices ?? DEFAULT_PLAN_PRICES
@@ -238,11 +212,12 @@ function PlanCard({ plan, currentPlan, onUpgrade }: PlanCardProps) {
         : t('billing.feat.apptsUnlimited')
     )
 
-    // Статические фичи (telegram, email, analytics, …)
-    plan.staticFeatures.forEach(key => feats.push(t(key)))
+    // Динамические фичи из Supabase (редактируются в админке)
+    const planFeats = (planFeaturesData ?? DEFAULT_PLAN_FEATURES)[plan.id as keyof PlanFeaturesConfig] ?? []
+    planFeats.forEach(feat => feats.push(feat))
 
     return feats
-  }, [planLimits, plan.id, plan.staticFeatures, t])
+  }, [planLimits, plan.id, planFeaturesData, t])
 
   return (
     <div className={[

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { Settings2, RefreshCw, LayoutGrid } from 'lucide-react'
+import { Settings2, RefreshCw, LayoutGrid, ListChecks, Plus, X } from 'lucide-react'
 import dayjs from 'dayjs'
 import {
   useAppSettings, useUpdateAppSetting, APP_SETTINGS_KEY,
   usePlanLimits, useUpdatePlanLimits, DEFAULT_PLAN_LIMITS, type PlanLimitRow,
   usePlanPrices, useUpdatePlanPrices, DEFAULT_PLAN_PRICES,
+  usePlanFeatures, useUpdatePlanFeatures, DEFAULT_PLAN_FEATURES, type PlanFeaturesConfig,
 } from '@/hooks/useAppSettings'
 import { useAllSubscriptions, SUBSCRIPTIONS_KEY } from '@/hooks/useSubscription'
 import { Button } from '@/components/ui/button'
@@ -486,12 +487,126 @@ function SubscriptionsTable() {
   )
 }
 
+// ── Редактор фич тарифных планов ─────────────────────────────────────────────
+
+function PlanFeaturesEditor() {
+  const { t } = useTranslation()
+  const { data: featuresData } = usePlanFeatures()
+  const updateFeatures = useUpdatePlanFeatures()
+
+  const [features, setFeatures] = useState<PlanFeaturesConfig>(DEFAULT_PLAN_FEATURES)
+  const [newFeats, setNewFeats] = useState<Record<keyof PlanFeaturesConfig, string>>({
+    free: '', pro: '', enterprise: '',
+  })
+
+  useEffect(() => {
+    if (featuresData) setFeatures(featuresData)
+  }, [featuresData])
+
+  const addFeature = (plan: keyof PlanFeaturesConfig) => {
+    const text = newFeats[plan].trim()
+    if (!text) return
+    setFeatures(prev => ({ ...prev, [plan]: [...prev[plan], text] }))
+    setNewFeats(prev => ({ ...prev, [plan]: '' }))
+  }
+
+  const removeFeature = (plan: keyof PlanFeaturesConfig, index: number) => {
+    setFeatures(prev => ({
+      ...prev,
+      [plan]: prev[plan].filter((_, i) => i !== index),
+    }))
+  }
+
+  const save = async () => {
+    await updateFeatures.mutateAsync(features)
+    toast.success(t('admin.billing.saved'))
+  }
+
+  const plans: { id: keyof PlanFeaturesConfig; label: string }[] = [
+    { id: 'free',       label: t('billing.plan.free') },
+    { id: 'pro',        label: t('billing.plan.pro') },
+    { id: 'enterprise', label: t('billing.plan.enterprise') },
+  ]
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2">
+        <ListChecks className="h-4 w-4 text-muted-foreground" />
+        <div>
+          <h3 className="font-semibold text-sm">{t('admin.billing.featuresSection')}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t('admin.billing.featuresSectionDesc')}</p>
+        </div>
+      </div>
+
+      <div className="rounded-lg border p-4 space-y-5">
+        {plans.map(({ id, label }) => (
+          <div key={id} className="space-y-2">
+            <p className="text-sm font-medium">{label}</p>
+
+            {/* Список фич */}
+            <div className="space-y-1.5">
+              {features[id].length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">{t('admin.billing.featuresEmpty')}</p>
+              ) : (
+                features[id].map((feat, i) => (
+                  <div key={i} className="flex items-center gap-2 group">
+                    <span className="flex-1 text-sm bg-muted/40 rounded px-2.5 py-1 leading-tight">{feat}</span>
+                    <button
+                      type="button"
+                      className="h-6 w-6 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all shrink-0"
+                      onClick={() => removeFeature(id, i)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Поле добавления */}
+            <div className="flex items-center gap-2">
+              <Input
+                value={newFeats[id]}
+                onChange={e => setNewFeats(prev => ({ ...prev, [id]: e.target.value }))}
+                onKeyDown={e => e.key === 'Enter' && addFeature(id)}
+                placeholder={t('admin.billing.featurePlaceholder')}
+                className="text-sm h-8"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-2 shrink-0"
+                onClick={() => addFeature(id)}
+                disabled={!newFeats[id].trim()}
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        ))}
+
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={save}
+          disabled={updateFeatures.isPending}
+        >
+          {t('common.save')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 // ── AdminBillingTab ───────────────────────────────────────────────────────────
 
 export function AdminBillingTab() {
   return (
     <div className="space-y-8">
       <PlanSettings />
+      <div className="border-t pt-6">
+        <PlanFeaturesEditor />
+      </div>
       <div className="border-t pt-6">
         <ProviderSettings />
       </div>

@@ -107,6 +107,67 @@ export function useUpdatePlanPrices() {
   })
 }
 
+// ── Plan Features ─────────────────────────────────────────────────────────────
+
+export interface PlanFeaturesConfig {
+  free: string[]
+  pro: string[]
+  enterprise: string[]
+}
+
+export const DEFAULT_PLAN_FEATURES: PlanFeaturesConfig = {
+  free: [],
+  pro: [
+    'Telegram-уведомления',
+    'Email-уведомления',
+    'Расширенная аналитика',
+  ],
+  enterprise: [
+    'Telegram-уведомления',
+    'Email-уведомления',
+    'Расширенная аналитика',
+    'Управление командой',
+    'Приоритетная поддержка',
+  ],
+}
+
+export function usePlanFeatures() {
+  return useQuery({
+    queryKey: [APP_SETTINGS_KEY, 'plan_features'],
+    queryFn: async (): Promise<PlanFeaturesConfig> => {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('*')
+        .eq('key', 'plan_features')
+        .maybeSingle()
+      if (!data) return DEFAULT_PLAN_FEATURES
+      try {
+        return JSON.parse(data.value) as PlanFeaturesConfig
+      } catch {
+        return DEFAULT_PLAN_FEATURES
+      }
+    },
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useUpdatePlanFeatures() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (features: PlanFeaturesConfig) => {
+      const value = JSON.stringify(features)
+      const { data, error } = await supabase
+        .from('app_settings')
+        .upsert({ key: 'plan_features', value }, { onConflict: 'key' })
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [APP_SETTINGS_KEY, 'plan_features'] }),
+  })
+}
+
 // ── Plan Limit Check ─────────────────────────────────────────────────────────
 
 export interface PlanLimitCheckResult {

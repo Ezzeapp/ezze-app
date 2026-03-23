@@ -920,7 +920,11 @@
       "colExpires": "Expires",
       "colStatus": "Status",
       "saved": "Settings saved",
-      "limitsSaved": "Limits saved"
+      "limitsSaved": "Limits saved",
+      "featuresSection": "Plan Features",
+      "featuresSectionDesc": "Add, edit and remove features displayed on each plan card",
+      "featuresEmpty": "No features yet. Add one below.",
+      "featurePlaceholder": "E.g. Telegram notifications"
     },
     "ai": {
       "desc": "AI assistant settings. Used for profile text generation, client analysis and Telegram bot responses.",
