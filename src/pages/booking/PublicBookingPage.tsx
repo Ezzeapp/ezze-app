@@ -41,7 +41,7 @@ interface SlotInfo {
   reason: BusyReason
 }
 
-const SERVICES_LIMIT = 30
+const SERVICES_LIMIT = 15
 
 export function PublicBookingPage() {
   const { t, i18n } = useTranslation()
