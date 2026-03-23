@@ -134,10 +134,14 @@ export function PublicBookingPage() {
       tg.ready()
       // requestFullscreen() — полный экран (Bot API 8.0+), как в MiniAppLayout
       // Это то, что заставляет страницу раскрываться на весь экран в Telegram
-      if (typeof tg.requestFullscreen === 'function') {
-        tg.requestFullscreen()
-      } else {
-        tg.expand()
+      try {
+        if (typeof tg.requestFullscreen === 'function') {
+          tg.requestFullscreen()
+        } else {
+          tg.expand()
+        }
+      } catch {
+        try { tg.expand() } catch { /* ignore */ }
       }
 
       const updatePadding = () => {

@@ -51,10 +51,14 @@ if (window.Telegram?.WebApp) {
   const path = window.location.pathname
   const needsFullscreen = path.startsWith('/book/') || path === '/my' ||
     path.startsWith('/tg') || path.startsWith('/cancel/')
-  if (needsFullscreen && typeof tg.requestFullscreen === 'function') {
-    tg.requestFullscreen()
-  } else {
-    tg.expand()
+  try {
+    if (needsFullscreen && typeof tg.requestFullscreen === 'function') {
+      tg.requestFullscreen()
+    } else {
+      tg.expand()
+    }
+  } catch {
+    try { tg.expand() } catch { /* ignore */ }
   }
 }
 
