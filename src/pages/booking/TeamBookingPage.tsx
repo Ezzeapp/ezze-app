@@ -39,7 +39,6 @@ export function TeamBookingPage() {
   const memberIdsKey = useMemo(() => {
     const ids = members.map(m => (m as any).user_id).filter(Boolean) as string[]
     const ownerId: string | undefined = (team as any)?.owner_id
-    console.log('[TBP] team.id=', team?.id, 'owner_id=', ownerId, 'members=', members.length, ids)
     if (ownerId && !ids.includes(ownerId)) {
       ids.unshift(ownerId)
     }
@@ -47,17 +46,15 @@ export function TeamBookingPage() {
   }, [members, team])
 
   useEffect(() => {
-    console.log('[TBP] memberIdsKey=', memberIdsKey)
     if (!memberIdsKey) { setProfiles([]); setProfilesLoading(false); return }
     const userIds = memberIdsKey.split(',')
 
     setProfilesLoading(true)
     supabase
       .from('master_profiles')
-      .select('*, user:users(id, name, avatar, email)')
+      .select('*')
       .in('user_id', userIds)
       .then(({ data, error }) => {
-        console.log('[TBP] profiles result:', data?.length, error)
         setProfilesLoading(false)
         if (error) { console.error('TeamBookingPage profiles error:', error); setProfiles([]); return }
         setProfiles((data ?? []) as unknown as MasterProfile[])
