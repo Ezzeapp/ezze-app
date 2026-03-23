@@ -75,9 +75,18 @@ async function saveTgClient(chatId, name, phone, tgUsername = null) {
 
 // ── Клиентские хелперы ────────────────────────────────────────────────────────
 
-async function setClientMenuButton(chatId) {
+async function setClientMenuButton(chatId, phone = '', name = '') {
   const cfg = await loadTgConfig();
-  await bot.setUserMenuButton(chatId, cfg.client_label, `${APP_URL}/my?tg_id=${chatId}`);
+  // Если телефон не передан — пробуем достать из tg_clients
+  if (!phone) {
+    const tgClient = await findTgClient(chatId);
+    phone = tgClient?.phone || '';
+    if (!name) name = tgClient?.name || '';
+  }
+  const params = new URLSearchParams({ tg_id: String(chatId) });
+  if (phone) params.set('tg_phone', phone);
+  if (name) params.set('tg_name', name);
+  await bot.setUserMenuButton(chatId, cfg.client_label, `${APP_URL}/my?${params.toString()}`);
 }
 
 async function showBookingButton(chatId, slug, phone, name, tgUsername = '') {
@@ -131,9 +140,12 @@ async function sendClientMenuSmart(chatId, firstName) {
   }
 
   // 3. Зарегистрирован в tg_clients (платформенная регистрация)?
+  let knownTgClient = null;
   if (!isKnownClient) {
-    const tgClient = await findTgClient(chatId);
-    isKnownClient = !!tgClient;
+    knownTgClient = await findTgClient(chatId);
+    isKnownClient = !!knownTgClient;
+  } else {
+    knownTgClient = await findTgClient(chatId);
   }
 
   // 4. Есть ли сохранённая JSON-сессия (резервный вариант)?
@@ -144,7 +156,13 @@ async function sendClientMenuSmart(chatId, firstName) {
 
   if (isKnownClient) {
     const cfg = await loadTgConfig();
-    await setClientMenuButton(chatId);
+    const clientPhone = knownTgClient?.phone || '';
+    const clientName  = knownTgClient?.name  || '';
+    const cabinetParams = new URLSearchParams({ tg_id: String(chatId) });
+    if (clientPhone) cabinetParams.set('tg_phone', clientPhone);
+    if (clientName)  cabinetParams.set('tg_name', clientName);
+    const cabinetUrl = `${APP_URL}/my?${cabinetParams.toString()}`;
+    await setClientMenuButton(chatId, clientPhone, clientName);
     await fetch(`${bot.TG_API}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -154,7 +172,7 @@ async function sendClientMenuSmart(chatId, firstName) {
         parse_mode: "HTML",
         reply_markup: {
           inline_keyboard: [[
-            { text: "📋 Мой кабинет", style: "primary", web_app: { url: `${APP_URL}/my?tg_id=${chatId}` } },
+            { text: "📋 Мой кабинет", style: "primary", web_app: { url: cabinetUrl } },
           ]],
         },
       }),
@@ -363,7 +381,8 @@ async function processUpdate(update) {
             tgUsername,
           });
           savePendingBookings();
-          await setClientMenuButton(chatId);
+          await setClientMenuButton(chatId, pending.phone, name);
+          const regParams = new URLSearchParams({ tg_id: String(chatId), tg_phone: pending.phone, tg_name: name });
           await fetch(`${bot.TG_API}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -373,7 +392,7 @@ async function processUpdate(update) {
               parse_mode: "HTML",
               reply_markup: {
                 inline_keyboard: [[
-                  { text: "📋 Мой кабинет", style: "primary", web_app: { url: `${APP_URL}/my?tg_id=${chatId}` } },
+                  { text: "📋 Мой кабинет", style: "primary", web_app: { url: `${APP_URL}/my?${regParams.toString()}` } },
                 ]],
               },
             }),
@@ -417,7 +436,11 @@ async function processUpdate(update) {
     await bot.answerCallbackQuery(callback.id);
 
     if (callback.data === "open_cabinet") {
-      await bot.sendMessageWithWebApp(chatId, "📋 Открываю ваши записи...", "Ezze", `${APP_URL}/my?tg_id=${chatId}`);
+      const tgCl = await findTgClient(chatId);
+      const cbParams = new URLSearchParams({ tg_id: String(chatId) });
+      if (tgCl?.phone) cbParams.set('tg_phone', tgCl.phone);
+      if (tgCl?.name)  cbParams.set('tg_name', tgCl.name);
+      await bot.sendMessageWithWebApp(chatId, "📋 Открываю ваши записи...", "Ezze", `${APP_URL}/my?${cbParams.toString()}`);
     }
 
     if (callback.data?.startsWith("cancel_appt_")) {
