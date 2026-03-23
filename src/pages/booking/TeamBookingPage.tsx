@@ -24,8 +24,9 @@ export function TeamBookingPage() {
   }, [])
 
   // Параметры Telegram пользователя из URL (если переданы через бота)
-  const tgId   = searchParams.get('tg_id')   ?? undefined
-  const tgName = searchParams.get('tg_name') ?? undefined
+  const tgId    = searchParams.get('tg_id')    ?? undefined
+  const tgName  = searchParams.get('tg_name')  ?? undefined
+  const tgPhone = searchParams.get('tg_phone') ?? undefined
 
   const { data: team, isLoading: teamLoading } = useTeamBySlug(teamSlug)
   const { data: members = [], isLoading: membersLoading } = usePublicTeamMembers(team?.id ?? '')
@@ -154,8 +155,9 @@ export function TeamBookingPage() {
                   type="button"
                   onClick={() => {
                   const params = new URLSearchParams({ team: teamSlug })
-                  if (tgId)   params.set('tg_id', tgId)
-                  if (tgName) params.set('tg_name', tgName)
+                  if (tgId)    params.set('tg_id', tgId)
+                  if (tgName)  params.set('tg_name', tgName)
+                  if (tgPhone) params.set('tg_phone', tgPhone)
                   navigate(`/book/${profile.booking_slug}?${params.toString()}`)
                 }}
                   className="w-full text-left"
