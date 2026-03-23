@@ -1515,14 +1515,14 @@ export function AppointmentDialog({
 
               {/* ── ДЕСКТОП (lg+) — двухколоночный ──────────────────── */}
               <div className="hidden lg:flex flex-1 overflow-hidden flex-row min-h-0">
-                {/* Левая колонка — Услуги, Дата, Время (50%) */}
-                <div className="px-5 py-4 space-y-5 border-r" style={{ width: '50%', overflow: svcSearch ? 'visible' : 'auto' }}>
-                  {servicesBlock}
+                {/* Левая колонка — Дата, Время (50%) */}
+                <div className="overflow-y-auto px-5 py-4 space-y-5 border-r" style={{ width: '50%' }}>
                   {dateTimeBlock}
                 </div>
 
-                {/* Правая колонка (50%) */}
-                <div className="overflow-y-auto px-5 py-4 flex flex-col gap-4" style={{ width: '50%' }}>
+                {/* Правая колонка — Услуга, Клиент, Цена, Детали (50%) */}
+                <div className="px-5 py-4 flex flex-col gap-4" style={{ width: '50%', overflow: svcSearch ? 'visible' : 'auto' }}>
+                  {servicesBlock}
                   {clientBlock}
 
                   {/* Цена */}
