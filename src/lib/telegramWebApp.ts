@@ -142,11 +142,15 @@ export function initMiniApp(): void {
   if (!window.Telegram?.WebApp) return
   window.Telegram.WebApp.ready()
   // Запросить полноэкранный режим (Bot API 8.0+) — убирает нативную шапку Telegram
-  if (typeof window.Telegram.WebApp.requestFullscreen === 'function') {
-    window.Telegram.WebApp.requestFullscreen()
-  } else {
-    // Fallback для старых версий Telegram
-    window.Telegram.WebApp.expand()
+  try {
+    if (typeof window.Telegram.WebApp.requestFullscreen === 'function') {
+      window.Telegram.WebApp.requestFullscreen()
+    } else {
+      window.Telegram.WebApp.expand()
+    }
+  } catch {
+    // Fallback для версий Telegram, которые не поддерживают requestFullscreen
+    try { window.Telegram.WebApp.expand() } catch { /* ignore */ }
   }
 }
 
