@@ -584,7 +584,7 @@ export function AppointmentDialog({
   // Мобильный квиз: шаги 0=Дата, 1=Время, 2=Услуга, 3=Детали
   const [mobileStep, setMobileStep] = useState(0)
   const [stepDir, setStepDir] = useState<'forward' | 'back'>('forward')
-  const MOBILE_STEPS = 4
+  const MOBILE_STEPS = 3
 
   // Отображение клиента в итоговой строке
   const clientLabel = selectedClient
@@ -1105,7 +1105,6 @@ export function AppointmentDialog({
             t('appointments.service'),
             `${t('appointments.date')} / ${t('appointments.time')}`,
             t('appointments.client'),
-            t('appointments.total'),
           ]
 
           // Кастомные блоки только для нужного шага
@@ -1113,8 +1112,121 @@ export function AppointmentDialog({
             selectedSvcs.length > 0,          // шаг 0: услуга
             !!selectedDate && !!selectedTime,  // шаг 1: дата И время
             true,                             // шаг 2: клиент (опционально)
-            true,                             // шаг 3: итого (всегда можно сохранить)
           ]
+
+          // Табы цены/деталей (переиспользуются в мобайле и правой панели)
+          const tabs4 = [
+            { key: 'discount' as const, icon: Percent, label: t('appointments.tabDiscount'), badge: effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : effectiveDiscount > 0 ? `−${effectiveDiscount}%` : null },
+            { key: 'payment' as const, icon: CreditCard, label: t('appointments.tabPayment'), badge: paymentMethod ? ({ cash: t('appointments.paymentCash'), card: t('appointments.paymentCard'), transfer: t('appointments.paymentTransfer'), other: t('appointments.paymentOther') } as Record<string, string>)[paymentMethod] ?? null : null },
+            ...(showNotes ? [{ key: 'notes' as const, icon: StickyNote, label: t('appointments.tabNote'), badge: notes.trim() ? '·' : null }] : []),
+            ...(!editAppt && showRecurring ? [{ key: 'recurring' as const, icon: Repeat, label: t('appointments.tabRecurring'), badge: recurring ? '·' : null }] : []),
+          ]
+
+          const tabsContent = (
+            <>
+              <div className="grid grid-cols-2 gap-1">
+                {tabs4.map(tab => {
+                  const Icon = tab.icon
+                  const isActive = activeSection4 === tab.key
+                  return (
+                    <button key={tab.key} type="button"
+                      onClick={() => setActiveSection4(isActive ? null : tab.key)}
+                      className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors text-left ${
+                        isActive ? 'bg-primary/10 text-primary' : tab.badge ? 'bg-muted/70 text-foreground' : 'bg-muted/40 text-muted-foreground hover:bg-muted'
+                      }`}>
+                      <Icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <span className="truncate flex-1">{tab.label}</span>
+                      {tab.badge && <span className={`shrink-0 text-xs font-semibold ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>{tab.badge}</span>}
+                    </button>
+                  )
+                })}
+              </div>
+              {activeSection4 === 'discount' && (
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex rounded-lg border overflow-hidden shrink-0">
+                      <button type="button" onClick={() => handleModeSwitch('discount')}
+                        className={`px-3 h-7 text-xs font-medium transition-all border-r ${adjustMode === 'discount' ? 'bg-emerald-500 text-white' : 'bg-background text-muted-foreground hover:text-emerald-600'}`}>
+                        {t('appointments.discount')}
+                      </button>
+                      <button type="button" onClick={() => handleModeSwitch('surcharge')}
+                        className={`px-3 h-7 text-xs font-medium transition-all ${adjustMode === 'surcharge' ? 'bg-orange-500 text-white' : 'bg-background text-muted-foreground hover:text-orange-500'}`}>
+                        {t('appointments.surcharge')}
+                      </button>
+                    </div>
+                    <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : effectiveDiscount > 0 ? 'text-emerald-600' : 'text-muted-foreground/40'}`}>
+                      {effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : effectiveDiscount > 0 ? `−${effectiveDiscount}%` : adjustMode === 'discount' ? '−%' : '+%'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {PRESETS.map(p => (
+                      <button key={p} type="button" onClick={() => handlePresetClick(p)}
+                        className={`h-7 px-2 rounded-lg border text-xs font-medium transition-all flex-1 ${activePreset === p ? adjustMode === 'discount' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-orange-500 border-orange-500 text-white' : adjustMode === 'discount' ? 'border-border hover:border-emerald-400 hover:text-emerald-600' : 'border-border hover:border-orange-400 hover:text-orange-500'}`}>
+                        {p}%
+                      </button>
+                    ))}
+                    <div className="relative flex-1">
+                      <Percent className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+                      <Input type="number" min={0} max={100}
+                        className="h-7 w-full pr-6 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        placeholder="0" value={customAdjust} onChange={e => handleCustomChange(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              )}
+              {activeSection4 === 'payment' && (
+                <div className="grid grid-cols-2 gap-1 pt-1">
+                  {([
+                    { key: 'cash', label: t('appointments.paymentCash') },
+                    { key: 'card', label: t('appointments.paymentCard') },
+                    { key: 'transfer', label: t('appointments.paymentTransfer') },
+                    { key: 'other', label: t('appointments.paymentOther') },
+                  ] as const).map(m => (
+                    <button key={m.key} type="button"
+                      onClick={() => setPaymentMethod(paymentMethod === m.key ? '' : m.key)}
+                      className={`py-2 px-3 rounded-lg text-xs font-medium transition-colors ${paymentMethod === m.key ? 'bg-primary/10 text-primary' : 'bg-muted/40 text-muted-foreground hover:bg-muted'}`}>
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {activeSection4 === 'notes' && showNotes && (
+                <div className="pt-1">
+                  <Textarea rows={3} className="text-sm resize-none min-h-0"
+                    placeholder={t('booking.commentPlaceholder')}
+                    value={notes} onChange={e => setNotes(e.target.value)} />
+                </div>
+              )}
+              {activeSection4 === 'recurring' && !editAppt && (
+                <div className="rounded-xl border divide-y overflow-hidden mt-1">
+                  {hasTelegram && (
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <p className="text-sm">{t('appointments.notifyTelegram')}</p>
+                      <Switch checked={notifyTg} onCheckedChange={setNotifyTg} />
+                    </div>
+                  )}
+                  {showRecurring && (
+                    <div className="px-4 py-3 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">{t('appointments.recurring')}</p>
+                          <p className="text-xs text-muted-foreground">{t('appointments.recurringHelp')}</p>
+                        </div>
+                        <Switch checked={recurring} onCheckedChange={setRecurring} />
+                      </div>
+                      {recurring && (
+                        <div className="flex items-center gap-3 pt-1">
+                          <p className="text-sm text-muted-foreground shrink-0">{t('appointments.recurringWeeks')}</p>
+                          <Input type="number" min={2} max={52} className="w-20 h-8"
+                            value={recurringWeeks} onChange={e => setRecurringWeeks(Number(e.target.value))} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )
 
           return (
             <>
@@ -1309,202 +1421,28 @@ export function AppointmentDialog({
                     </>
                   )}
 
-                  {/* Шаг 2 — Клиент */}
-                  {mobileStep === 2 && clientBlock}
-
-                  {/* Шаг 3 — Итого */}
-                  {mobileStep === 3 && (
+                  {/* Шаг 2 — Клиент + цена/детали (цена только на мобайле, на десктопе — в правой панели) */}
+                  {mobileStep === 2 && (
                     <>
-                      {/* Сводка */}
-                      <div className="rounded-xl border bg-muted/30 p-3 space-y-1.5">
-                        <div className="flex items-center gap-2 text-xs">
-                          <CalendarCheck className="h-3.5 w-3.5 text-primary shrink-0" />
-                          <span className="font-medium text-foreground">{dayjs(selectedDate).format('D MMM, dddd')}</span>
-                          <span className="text-muted-foreground">·</span>
-                          <span>{selectedTime}</span>
-                          {totalDuration > 0 && (
-                            <span className="text-muted-foreground/70">→ {minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)}</span>
+                      {clientBlock}
+                      <div className="lg:hidden space-y-3 border-t pt-3">
+                        <div className="space-y-1">
+                          <div className="relative">
+                            <Input type="number" min={0} className="h-10 w-full text-base font-medium pr-12"
+                              placeholder={totalBasePrice > 0 ? String(totalBasePrice) : t('appointments.pricePlaceholder')}
+                              value={priceInput} onChange={e => setPriceInput(e.target.value)} />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
+                          </div>
+                          {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
+                            <div className="flex items-center justify-end gap-1.5 px-1">
+                              <span className="text-xs text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
+                              <span className="text-xs">→</span>
+                              <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : 'text-emerald-600'}`}>{formatCurrency(finalPrice, currency, i18n.language)}</span>
+                            </div>
                           )}
                         </div>
-                        {selectedSvcs.length > 0 && (
-                          <div className="space-y-0.5 pt-0.5">
-                            {selectedSvcs.map(svc => (
-                              <div key={svc.id} className="flex items-center justify-between text-xs">
-                                <span className="text-foreground">{svc.name}</span>
-                                {svc.price > 0 && <span className="text-muted-foreground">{formatCurrency(svc.price, currency, i18n.language)}</span>}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between text-xs font-medium pt-1 border-t">
-                          <span className="text-muted-foreground">{clientLabel}</span>
-                          <div className="flex items-center gap-2">
-                            {finalPrice > 0
-                              ? <span className="text-primary">{formatCurrency(finalPrice, currency, i18n.language)}</span>
-                              : totalBasePrice > 0 && <span>{formatCurrency(totalBasePrice, currency, i18n.language)}</span>
-                            }
-                          </div>
-                        </div>
+                        {tabsContent}
                       </div>
-
-                      {/* Цена — всегда видна под карточкой */}
-                      <div className="space-y-1">
-                        <div className="relative">
-                          <Input type="number" min={0} className="h-10 w-full text-base font-medium pr-12"
-                            placeholder={totalBasePrice > 0 ? String(totalBasePrice) : t('appointments.pricePlaceholder')}
-                            value={priceInput} onChange={e => setPriceInput(e.target.value)} />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
-                        </div>
-                        {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
-                          <div className="flex items-center justify-end gap-1.5 px-1">
-                            <span className="text-xs text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
-                            <span className="text-xs">→</span>
-                            <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : 'text-emerald-600'}`}>
-                              {formatCurrency(finalPrice, currency, i18n.language)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Таб-навигация: Скидка | Оплата | Заметки | Повтор */}
-                      {(() => {
-                        const tabs4 = [
-                          {
-                            key: 'discount' as const,
-                            icon: Percent,
-                            label: t('appointments.tabDiscount'),
-                            badge: effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : effectiveDiscount > 0 ? `−${effectiveDiscount}%` : null,
-                          },
-                          {
-                            key: 'payment' as const,
-                            icon: CreditCard,
-                            label: t('appointments.tabPayment'),
-                            badge: paymentMethod
-                              ? ({ cash: t('appointments.paymentCash'), card: t('appointments.paymentCard'), transfer: t('appointments.paymentTransfer'), other: t('appointments.paymentOther') } as Record<string, string>)[paymentMethod] ?? null
-                              : null,
-                          },
-                          ...(showNotes ? [{ key: 'notes' as const, icon: StickyNote, label: t('appointments.tabNote'), badge: notes.trim() ? '·' : null }] : []),
-                          ...(!editAppt && showRecurring ? [{ key: 'recurring' as const, icon: Repeat, label: t('appointments.tabRecurring'), badge: recurring ? '·' : null }] : []),
-                        ]
-                        return (
-                          <>
-                            <div className="grid grid-cols-2 gap-1">
-                              {tabs4.map(tab => {
-                                const Icon = tab.icon
-                                const isActive = activeSection4 === tab.key
-                                return (
-                                  <button key={tab.key} type="button"
-                                    onClick={() => setActiveSection4(isActive ? null : tab.key)}
-                                    className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors text-left ${
-                                      isActive
-                                        ? 'bg-primary/10 text-primary'
-                                        : tab.badge
-                                          ? 'bg-muted/70 text-foreground'
-                                          : 'bg-muted/40 text-muted-foreground hover:bg-muted'
-                                    }`}>
-                                    <Icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                                    <span className="truncate flex-1">{tab.label}</span>
-                                    {tab.badge && (
-                                      <span className={`shrink-0 text-xs font-semibold ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
-                                        {tab.badge}
-                                      </span>
-                                    )}
-                                  </button>
-                                )
-                              })}
-                            </div>
-
-                            {/* Контент активной вкладки */}
-                            {activeSection4 === 'discount' && (
-                              <div className="space-y-2 pt-1">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex rounded-lg border overflow-hidden shrink-0">
-                                    <button type="button" onClick={() => handleModeSwitch('discount')}
-                                      className={`px-3 h-7 text-xs font-medium transition-all border-r ${adjustMode === 'discount' ? 'bg-emerald-500 text-white' : 'bg-background text-muted-foreground hover:text-emerald-600'}`}>
-                                      {t('appointments.discount')}
-                                    </button>
-                                    <button type="button" onClick={() => handleModeSwitch('surcharge')}
-                                      className={`px-3 h-7 text-xs font-medium transition-all ${adjustMode === 'surcharge' ? 'bg-orange-500 text-white' : 'bg-background text-muted-foreground hover:text-orange-500'}`}>
-                                      {t('appointments.surcharge')}
-                                    </button>
-                                  </div>
-                                  <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : effectiveDiscount > 0 ? 'text-emerald-600' : 'text-muted-foreground/40'}`}>
-                                    {effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : effectiveDiscount > 0 ? `−${effectiveDiscount}%` : adjustMode === 'discount' ? '−%' : '+%'}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  {PRESETS.map(p => (
-                                    <button key={p} type="button" onClick={() => handlePresetClick(p)}
-                                      className={`h-7 px-2 rounded-lg border text-xs font-medium transition-all flex-1 ${activePreset === p ? adjustMode === 'discount' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-orange-500 border-orange-500 text-white' : adjustMode === 'discount' ? 'border-border hover:border-emerald-400 hover:text-emerald-600' : 'border-border hover:border-orange-400 hover:text-orange-500'}`}>
-                                      {p}%
-                                    </button>
-                                  ))}
-                                  <div className="relative flex-1">
-                                    <Percent className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
-                                    <Input type="number" min={0} max={100}
-                                      className="h-7 w-full pr-6 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                      placeholder="0" value={customAdjust} onChange={e => handleCustomChange(e.target.value)} />
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {activeSection4 === 'payment' && (
-                              <div className="grid grid-cols-2 gap-1 pt-1">
-                                {([
-                                  { key: 'cash',     label: t('appointments.paymentCash') },
-                                  { key: 'card',     label: t('appointments.paymentCard') },
-                                  { key: 'transfer', label: t('appointments.paymentTransfer') },
-                                  { key: 'other',    label: t('appointments.paymentOther') },
-                                ] as const).map(m => (
-                                  <button key={m.key} type="button"
-                                    onClick={() => setPaymentMethod(paymentMethod === m.key ? '' : m.key)}
-                                    className={`py-2 px-3 rounded-lg text-xs font-medium transition-colors ${paymentMethod === m.key ? 'bg-primary/10 text-primary' : 'bg-muted/40 text-muted-foreground hover:bg-muted'}`}>
-                                    {m.label}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-
-                            {activeSection4 === 'notes' && showNotes && (
-                              <div className="pt-1">
-                                <Textarea rows={3} className="text-sm resize-none min-h-0"
-                                  placeholder={t('booking.commentPlaceholder')}
-                                  value={notes} onChange={e => setNotes(e.target.value)} />
-                              </div>
-                            )}
-
-                            {activeSection4 === 'recurring' && !editAppt && (
-                              <div className="rounded-xl border divide-y overflow-hidden mt-1">
-                                {hasTelegram && (
-                                  <div className="flex items-center justify-between px-4 py-3">
-                                    <p className="text-sm">{t('appointments.notifyTelegram')}</p>
-                                    <Switch checked={notifyTg} onCheckedChange={setNotifyTg} />
-                                  </div>
-                                )}
-                                {showRecurring && (
-                                  <div className="px-4 py-3 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                      <div>
-                                        <p className="text-sm font-medium">{t('appointments.recurring')}</p>
-                                        <p className="text-xs text-muted-foreground">{t('appointments.recurringHelp')}</p>
-                                      </div>
-                                      <Switch checked={recurring} onCheckedChange={setRecurring} />
-                                    </div>
-                                    {recurring && (
-                                      <div className="flex items-center gap-3 pt-1">
-                                        <p className="text-sm text-muted-foreground shrink-0">{t('appointments.recurringWeeks')}</p>
-                                        <Input type="number" min={2} max={52} className="w-20 h-8"
-                                          value={recurringWeeks} onChange={e => setRecurringWeeks(Number(e.target.value))} />
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </>
-                        )
-                      })()}
                     </>
                   )}
                 </div>
@@ -1621,37 +1559,26 @@ export function AppointmentDialog({
                       )}
                     </div>
 
-                    {/* Цена */}
-                    {(totalBasePrice > 0 || parseFloat(priceInput) > 0) && (
-                      <div className="pt-3 border-t">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{t('appointments.total')}</p>
-                          {paymentMethod && (
-                            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
-                              {({ cash: t('appointments.paymentCash'), card: t('appointments.paymentCard'), transfer: t('appointments.paymentTransfer'), other: t('appointments.paymentOther') } as Record<string, string>)[paymentMethod]}
-                            </span>
-                          )}
+                    {/* Цена + детали */}
+                    <div className="pt-3 border-t space-y-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{t('appointments.total')}</p>
+                      <div className="space-y-1">
+                        <div className="relative">
+                          <Input type="number" min={0} className="h-9 w-full text-sm font-medium pr-10"
+                            placeholder={totalBasePrice > 0 ? String(totalBasePrice) : t('appointments.pricePlaceholder')}
+                            value={priceInput} onChange={e => setPriceInput(e.target.value)} />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
-                            <span className="text-sm text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
-                          )}
-                          <span className={`text-xl font-bold ${effectiveSurcharge > 0 ? 'text-orange-500' : effectiveDiscount > 0 ? 'text-emerald-600' : 'text-foreground'}`}>
-                            {formatCurrency(finalPrice > 0 ? finalPrice : (parseFloat(priceInput) || totalBasePrice), currency, i18n.language)}
-                          </span>
-                          {effectiveDiscount > 0 && <Badge variant="secondary" className="text-xs text-emerald-600">−{effectiveDiscount}%</Badge>}
-                          {effectiveSurcharge > 0 && <Badge variant="secondary" className="text-xs text-orange-500">+{effectiveSurcharge}%</Badge>}
-                        </div>
+                        {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
+                          <div className="flex items-center justify-end gap-1.5 px-1">
+                            <span className="text-xs text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
+                            <span className="text-xs">→</span>
+                            <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : 'text-emerald-600'}`}>{formatCurrency(finalPrice, currency, i18n.language)}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-
-                    {/* Заметка */}
-                    {notes.trim() && (
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{t('appointments.tabNote')}</p>
-                        <p className="text-xs text-muted-foreground italic line-clamp-3">{notes.trim()}</p>
-                      </div>
-                    )}
+                      {tabsContent}
+                    </div>
 
                   </div>
 
