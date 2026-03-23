@@ -158,6 +158,15 @@ export function ClientCabinetPage() {
   // ── Загрузка данных ─────────────────────────────────────────────────────────
   const loadData = async (tgId: string) => {
     try {
+      // Подгружаем телефон из tg_clients (бот сохраняет его туда при регистрации)
+      const { data: tgClient } = await supabase
+        .from('tg_clients')
+        .select('phone, name')
+        .eq('tg_chat_id', tgId)
+        .maybeSingle()
+      if (tgClient?.phone) setTelegramPhone(tgClient.phone)
+      if (tgClient?.name && !userName) setUserName(tgClient.name)
+
       const { data: records } = await supabase
         .from('appointments')
         .select('*, service:services(name)')
