@@ -1060,7 +1060,7 @@ export function AppointmentDialog({
       {/* Мобиле: полноэкранный снизу вверх. Десктоп: центрированный диалог */}
       <DialogContent
         mobileFullscreen
-        className="w-full p-0 overflow-hidden flex flex-col sm:max-w-2xl lg:max-w-4xl sm:h-[90vh] sm:max-h-[90vh] lg:h-[65vh] lg:max-h-[65vh]"
+        className="w-full p-0 overflow-hidden flex flex-col sm:max-w-xl sm:h-[88vh] sm:max-h-[88vh]"
       >
 
         {/* Заголовок */}
@@ -1118,8 +1118,8 @@ export function AppointmentDialog({
 
           return (
             <>
-              {/* ── МОБАЙЛ (< lg) ─── квиз ───────────────────────── */}
-              <div className="lg:hidden flex-1 flex flex-col min-h-0">
+              {/* ── WIZARD (все экраны) ─────────────────────────── */}
+              <div className="flex-1 flex flex-col min-h-0">
                 {/* Прогресс-бар — компактный */}
                 <div className="shrink-0 px-5 pt-3 pb-2">
                   <div className="flex items-center">
@@ -1127,7 +1127,7 @@ export function AppointmentDialog({
                       <div key={i} className={`flex items-center ${i < stepLabels.length - 1 ? 'flex-1' : ''}`}>
                         <button
                           type="button"
-                          onClick={() => { if (i < mobileStep || mobileStepCanNext.slice(0, i).every(Boolean)) setMobileStep(i) }}
+                          onClick={() => { if (editAppt || duplicateFrom || i < mobileStep || mobileStepCanNext.slice(0, i).every(Boolean)) setMobileStep(i) }}
                           className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center shrink-0 transition-all ${
                             i === mobileStep
                               ? 'bg-primary text-primary-foreground scale-110'
@@ -1147,6 +1147,38 @@ export function AppointmentDialog({
                   {/* Название текущего шага */}
                   <p className="text-xs font-semibold text-primary mt-1.5">{stepLabels[mobileStep]}</p>
                 </div>
+
+                {/* Тулбар действий для режима редактирования */}
+                {editAppt && (
+                  <div className="shrink-0 px-5 pb-2 flex items-center gap-1.5 flex-wrap border-b">
+                    {onDelete && (
+                      <Button type="button" size="sm" variant="destructive" className="h-7 text-xs" onClick={onDelete}>
+                        {t('common.delete')}
+                      </Button>
+                    )}
+                    {onDuplicate && (
+                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={onDuplicate}>
+                        <Copy className="h-3 w-3" />{t('appointments.duplicate')}
+                      </Button>
+                    )}
+                    {!isReschedule ? (
+                      <Button type="button" size="sm" variant="outline"
+                        className="h-7 text-xs gap-1 text-amber-600 border-amber-200 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                        onClick={() => { setIsReschedule(true); setSelectedTime('') }}>
+                        <ArrowRightLeft className="h-3 w-3" />{t('appointments.reschedule')}
+                      </Button>
+                    ) : (
+                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 text-muted-foreground"
+                        onClick={() => { setIsReschedule(false); setSelectedTime(editAppt.start_time) }}>
+                        <X className="h-3 w-3" />{t('appointments.rescheduleCancel')}
+                      </Button>
+                    )}
+                    <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 ml-auto"
+                      onClick={() => printReceipt({ appointment: editAppt, masterName: user?.name || '', services: selectedSvcs, currency })}>
+                      <Printer className="h-3 w-3" />Чек
+                    </Button>
+                  </div>
+                )}
 
                 {/* Контент шага */}
                 <div key={mobileStep} className={`flex-1 overflow-y-auto px-5 pb-3 space-y-4 ${stepDir === 'forward' ? 'animate-slide-from-right' : 'animate-slide-from-left'}`}>
@@ -1513,260 +1545,6 @@ export function AppointmentDialog({
                 </div>
               </div>
 
-              {/* ── ДЕСКТОП (lg+) — двухколоночный ──────────────────── */}
-              <div className="hidden lg:flex flex-1 overflow-hidden flex-row min-h-0">
-                {/* Левая колонка — Дата, Время (50%) */}
-                <div className="overflow-y-auto px-5 py-4 space-y-5 border-r" style={{ width: '50%' }}>
-                  {dateTimeBlock}
-                </div>
-
-                {/* Правая колонка — Услуга, Клиент, Цена, Детали (50%) */}
-                <div className="px-5 py-4 flex flex-col gap-4" style={{ width: '50%', overflow: svcSearch ? 'visible' : 'auto' }}>
-                  {servicesBlock}
-                  {clientBlock}
-
-                  {/* Цена */}
-                  <section className="pt-1 border-t border-border">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                      {t('appointments.price')}
-                    </p>
-                    <div className="mb-2 relative">
-                      <Input type="number" min={0} className="h-10 w-full text-base font-medium pr-8"
-                        placeholder={totalBasePrice > 0 ? String(totalBasePrice) : t('appointments.pricePlaceholder')}
-                        value={priceInput} onChange={e => setPriceInput(e.target.value)} />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
-                    </div>
-                    {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
-                      <div className="flex items-center gap-2 text-xs mb-1 px-0.5">
-                        <span className="text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
-                        <span className="text-muted-foreground">→</span>
-                        <span className={`font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : 'text-emerald-600'}`}>{formatCurrency(finalPrice, currency, i18n.language)}</span>
-                      </div>
-                    )}
-                  </section>
-
-                  {/* Таб-навигация: Скидка | Оплата | Заметки | Детали */}
-                  {(() => {
-                    const tabs4 = [
-                      {
-                        key: 'discount' as const,
-                        icon: Percent,
-                        label: t('appointments.tabDiscount'),
-                        badge: effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : effectiveDiscount > 0 ? `−${effectiveDiscount}%` : null,
-                      },
-                      {
-                        key: 'payment' as const,
-                        icon: CreditCard,
-                        label: t('appointments.tabPayment'),
-                        badge: paymentMethod
-                          ? ({ cash: t('appointments.paymentCash'), card: t('appointments.paymentCard'), transfer: t('appointments.paymentTransfer'), other: t('appointments.paymentOther') } as Record<string, string>)[paymentMethod] ?? null
-                          : null,
-                      },
-                      ...(showNotes ? [{ key: 'notes' as const, icon: StickyNote, label: t('appointments.tabNote'), badge: notes.trim() ? '·' : null }] : []),
-                      { key: 'recurring' as const, icon: Info, label: t('appointments.tabDetails'), badge: status !== 'scheduled' || recurring || notifyTg ? '·' : null },
-                    ]
-                    return (
-                      <>
-                        <div className="grid grid-cols-2 gap-1">
-                          {tabs4.map(tab => {
-                            const Icon = tab.icon
-                            const isActive = activeSection4 === tab.key
-                            return (
-                              <button key={tab.key} type="button"
-                                onClick={() => setActiveSection4(isActive ? null : tab.key)}
-                                className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors text-left ${
-                                  isActive
-                                    ? 'bg-primary/10 text-primary'
-                                    : tab.badge
-                                      ? 'bg-muted/70 text-foreground'
-                                      : 'bg-muted/40 text-muted-foreground hover:bg-muted'
-                                }`}>
-                                <Icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                                <span className="truncate flex-1">{tab.label}</span>
-                                {tab.badge && (
-                                  <span className={`shrink-0 text-xs font-semibold ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
-                                    {tab.badge}
-                                  </span>
-                                )}
-                              </button>
-                            )
-                          })}
-                        </div>
-
-                        {activeSection4 === 'discount' && (
-                          <div className="space-y-2 pt-1">
-                            <div className="flex items-center justify-between">
-                              <div className="flex rounded-lg border overflow-hidden shrink-0">
-                                <button type="button" onClick={() => handleModeSwitch('discount')}
-                                  className={`px-3 h-7 text-xs font-medium transition-all border-r ${adjustMode === 'discount' ? 'bg-emerald-500 text-white' : 'bg-background text-muted-foreground hover:text-emerald-600'}`}>
-                                  {t('appointments.discount')}
-                                </button>
-                                <button type="button" onClick={() => handleModeSwitch('surcharge')}
-                                  className={`px-3 h-7 text-xs font-medium transition-all ${adjustMode === 'surcharge' ? 'bg-orange-500 text-white' : 'bg-background text-muted-foreground hover:text-orange-500'}`}>
-                                  {t('appointments.surcharge')}
-                                </button>
-                              </div>
-                              <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : effectiveDiscount > 0 ? 'text-emerald-600' : 'text-muted-foreground/40'}`}>
-                                {effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : effectiveDiscount > 0 ? `−${effectiveDiscount}%` : adjustMode === 'discount' ? '−%' : '+%'}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              {PRESETS.map(p => (
-                                <button key={p} type="button" onClick={() => handlePresetClick(p)}
-                                  className={`h-7 px-2 rounded-lg border text-xs font-medium transition-all flex-1 ${activePreset === p ? adjustMode === 'discount' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-orange-500 border-orange-500 text-white' : adjustMode === 'discount' ? 'border-border hover:border-emerald-400 hover:text-emerald-600' : 'border-border hover:border-orange-400 hover:text-orange-500'}`}>
-                                  {p}%
-                                </button>
-                              ))}
-                              <div className="relative flex-1">
-                                <Percent className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
-                                <Input type="number" min={0} max={100}
-                                  className="h-7 w-full pr-6 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  placeholder="0" value={customAdjust} onChange={e => handleCustomChange(e.target.value)} />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {activeSection4 === 'payment' && (
-                          <div className="grid grid-cols-2 gap-1 pt-1">
-                            {([
-                              { key: 'cash',     label: t('appointments.paymentCash') },
-                              { key: 'card',     label: t('appointments.paymentCard') },
-                              { key: 'transfer', label: t('appointments.paymentTransfer') },
-                              { key: 'other',    label: t('appointments.paymentOther') },
-                            ] as const).map(m => (
-                              <button key={m.key} type="button"
-                                onClick={() => setPaymentMethod(paymentMethod === m.key ? '' : m.key)}
-                                className={`py-2 px-3 rounded-lg text-xs font-medium transition-colors ${paymentMethod === m.key ? 'bg-primary/10 text-primary' : 'bg-muted/40 text-muted-foreground hover:bg-muted'}`}>
-                                {m.label}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-
-                        {activeSection4 === 'notes' && showNotes && (
-                          <div className="pt-1">
-                            <Textarea rows={3} className="text-sm resize-none min-h-0"
-                              placeholder={t('booking.commentPlaceholder')}
-                              value={notes} onChange={e => setNotes(e.target.value)} />
-                          </div>
-                        )}
-
-                        {activeSection4 === 'recurring' && (
-                          <div className="space-y-2 pt-1">
-                            {/* Статус */}
-                            {(() => {
-                              const statuses = editAppt
-                                ? (['scheduled', 'done', 'cancelled', 'no_show'] as const)
-                                : (['scheduled', 'done'] as const)
-                              const dotColor: Record<string, string> = {
-                                scheduled: 'bg-blue-500', done: 'bg-emerald-500', cancelled: 'bg-red-500', no_show: 'bg-orange-500',
-                              }
-                              const activeColor: Record<string, string> = {
-                                scheduled: 'bg-blue-50 text-blue-700 border-blue-400 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-600',
-                                done:      'bg-emerald-50 text-emerald-700 border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-600',
-                                cancelled: 'bg-red-50 text-red-700 border-red-400 dark:bg-red-950/40 dark:text-red-300 dark:border-red-600',
-                                no_show:   'bg-orange-50 text-orange-700 border-orange-400 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-600',
-                              }
-                              return (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {statuses.map(s => (
-                                    <button key={s} type="button" onClick={() => setStatus(s)}
-                                      className={`h-7 px-2.5 rounded-full border text-xs font-medium transition-all flex items-center gap-1.5 ${
-                                        status === s ? activeColor[s] : 'border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground'
-                                      }`}>
-                                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${status === s ? dotColor[s] : 'bg-muted-foreground/40'}`} />
-                                      {t(`appointments.status.${s}`)}
-                                    </button>
-                                  ))}
-                                </div>
-                              )
-                            })()}
-                            {/* Telegram + Повтор */}
-                            {(hasTelegram || (!editAppt && showRecurring)) && (
-                              <div className="rounded-xl border divide-y overflow-hidden">
-                                {hasTelegram && (
-                                  <div className="flex items-center justify-between px-4 py-3">
-                                    <p className="text-sm">{t('appointments.notifyTelegram')}</p>
-                                    <Switch checked={notifyTg} onCheckedChange={setNotifyTg} />
-                                  </div>
-                                )}
-                                {!editAppt && showRecurring && (
-                                  <div className="px-4 py-3 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                      <div>
-                                        <p className="text-sm font-medium">{t('appointments.recurring')}</p>
-                                        <p className="text-xs text-muted-foreground">{t('appointments.recurringHelp')}</p>
-                                      </div>
-                                      <Switch checked={recurring} onCheckedChange={setRecurring} />
-                                    </div>
-                                    {recurring && (
-                                      <div className="flex items-center gap-3 pt-1">
-                                        <p className="text-sm text-muted-foreground shrink-0">{t('appointments.recurringWeeks')}</p>
-                                        <Input type="number" min={2} max={52} className="w-20 h-8"
-                                          value={recurringWeeks} onChange={e => setRecurringWeeks(Number(e.target.value))} />
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )
-                  })()}
-
-                </div>
-              </div>
-
-              {/* ── Десктоп-футер ─────────────────────────────────── */}
-              <div className="hidden lg:flex border-t shrink-0 px-5 py-3 items-center gap-2">
-                {editAppt && onDelete && (
-                  <Button type="button" variant="destructive" size="sm" onClick={onDelete}>{t('common.delete')}</Button>
-                )}
-                {editAppt && onDuplicate && (
-                  <Button type="button" variant="outline" size="sm" onClick={onDuplicate} className="gap-1.5 text-muted-foreground hover:text-foreground">
-                    <Copy className="h-3.5 w-3.5" />{t('appointments.duplicate')}
-                  </Button>
-                )}
-                {editAppt && !isReschedule && (
-                  <Button type="button" variant="outline" size="sm"
-                    onClick={() => { setIsReschedule(true); setSelectedTime('') }}
-                    className="gap-1.5 text-amber-600 hover:text-amber-700 border-amber-200 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20">
-                    <ArrowRightLeft className="h-3.5 w-3.5" />{t('appointments.reschedule')}
-                  </Button>
-                )}
-                {editAppt && isReschedule && (
-                  <Button type="button" variant="outline" size="sm"
-                    onClick={() => { setIsReschedule(false); setSelectedTime(editAppt.start_time) }}
-                    className="gap-1.5 text-muted-foreground">
-                    <X className="h-3.5 w-3.5" />{t('appointments.rescheduleCancel')}
-                  </Button>
-                )}
-                {editAppt && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-muted-foreground"
-                    onClick={() => printReceipt({
-                      appointment: editAppt,
-                      masterName: user?.name || '',
-                      services: selectedSvcs,
-                      currency,
-                    })}
-                  >
-                    <Printer className="h-3.5 w-3.5" />
-                    Чек
-                  </Button>
-                )}
-                <Button type="button" variant="outline" onClick={onClose} className="ml-auto">{t('common.cancel')}</Button>
-                <Button type="button" loading={isLoading} disabled={!canSave} onClick={handleSubmit}>
-                  {t('common.save')}
-                  {finalPrice > 0 && canSave && <Badge variant="secondary" className="ml-2 text-xs font-semibold">{formatCurrency(finalPrice, currency, i18n.language)}</Badge>}
-                </Button>
-              </div>
             </>
           )
         })()}
