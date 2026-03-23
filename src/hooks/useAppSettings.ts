@@ -302,6 +302,20 @@ export function useUpdateAppLogo() {
   })
 }
 
+export function useResetAppLogo() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('app_settings')
+        .delete()
+        .eq('key', 'platform_logo')
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [APP_SETTINGS_KEY] }),
+  })
+}
+
 // ── AI Config ─────────────────────────────────────────────────────────────────
 
 export interface AIConfig {

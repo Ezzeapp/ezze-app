@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Zap, Upload, Palette, Globe, ToggleLeft, ToggleRight, Users, Type, Send } from 'lucide-react'
+import { Zap, Upload, Palette, Globe, ToggleLeft, ToggleRight, Users, Type, Send, Download, RotateCcw } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,6 +14,7 @@ import {
   useAppSettings,
   useUpdateAppSetting,
   useUpdateAppLogo,
+  useResetAppLogo,
   useTgConfig,
   useUpdateTgConfig,
   DEFAULT_TG_CONFIG,
@@ -136,6 +137,7 @@ export function AdminAppearanceTab() {
   const { data: settings, isLoading } = useAppSettings()
   const updateSetting = useUpdateAppSetting()
   const updateLogo = useUpdateAppLogo()
+  const resetLogo = useResetAppLogo()
   const { data: tgConfig } = useTgConfig()
   const updateTgConfig = useUpdateTgConfig()
 
@@ -226,6 +228,37 @@ export function AdminAppearanceTab() {
     } catch {
       toast.error(t('common.saveError'))
       setLogoPreview(null)
+    }
+  }
+
+  async function handleDownloadLogo() {
+    if (!currentLogo) return
+    try {
+      const resp = await fetch(currentLogo)
+      const blob = await resp.blob()
+      const ext = blob.type.includes('png') ? 'png'
+        : blob.type.includes('svg') ? 'svg'
+        : blob.type.includes('webp') ? 'webp'
+        : blob.type.includes('gif') ? 'gif'
+        : 'jpg'
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `logo.${ext}`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error(t('common.saveError'))
+    }
+  }
+
+  async function handleResetLogo() {
+    try {
+      await resetLogo.mutateAsync()
+      setLogoPreview(null)
+      toast.success('Логотип восстановлен по умолчанию')
+    } catch {
+      toast.error(t('common.saveError'))
     }
   }
 
@@ -339,16 +372,41 @@ export function AdminAppearanceTab() {
             <div>
               <p className="text-sm font-medium">{t('admin.platformLogo')}</p>
               <p className="text-xs text-muted-foreground mb-2">{t('admin.logoHint')}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => logoInputRef.current?.click()}
-                disabled={updateLogo.isPending}
-                className="flex items-center gap-1.5"
-              >
-                <Upload className="h-3.5 w-3.5" />
-                {t('admin.uploadLogo')}
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => logoInputRef.current?.click()}
+                  disabled={updateLogo.isPending}
+                  className="flex items-center gap-1.5"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  {t('admin.uploadLogo')}
+                </Button>
+                {currentLogo && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadLogo}
+                    className="flex items-center gap-1.5"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Скачать
+                  </Button>
+                )}
+                {settings?.logo_url && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResetLogo}
+                    disabled={resetLogo.isPending}
+                    className="flex items-center gap-1.5 text-muted-foreground hover:text-destructive hover:border-destructive/50"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    По умолчанию
+                  </Button>
+                )}
+              </div>
               <input
                 ref={logoInputRef}
                 type="file"
