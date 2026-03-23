@@ -96,6 +96,22 @@ async function showBookingButton(chatId, slug, phone, name, tgUsername = '') {
   });
 }
 
+async function showTeamBookingButton(chatId, teamSlug, phone, name, tgUsername = '') {
+  const params = new URLSearchParams({ tg_phone: phone, tg_name: name, tg_id: String(chatId) });
+  if (tgUsername) params.set('tg_username', tgUsername);
+  const teamUrl = `${APP_URL}/book/team/${teamSlug}?${params.toString()}`;
+  await fetch(`${bot.TG_API}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: `✅ <b>Отлично, ${name}!</b>\n\nНажмите кнопку ниже, чтобы выбрать мастера и записаться:`,
+      parse_mode: "HTML",
+      reply_markup: { inline_keyboard: [[{ text: "👥 Выбрать мастера", web_app: { url: teamUrl } }]] },
+    }),
+  });
+}
+
 async function sendClientMenuSmart(chatId, firstName) {
   const greeting = `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>`;
 
@@ -251,6 +267,47 @@ async function processUpdate(update) {
         return;
       }
 
+      // ── Сценарий 3: ссылка команды /start team_SLUG ──────────────────────
+      if (param.startsWith("team_")) {
+        const teamSlug = param.slice(5);
+        const { data: team } = await supabase
+          .from("teams").select("id, name").eq("slug", teamSlug).eq("is_public", true).maybeSingle();
+
+        if (!team) {
+          await bot.sendMessage(chatId, `❌ Команда не найдена или страница записи закрыта.`);
+          return;
+        }
+
+        const tgClient = await findTgClient(chatId);
+        if (tgClient?.phone && tgClient?.name) {
+          await showTeamBookingButton(chatId, teamSlug, tgClient.phone, tgClient.name, tgClient.tg_username || '');
+          await setClientMenuButton(chatId);
+        } else {
+          await bot.setUserMenuButton(chatId);
+          pendingBookings.set(chatId, {
+            teamSlug,
+            step: "waiting_phone",
+            tgUsername: message.from?.username || '',
+          });
+          savePendingBookings();
+          await fetch(`${bot.TG_API}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nВы записываетесь к мастерам команды <b>${team.name}</b>.\n\n📱 Для записи нам нужен ваш номер телефона.\nНажмите кнопку ниже:`,
+              parse_mode: "HTML",
+              reply_markup: {
+                keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
+                resize_keyboard: true,
+                one_time_keyboard: true,
+              },
+            }),
+          });
+        }
+        return;
+      }
+
       // ── Сценарий 1: /start без параметра ─────────────────────────────────
       const existingSession = pendingBookings.get(chatId);
       if (existingSession && existingSession.mode !== "registered") {
@@ -321,6 +378,12 @@ async function processUpdate(update) {
               },
             }),
           });
+        } else if (pending.teamSlug) {
+          // Сценарий 3: запись через команду
+          pendingBookings.delete(chatId);
+          savePendingBookings();
+          await showTeamBookingButton(chatId, pending.teamSlug, pending.phone, name, tgUsername);
+          await setClientMenuButton(chatId);
         } else {
           // Сценарий 2: запись к конкретному мастеру
           pendingBookings.delete(chatId);
