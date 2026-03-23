@@ -232,9 +232,23 @@ export function AdminAppearanceTab() {
   }
 
   async function handleDownloadLogo() {
-    const src = currentLogo ?? '/logo-default.svg'
     try {
-      const resp = await fetch(src)
+      if (!currentLogo) {
+        // Дефолтный SVG — подставляем текущий цвет темы
+        const resp = await fetch('/logo-default.svg')
+        const svgText = await resp.text()
+        const hex = customHex.length === 7 ? customHex : '#6366f1'
+        const colored = svgText.replace(/#6366f1/gi, hex)
+        const blob = new Blob([colored], { type: 'image/svg+xml' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'logo.svg'
+        a.click()
+        URL.revokeObjectURL(url)
+        return
+      }
+      const resp = await fetch(currentLogo)
       const blob = await resp.blob()
       const ext = blob.type.includes('png') ? 'png'
         : blob.type.includes('svg') ? 'svg'
