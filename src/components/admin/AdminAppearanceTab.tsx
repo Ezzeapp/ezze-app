@@ -232,9 +232,9 @@ export function AdminAppearanceTab() {
   }
 
   async function handleDownloadLogo() {
-    if (!currentLogo) return
+    const src = currentLogo ?? '/logo-default.svg'
     try {
-      const resp = await fetch(currentLogo)
+      const resp = await fetch(src)
       const blob = await resp.blob()
       const ext = blob.type.includes('png') ? 'png'
         : blob.type.includes('svg') ? 'svg'
@@ -383,17 +383,15 @@ export function AdminAppearanceTab() {
                   <Upload className="h-3.5 w-3.5" />
                   {t('admin.uploadLogo')}
                 </Button>
-                {currentLogo && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDownloadLogo}
-                    className="flex items-center gap-1.5"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    Скачать
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadLogo}
+                  className="flex items-center gap-1.5"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Скачать
+                </Button>
                 {settings?.logo_url && (
                   <Button
                     variant="outline"
