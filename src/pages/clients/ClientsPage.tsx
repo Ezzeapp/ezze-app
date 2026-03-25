@@ -684,7 +684,7 @@ export function ClientsPage() {
           </div>
         )}
 
-        {/* Row 2: search + button */}
+        {/* Row 2: search + button (desktop only) */}
         <div className="flex items-center gap-2">
           {!isLoading && (totalItems > 0 || debouncedSearch) && (
             <div className="relative flex-1">
@@ -697,9 +697,9 @@ export function ClientsPage() {
               />
             </div>
           )}
-          <Button className="shrink-0 ml-auto" onClick={openCreate} disabled={clientLimitReached}>
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{t('clients.add')}</span>
+          <Button className="shrink-0 ml-auto hidden lg:flex" onClick={openCreate} disabled={clientLimitReached}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('clients.add')}
           </Button>
         </div>
 
@@ -1092,6 +1092,18 @@ export function ClientsPage() {
 
       {statsClient && (
         <ClientStatsDialog client={statsClient} onClose={() => setStatsClient(null)} />
+      )}
+
+      {/* FAB — добавить клиента (только мобиль) */}
+      {!clientLimitReached && (
+        <button
+          onClick={openCreate}
+          className="fixed bottom-[80px] right-4 z-20 lg:hidden flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all active:scale-95 hover:brightness-110"
+          style={{ width: 52, height: 52 }}
+          aria-label={t('clients.add')}
+        >
+          <Plus className="h-5 w-5" />
+        </button>
       )}
 
       {/* AI Analysis Dialog */}
