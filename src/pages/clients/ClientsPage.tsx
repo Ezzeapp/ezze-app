@@ -653,33 +653,53 @@ export function ClientsPage() {
 
         {/* Bulk action bar */}
         {isSomeSelected && (
-          <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-primary/5 border border-primary/20">
-            <button
-              type="button"
-              onClick={toggleSelectAll}
-              className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-            >
-              {isAllSelected
-                ? <CheckSquare className="h-4 w-4" />
-                : <Square className="h-4 w-4" />
-              }
-              {isAllSelected ? t('common.deselectAll') : t('common.selectAll')}
-            </button>
-            <span className="text-xs text-muted-foreground">
-              {t('clients.selectedCount', { count: selectedIds.size })}
-            </span>
-            <div className="ml-auto flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
-                {t('common.cancel')}
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setBulkDeleteOpen(true)}
+          <div className="rounded-xl bg-primary/5 border border-primary/20 overflow-hidden">
+            {/* Заголовок */}
+            <div className="px-4 py-1.5 border-b border-primary/10 text-center">
+              <span className="text-xs font-medium text-primary">
+                {t('clients.selectedCount', { count: selectedIds.size })}
+              </span>
+            </div>
+            {/* Кнопки */}
+            <div className="grid grid-cols-4 divide-x divide-primary/10">
+              {/* Снять выделение */}
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set())}
+                className="flex flex-col items-center gap-1 py-2.5 px-1 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
               >
-                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                {t('common.delete')}
-              </Button>
+                <Square className="h-4 w-4" />
+                <span className="text-[10px] font-medium leading-tight text-center">Снять</span>
+              </button>
+              {/* Выбрать все */}
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="flex flex-col items-center gap-1 py-2.5 px-1 text-primary hover:bg-primary/5 transition-colors"
+              >
+                <CheckSquare className="h-4 w-4" />
+                <span className="text-[10px] font-medium leading-tight text-center">
+                  {isAllSelected ? 'Снять все' : 'Выбрать все'}
+                </span>
+              </button>
+              {/* Отмена */}
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set())}
+                className="flex flex-col items-center gap-1 py-2.5 px-1 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
+              >
+                <XCircle className="h-4 w-4" />
+                <span className="text-[10px] font-medium leading-tight text-center">Отмена</span>
+              </button>
+              {/* Удалить */}
+              <button
+                type="button"
+                onClick={() => setBulkDeleteOpen(true)}
+                className="flex flex-col items-center gap-1 py-2.5 px-1 text-destructive hover:bg-destructive/5 transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="text-[10px] font-medium leading-tight text-center">Удалить</span>
+              </button>
             </div>
           </div>
         )}
