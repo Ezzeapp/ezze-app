@@ -1426,30 +1426,30 @@ export function AppointmentDialog({
 
                 {/* Тулбар действий для режима редактирования */}
                 {editAppt && (
-                  <div className="shrink-0 px-5 pb-2 pt-2 flex items-center gap-1.5 flex-wrap border-t">
+                  <div className="shrink-0 px-5 pb-2 pt-2 flex items-center gap-1.5 border-t overflow-hidden">
                     {onDelete && (
-                      <Button type="button" size="sm" variant="destructive" className="h-7 text-xs" onClick={onDelete}>
+                      <Button type="button" size="sm" variant="destructive" className="h-7 text-xs shrink-0" onClick={onDelete}>
                         {t('common.delete')}
                       </Button>
                     )}
                     {onDuplicate && (
-                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={onDuplicate}>
+                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 shrink-0" onClick={onDuplicate}>
                         <Copy className="h-3 w-3" />{t('appointments.duplicate')}
                       </Button>
                     )}
                     {!isReschedule ? (
                       <Button type="button" size="sm" variant="outline"
-                        className="h-7 text-xs gap-1 text-amber-600 border-amber-200 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20"
-                        onClick={() => { setIsReschedule(true); setSelectedTime('') }}>
+                        className="h-7 text-xs gap-1 shrink-0 text-amber-600 border-amber-200 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                        onClick={() => { setIsReschedule(true); setSelectedTime(''); setStepDir('forward'); setMobileStep(1); }}>
                         <ArrowRightLeft className="h-3 w-3" />{t('appointments.reschedule')}
                       </Button>
                     ) : (
-                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 text-muted-foreground"
-                        onClick={() => { setIsReschedule(false); setSelectedTime(editAppt.start_time) }}>
+                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 shrink-0 text-muted-foreground"
+                        onClick={() => { setIsReschedule(false); setSelectedTime(editAppt.start_time); setMobileStep(0); }}>
                         <X className="h-3 w-3" />{t('appointments.rescheduleCancel')}
                       </Button>
                     )}
-                    <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 ml-auto"
+                    <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 ml-auto shrink-0"
                       onClick={() => printReceipt({ appointment: editAppt, masterName: user?.name || '', services: selectedSvcs, currency })}>
                       <Printer className="h-3 w-3" />Чек
                     </Button>
