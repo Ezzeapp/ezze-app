@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, UserCircle, Banknote, Trash2, Pencil, MessageSquare, CheckCircle2, Clock } from 'lucide-react'
+import { CalendarDays, UserCircle, Banknote, Trash2, Pencil, MessageSquare, CheckCircle2, Clock, X } from 'lucide-react'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -99,6 +99,7 @@ export function AppointmentPreviewSheet({
     await onStatusChange(s)
     setStatusLoading(null)
     toast.success(t('appointments.updated'))
+    onClose()
   }
 
   return (
@@ -117,7 +118,7 @@ export function AppointmentPreviewSheet({
         )}
       >
         <VisuallyHidden><DialogTitle>Запись</DialogTitle></VisuallyHidden>
-        {/* Drag handle + кнопка удалить */}
+        {/* Drag handle + кнопки */}
         <div
           className="relative flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"
           onTouchStart={handleTouchStart}
@@ -125,6 +126,13 @@ export function AppointmentPreviewSheet({
           ref={sheetRef}
         >
           <div className="w-10 h-1 rounded-full bg-muted-foreground/25" />
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute left-3 top-1.5 p-1.5 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
           <button
             type="button"
             onClick={onDelete}
@@ -139,7 +147,7 @@ export function AppointmentPreviewSheet({
           {/* Дата и время */}
           <button
             type="button"
-            onClick={() => onEditStep(0)}
+            onClick={() => onEditStep(1)}
             className="w-full flex items-center gap-3 py-3 border-b border-border/50 text-left active:bg-muted/40 rounded-lg -mx-1 px-1 transition-colors"
           >
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted shrink-0">
@@ -156,7 +164,7 @@ export function AppointmentPreviewSheet({
           {/* Услуга */}
           <button
             type="button"
-            onClick={() => onEditStep(1)}
+            onClick={() => onEditStep(0)}
             className="w-full flex items-center gap-3 py-3 border-b border-border/50 text-left active:bg-muted/40 rounded-lg -mx-1 px-1 transition-colors"
           >
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted shrink-0">

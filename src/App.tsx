@@ -1,9 +1,9 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 
-/** Мобильные (< lg) → Календарь, Десктоп (lg+) → Главная */
+/** Всегда → Календарь */
 function DefaultRedirect() {
-  return <Navigate to={window.innerWidth < 1024 ? '/calendar' : '/dashboard'} replace />
+  return <Navigate to="/calendar" replace />
 }
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/queryClient'
