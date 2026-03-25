@@ -1260,38 +1260,6 @@ export function AppointmentDialog({
                   <p className="text-xs font-semibold text-primary mt-1.5">{stepLabels[mobileStep]}</p>
                 </div>
 
-                {/* Тулбар действий для режима редактирования */}
-                {editAppt && (
-                  <div className="shrink-0 px-5 pb-2 flex items-center gap-1.5 flex-wrap border-b">
-                    {onDelete && (
-                      <Button type="button" size="sm" variant="destructive" className="h-7 text-xs" onClick={onDelete}>
-                        {t('common.delete')}
-                      </Button>
-                    )}
-                    {onDuplicate && (
-                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={onDuplicate}>
-                        <Copy className="h-3 w-3" />{t('appointments.duplicate')}
-                      </Button>
-                    )}
-                    {!isReschedule ? (
-                      <Button type="button" size="sm" variant="outline"
-                        className="h-7 text-xs gap-1 text-amber-600 border-amber-200 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20"
-                        onClick={() => { setIsReschedule(true); setSelectedTime('') }}>
-                        <ArrowRightLeft className="h-3 w-3" />{t('appointments.reschedule')}
-                      </Button>
-                    ) : (
-                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 text-muted-foreground"
-                        onClick={() => { setIsReschedule(false); setSelectedTime(editAppt.start_time) }}>
-                        <X className="h-3 w-3" />{t('appointments.rescheduleCancel')}
-                      </Button>
-                    )}
-                    <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 ml-auto"
-                      onClick={() => printReceipt({ appointment: editAppt, masterName: user?.name || '', services: selectedSvcs, currency })}>
-                      <Printer className="h-3 w-3" />Чек
-                    </Button>
-                  </div>
-                )}
-
                 {/* Контент шага */}
                 <div key={mobileStep} className={`flex-1 overflow-y-auto px-5 pb-3 space-y-4 ${stepDir === 'forward' ? 'animate-slide-from-right' : 'animate-slide-from-left'}`}>
                   {/* Шаг 0 — Услуга */}
@@ -1456,6 +1424,38 @@ export function AppointmentDialog({
                   </div>
                 )}
 
+                {/* Тулбар действий для режима редактирования */}
+                {editAppt && (
+                  <div className="shrink-0 px-5 pb-2 pt-2 flex items-center gap-1.5 flex-wrap border-t">
+                    {onDelete && (
+                      <Button type="button" size="sm" variant="destructive" className="h-7 text-xs" onClick={onDelete}>
+                        {t('common.delete')}
+                      </Button>
+                    )}
+                    {onDuplicate && (
+                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={onDuplicate}>
+                        <Copy className="h-3 w-3" />{t('appointments.duplicate')}
+                      </Button>
+                    )}
+                    {!isReschedule ? (
+                      <Button type="button" size="sm" variant="outline"
+                        className="h-7 text-xs gap-1 text-amber-600 border-amber-200 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                        onClick={() => { setIsReschedule(true); setSelectedTime('') }}>
+                        <ArrowRightLeft className="h-3 w-3" />{t('appointments.reschedule')}
+                      </Button>
+                    ) : (
+                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 text-muted-foreground"
+                        onClick={() => { setIsReschedule(false); setSelectedTime(editAppt.start_time) }}>
+                        <X className="h-3 w-3" />{t('appointments.rescheduleCancel')}
+                      </Button>
+                    )}
+                    <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 ml-auto"
+                      onClick={() => printReceipt({ appointment: editAppt, masterName: user?.name || '', services: selectedSvcs, currency })}>
+                      <Printer className="h-3 w-3" />Чек
+                    </Button>
+                  </div>
+                )}
+
                 {/* Мобайл-футер: кнопки Назад / Далее / Сохранить */}
                 <div className="lg:hidden shrink-0 border-t px-5 py-3 flex items-center gap-2">
                   {mobileStep > 0 ? (
@@ -1554,6 +1554,27 @@ export function AppointmentDialog({
                       )}
                     </div>
 
+                    {/* Цена + детали */}
+                    <div className="pt-3 border-t space-y-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{t('appointments.total')}</p>
+                      <div className="space-y-1">
+                        <div className="relative">
+                          <Input type="number" min={0} className="h-9 w-full text-sm font-medium pr-10"
+                            placeholder={totalBasePrice > 0 ? String(totalBasePrice) : t('appointments.pricePlaceholder')}
+                            value={priceInput} onChange={e => setPriceInput(e.target.value)} />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
+                        </div>
+                        {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
+                          <div className="flex items-center justify-end gap-1.5 px-1">
+                            <span className="text-xs text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
+                            <span className="text-xs">→</span>
+                            <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : 'text-emerald-600'}`}>{formatCurrency(finalPrice, currency, i18n.language)}</span>
+                          </div>
+                        )}
+                      </div>
+                      {tabsContent}
+                    </div>
+
                     {/* Статус (только редактирование) */}
                     {editAppt && (
                       <div className="pt-3 border-t space-y-2">
@@ -1578,27 +1599,6 @@ export function AppointmentDialog({
                         </div>
                       </div>
                     )}
-
-                    {/* Цена + детали */}
-                    <div className="pt-3 border-t space-y-3">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{t('appointments.total')}</p>
-                      <div className="space-y-1">
-                        <div className="relative">
-                          <Input type="number" min={0} className="h-9 w-full text-sm font-medium pr-10"
-                            placeholder={totalBasePrice > 0 ? String(totalBasePrice) : t('appointments.pricePlaceholder')}
-                            value={priceInput} onChange={e => setPriceInput(e.target.value)} />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
-                        </div>
-                        {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
-                          <div className="flex items-center justify-end gap-1.5 px-1">
-                            <span className="text-xs text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
-                            <span className="text-xs">→</span>
-                            <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : 'text-emerald-600'}`}>{formatCurrency(finalPrice, currency, i18n.language)}</span>
-                          </div>
-                        )}
-                      </div>
-                      {tabsContent}
-                    </div>
 
                   </div>
 
