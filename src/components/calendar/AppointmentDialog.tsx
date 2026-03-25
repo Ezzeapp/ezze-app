@@ -1394,10 +1394,10 @@ export function AppointmentDialog({
                       <div className="lg:hidden space-y-3 border-t pt-3">
                         <div className="space-y-1">
                           <div className="relative">
-                            <Input type="number" min={0} className="h-10 w-full text-base font-medium pr-12"
+                            <Input type="number" min={0} className="h-12 w-full text-2xl font-bold pr-16"
                               placeholder={totalBasePrice > 0 ? String(totalBasePrice) : t('appointments.pricePlaceholder')}
                               value={priceInput} onChange={e => setPriceInput(e.target.value)} />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base font-medium text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
                           </div>
                           {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
                             <div className="flex items-center justify-end gap-1.5 px-1">
@@ -1426,13 +1426,13 @@ export function AppointmentDialog({
 
                 {/* Тулбар действий для режима редактирования */}
                 {editAppt && (
-                  <div className="shrink-0 px-5 pb-2 pt-2 flex items-center gap-1.5 border-t overflow-hidden">
+                  <div className="shrink-0 px-5 pb-2 pt-2 flex items-center gap-1.5 border-t">
                     {onDelete && (
                       <Button type="button" size="sm" variant="destructive" className="h-7 text-xs shrink-0" onClick={onDelete}>
                         {t('common.delete')}
                       </Button>
                     )}
-                    {onDuplicate && (
+                    {!isReschedule && onDuplicate && (
                       <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 shrink-0" onClick={onDuplicate}>
                         <Copy className="h-3 w-3" />{t('appointments.duplicate')}
                       </Button>
@@ -1444,15 +1444,17 @@ export function AppointmentDialog({
                         <ArrowRightLeft className="h-3 w-3" />{t('appointments.reschedule')}
                       </Button>
                     ) : (
-                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 shrink-0 text-muted-foreground"
+                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 ml-auto shrink-0 text-muted-foreground"
                         onClick={() => { setIsReschedule(false); setSelectedTime(editAppt.start_time); setMobileStep(0); }}>
                         <X className="h-3 w-3" />{t('appointments.rescheduleCancel')}
                       </Button>
                     )}
-                    <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 ml-auto shrink-0"
-                      onClick={() => printReceipt({ appointment: editAppt, masterName: user?.name || '', services: selectedSvcs, currency })}>
-                      <Printer className="h-3 w-3" />Чек
-                    </Button>
+                    {!isReschedule && (
+                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 ml-auto shrink-0"
+                        onClick={() => printReceipt({ appointment: editAppt, masterName: user?.name || '', services: selectedSvcs, currency })}>
+                        <Printer className="h-3 w-3" />Чек
+                      </Button>
+                    )}
                   </div>
                 )}
 
