@@ -48,6 +48,28 @@ export function AdminPage() {
         <Shield className="h-5 w-5 text-amber-600" />
       </PageHeader>
 
+      {/* Mobile: горизонтальный скролл вкладок */}
+      <div className="sm:hidden -mx-3 px-3 overflow-x-auto scrollbar-none mb-2">
+        <div className="flex gap-1 pb-1" style={{ minWidth: 'max-content' }}>
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-colors shrink-0',
+                tab === id
+                  ? 'bg-primary/10 text-primary'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              )}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="flex gap-6 items-start">
         {/* Vertical sidebar — sm+ */}
         <nav className="hidden sm:flex flex-col w-44 shrink-0 gap-0.5">
@@ -68,26 +90,6 @@ export function AdminPage() {
             </button>
           ))}
         </nav>
-
-        {/* Mobile: grid tabs */}
-        <div className="sm:hidden grid grid-cols-3 gap-1 w-full">
-          {tabs.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id)}
-              className={cn(
-                'flex flex-col items-center gap-1 px-2 py-2.5 text-xs font-medium rounded-lg transition-colors',
-                tab === id
-                  ? 'bg-primary/10 text-primary'
-                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span className="truncate w-full text-center">{label}</span>
-            </button>
-          ))}
-        </div>
 
         {/* Tab content */}
         <div className="flex-1 min-w-0">
