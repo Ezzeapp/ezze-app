@@ -108,6 +108,20 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
               <span>{t(tab.label)}</span>
             </NavLink>
           ))}
+          {/* Статистика */}
+          <NavLink
+            to="/dashboard"
+            onClick={onClose}
+            className={({ isActive }) =>
+              cn(
+                'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              )
+            }
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            <span>{t('nav.dashboard')}</span>
+          </NavLink>
           {/* AI Ассистент */}
           <NavLink
             to="/ai"
@@ -122,24 +136,6 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
             <Bot className="h-5 w-5" />
             <span>AI</span>
           </NavLink>
-          {([
-            { icon: LayoutDashboard, label: 'nav.dashboard', to: '/dashboard' },
-          ] as { icon: React.ComponentType<{ className?: string }>; label: string; to: string }[]).map((tab) => (
-            <NavLink
-              key={tab.to}
-              to={tab.to}
-              onClick={onClose}
-              className={({ isActive }) =>
-                cn(
-                  'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-                )
-              }
-            >
-              <tab.icon className="h-5 w-5" />
-              <span>{t(tab.label)}</span>
-            </NavLink>
-          ))}
           {/* Active "More" button */}
           <button
             onClick={onClose}
@@ -194,6 +190,20 @@ export function BottomNav() {
             <span>{t('nav.clients')}</span>
           </NavLink>
 
+          {/* Статистика */}
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+              cn(
+                'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              )
+            }
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            <span>{t('nav.dashboard')}</span>
+          </NavLink>
+
           {/* AI Ассистент */}
           <NavLink
             to="/ai"
@@ -206,20 +216,6 @@ export function BottomNav() {
           >
             <Bot className="h-5 w-5" />
             <span>AI</span>
-          </NavLink>
-
-          {/* Главная */}
-          <NavLink
-            to="/dashboard"
-            className={({ isActive }) =>
-              cn(
-                'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-              )
-            }
-          >
-            <LayoutDashboard className="h-5 w-5" />
-            <span>{t('nav.dashboard')}</span>
           </NavLink>
 
           {/* Ещё */}
