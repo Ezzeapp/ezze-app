@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ChevronRight, ChevronLeft, Check,
-  User, Briefcase, Globe, Camera, X, ImagePlus, Trash2,
+  User, Briefcase, Camera, X, ImagePlus, Trash2,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { cn, CURRENCIES, LANG_TO_CURRENCY } from '@/lib/utils'
+import { cn, LANG_TO_CURRENCY } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { getCategoriesForSpecialty } from '@/data/specialty-category-map'
 import { toast } from '@/components/shared/Toaster'
@@ -190,7 +190,6 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   const STEPS = [
     { icon: User,      label: t('onboarding.step1') },
     { icon: Briefcase, label: t('onboarding.step2') },
-    { icon: Globe,     label: t('onboarding.step3') },
   ]
 
   const toggleDay = (day: Day) =>
@@ -375,7 +374,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v && onClose) onClose() }}>
-      <DialogContent className="max-w-lg p-0 overflow-hidden flex flex-col gap-0" hideClose mobileFullscreen>
+      <DialogContent className="max-w-lg p-0 overflow-hidden flex flex-col gap-0 sm:h-[620px] sm:max-h-[90vh]" hideClose mobileFullscreen>
 
         {/* ── Welcome screen ─────────────────────────────────────────────── */}
         {showWelcome && (
@@ -608,43 +607,6 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
                   </Select>
                 </div>
                 <p className="text-xs text-muted-foreground">Детальная настройка — в разделе «Расписание»</p>
-              </div>
-            </div>
-          )}
-
-          {/* ── Step 2: Язык + Валюта + TZ ─────────────────────────────── */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs">{t('settings.language')}</Label>
-                <Select value={language} onValueChange={(val) => {
-                  setLanguage(val)
-                  const suggestedCurrency = LANG_TO_CURRENCY[val]
-                  if (suggestedCurrency) setCurrency(suggestedCurrency)
-                }}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{LANGUAGES.map((l) => <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">{t('settings.currency')}</Label>
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {CURRENCIES.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>
-                        {c.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">{t('settings.timezone')}</Label>
-                <Select value={timezone} onValueChange={setTimezone}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{TIMEZONES_SHORT.map((tz) => <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>)}</SelectContent>
-                </Select>
               </div>
 
               {/* Auto-import notice — counts from global catalog */}
