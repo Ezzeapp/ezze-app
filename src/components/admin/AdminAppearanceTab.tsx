@@ -233,34 +233,48 @@ export function AdminAppearanceTab() {
 
   async function handleDownloadLogo() {
     try {
+      // Цвет берём напрямую из settings, а не из state
+      const primaryHex = settings?.primary_color ? hslToHex(settings.primary_color) : (customHex.length === 7 ? customHex : '#6366f1')
+
+      let imgSrc: string
       if (!currentLogo) {
-        // Дефолтный SVG — подставляем текущий цвет темы
+        // Дефолтный SVG — подставляем текущий основной цвет
         const resp = await fetch('/logo-default.svg')
         const svgText = await resp.text()
-        const hex = customHex.length === 7 ? customHex : '#6366f1'
-        const colored = svgText.replace(/#6366f1/gi, hex)
-        const blob = new Blob([colored], { type: 'image/svg+xml' })
+        const colored = svgText.replace(/#6366f1/gi, primaryHex)
+        imgSrc = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(colored)
+      } else {
+        imgSrc = currentLogo
+      }
+
+      // Конвертируем в JPEG через canvas
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve()
+        img.onerror = reject
+        img.src = imgSrc
+      })
+
+      const w = img.naturalWidth || 512
+      const h = img.naturalHeight || 512
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')!
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, w, h)
+      ctx.drawImage(img, 0, 0, w, h)
+
+      canvas.toBlob(blob => {
+        if (!blob) { toast.error(t('common.saveError')); return }
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = 'logo.svg'
+        a.download = 'logo.jpg'
         a.click()
         URL.revokeObjectURL(url)
-        return
-      }
-      const resp = await fetch(currentLogo)
-      const blob = await resp.blob()
-      const ext = blob.type.includes('png') ? 'png'
-        : blob.type.includes('svg') ? 'svg'
-        : blob.type.includes('webp') ? 'webp'
-        : blob.type.includes('gif') ? 'gif'
-        : 'jpg'
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `logo.${ext}`
-      a.click()
-      URL.revokeObjectURL(url)
+      }, 'image/jpeg', 0.95)
     } catch {
       toast.error(t('common.saveError'))
     }
