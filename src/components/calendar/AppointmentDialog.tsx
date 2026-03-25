@@ -174,6 +174,7 @@ export function AppointmentDialog({
   const draftKey = `appt_draft_${user?.id || 'anon'}`
   const draft = useDraft<AppointmentDraft>(draftKey)
   const [showDraftBanner, setShowDraftBanner] = useState(false)
+  const [isConfirmedLocally, setIsConfirmedLocally] = useState(false)
 
   // ── Feature flags ──────────────────────────────────────────────────────────
   const showNotes     = useFeature('appointment_notes')
@@ -289,6 +290,7 @@ export function AppointmentDialog({
   useEffect(() => {
     if (!open) return
     setMobileStep(initialStep ?? 0)
+    setIsConfirmedLocally(false)
     if (editAppt) {
       // Восстанавливаем услуги: 1) из appointment_services (новый формат)
       //   2) из notes-префикса "[Услуга, ...]\n" (legacy)  3) из editAppt.service (fallback)
@@ -1581,7 +1583,7 @@ export function AppointmentDialog({
                     </div>
 
                     {/* Баннер: ожидает подтверждения (десктоп) */}
-                    {editAppt?.booked_via === 'online' && !editAppt.confirmed_at && editAppt.status === 'scheduled' && (
+                    {editAppt?.booked_via === 'online' && !editAppt.confirmed_at && editAppt.status === 'scheduled' && !isConfirmedLocally && (
                       <div className="pt-3 border-t">
                         <div className="p-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 flex items-start gap-2.5">
                           <Clock className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
@@ -1595,6 +1597,7 @@ export function AppointmentDialog({
                             className="shrink-0 h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white"
                             onClick={async () => {
                               await confirm.mutateAsync(editAppt.id)
+                              setIsConfirmedLocally(true)
                               toast.success('Запись подтверждена')
                             }}
                             disabled={confirm.isPending}
