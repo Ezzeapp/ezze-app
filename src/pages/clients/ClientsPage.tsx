@@ -439,6 +439,8 @@ export function ClientsPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressFiredRef = useRef(false)
   const [analysisOpen, setAnalysisOpen] = useState(false)
   const [analysis, setAnalysis] = useState('')
   const [analysisLoading, setAnalysisLoading] = useState(false)
@@ -765,26 +767,34 @@ export function ClientsPage() {
           {items.map((client) => {
             const isSelected = selectedIds.has(client.id)
             return (
-            <Card key={client.id} className={`hover:border-primary/40 transition-colors cursor-pointer ${isSelected ? 'border-primary/60 bg-primary/5' : ''}`} onClick={() => setStatsClient(client)}>
+            <Card
+              key={client.id}
+              className={`transition-all cursor-pointer select-none ${isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/40'}`}
+              onClick={() => {
+                if (longPressFiredRef.current) { longPressFiredRef.current = false; return }
+                isSomeSelected ? toggleSelect(client.id) : setStatsClient(client)
+              }}
+              onTouchStart={() => {
+                longPressFiredRef.current = false
+                longPressTimerRef.current = setTimeout(() => {
+                  longPressFiredRef.current = true
+                  toggleSelect(client.id)
+                }, 500)
+              }}
+              onTouchEnd={() => { if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null } }}
+              onTouchMove={() => { if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null } }}
+              onContextMenu={(e) => e.preventDefault()}
+            >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  {/* Чекбокс */}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); toggleSelect(client.id) }}
-                    className="mt-1 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors shrink-0"
-                  >
-                    {isSelected
-                      ? <CheckSquare className="h-4 w-4 text-primary" />
-                      : <Square className="h-4 w-4" />
-                    }
-                  </button>
-                  <Avatar className="h-10 w-10 shrink-0">
-                    <AvatarImage src={getAvatarUrl(client) ?? undefined} />
-                    <AvatarFallback>
-                      {client.first_name.charAt(0)}{client.last_name?.charAt(0) || ''}
-                    </AvatarFallback>
-                  </Avatar>
+                  {/* Индикатор выделения — только в режиме выбора */}
+                  {isSomeSelected && (
+                    <div className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40'
+                    }`}>
+                      {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-primary-foreground" />}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">
                       {client.first_name} {client.last_name}
