@@ -10,6 +10,7 @@ import { initMiniApp, isTelegramMiniApp } from '@/lib/telegramWebApp'
 import { useAppointmentsRealtime } from '@/hooks/useAppointmentsRealtime'
 import { useClientsRealtime } from '@/hooks/useClientsRealtime'
 import { useDynamicFavicon } from '@/hooks/useDynamicFavicon'
+import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/lib/supabase'
 
 const inTelegram = isTelegramMiniApp()
@@ -17,6 +18,7 @@ const inTelegram = isTelegramMiniApp()
 export function AppLayout() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const { data: existingProfile } = useProfile()
 
   useAppointmentsRealtime()
   useClientsRealtime()
@@ -104,7 +106,13 @@ export function AppLayout() {
         <OnboardingWizard
           open={true}
           onComplete={handleOnboardingComplete}
-          prefill={wizardPrefill ? { ...wizardPrefill, name: wizardPrefill.name || user?.name || '' } : undefined}
+          prefill={{
+            name:     wizardPrefill?.name     || existingProfile?.display_name || user?.name || '',
+            phone:    wizardPrefill?.phone    || existingProfile?.phone        || '',
+            city:     existingProfile?.city    || '',
+            address:  existingProfile?.address || '',
+            language: wizardPrefill?.language,
+          }}
         />
       )}
     </div>
