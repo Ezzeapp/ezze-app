@@ -1000,7 +1000,7 @@ export function AppointmentDialog({
                 {t('booking.slotBusy')}
               </span>
             </div>
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-1 max-h-[160px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-1 max-h-[260px] overflow-y-auto pr-1">
               {slots.map(slot => {
                 const isChosen = selectedTime === slot.time
                 const isDisabled = slot.busy
@@ -1370,7 +1370,7 @@ export function AppointmentDialog({
                                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded border-2 border-primary bg-primary/10 inline-block" />{t('booking.slotFree')}</span>
                                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded border border-border bg-muted inline-block" />{t('booking.slotBusy')}</span>
                               </div>
-                              <div className="grid grid-cols-4 gap-1 max-h-[160px] overflow-y-auto pr-1">
+                              <div className="grid grid-cols-4 gap-1 max-h-[260px] overflow-y-auto pr-1">
                                 {slots.map(slot => {
                                   const isChosen = selectedTime === slot.time
                                   const isDisabled = slot.busy
