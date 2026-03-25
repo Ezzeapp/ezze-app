@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { initMiniApp, isTelegramMiniApp } from '@/lib/telegramWebApp'
 import { useAppointmentsRealtime } from '@/hooks/useAppointmentsRealtime'
 import { useClientsRealtime } from '@/hooks/useClientsRealtime'
+import { useDynamicFavicon } from '@/hooks/useDynamicFavicon'
 import { supabase } from '@/lib/supabase'
 
 const inTelegram = isTelegramMiniApp()
@@ -19,6 +20,7 @@ export function AppLayout() {
 
   useAppointmentsRealtime()
   useClientsRealtime()
+  useDynamicFavicon()
 
   // Expand to full screen if opened inside Telegram Mini App + track safe area insets
   useEffect(() => {
