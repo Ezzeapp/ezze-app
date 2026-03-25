@@ -1075,9 +1075,6 @@ export function AppointmentDialog({
                 {totalDuration > 0 && (
                   <span className="text-muted-foreground/60">→ {minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)}</span>
                 )}
-                {finalPrice > 0 && (
-                  <Badge variant="secondary" className="text-xs font-semibold ml-1">{formatCurrency(finalPrice, currency, i18n.language)}</Badge>
-                )}
               </span>
             )}
           </DialogTitle>
@@ -1456,7 +1453,6 @@ export function AppointmentDialog({
                     <span className="text-muted-foreground">·</span>
                     <span>{selectedTime}</span>
                     {totalDuration > 0 && <span className="text-muted-foreground">→ {minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)}</span>}
-                    {finalPrice > 0 && <span className="ml-auto font-semibold">{formatCurrency(finalPrice, currency, i18n.language)}</span>}
                   </div>
                 )}
 
@@ -1479,8 +1475,6 @@ export function AppointmentDialog({
                   ) : (
                     <Button type="button" className="ml-auto" loading={isLoading} disabled={!canSave || isLoading} onClick={handleSubmit}>
                       {t('common.save')}
-                      {finalPrice > 0 && <Badge variant="secondary" className="ml-2 text-xs font-semibold">{formatCurrency(finalPrice, currency, i18n.language)}</Badge>}
-                      {finalPrice === 0 && totalBasePrice > 0 && <Badge variant="secondary" className="ml-2 text-xs font-semibold">{formatCurrency(totalBasePrice, currency, i18n.language)}</Badge>}
                     </Button>
                   )}
                 </div>
@@ -1594,11 +1588,6 @@ export function AppointmentDialog({
                     ) : (
                       <Button type="button" className="w-full" loading={isLoading} disabled={!canSave} onClick={handleSubmit}>
                         {t('common.save')}
-                        {(finalPrice > 0 || totalBasePrice > 0) && canSave && (
-                          <Badge variant="secondary" className="ml-2 text-xs font-semibold">
-                            {formatCurrency(finalPrice > 0 ? finalPrice : totalBasePrice, currency, i18n.language)}
-                          </Badge>
-                        )}
                       </Button>
                     )}
                   </div>
