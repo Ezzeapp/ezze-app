@@ -40,7 +40,7 @@ export function AdminPage() {
   ]
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6">
       <PageHeader
         title={t('admin.pageTitle')}
         description={t('admin.pageDesc')}
@@ -48,38 +48,59 @@ export function AdminPage() {
         <Shield className="h-5 w-5 text-amber-600" />
       </PageHeader>
 
-      {/* Tabs */}
-      <div className="grid grid-cols-2 gap-1 sm:flex sm:gap-0 sm:border-b">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={cn(
-              'flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium rounded-lg transition-colors',
-              'sm:rounded-none sm:px-4 sm:py-2.5 sm:text-sm sm:border-b-2 sm:-mb-px sm:justify-start',
-              tab === id
-                ? 'bg-primary/10 text-primary sm:bg-transparent sm:border-primary sm:text-foreground'
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted sm:bg-transparent sm:border-transparent sm:hover:text-foreground'
-            )}
-          >
-            <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-            <span className="truncate">{label}</span>
-          </button>
-        ))}
-      </div>
+      <div className="flex gap-6 items-start">
+        {/* Vertical sidebar — sm+ */}
+        <nav className="hidden sm:flex flex-col w-44 shrink-0 gap-0.5">
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={cn(
+                'flex items-center gap-2.5 px-3 py-2 text-sm font-medium rounded-lg text-left transition-colors w-full',
+                tab === id
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
 
-      {/* Tab content */}
-      <div>
-        {tab === 'features'   && <AdminFeaturesTab />}
-        {tab === 'users'      && <AdminUsersTab />}
-        {tab === 'catalogs'   && <AdminCatalogsTab />}
-        {tab === 'appearance' && <AdminAppearanceTab />}
-        {tab === 'billing'    && <AdminBillingTab />}
-        {tab === 'email'      && <AdminEmailTab />}
-        {tab === 'ai'         && <AdminAITab />}
-        {tab === 'tg_clients' && <AdminTgClientsTab />}
-        {tab === 'reports'    && <AdminReportsTab />}
+        {/* Mobile: grid tabs */}
+        <div className="sm:hidden grid grid-cols-3 gap-1 w-full">
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={cn(
+                'flex flex-col items-center gap-1 px-2 py-2.5 text-xs font-medium rounded-lg transition-colors',
+                tab === id
+                  ? 'bg-primary/10 text-primary'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="truncate w-full text-center">{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div className="flex-1 min-w-0">
+          {tab === 'features'   && <AdminFeaturesTab />}
+          {tab === 'users'      && <AdminUsersTab />}
+          {tab === 'catalogs'   && <AdminCatalogsTab />}
+          {tab === 'appearance' && <AdminAppearanceTab />}
+          {tab === 'billing'    && <AdminBillingTab />}
+          {tab === 'email'      && <AdminEmailTab />}
+          {tab === 'ai'         && <AdminAITab />}
+          {tab === 'tg_clients' && <AdminTgClientsTab />}
+          {tab === 'reports'    && <AdminReportsTab />}
+        </div>
       </div>
     </div>
   )
