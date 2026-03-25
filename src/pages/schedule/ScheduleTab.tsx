@@ -123,7 +123,7 @@ export function ScheduleTab() {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24 lg:pb-0">
       {/* Working Hours */}
       <Card>
         <CardHeader>
@@ -340,8 +340,18 @@ export function ScheduleTab() {
         </CardContent>
       </Card>
 
-      {/* Save button */}
-      <div className="flex justify-end">
+      {/* Save button — fixed bar on mobile, normal on desktop */}
+      <div className="fixed bottom-[64px] left-0 right-0 z-20 bg-background/95 backdrop-blur-sm border-t px-4 py-3 lg:hidden">
+        <Button
+          type="button"
+          loading={upsert.isPending}
+          onClick={handleSubmit(onSubmit)}
+          className="w-full"
+        >
+          {t('common.save')}
+        </Button>
+      </div>
+      <div className="hidden lg:flex justify-end">
         <Button
           type="button"
           loading={upsert.isPending}

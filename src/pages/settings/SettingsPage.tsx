@@ -73,7 +73,6 @@ export function SettingsPage() {
   const [pwLoading, setPwLoading] = useState(false)
   const [currency, setCurrency] = useState<string>('')
   const [timezone, setTimezone] = useState<string>('')
-  const [locSaving, setLocSaving] = useState(false)
   const { data: profile } = useProfile()
   const upsertProfile = useUpsertProfile()
 
@@ -109,16 +108,23 @@ export function SettingsPage() {
     }
   }
 
-  const onSaveLocalization = async () => {
+  const onCurrencyChange = async (val: string) => {
+    setCurrency(val)
     try {
-      setLocSaving(true)
-      await upsertProfile.mutateAsync({ id: profile?.id, data: { currency } })
-      await supabase.from('users').update({ timezone }).eq('id', user!.id)
+      await upsertProfile.mutateAsync({ id: profile?.id, data: { currency: val } })
       toast.success(t('common.saved'))
     } catch {
       toast.error(t('common.saveError'))
-    } finally {
-      setLocSaving(false)
+    }
+  }
+
+  const onTimezoneChange = async (val: string) => {
+    setTimezone(val)
+    try {
+      await supabase.from('users').update({ timezone: val }).eq('id', user!.id)
+      toast.success(t('common.saved'))
+    } catch {
+      toast.error(t('common.saveError'))
     }
   }
 
@@ -317,7 +323,7 @@ export function SettingsPage() {
                     {t('settings.currency')}
                   </Label>
                   {currency && (
-                    <Select value={currency} onValueChange={setCurrency}>
+                    <Select value={currency} onValueChange={onCurrencyChange}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -337,7 +343,7 @@ export function SettingsPage() {
                     {t('settings.timezone')}
                   </Label>
                   {timezone && (
-                    <Select value={timezone} onValueChange={setTimezone}>
+                    <Select value={timezone} onValueChange={onTimezoneChange}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -352,7 +358,6 @@ export function SettingsPage() {
                   )}
                 </div>
               </div>
-              <Button onClick={onSaveLocalization} loading={locSaving}>{t('common.save')}</Button>
             </CardContent>
           </Card>
         </div>
