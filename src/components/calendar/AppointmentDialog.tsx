@@ -1394,7 +1394,8 @@ export function AppointmentDialog({
                       <div className="lg:hidden space-y-3 border-t pt-3">
                         <div className="space-y-1">
                           <div className="relative">
-                            <Input type="number" min={0} className="h-12 w-full text-2xl font-bold pr-16"
+                            <Input type="number" min={0} className="h-14 w-full pr-16"
+                              style={{ fontSize: '1.75rem', fontWeight: 700, lineHeight: 1 }}
                               placeholder={totalBasePrice > 0 ? String(totalBasePrice) : t('appointments.pricePlaceholder')}
                               value={priceInput} onChange={e => setPriceInput(e.target.value)} />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base font-medium text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
@@ -1450,9 +1451,9 @@ export function AppointmentDialog({
                       </Button>
                     )}
                     {!isReschedule && (
-                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 ml-auto shrink-0"
+                      <Button type="button" variant="outline" className="h-7 w-7 p-0 ml-auto shrink-0"
                         onClick={() => printReceipt({ appointment: editAppt, masterName: user?.name || '', services: selectedSvcs, currency })}>
-                        <Printer className="h-3 w-3" />Чек
+                        <Printer className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </div>
