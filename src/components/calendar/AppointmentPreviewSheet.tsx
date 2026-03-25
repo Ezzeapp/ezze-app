@@ -197,7 +197,11 @@ export function AppointmentPreviewSheet({
 
           {/* Цена */}
           {appt.price != null && appt.price > 0 && (
-            <div className="flex items-center gap-3 py-3 border-b border-border/50">
+            <button
+              type="button"
+              onClick={() => onEditStep(2)}
+              className="w-full flex items-center gap-3 py-3 border-b border-border/50 text-left active:bg-muted/40 rounded-lg -mx-1 px-1 transition-colors"
+            >
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted shrink-0">
                 <Banknote className="h-4 w-4 text-muted-foreground" />
               </div>
@@ -207,7 +211,7 @@ export function AppointmentPreviewSheet({
                 </p>
                 <p className="text-sm font-semibold">{formatCurrency(appt.price, currency, i18n.language)}</p>
               </div>
-            </div>
+            </button>
           )}
 
           {/* Заметки */}
