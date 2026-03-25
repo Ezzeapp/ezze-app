@@ -99,7 +99,7 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
               onClick={onClose}
               className={({ isActive }) =>
                 cn(
-                  'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 )
               }
@@ -114,7 +114,7 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
             onClick={onClose}
             className={({ isActive }) =>
               cn(
-                'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                 isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )
             }
@@ -128,7 +128,7 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
             onClick={onClose}
             className={({ isActive }) =>
               cn(
-                'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                 isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )
             }
@@ -139,7 +139,7 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
           {/* Active "More" button */}
           <button
             onClick={onClose}
-            className="flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium text-primary"
+            className="w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium text-primary"
           >
             <MoreHorizontal className="h-5 w-5" />
             <span>{t('nav.more')}</span>
@@ -167,7 +167,7 @@ export function BottomNav() {
             to="/calendar"
             className={({ isActive }) =>
               cn(
-                'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                 isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )
             }
@@ -181,7 +181,7 @@ export function BottomNav() {
             to="/clients"
             className={({ isActive }) =>
               cn(
-                'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                 isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )
             }
@@ -195,7 +195,7 @@ export function BottomNav() {
             to="/dashboard"
             className={({ isActive }) =>
               cn(
-                'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                 isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )
             }
@@ -209,7 +209,7 @@ export function BottomNav() {
             to="/ai"
             className={({ isActive }) =>
               cn(
-                'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                 isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )
             }
@@ -222,7 +222,7 @@ export function BottomNav() {
           <button
             onClick={() => setMoreOpen((v) => !v)}
             className={cn(
-              'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+              'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
               moreOpen ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             )}
           >
