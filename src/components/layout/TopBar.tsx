@@ -67,7 +67,7 @@ export function TopBar() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full hidden lg:flex">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={user?.avatar ? `http://127.0.0.1:8090/api/files/users/${user.id}/${user.avatar}?thumb=100x100` : undefined} />
                   <AvatarFallback>{initials}</AvatarFallback>
