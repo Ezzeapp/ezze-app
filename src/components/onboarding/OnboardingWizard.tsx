@@ -378,16 +378,19 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
 
     // Частичное сохранение шага 0 при переходе на шаг 1 (чтобы не потерять данные при закрытии)
     if (step === 0 && user?.id) {
-      supabase
-        .from('master_profiles')
-        .update({
-          display_name: displayName.trim() || undefined,
-          phone: phone.trim() || undefined,
-          city: city.trim() || undefined,
-          address: address.trim() || undefined,
-        })
-        .eq('user_id', user.id)
-        .catch(() => { /* non-critical */ })
+      void (async () => {
+        try {
+          await supabase
+            .from('master_profiles')
+            .update({
+              display_name: displayName.trim() || undefined,
+              phone: phone.trim() || undefined,
+              city: city.trim() || undefined,
+              address: address.trim() || undefined,
+            })
+            .eq('user_id', user.id)
+        } catch { /* non-critical */ }
+      })()
     }
 
     if (step < STEPS.length - 1) setStep((s) => s + 1)
