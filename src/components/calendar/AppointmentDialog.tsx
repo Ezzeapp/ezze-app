@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Search, Clock, X, Percent, User, UserPlus, CalendarCheck, ChevronLeft, ChevronRight, Copy, ArrowRightLeft, Plus, CreditCard, StickyNote, Repeat, Info, Printer } from 'lucide-react'
+import { Search, Clock, X, Percent, User, UserPlus, CalendarCheck, ChevronLeft, ChevronRight, Copy, ArrowRightLeft, Plus, CreditCard, StickyNote, Repeat, Info, Printer, CheckCircle2 } from 'lucide-react'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import { supabase } from '@/lib/supabase'
@@ -23,6 +23,7 @@ import { useClientStats } from '@/hooks/useClientStats'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFeature } from '@/hooks/useFeatureFlags'
 import { useDraft } from '@/hooks/useDraft'
+import { useConfirmAppointment } from '@/hooks/useAppointments'
 import { toast } from '@/components/shared/Toaster'
 import { printReceipt } from '@/lib/printReceipt'
 import type { Appointment, Service, Client, Schedule, ScheduleBreak } from '@/types'
@@ -167,6 +168,7 @@ export function AppointmentDialog({
   const { data: breaksData } = useScheduleBreaks()
   const breaks = breaksData ?? EMPTY_BREAKS
   const createClient = useCreateClient()
+  const confirm = useConfirmAppointment()
 
   // ── Черновик ──────────────────────────────────────────────────────────────
   const draftKey = `appt_draft_${user?.id || 'anon'}`
@@ -1577,6 +1579,32 @@ export function AppointmentDialog({
                       </div>
                       {tabsContent}
                     </div>
+
+                    {/* Баннер: ожидает подтверждения (десктоп) */}
+                    {editAppt?.booked_via === 'online' && !editAppt.confirmed_at && editAppt.status === 'scheduled' && (
+                      <div className="pt-3 border-t">
+                        <div className="p-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 flex items-start gap-2.5">
+                          <Clock className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-amber-700 dark:text-amber-300">Ожидает подтверждения</p>
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Онлайн-запись от клиента</p>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="shrink-0 h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white"
+                            onClick={async () => {
+                              await confirm.mutateAsync(editAppt.id)
+                              toast.success('Запись подтверждена')
+                            }}
+                            disabled={confirm.isPending}
+                          >
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Подтвердить
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Статус (только редактирование) */}
                     {editAppt && (
