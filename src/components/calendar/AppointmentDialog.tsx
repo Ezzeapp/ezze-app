@@ -1554,6 +1554,31 @@ export function AppointmentDialog({
                       )}
                     </div>
 
+                    {/* Статус (только редактирование) */}
+                    {editAppt && (
+                      <div className="pt-3 border-t space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{t('appointments.statusLabel')}</p>
+                        <div className="grid grid-cols-2 gap-1">
+                          {([
+                            { value: 'scheduled', label: t('appointments.status.scheduled'), color: 'text-blue-500 border-blue-500/40 bg-blue-500/10' },
+                            { value: 'done',      label: t('appointments.status.done'),      color: 'text-emerald-500 border-emerald-500/40 bg-emerald-500/10' },
+                            { value: 'cancelled', label: t('appointments.status.cancelled'), color: 'text-red-500 border-red-500/40 bg-red-500/10' },
+                            { value: 'no_show',   label: t('appointments.status.no_show'),   color: 'text-amber-500 border-amber-500/40 bg-amber-500/10' },
+                          ] as const).map(opt => (
+                            <button key={opt.value} type="button"
+                              onClick={() => setStatus(opt.value)}
+                              className={`px-2 py-1.5 rounded-lg border text-xs font-medium transition-all text-left ${
+                                status === opt.value
+                                  ? opt.color
+                                  : 'border-border text-muted-foreground hover:bg-muted/60'
+                              }`}>
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Цена + детали */}
                     <div className="pt-3 border-t space-y-3">
                       <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{t('appointments.total')}</p>
