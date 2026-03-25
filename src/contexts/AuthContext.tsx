@@ -90,6 +90,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return
           }
           const appUser = await fetchAppUser(session.user.id)
+          // Если строки пользователя нет в БД (удалён админом) — разлогиниваем
+          if (!appUser) {
+            await supabase.auth.signOut()
+            return
+          }
           setSession(session)
           setUser(appUser)
         } else {
