@@ -335,6 +335,7 @@
     "deleteConfirm": "Delete client?",
     "firstName": "First name",
     "lastName": "Last name",
+    "birthday": "Birthday",
     "phone": "Phone",
     "email": "Email",
     "notes": "Notes",

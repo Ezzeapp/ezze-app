@@ -1559,10 +1559,10 @@ export function AppointmentDialog({
                       <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{t('appointments.total')}</p>
                       <div className="space-y-1">
                         <div className="relative">
-                          <Input type="number" min={0} className="h-9 w-full text-sm font-medium pr-10"
+                          <Input type="number" min={0} className="h-12 w-full text-2xl font-bold pr-14"
                             placeholder={totalBasePrice > 0 ? String(totalBasePrice) : t('appointments.pricePlaceholder')}
                             value={priceInput} onChange={e => setPriceInput(e.target.value)} />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
                         </div>
                         {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
                           <div className="flex items-center justify-end gap-1.5 px-1">

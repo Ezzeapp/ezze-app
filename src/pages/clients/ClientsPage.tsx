@@ -855,6 +855,9 @@ export function ClientsPage() {
                 <th className="w-10"></th>
                 <th className="text-left p-3 font-medium">{t('clients.firstName')}</th>
                 <th className="text-left p-3 font-medium">{t('clients.phone')}</th>
+                <th className="text-left p-3 font-medium hidden md:table-cell">{t('clients.birthday')}</th>
+                <th className="text-left p-3 font-medium hidden md:table-cell">{t('clients.statsVisits')}</th>
+                <th className="text-left p-3 font-medium hidden lg:table-cell">{t('clients.statsLastVisit')}</th>
                 <th className="w-10"></th>
               </tr>
             </thead>
@@ -902,6 +905,21 @@ export function ClientsPage() {
                     <td className="p-3 text-muted-foreground">
                       {client.phone
                         ? <span className="flex items-center gap-1"><Phone className="h-3 w-3 shrink-0" />{client.phone}</span>
+                        : '—'}
+                    </td>
+                    <td className="p-3 text-muted-foreground hidden md:table-cell">
+                      {client.birthday
+                        ? <span className="flex items-center gap-1"><Gift className="h-3 w-3 shrink-0 text-pink-500" />{birthdayToDisplay(client.birthday)}</span>
+                        : '—'}
+                    </td>
+                    <td className="p-3 text-muted-foreground hidden md:table-cell">
+                      {(clientVisits[client.id] ?? 0) > 0
+                        ? <span className="flex items-center gap-1"><Calendar className="h-3 w-3 shrink-0" />{clientVisits[client.id]}</span>
+                        : '—'}
+                    </td>
+                    <td className="p-3 text-muted-foreground hidden lg:table-cell">
+                      {client.last_visit
+                        ? new Date(client.last_visit).toLocaleDateString(i18n.language, { day: '2-digit', month: '2-digit', year: '2-digit' })
                         : '—'}
                     </td>
                     <td className="p-3 w-10">

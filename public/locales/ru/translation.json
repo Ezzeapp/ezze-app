@@ -335,6 +335,7 @@
     "deleteConfirm": "Удалить клиента?",
     "firstName": "Имя",
     "lastName": "Фамилия",
+    "birthday": "День рождения",
     "phone": "Телефон",
     "email": "Email",
     "notes": "Заметки",
