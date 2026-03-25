@@ -88,7 +88,7 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
 
       {/* Bottom nav replica */}
       <div className="shrink-0 border-t bg-background pb-safe">
-        <div className="flex items-stretch h-16">
+        <div className="flex items-stretch h-16 w-full">
           {([
             { icon: CalendarDays,    label: 'nav.calendar',  to: '/calendar'  },
             { icon: Users,           label: 'nav.clients',   to: '/clients'   },
@@ -160,7 +160,7 @@ export function BottomNav() {
       {moreOpen && <MoreMenu onClose={() => setMoreOpen(false)} ServiceIcon={ServiceIcon} />}
 
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-background border-t pb-safe lg:hidden">
-        <div className="flex items-stretch h-16">
+        <div className="flex items-stretch h-16 w-full">
 
           {/* Календарь */}
           <NavLink

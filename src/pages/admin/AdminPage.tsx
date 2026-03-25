@@ -48,26 +48,24 @@ export function AdminPage() {
         <Shield className="h-5 w-5 text-amber-600" />
       </PageHeader>
 
-      {/* Mobile: горизонтальный скролл вкладок */}
-      <div className="sm:hidden -mx-3 px-3 overflow-x-auto scrollbar-none mb-2">
-        <div className="flex gap-1 pb-1" style={{ minWidth: 'max-content' }}>
-          {tabs.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-colors shrink-0',
-                tab === id
-                  ? 'bg-primary/10 text-primary'
-                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-              )}
-            >
-              <Icon className="h-3.5 w-3.5 shrink-0" />
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
+      {/* Mobile: сетка 2 колонки */}
+      <div className="sm:hidden grid grid-cols-2 gap-1.5 mb-2">
+        {tabs.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={cn(
+              'flex items-center gap-2 px-3 py-2.5 text-xs font-medium rounded-lg transition-colors w-full',
+              tab === id
+                ? 'bg-primary/10 text-primary'
+                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+            )}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{label}</span>
+          </button>
+        ))}
       </div>
 
       <div className="flex gap-6 items-start">
