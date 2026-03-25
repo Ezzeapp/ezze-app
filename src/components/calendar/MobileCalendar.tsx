@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight, ChevronDown, Plus, Clock, UserCircle, CalendarDays, CalendarRange, CalendarCheck } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, Clock, UserCircle, CalendarDays, CalendarRange } from 'lucide-react'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import { Badge } from '@/components/ui/badge'
@@ -263,10 +263,9 @@ export function MobileCalendar({
           {(mobileView === 'day' ? selectedDate !== today : !isCurrentWeek) && (
             <button
               onClick={goToToday}
-              title={t('calendar.today')}
-              className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors text-primary shrink-0"
+              className="px-3 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors text-primary text-xs font-medium shrink-0"
             >
-              <CalendarCheck className="h-5 w-5" />
+              {t('calendar.today')}
             </button>
           )}
         </div>
@@ -418,14 +417,6 @@ export function MobileCalendar({
                   <Clock className="h-6 w-6 text-muted-foreground/50" />
                 </div>
                 <p className="text-sm font-medium text-muted-foreground">{t('calendar.noAppointments')}</p>
-                {!limitReached && (
-                  <button
-                    className="mt-3 text-xs text-primary hover:underline"
-                    onClick={() => onOpenCreate(selectedDate)}
-                  >
-                    {t('appointments.add')}
-                  </button>
-                )}
               </div>
             ) : (
               dayAppts.map((appt) => {
