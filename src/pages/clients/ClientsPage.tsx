@@ -799,36 +799,34 @@ export function ClientsPage() {
                     <p className="font-medium truncate">
                       {client.first_name} {client.last_name}
                     </p>
-                    {client.phone && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                        <Phone className="h-3 w-3" />{client.phone}
-                      </p>
-                    )}
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {client.phone && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 flex-1 min-w-0 truncate">
+                          <Phone className="h-3 w-3 shrink-0" />{client.phone}
+                        </p>
+                      )}
+                      {loyaltySettings?.enabled && (() => {
+                        const visits = clientVisits[client.id] ?? 0
+                        const level = getLoyaltyLevel(visits, loyaltySettings)
+                        const balance = loyaltyBalances[client.id] ?? 0
+                        const color = getLevelColor(level)
+                        return (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${color}`}>
+                              <LevelIcon level={level} className="h-2.5 w-2.5" />
+                              {t(`loyalty.level_${level}`)}
+                            </span>
+                            {balance > 0 && (
+                              <span className="text-[10px] text-muted-foreground">{balance} {t('loyalty.pts')}</span>
+                            )}
+                          </div>
+                        )
+                      })()}
+                    </div>
                     {client.email && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Mail className="h-3 w-3" />{client.email}
                       </p>
-                    )}
-                    {loyaltySettings?.enabled && (
-                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                        {(() => {
-                          const visits = clientVisits[client.id] ?? 0
-                          const level = getLoyaltyLevel(visits, loyaltySettings)
-                          const balance = loyaltyBalances[client.id] ?? 0
-                          const color = getLevelColor(level)
-                          return (
-                            <>
-                              <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${color}`}>
-                                <LevelIcon level={level} className="h-2.5 w-2.5" />
-                                {t(`loyalty.level_${level}`)}
-                              </span>
-                              {balance > 0 && (
-                                <span className="text-[10px] text-muted-foreground">{balance} {t('loyalty.pts')}</span>
-                              )}
-                            </>
-                          )
-                        })()}
-                      </div>
                     )}
                     {client.tags && client.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1.5">
