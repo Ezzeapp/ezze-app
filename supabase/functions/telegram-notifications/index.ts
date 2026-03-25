@@ -233,25 +233,40 @@ async function handleInsert(record: any) {
     if (msg) await sendTgMasterWithCancelButton(masterTgId, msg, record.id)
   }
 
-  // Confirm to client
+  // Notify client
   const clientTgId = record.telegram_id ?? ''
   const clientTgUsr = record.client_telegram ?? ''
   if (clientTgId || clientTgUsr) {
     const cSetting = await getNotifSetting(masterId, 'appointment_confirmed')
     if (cSetting.enabled) {
-      let cMsg = cSetting.template?.trim()
-        ? applyTemplate(cSetting.template, {
-            master_name: masterName, service: svcName, price: svcPrice,
-            date, time: startTime, end_time: endTime, address: prof.address ?? '',
-            cancel_link: cancelLink,
-          })
-        : `✅ <b>Запись подтверждена!</b>\n\nВы записаны к <b>${masterName}</b>\n\n` +
+      let cMsg: string
+
+      if (isOnline) {
+        // Онлайн-запись — ещё не подтверждена мастером
+        cMsg = `⏳ <b>Запись принята!</b>\n\nВаша заявка к <b>${masterName}</b> принята и ожидает подтверждения.\n\n` +
           `✂️ <b>Услуга:</b> ${svcName}\n` +
           (svcPrice ? `💰 <b>Стоимость:</b> ${svcPrice}\n` : '') +
           `📅 <b>Дата:</b> ${date}\n🕐 <b>Время:</b> ${startTime}` +
           (endTime ? ` — ${endTime}` : '') +
           (prof.address ? `\n📍 <b>Адрес:</b> ${prof.address}` : '') +
-          `\n\nДо встречи! 🌟`
+          `\n\nМастер подтвердит запись в ближайшее время.`
+      } else {
+        // Мастер добавил вручную — сразу подтверждено
+        cMsg = cSetting.template?.trim()
+          ? applyTemplate(cSetting.template, {
+              master_name: masterName, service: svcName, price: svcPrice,
+              date, time: startTime, end_time: endTime, address: prof.address ?? '',
+              cancel_link: cancelLink,
+            })
+          : `✅ <b>Запись подтверждена!</b>\n\nВы записаны к <b>${masterName}</b>\n\n` +
+            `✂️ <b>Услуга:</b> ${svcName}\n` +
+            (svcPrice ? `💰 <b>Стоимость:</b> ${svcPrice}\n` : '') +
+            `📅 <b>Дата:</b> ${date}\n🕐 <b>Время:</b> ${startTime}` +
+            (endTime ? ` — ${endTime}` : '') +
+            (prof.address ? `\n📍 <b>Адрес:</b> ${prof.address}` : '') +
+            `\n\nДо встречи! 🌟`
+      }
+
       if (cMsg) await sendTgWithCancelButton(clientTgId || clientTgUsr, cMsg, record.id)
     }
   }
