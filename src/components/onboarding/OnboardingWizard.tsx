@@ -449,37 +449,38 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
 
           {/* ── Step 0: Личные данные ──────────────────────────────────── */}
           {step === 0 && (
-            <div className="space-y-4">
-
-              {/* Avatar — centered, clickable */}
-              <div className="flex flex-col items-center pt-2 pb-1 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPhotoModalOpen(true)}
-                  className="group relative w-24 h-24 rounded-full overflow-hidden border-2 border-dashed border-primary/30 hover:border-primary/60 bg-primary/5 transition-colors"
-                >
-                  {avatarPreview
-                    ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
-                    : (
-                      <div className="flex flex-col items-center justify-center h-full gap-1.5">
-                        <Camera className="h-7 w-7 text-primary/40" />
-                        <span className="text-[11px] text-primary/50 font-medium">Фото</span>
-                      </div>
-                    )
-                  }
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
-                    <Camera className="h-5 w-5 text-white" />
-                  </div>
-                </button>
-                <span className="text-xs text-muted-foreground">
-                  {avatarPreview ? 'Нажмите для замены' : t('onboarding.photoHint')}
-                </span>
-              </div>
+            <div className="space-y-3 pt-1">
 
               {/* Hidden file inputs */}
               <input ref={fileInputRef}   type="file" accept="image/*"                    className="sr-only" onChange={onAvatarChange} />
               <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="sr-only" onChange={onAvatarChange} />
+
+              {/* Avatar — compact horizontal row */}
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setPhotoModalOpen(true)}
+                  className="group relative w-14 h-14 shrink-0 rounded-full overflow-hidden border-2 border-dashed border-primary/30 hover:border-primary/60 bg-primary/5 transition-colors"
+                >
+                  {avatarPreview
+                    ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
+                    : (
+                      <div className="flex flex-col items-center justify-center h-full gap-0.5">
+                        <Camera className="h-5 w-5 text-primary/40" />
+                      </div>
+                    )
+                  }
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
+                    <Camera className="h-4 w-4 text-white" />
+                  </div>
+                </button>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{t('onboarding.photoHint')}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {avatarPreview ? 'Нажмите для замены' : 'Необязательно'}
+                  </p>
+                </div>
+              </div>
 
               <div className="space-y-1.5">
                 <Label className="text-xs">{t('profile.displayName')}</Label>
@@ -518,7 +519,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
 
           {/* ── Step 1: Профессия + График ──────────────────────────────── */}
           {step === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-3 pt-1">
               {/* Profession combobox */}
               <div className="space-y-1.5" ref={profContainerRef}>
                 <Label className="text-xs">
