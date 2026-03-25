@@ -190,8 +190,8 @@ export function RegisterPage() {
     }
   }
 
-  // ── Регистрация закрыта ───────────────────────────────────────────────────
-  if (appSettings && !appSettings.registration_open) {
+  // ── Регистрация закрыта (только для веб, не для Telegram Mini App) ────────
+  if (appSettings && !appSettings.registration_open && !isTg) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 text-center gap-4">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary overflow-hidden">
