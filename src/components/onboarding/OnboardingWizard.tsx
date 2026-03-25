@@ -374,7 +374,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v && onClose) onClose() }}>
-      <DialogContent className="max-w-lg p-0 overflow-hidden flex flex-col gap-0 sm:h-[620px] sm:max-h-[90vh]" hideClose mobileFullscreen>
+      <DialogContent className="max-w-lg p-0 overflow-hidden flex flex-col gap-0 sm:h-[680px] sm:max-h-[90vh]" hideClose mobileFullscreen>
 
         {/* ── Welcome screen ─────────────────────────────────────────────── */}
         {showWelcome && (
@@ -569,7 +569,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
                   <p className="text-xs text-destructive">Укажите вашу профессию</p>
                 )}
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 mt-3">
                 <Label className="text-xs">{t('onboarding.workSchedule')}</Label>
                 {/* Compact day toggles */}
                 <div className="flex gap-1.5">
