@@ -149,22 +149,36 @@ export function RegisterPage() {
         setAutoRegistering(false)
         setShowWizard(true)
       } catch (e: any) {
-        const emailErr = e?.response?.data?.email?.code
-        if (emailErr === 'validation_not_unique') {
-          // Аккаунт уже есть — пробуем войти
+        // Проверяем — аккаунт уже существует (Supabase или PocketBase формат)
+        const errMsg    = (e as Error)?.message || ''
+        const emailCode = e?.response?.data?.email?.code || ''
+        const alreadyExists =
+          emailCode === 'validation_not_unique' ||          // PocketBase (legacy)
+          errMsg.toLowerCase().includes('already registered') || // Supabase
+          errMsg.toLowerCase().includes('already exists') ||
+          errMsg.toLowerCase().includes('email address is already')
+
+        if (alreadyExists || isTg) {
+          // В Telegram-контексте ВСЕГДА пробуем войти через tg-auth
           const initData = window.Telegram?.WebApp?.initData
           if (initData) {
             try {
-              const r = await fetch('/api/tg-auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ initData }),
+              const { data: authData, error: authErr } = await supabase.functions.invoke('tg-auth', {
+                body: { initData },
               })
-              if (r.ok) { navigate('/dashboard', { replace: true }); return }
+              if (!authErr && authData?.access_token) {
+                await supabase.auth.setSession({
+                  access_token: authData.access_token,
+                  refresh_token: authData.refresh_token,
+                })
+                navigate('/dashboard', { replace: true })
+                return
+              }
             } catch {}
           }
         }
-        toast.error('Ошибка регистрации')
+
+        if (!alreadyExists) toast.error('Ошибка регистрации')
         setAutoRegistering(false)
       } finally {
         setLoading(false)
@@ -249,6 +263,9 @@ export function RegisterPage() {
       />
     )
   }
+
+  // ── В Telegram-контексте никогда не показываем стандартную форму ──────────
+  if (isTg) return <LoadingSpinner fullScreen />
 
   // ── Стандартная форма (браузер) ───────────────────────────────────────────
   return (
