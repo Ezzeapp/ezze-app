@@ -1,10 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 
 /** List of all users — admin only */
 export function useUsers() {
   const { user } = useAuth()
+  const qc = useQueryClient()
+
+  // Real-time: сразу показываем нового пользователя без обновления страницы
+  useEffect(() => {
+    if (!user?.is_admin) return
+    const channel = supabase
+      .channel('admin-users-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
+        qc.invalidateQueries({ queryKey: ['users'] })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.is_admin, qc])
+
   return useQuery({
     queryKey: ['users'],
     queryFn: async () => {
@@ -26,7 +41,7 @@ export function useUsers() {
       })
     },
     enabled: !!user?.is_admin,
-    staleTime: 60_000,
+    staleTime: 0,
   })
 }
 
