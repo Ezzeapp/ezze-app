@@ -464,18 +464,20 @@ async function processUpdate(update) {
         return;
       }
 
-      await supabase.from("appointments").update({ status: "cancelled" }).eq("id", apptId);
-
-      await bot.editMessageText(
-        chatId, msgId,
-        `❌ <b>Запись отменена.</b>\n\nЕсли захотите записаться снова — воспользуйтесь ссылкой мастера.`
-      );
-
-      // Уведомляем мастера через мастерский бот
+      // Получаем данные мастера заранее
       const { data: prof } = await supabase
         .from("master_profiles").select("tg_chat_id, profession")
         .eq("user_id", appt.master_id).maybeSingle();
 
+      await supabase.from("appointments").update({ status: "cancelled" }).eq("id", apptId);
+
+      const masterName = prof?.profession ?? "мастера";
+      await bot.editMessageText(
+        chatId, msgId,
+        `❌ Ваша запись к <b>${masterName}</b> на ${fmtDate(appt.date)} в ${appt.start_time ?? "—"} отменена.`
+      );
+
+      // Уведомляем мастера через мастерский бот
       if (prof?.tg_chat_id) {
         await masterBot.sendMessage(
           prof.tg_chat_id,
