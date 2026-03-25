@@ -1061,7 +1061,7 @@ export function AppointmentDialog({
       {/* Мобиле: полноэкранный снизу вверх. Десктоп: центрированный диалог */}
       <DialogContent
         mobileFullscreen
-        className="w-full p-0 overflow-hidden flex flex-col sm:max-w-xl lg:max-w-3xl sm:h-[72vh] sm:max-h-[72vh]"
+        className="w-full p-0 overflow-hidden flex flex-col sm:max-w-xl lg:max-w-3xl sm:h-[65vh] sm:max-h-[65vh]"
       >
 
         {/* Заголовок */}
