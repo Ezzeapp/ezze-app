@@ -1,7 +1,7 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  LayoutDashboard, CalendarDays, Users, MoreHorizontal, Plus,
+  LayoutDashboard, CalendarDays, Users, MoreHorizontal, Bot,
   Package, User, Settings, ShieldCheck, X, UsersRound, ChevronRight, Tag, Star, LogOut, CreditCard, LifeBuoy, Gift,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -108,12 +108,20 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
               <span>{t(tab.label)}</span>
             </NavLink>
           ))}
-          {/* FAB placeholder in replica */}
-          <div className="flex-1 flex items-center justify-center">
-            <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
-              <Plus className="h-4 w-4 text-primary" />
-            </div>
-          </div>
+          {/* AI Ассистент */}
+          <NavLink
+            to="/ai"
+            onClick={onClose}
+            className={({ isActive }) =>
+              cn(
+                'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              )
+            }
+          >
+            <Bot className="h-5 w-5" />
+            <span>AI</span>
+          </NavLink>
           {([
             { icon: LayoutDashboard, label: 'nav.dashboard', to: '/dashboard' },
           ] as { icon: React.ComponentType<{ className?: string }>; label: string; to: string }[]).map((tab) => (
@@ -148,7 +156,6 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
 
 export function BottomNav() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const [moreOpen, setMoreOpen] = useState(false)
   const ServiceIcon = useProfileIcon()
 
@@ -187,16 +194,19 @@ export function BottomNav() {
             <span>{t('nav.clients')}</span>
           </NavLink>
 
-          {/* FAB — центральная кнопка */}
-          <div className="flex-1 flex items-center justify-center">
-            <button
-              onClick={() => navigate('/calendar?new=1')}
-              aria-label={t('nav.newAppointment')}
-              className="flex items-center justify-center h-12 w-12 -translate-y-3 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all active:scale-95 hover:brightness-110"
-            >
-              <Plus className="h-5 w-5" />
-            </button>
-          </div>
+          {/* AI Ассистент */}
+          <NavLink
+            to="/ai"
+            className={({ isActive }) =>
+              cn(
+                'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              )
+            }
+          >
+            <Bot className="h-5 w-5" />
+            <span>AI</span>
+          </NavLink>
 
           {/* Главная */}
           <NavLink

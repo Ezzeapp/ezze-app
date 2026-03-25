@@ -45,6 +45,7 @@ const TelegramEntryPage = lazy(() => import('@/pages/tg/TelegramEntryPage').then
 const PhoneSharePage = lazy(() => import('@/pages/tg/PhoneSharePage').then(m => ({ default: m.PhoneSharePage })))
 const SupportPage = lazy(() => import('@/pages/support/SupportPage'))
 const LoyaltyPage = lazy(() => import('@/pages/loyalty/LoyaltyPage'))
+const AIAssistantPage = lazy(() => import('@/pages/ai/AIAssistantPage').then(m => ({ default: m.AIAssistantPage })))
 
 const router = createBrowserRouter([
   // Public routes
@@ -103,6 +104,7 @@ const router = createBrowserRouter([
       { path: 'billing', element: <BillingPage /> },
       { path: 'support', element: <SupportPage /> },
       { path: 'loyalty', element: <LoyaltyPage /> },
+      { path: 'ai', element: <AIAssistantPage /> },
     ],
   },
 

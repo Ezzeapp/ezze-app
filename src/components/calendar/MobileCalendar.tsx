@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, ChevronDown, Plus, Clock, UserCircle, CalendarDays, CalendarRange, CalendarCheck } from 'lucide-react'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { formatCurrency, formatDuration } from '@/lib/utils'
@@ -270,10 +269,6 @@ export function MobileCalendar({
               <CalendarCheck className="h-5 w-5" />
             </button>
           )}
-          <Button size="sm" disabled={isDayOff(currentDate) || limitReached} onClick={() => onOpenCreate(selectedDate)}>
-            <Plus className="h-4 w-4 mr-1" />
-            {t('appointments.add')}
-          </Button>
         </div>
       </div>
 
@@ -506,6 +501,18 @@ export function MobileCalendar({
               })
             )}
           </div>
+      )}
+
+      {/* FAB — новая запись */}
+      {!limitReached && (
+        <button
+          onClick={() => onOpenCreate(selectedDate)}
+          className="fixed bottom-[80px] right-4 z-20 flex items-center justify-center w-13 h-13 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all active:scale-95 hover:brightness-110"
+          style={{ width: 52, height: 52 }}
+          aria-label={t('appointments.add')}
+        >
+          <Plus className="h-5 w-5" />
+        </button>
       )}
     </div>
   )
