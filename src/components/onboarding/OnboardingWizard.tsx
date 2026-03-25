@@ -222,46 +222,56 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
     const servicesToImport = svcRes.data ?? []
     const productsToImport = prodRes.data ?? []
     if (servicesToImport.length === 0 && productsToImport.length === 0) return
+
     try {
+      // 1. Категории услуг — получить существующие, создать недостающие пачкой
       const { data: existingSvcCats } = await supabase
         .from('service_categories').select('id, name').eq('master_id', user!.id)
       const existingSvcCatNames = new Set((existingSvcCats ?? []).map((c: any) => c.name.toLowerCase()))
       const categoryIdMap: Record<string, string> = {}
       for (const c of (existingSvcCats ?? [])) categoryIdMap[(c as any).name.toLowerCase()] = (c as any).id
-      for (const cat of serviceCategories) {
-        if (!existingSvcCatNames.has(cat.toLowerCase())) {
-          try {
-            const { data: created } = await supabase
-              .from('service_categories').insert({ name: cat, master_id: user!.id }).select().single()
-            if (created) categoryIdMap[cat.toLowerCase()] = (created as any).id
-          } catch { /* ignore */ }
+
+      const missingCats = serviceCategories.filter(cat => !existingSvcCatNames.has(cat.toLowerCase()))
+      if (missingCats.length > 0) {
+        const { data: createdCats } = await supabase
+          .from('service_categories')
+          .insert(missingCats.map(name => ({ name, master_id: user!.id })))
+          .select()
+        for (const c of (createdCats ?? [])) categoryIdMap[(c as any).name.toLowerCase()] = (c as any).id
+      }
+
+      // 2. Услуги — bulk insert пачками по 100
+      if (servicesToImport.length > 0) {
+        const { data: existingServices } = await supabase
+          .from('services').select('name').eq('master_id', user!.id)
+        const existingSvcNames = new Set((existingServices ?? []).map((s: any) => s.name.toLowerCase()))
+        const newServices = servicesToImport
+          .filter(svc => !existingSvcNames.has(svc.name.toLowerCase()))
+          .map(svc => ({
+            name: svc.name, duration_min: 30, master_id: user!.id,
+            category_id: categoryIdMap[(svc.category ?? '').toLowerCase()] || undefined,
+            is_active: true, is_bookable: true,
+          }))
+        const CHUNK = 100
+        for (let i = 0; i < newServices.length; i += CHUNK) {
+          await supabase.from('services').insert(newServices.slice(i, i + CHUNK))
         }
       }
-      const { data: existingServices } = await supabase
-        .from('services').select('name').eq('master_id', user!.id)
-      const existingSvcNames = new Set((existingServices ?? []).map((s: any) => s.name.toLowerCase()))
-      for (const svc of servicesToImport) {
-        if (!existingSvcNames.has(svc.name.toLowerCase())) {
-          try {
-            await supabase.from('services').insert({
-              name: svc.name, duration_min: 60, master_id: user!.id,
-              category_id: categoryIdMap[(svc.category ?? '').toLowerCase()] || undefined,
-              is_active: true, is_bookable: true,
-            })
-          } catch { /* ignore */ }
-        }
-      }
-      const { data: existingProducts } = await supabase
-        .from('inventory_items').select('name').eq('master_id', user!.id)
-      const existingProdNames = new Set((existingProducts ?? []).map((p: any) => p.name.toLowerCase()))
-      for (const prod of productsToImport) {
-        if (!existingProdNames.has(prod.name.toLowerCase())) {
-          try {
-            await supabase.from('inventory_items').insert({
-              name: prod.name, category: prod.category || undefined,
-              unit: prod.unit || undefined, quantity: 0, master_id: user!.id,
-            })
-          } catch { /* ignore */ }
+
+      // 3. Товары — bulk insert пачками по 100
+      if (productsToImport.length > 0) {
+        const { data: existingProducts } = await supabase
+          .from('inventory_items').select('name').eq('master_id', user!.id)
+        const existingProdNames = new Set((existingProducts ?? []).map((p: any) => p.name.toLowerCase()))
+        const newProducts = productsToImport
+          .filter(prod => !existingProdNames.has(prod.name.toLowerCase()))
+          .map(prod => ({
+            name: prod.name, category: prod.category || undefined,
+            unit: prod.unit || undefined, quantity: 0, master_id: user!.id,
+          }))
+        const CHUNK = 100
+        for (let i = 0; i < newProducts.length; i += CHUNK) {
+          await supabase.from('inventory_items').insert(newProducts.slice(i, i + CHUNK))
         }
       }
     } catch { /* don't block */ }
@@ -569,7 +579,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
                   <p className="text-xs text-destructive">Укажите вашу профессию</p>
                 )}
               </div>
-              <div className="space-y-1.5 mt-3">
+              <div className="space-y-1.5 mt-5">
                 <Label className="text-xs">{t('onboarding.workSchedule')}</Label>
                 {/* Compact day toggles */}
                 <div className="flex gap-1.5">
