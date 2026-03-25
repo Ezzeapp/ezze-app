@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { initMiniApp, isTelegramMiniApp } from '@/lib/telegramWebApp'
 import { useAppointmentsRealtime } from '@/hooks/useAppointmentsRealtime'
+import { useClientsRealtime } from '@/hooks/useClientsRealtime'
 import { supabase } from '@/lib/supabase'
 
 const inTelegram = isTelegramMiniApp()
@@ -17,6 +18,7 @@ export function AppLayout() {
   const queryClient = useQueryClient()
 
   useAppointmentsRealtime()
+  useClientsRealtime()
 
   // Expand to full screen if opened inside Telegram Mini App + track safe area insets
   useEffect(() => {

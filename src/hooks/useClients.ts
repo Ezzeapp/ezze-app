@@ -22,7 +22,7 @@ export function useClientSummary() {
       return count
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0,
   })
 
   const { data: phoneData } = useQuery({
@@ -38,7 +38,7 @@ export function useClientSummary() {
       return count
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0,
   })
 
   return {
@@ -80,7 +80,7 @@ export function useClientsPaged(search = '', page = 1, perPage = 25) {
       }
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0,
     placeholderData: keepPreviousData,
   })
 }

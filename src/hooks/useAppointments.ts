@@ -130,7 +130,7 @@ export function useAppointments(startDate?: string, endDate?: string) {
       return (data ?? []).map(normalizeAppointment) as Appointment[]
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 0,
   })
 }
 
