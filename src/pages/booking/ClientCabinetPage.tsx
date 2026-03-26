@@ -65,6 +65,7 @@ interface MasterResult {
   booking_slug: string
   profession: string | null
   avatar: string | null
+  phone: string | null
   user: { name: string } | null
 }
 
@@ -213,7 +214,7 @@ export function ClientCabinetPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('master_profiles')
-        .select('booking_slug, profession, avatar, user:users(name)')
+        .select('booking_slug, profession, avatar, phone, user:users(name)')
         .not('booking_slug', 'is', null)
         .eq('is_public', true)
         .order('created_at', { ascending: false })
@@ -257,7 +258,11 @@ export function ClientCabinetPage() {
   const filteredMasters = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     const list = q
-      ? allMasters.filter(m => (m.user?.name ?? '').toLowerCase().includes(q) || (m.profession ?? '').toLowerCase().includes(q))
+      ? allMasters.filter(m =>
+          (m.user?.name ?? '').toLowerCase().includes(q) ||
+          (m.profession ?? '').toLowerCase().includes(q) ||
+          (m.phone ?? '').replace(/\D/g, '').includes(q.replace(/\D/g, ''))
+        )
       : allMasters
     // Избранные сверху
     return [...list].sort((a, b) => {
