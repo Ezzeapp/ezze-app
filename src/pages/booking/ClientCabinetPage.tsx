@@ -167,7 +167,7 @@ export function ClientCabinetPage() {
         .eq('tg_chat_id', tgId)
         .maybeSingle()
       if (tgClient?.phone) setTelegramPhone(tgClient.phone)
-      if (tgClient?.name && !userName) setUserName(tgClient.name)
+      if (tgClient?.name) setUserName(tgClient.name) // зарегистрированное имя приоритетнее TG-профиля
 
       const { data: records } = await supabase
         .from('appointments')

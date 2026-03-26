@@ -339,6 +339,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
         city: city.trim() || undefined,
         address: address.trim() || undefined,
         currency,
+        is_public: true, // после онбординга мастер сразу виден в поиске
       }
       if (avatarFile) {
         const fd = new FormData()
