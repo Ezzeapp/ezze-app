@@ -42,6 +42,7 @@ export function RegisterPage() {
   const inviteCode  = searchParams.get('invite')
   const langParam   = searchParams.get('lang')   // язык выбранный в боте
   const phoneParam  = searchParams.get('phone')  // телефон из бота
+  const nameParam   = searchParams.get('name')   // имя, введённое в боте
   const [loading, setLoading] = useState(false)
   const [showWizard, setShowWizard] = useState(false)
   const [wizardName, setWizardName] = useState('')
@@ -125,8 +126,8 @@ export function RegisterPage() {
   useEffect(() => {
     if (tgChecking || !isTg || !tgId) return
 
-    // Используем любое доступное имя, fallback — 'Мастер'
-    const rawName = getTelegramDisplayName() || tgUser?.username || ''
+    // Предпочитаем имя из бота (введённое вручную), затем TG профиль, fallback — 'Новый пользователь'
+    const rawName = nameParam || getTelegramDisplayName() || tgUser?.username || ''
     const name = rawName.trim().length >= 2 ? rawName.trim() : (tgUser?.username || 'Новый пользователь')
 
     sessionStorage.setItem('ezze_prefill_name', name)
@@ -259,7 +260,7 @@ export function RegisterPage() {
       <OnboardingWizard
         open={true}
         onComplete={() => navigate('/dashboard', { replace: true })}
-        prefill={{ name: '', phone: phoneParam || '' }}
+        prefill={{ name: nameParam || wizardName || '', phone: phoneParam || '' }}
       />
     )
   }

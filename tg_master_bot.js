@@ -57,6 +57,9 @@ const LANG_STRINGS = {
     notFound:     `❌ <b>Аккаунт не найден</b>\n\nМастер с таким номером телефона не зарегистрирован в системе.\n\nЗарегистрируйтесь — это займёт 2 минуты:`,
     registerBtn:  "Зарегистрироваться",
     openApp:      "Открыть приложение",
+    askName:      `👤 Как вас зовут? Введите своё имя:`,
+    askNameHint:  name => `\n\n<i>Можете написать: ${name}</i>`,
+    successReg:   name => `✅ <b>Отлично, ${name}!</b>\n\nПройдите быструю регистрацию — ваши данные уже заполнены:`,
   },
   uz: {
     phonePrompt:  `📱 Telefon raqamingizni ulashish uchun quyidagi tugmani bosing:`,
@@ -66,6 +69,9 @@ const LANG_STRINGS = {
     notFound:     `❌ <b>Hisob topilmadi</b>\n\nBu raqam bilan hech qanday usta ro'yxatdan o'tmagan.\n\nRo'yxatdan o'ting — bu 2 daqiqa oladi:`,
     registerBtn:  "Ro'yxatdan o'tish",
     openApp:      "Ilovani ochish",
+    askName:      `👤 Ismingiz nima? Ismingizni kiriting:`,
+    askNameHint:  name => `\n\n<i>Yozishingiz mumkin: ${name}</i>`,
+    successReg:   name => `✅ <b>Ajoyib, ${name}!</b>\n\nTez ro'yxatdan o'ting — ma'lumotlaringiz allaqachon to'ldirilgan:`,
   },
   en: {
     phonePrompt:  `📱 Press the button below to share your phone number:`,
@@ -75,6 +81,9 @@ const LANG_STRINGS = {
     notFound:     `❌ <b>Account not found</b>\n\nNo master with this phone number is registered in the system.\n\nSign up — it takes only 2 minutes:`,
     registerBtn:  "Sign up",
     openApp:      "Open App",
+    askName:      `👤 What is your name? Please enter it:`,
+    askNameHint:  name => `\n\n<i>You can type: ${name}</i>`,
+    successReg:   name => `✅ <b>Great, ${name}!</b>\n\nComplete quick registration — your details are pre-filled:`,
   },
   tg: {
     phonePrompt:  `📱 Барои мубодилаи рақами телефон тугмаи зеринро пахш кунед:`,
@@ -84,6 +93,9 @@ const LANG_STRINGS = {
     notFound:     `❌ <b>Ҳисоб ёфт нашуд</b>\n\nАз ин рақами телефон ягон устои бақайдгирифта вуҷуд надорад.\n\nБақайд гиред — ин 2 дақиқа мегирад:`,
     registerBtn:  "Бақайдгирӣ",
     openApp:      "Кушодани барнома",
+    askName:      `👤 Номи шумо чист? Номатонро ворид кунед:`,
+    askNameHint:  name => `\n\n<i>Навиштан мумкин: ${name}</i>`,
+    successReg:   name => `✅ <b>Аъло, ${name}!</b>\n\nБақайдгириро анҷом диҳед — маълумоти шумо аллакай пур шудааст:`,
   },
   kz: {
     phonePrompt:  `📱 Телефон нөміріңізді бөлісу үшін төмендегі түймені басыңыз:`,
@@ -93,6 +105,9 @@ const LANG_STRINGS = {
     notFound:     `❌ <b>Аккаунт табылмады</b>\n\nБұл телефон нөмірімен тіркелген шебер жоқ.\n\nТіркеліңіз — бұл 2 минут алады:`,
     registerBtn:  "Тіркелу",
     openApp:      "Қолданбаны ашу",
+    askName:      `👤 Атыңыз қалай? Атыңызды енгізіңіз:`,
+    askNameHint:  name => `\n\n<i>Жазуыңызға болады: ${name}</i>`,
+    successReg:   name => `✅ <b>Тамаша, ${name}!</b>\n\nЖылдам тіркелуді аяқтаңыз — деректеріңіз толтырылды:`,
   },
   ky: {
     phonePrompt:  `📱 Телефон номериңизди бөлүшүү үчүн төмөндөгү баскычты басыңыз:`,
@@ -102,6 +117,9 @@ const LANG_STRINGS = {
     notFound:     `❌ <b>Аккаунт табылган жок</b>\n\nБул телефон номери менен каттоодон өткөн чебер жок.\n\nКаттоодон өтүңүз — бул 2 мүнөт алат:`,
     registerBtn:  "Каттоодон өтүү",
     openApp:      "Колдонмону ачуу",
+    askName:      `👤 Атыңыз кандай? Атыңызды киргизиңиз:`,
+    askNameHint:  name => `\n\n<i>Жазсаңыз болот: ${name}</i>`,
+    successReg:   name => `✅ <b>Мыкты, ${name}!</b>\n\nТез катталууну аяктаңыз — дайындарыңыз толтурулду:`,
   },
 };
 
@@ -366,22 +384,17 @@ async function processUpdate(update) {
         await bot.sendMessage(chatId, s.found, { remove_keyboard: true });
         await sendMasterMenu(chatId, message.contact.first_name || "", profile);
       } else {
-        // Не найден — одно сообщение: текст + inline кнопка регистрации
-        const regUrl = `${APP_URL}/register?lang=${lang}&phone=${encodeURIComponent(message.contact.phone_number)}`;
-        await fetch(`${bot.TG_API}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: s.notFound,
-            parse_mode: "HTML",
-            reply_markup: {
-              inline_keyboard: [[
-                { text: s.registerBtn, web_app: { url: regUrl }, style: "primary" },
-              ]],
-            },
-          }),
+        // Не найден — спрашиваем имя для предзаполнения регистрации
+        const tgFullName = [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ");
+        pendingMasters.set(chatId, {
+          step: "waiting_master_name",
+          lang,
+          phone: message.contact.phone_number,
+          tgName: tgFullName,
         });
+        savePendingSessions();
+        const askText = `${s.askName}${tgFullName ? s.askNameHint(tgFullName) : ""}`;
+        await bot.sendMessage(chatId, askText, { remove_keyboard: true });
       }
     }
     return;
@@ -424,21 +437,17 @@ async function processUpdate(update) {
       await bot.sendMessage(chatId, s.found);
       await sendMasterMenu(chatId, message.from?.first_name || "", profile);
     } else {
-      const regUrl = `${APP_URL}/register?lang=${lang}&phone=${encodeURIComponent(phone)}`;
-      await fetch(`${bot.TG_API}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: s.notFound,
-          parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [[
-              { text: s.registerBtn, web_app: { url: regUrl }, style: "primary" },
-            ]],
-          },
-        }),
+      // Не найден — спрашиваем имя для предзаполнения регистрации
+      const tgFullName = [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ");
+      pendingMasters.set(chatId, {
+        step: "waiting_master_name",
+        lang,
+        phone,
+        tgName: tgFullName,
       });
+      savePendingSessions();
+      const askText = `${s.askName}${tgFullName ? s.askNameHint(tgFullName) : ""}`;
+      await bot.sendMessage(chatId, askText);
     }
     return;
   }
@@ -522,6 +531,35 @@ async function processUpdate(update) {
       // ── Текст при ожидании выбора языка ─────────────────────────────────────
       if (pending?.step === "waiting_language") {
         await sendLangSelection(chatId, firstName);
+        return;
+      }
+      // ── Текст при ожидании имени (новый мастер, не найден в базе) ─────────────
+      if (pending?.step === "waiting_master_name") {
+        const name = text.trim() || pending.tgName || firstName;
+        const lang = getLang(pending);
+        const s = LANG_STRINGS[lang];
+        const regUrl = `${APP_URL}/register?lang=${lang}&phone=${encodeURIComponent(pending.phone || "")}&name=${encodeURIComponent(name)}`;
+
+        pendingMasters.delete(chatId);
+        savePendingSessions();
+
+        // Кнопка меню → страница регистрации с предзаполненными данными
+        await bot.setUserMenuButton(chatId, s.registerBtn, regUrl);
+
+        await fetch(`${bot.TG_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: s.successReg(name),
+            parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [[
+                { text: s.registerBtn, web_app: { url: regUrl }, style: "primary" },
+              ]],
+            },
+          }),
+        });
         return;
       }
     }

@@ -49,13 +49,82 @@ function savePendingBookings() {
 
 const pendingBookings = loadPendingBookings();
 
+// ── Многоязычные строки клиентского бота ──────────────────────────────────────
+
+const CLIENT_LANG_STRINGS = {
+  ru: {
+    phonePrompt: `📱 Поделитесь вашим номером телефона:`,
+    shareBtn:    'Поделиться номером',
+    remindShare: `📱 Пожалуйста, нажмите кнопку <b>«Поделиться номером»</b> ниже.`,
+    askName:     `👤 Как вас зовут?`,
+    askNameHint: name => `\n\n<i>Можете написать: ${name}</i>`,
+    registered:  name => `✅ <b>Готово, ${name}!</b>\n\nВы зарегистрированы. Откройте кабинет — там можно найти мастера через поиск или отсканировать QR-код:`,
+    cabinetBtn:  '📋 Мой кабинет',
+    welcomeBack: `Рады видеть вас снова в <b>Ezze</b>!\n\nНажмите кнопку ниже, чтобы открыть личный кабинет:`,
+  },
+  uz: {
+    phonePrompt: `📱 Telefon raqamingizni ulashing:`,
+    shareBtn:    "Raqamni ulashish",
+    remindShare: `📱 Iltimos, <b>«Raqamni ulashish»</b> tugmasini bosing.`,
+    askName:     `👤 Ismingiz nima?`,
+    askNameHint: name => `\n\n<i>Yozishingiz mumkin: ${name}</i>`,
+    registered:  name => `✅ <b>Tayyor, ${name}!</b>\n\nSiz ro'yxatdan o'tdingiz. Kabinetni oching — u yerda usta qidirish yoki QR-kod skanerlash mumkin:`,
+    cabinetBtn:  "📋 Mening kabinetim",
+    welcomeBack: `<b>Ezze</b>ga yana xush kelibsiz!\n\nShaxsiy kabinetingizni ochish uchun tugmani bosing:`,
+  },
+  en: {
+    phonePrompt: `📱 Please share your phone number:`,
+    shareBtn:    "Share phone number",
+    remindShare: `📱 Please press the <b>«Share phone number»</b> button below.`,
+    askName:     `👤 What is your name?`,
+    askNameHint: name => `\n\n<i>You can type: ${name}</i>`,
+    registered:  name => `✅ <b>Done, ${name}!</b>\n\nYou're registered. Open your cabinet — search for a master or scan a QR code:`,
+    cabinetBtn:  "📋 My Cabinet",
+    welcomeBack: `Welcome back to <b>Ezze</b>!\n\nPress the button below to open your personal cabinet:`,
+  },
+  tg: {
+    phonePrompt: `📱 Рақами телефони худро мубодила кунед:`,
+    shareBtn:    "Мубодилаи рақам",
+    remindShare: `📱 Лутфан тугмаи <b>«Мубодилаи рақам»</b>-ро пахш кунед.`,
+    askName:     `👤 Номи шумо чист?`,
+    askNameHint: name => `\n\n<i>Навиштан мумкин: ${name}</i>`,
+    registered:  name => `✅ <b>Тайёр, ${name}!</b>\n\nШумо сабти ном шудед. Кабинетро кушоед:`,
+    cabinetBtn:  "📋 Кабинети ман",
+    welcomeBack: `Ба <b>Ezze</b> хуш омадед!\n\nБарои кушодани кабинет тугмаро пахш кунед:`,
+  },
+  kz: {
+    phonePrompt: `📱 Телефон нөміріңізді бөлісіңіз:`,
+    shareBtn:    "Нөмірді бөлісу",
+    remindShare: `📱 <b>«Нөмірді бөлісу»</b> түймесін басыңыз.`,
+    askName:     `👤 Атыңыз қалай?`,
+    askNameHint: name => `\n\n<i>Жазуыңызға болады: ${name}</i>`,
+    registered:  name => `✅ <b>Дайын, ${name}!</b>\n\nТіркелдіңіз. Кабинетіңізді ашыңыз:`,
+    cabinetBtn:  "📋 Менің кабинетім",
+    welcomeBack: `<b>Ezze</b>-ге қайта қош келдіңіз!\n\nКабинетті ашу үшін түймені басыңыз:`,
+  },
+  ky: {
+    phonePrompt: `📱 Телефон номериңизди бөлүшүңүз:`,
+    shareBtn:    "Номерди бөлүшүү",
+    remindShare: `📱 <b>«Номерди бөлүшүү»</b> баскычын басыңыз.`,
+    askName:     `👤 Атыңыз кандай?`,
+    askNameHint: name => `\n\n<i>Жазсаңыз болот: ${name}</i>`,
+    registered:  name => `✅ <b>Даяр, ${name}!</b>\n\nКаттоодон өттүңүз. Кабинетиңизди ачыңыз:`,
+    cabinetBtn:  "📋 Менин кабинетим",
+    welcomeBack: `<b>Ezze</b>-ге кайра кош келиңиз!\n\nКабинетти ачуу үчүн баскычты басыңыз:`,
+  },
+};
+
+function getClientLang(lang) {
+  return CLIENT_LANG_STRINGS[lang] ? lang : 'ru';
+}
+
 // ── tg_clients: сохранение/поиск платформенных клиентов ───────────────────────
 
 /** Ищет клиента в tg_clients по tg_chat_id. Возвращает запись или null. */
 async function findTgClient(chatId) {
   const { data } = await supabase
     .from("tg_clients")
-    .select("id, name, phone, tg_username, tg_name")
+    .select("id, name, phone, tg_username, tg_name, lang")
     .eq("tg_chat_id", String(chatId))
     .maybeSingle();
   return data ?? null;
@@ -63,22 +132,55 @@ async function findTgClient(chatId) {
 
 /**
  * Сохраняет/обновляет клиента в tg_clients.
- * @param {number|string} chatId   — Telegram chat ID
- * @param {string}        name     — имя, введённое клиентом
- * @param {string}        phone    — телефон
+ * @param {number|string} chatId     — Telegram chat ID
+ * @param {string}        name       — имя, введённое клиентом
+ * @param {string}        phone      — телефон
  * @param {string|null}   tgUsername — @никнейм из Telegram-профиля
- * @param {string|null}   tgName   — отображаемое имя из Telegram-профиля (first_name + last_name)
+ * @param {string|null}   tgName     — отображаемое имя из Telegram-профиля
+ * @param {string}        lang       — выбранный язык
  */
-async function saveTgClient(chatId, name, phone, tgUsername = null, tgName = null) {
+async function saveTgClient(chatId, name, phone, tgUsername = null, tgName = null, lang = 'ru') {
   const { error } = await supabase.from("tg_clients").upsert({
     tg_chat_id:  String(chatId),
     name,
     phone,
     tg_username: tgUsername || null,
     tg_name:     tgName     || null,
+    lang:        lang       || 'ru',
     updated_at:  new Date().toISOString(),
   }, { onConflict: "tg_chat_id" });
   if (error) console.error("saveTgClient error:", error.message);
+}
+
+// ── Выбор языка для клиента ───────────────────────────────────────────────────
+
+async function sendClientLangSelection(chatId, firstName) {
+  const greeting = `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>`;
+  await fetch(`${bot.TG_API}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: `${greeting}\n\nДобро пожаловать в <b>Ezze</b>!\n\n🌐 <b>Выберите язык / Tilni tanlang / Select language:</b>`,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🇷🇺 Русский",   callback_data: "lang_ru" },
+            { text: "🇺🇿 O'zbek",    callback_data: "lang_uz" },
+          ],
+          [
+            { text: "🇬🇧 English",   callback_data: "lang_en" },
+            { text: "🇹🇯 Тоҷикӣ",   callback_data: "lang_tg" },
+          ],
+          [
+            { text: "🇰🇿 Қазақша",  callback_data: "lang_kz" },
+            { text: "🇰🇬 Кыргызча", callback_data: "lang_ky" },
+          ],
+        ],
+      },
+    }),
+  });
 }
 
 // ── Клиентские хелперы ────────────────────────────────────────────────────────
@@ -129,7 +231,7 @@ async function showTeamBookingButton(chatId, teamSlug, phone, name, tgUsername =
   });
 }
 
-async function sendClientMenuSmart(chatId, firstName) {
+async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
   const greeting = `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>`;
 
   // 1. Есть ли активные/прошлые записи по telegram_id?
@@ -163,9 +265,10 @@ async function sendClientMenuSmart(chatId, firstName) {
   }
 
   if (isKnownClient) {
-    const cfg = await loadTgConfig();
     const clientPhone = knownTgClient?.phone || '';
     const clientName  = knownTgClient?.name  || '';
+    const clientLang  = getClientLang(knownTgClient?.lang || 'ru');
+    const s = CLIENT_LANG_STRINGS[clientLang];
     const cabinetParams = new URLSearchParams({ tg_id: String(chatId) });
     if (clientPhone) cabinetParams.set('tg_phone', clientPhone);
     if (clientName)  cabinetParams.set('tg_name', clientName);
@@ -176,38 +279,25 @@ async function sendClientMenuSmart(chatId, firstName) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `${greeting}\n\nРады видеть вас снова в <b>Ezze</b>!\n\nНажмите кнопку ниже, чтобы открыть личный кабинет:`,
+        text: `${greeting}\n\n${s.welcomeBack}`,
         parse_mode: "HTML",
         reply_markup: {
           inline_keyboard: [[
-            { text: "📋 Мой кабинет", style: "primary", web_app: { url: cabinetUrl } },
+            { text: s.cabinetBtn, style: "primary", web_app: { url: cabinetUrl } },
           ]],
         },
       }),
     });
   } else {
-    // Новый клиент — сбрасываем кнопку меню и запускаем регистрацию
+    // Новый клиент — сбрасываем кнопку меню, показываем выбор языка
     await bot.setUserMenuButton(chatId); // убираем кнопку до окончания регистрации
     pendingBookings.set(chatId, {
-      step: "waiting_phone",
+      step: "waiting_language",
       mode: "registration",
-      tgUsername: "",
+      tgUsername,
     });
     savePendingBookings();
-    await fetch(`${bot.TG_API}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: `${greeting}\n\nДобро пожаловать в <b>Ezze</b>!\n\n📱 Для начала поделитесь вашим номером телефона:`,
-        parse_mode: "HTML",
-        reply_markup: {
-          keyboard: [[{ text: "📱 Поделиться номером", request_contact: true, style: "primary" }]],
-          resize_keyboard: true,
-          one_time_keyboard: true,
-        },
-      }),
-    });
+    await sendClientLangSelection(chatId, firstName);
   }
 }
 
@@ -227,6 +317,8 @@ async function processUpdate(update) {
       // tgProfileName — отображаемое имя из Telegram-профиля (может отличаться от имени контакта)
       const tgProfileName = [message.from?.first_name, message.from?.last_name]
         .filter(Boolean).join(" ") || contactName;
+      const lang = getClientLang(pending?.lang);
+      const s = CLIENT_LANG_STRINGS[lang];
       pending.step = "waiting_name";
       pending.phone = phone;
       pending.tgName = contactName;
@@ -235,7 +327,7 @@ async function processUpdate(update) {
       savePendingBookings();
       await bot.sendMessage(
         chatId,
-        `📱 Номер получен!\n\nКак вас зовут?${contactName ? `\n\n<i>Можете просто написать: ${contactName}</i>` : ""}`,
+        `${s.askName}${contactName ? s.askNameHint(contactName) : ""}`,
         { remove_keyboard: true }
       );
     }
@@ -252,11 +344,12 @@ async function processUpdate(update) {
     if (text.startsWith("/start")) {
       // Единственный сценарий: регистрация → личный кабинет
       // Клиент находит мастера через поиск или QR-сканер внутри кабинета
+      const tgUsernameNow = message.from?.username || '';
       const existingSession = pendingBookings.get(chatId);
       if (existingSession && existingSession.mode !== "registered") {
-        existingSession.tgUsername = message.from?.username || '';
+        existingSession.tgUsername = tgUsernameNow;
       }
-      await sendClientMenuSmart(chatId, firstName);
+      await sendClientMenuSmart(chatId, firstName, tgUsernameNow);
       return;
     }
 
@@ -265,19 +358,30 @@ async function processUpdate(update) {
       return;
     }
 
+    // ── Шаг 0b: написал текст при ожидании выбора языка ──────────────────────
+    if (!text.startsWith("/")) {
+      const pending = pendingBookings.get(chatId);
+      if (pending?.step === "waiting_language") {
+        await sendClientLangSelection(chatId, firstName);
+        return;
+      }
+    }
+
     // ── Шаг 1b: написал текст вместо кнопки "Поделиться номером" ─────────────
     if (!text.startsWith("/")) {
       const pending = pendingBookings.get(chatId);
       if (pending?.step === "waiting_phone") {
+        const lang = getClientLang(pending?.lang);
+        const s = CLIENT_LANG_STRINGS[lang];
         await fetch(`${bot.TG_API}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: `📱 Пожалуйста, нажмите кнопку <b>«Поделиться номером»</b> ниже — это нужно для записи.`,
+            text: s.remindShare,
             parse_mode: "HTML",
             reply_markup: {
-              keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
+              keyboard: [[{ text: s.shareBtn, request_contact: true }]],
               resize_keyboard: true,
               one_time_keyboard: true,
             },
@@ -291,12 +395,14 @@ async function processUpdate(update) {
     if (!text.startsWith("/")) {
       const pending = pendingBookings.get(chatId);
       if (pending?.step === "waiting_name") {
-        const name = text.trim() || pending.tgName || firstName;
-        const tgUsername   = pending.tgUsername   || '';
+        const name          = text.trim() || pending.tgName || firstName;
+        const tgUsername    = pending.tgUsername    || '';
         const tgProfileName = pending.tgProfileName || '';
+        const lang          = getClientLang(pending?.lang);
+        const s             = CLIENT_LANG_STRINGS[lang];
 
         // ✅ Сохраняем клиента в tg_clients → всегда открываем кабинет
-        await saveTgClient(chatId, name, pending.phone, tgUsername, tgProfileName);
+        await saveTgClient(chatId, name, pending.phone, tgUsername, tgProfileName, lang);
 
         pendingBookings.set(chatId, {
           mode: "registered",
@@ -312,11 +418,11 @@ async function processUpdate(update) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: `✅ <b>Готово, ${name}!</b>\n\nВы зарегистрированы. Откройте кабинет — там можно найти мастера через поиск или отсканировать QR-код:`,
+            text: s.registered(name),
             parse_mode: "HTML",
             reply_markup: {
               inline_keyboard: [[
-                { text: "📋 Мой кабинет", style: "primary", web_app: { url: `${APP_URL}/my?${regParams.toString()}` } },
+                { text: s.cabinetBtn, style: "primary", web_app: { url: `${APP_URL}/my?${regParams.toString()}` } },
               ]],
             },
           }),
@@ -345,6 +451,36 @@ async function processUpdate(update) {
     if (!chatId) return;
 
     await bot.answerCallbackQuery(callback.id);
+
+    // ── Выбор языка ────────────────────────────────────────────────────────
+    if (callback.data?.startsWith("lang_")) {
+      const selectedLang = callback.data.slice(5); // "lang_ru" → "ru"
+      if (!CLIENT_LANG_STRINGS[selectedLang]) return;
+      const pending = pendingBookings.get(chatId);
+      if (pending?.step === "waiting_language") {
+        pending.step = "waiting_phone";
+        pending.lang = selectedLang;
+        savePendingBookings();
+        const s = CLIENT_LANG_STRINGS[selectedLang];
+        const langNames = { ru: "🇷🇺 Русский", uz: "🇺🇿 O'zbek", en: "🇬🇧 English", tg: "🇹🇯 Тоҷикӣ", kz: "🇰🇿 Қазақша", ky: "🇰🇬 Кыргызча" };
+        await bot.editMessageText(chatId, msgId, `✅ ${langNames[selectedLang] || selectedLang}`);
+        await fetch(`${bot.TG_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: s.phonePrompt,
+            parse_mode: "HTML",
+            reply_markup: {
+              keyboard: [[{ text: s.shareBtn, request_contact: true }]],
+              resize_keyboard: true,
+              one_time_keyboard: true,
+            },
+          }),
+        });
+      }
+      return;
+    }
 
     if (callback.data === "open_cabinet") {
       const tgCl = await findTgClient(chatId);
