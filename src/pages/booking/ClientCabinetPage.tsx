@@ -6,7 +6,7 @@ import dayjs from 'dayjs'
 import {
   Calendar, Clock, CheckCircle, XCircle, AlertCircle, CalendarClock,
   Zap, Gift, Copy, Check, Sun, Moon, Search, User, Users,
-  ChevronRight, X,
+  ChevronRight, X, QrCode,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { getFileUrl, cn } from '@/lib/utils'
@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
+import { toast } from '@/components/shared/Toaster'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { getStoredTheme, setTheme } from '@/stores/themeStore'
@@ -306,6 +307,29 @@ export function ClientCabinetPage() {
     navigate(`/book/team/${slug}?${params.toString()}`)
   }
 
+  // ── QR-сканер (Telegram WebApp API) ─────────────────────────────────────────
+  const handleScanQr = () => {
+    const tg = (window as any).Telegram?.WebApp
+    if (!tg?.showScanQrPopup) {
+      toast.error('QR-сканер недоступен. Обновите Telegram до последней версии.')
+      return
+    }
+    tg.showScanQrPopup({ text: 'Наведите камеру на QR-код мастера' }, (data: string) => {
+      tg.closeScanQrPopup?.()
+      try {
+        const url = new URL(data)
+        // Формат: https://ezze.site/book/my-salon
+        const masterMatch = url.pathname.match(/\/book\/([^/]+)$/)
+        if (masterMatch) { openBooking(masterMatch[1]); return true }
+        // Формат: https://ezze.site/book/team/my-team
+        const teamMatch = url.pathname.match(/\/book\/team\/([^/]+)$/)
+        if (teamMatch) { openTeam(teamMatch[1]); return true }
+      } catch {}
+      toast.error('Не удалось распознать QR-код мастера')
+      return true
+    })
+  }
+
   // ── Экран без авторизации ───────────────────────────────────────────────────
   if (!loading && !telegramId && !import.meta.env.DEV) {
     return (
@@ -416,6 +440,18 @@ export function ClientCabinetPage() {
           {/* ── Вкладка: Поиск мастеров ── */}
           {tab === 'search' && (
             <div className="space-y-3">
+              {/* QR-сканер (только в Telegram Mini App) */}
+              {isTelegramMiniApp() && (
+                <button
+                  type="button"
+                  onClick={handleScanQr}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 active:bg-primary/15 transition-colors py-3 text-sm font-medium text-primary"
+                >
+                  <QrCode className="h-4 w-4" />
+                  Сканировать QR-код мастера
+                </button>
+              )}
+
               {/* Поиск */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />

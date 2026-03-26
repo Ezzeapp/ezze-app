@@ -236,97 +236,8 @@ async function processUpdate(update) {
 
     // ── /start ────────────────────────────────────────────────────────────────
     if (text.startsWith("/start")) {
-      const param = text.split(" ")[1] || "";
-
-      // ── Сценарий 2: ссылка мастера /start book_SLUG ───────────────────────
-      if (param.startsWith("book_")) {
-        const slug = param.slice(5);
-        const { data: profile } = await supabase
-          .from("master_profiles").select("profession").eq("booking_slug", slug).maybeSingle();
-
-        if (!profile) {
-          await bot.sendMessage(chatId, `❌ Мастер не найден или страница записи закрыта.`);
-          return;
-        }
-
-        // Проверяем, зарегистрирован ли уже в tg_clients
-        const tgClient = await findTgClient(chatId);
-
-        if (tgClient?.phone && tgClient?.name) {
-          // ✅ Уже зарегистрирован → сразу кнопка записи, без повторного ввода
-          console.log(`👤 [client] chat=${chatId} already in tg_clients → skip registration`);
-          await showBookingButton(chatId, slug, tgClient.phone, tgClient.name, tgClient.tg_username || '');
-          await setClientMenuButton(chatId);
-        } else {
-          // Новый клиент → стандартный флоу регистрации + запись
-          await bot.setUserMenuButton(chatId); // сброс старой кнопки
-          pendingBookings.set(chatId, {
-            slug,
-            masterProfession: profile.profession || "Мастер",
-            step: "waiting_phone",
-            tgUsername: message.from?.username || '',
-          });
-          savePendingBookings();
-          await fetch(`${bot.TG_API}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nВы записываетесь к мастеру <b>${profile.profession || "Мастер"}</b>.\n\n📱 Для записи нам нужен ваш номер телефона.\nНажмите кнопку ниже:`,
-              parse_mode: "HTML",
-              reply_markup: {
-                keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
-                resize_keyboard: true,
-                one_time_keyboard: true,
-              },
-            }),
-          });
-        }
-        return;
-      }
-
-      // ── Сценарий 3: ссылка команды /start team_SLUG ──────────────────────
-      if (param.startsWith("team_")) {
-        const teamSlug = param.slice(5);
-        const { data: team } = await supabase
-          .from("teams").select("id, name").eq("slug", teamSlug).eq("is_public", true).maybeSingle();
-
-        if (!team) {
-          await bot.sendMessage(chatId, `❌ Команда не найдена или страница записи закрыта.`);
-          return;
-        }
-
-        const tgClient = await findTgClient(chatId);
-        if (tgClient?.phone && tgClient?.name) {
-          await showTeamBookingButton(chatId, teamSlug, tgClient.phone, tgClient.name, tgClient.tg_username || '');
-          await setClientMenuButton(chatId);
-        } else {
-          await bot.setUserMenuButton(chatId);
-          pendingBookings.set(chatId, {
-            teamSlug,
-            step: "waiting_phone",
-            tgUsername: message.from?.username || '',
-          });
-          savePendingBookings();
-          await fetch(`${bot.TG_API}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>\n\nВы записываетесь к мастерам команды <b>${team.name}</b>.\n\n📱 Для записи нам нужен ваш номер телефона.\nНажмите кнопку ниже:`,
-              parse_mode: "HTML",
-              reply_markup: {
-                keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
-                resize_keyboard: true,
-                one_time_keyboard: true,
-              },
-            }),
-          });
-        }
-        return;
-      }
-
-      // ── Сценарий 1: /start без параметра ─────────────────────────────────
+      // Единственный сценарий: регистрация → личный кабинет
+      // Клиент находит мастера через поиск или QR-сканер внутри кабинета
       const existingSession = pendingBookings.get(chatId);
       if (existingSession && existingSession.mode !== "registered") {
         existingSession.tgUsername = message.from?.username || '';
@@ -369,47 +280,32 @@ async function processUpdate(update) {
         const name = text.trim() || pending.tgName || firstName;
         const tgUsername = pending.tgUsername || '';
 
-        // ✅ Сохраняем клиента в tg_clients (оба сценария — регистрация и запись через ссылку)
+        // ✅ Сохраняем клиента в tg_clients → всегда открываем кабинет
         await saveTgClient(chatId, name, pending.phone, tgUsername);
 
-        if (pending.mode === "registration") {
-          // Сценарий 1: регистрация без мастера → обновляем JSON-сессию, показываем кабинет
-          pendingBookings.set(chatId, {
-            mode: "registered",
-            phone: pending.phone,
-            name,
-            tgUsername,
-          });
-          savePendingBookings();
-          await setClientMenuButton(chatId, pending.phone, name);
-          const regParams = new URLSearchParams({ tg_id: String(chatId), tg_phone: pending.phone, tg_name: name });
-          await fetch(`${bot.TG_API}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: `✅ <b>Регистрация успешна, ${name}!</b>\n\nОткройте личный кабинет, чтобы найти мастера и записаться на приём:`,
-              parse_mode: "HTML",
-              reply_markup: {
-                inline_keyboard: [[
-                  { text: "📋 Мой кабинет", style: "primary", web_app: { url: `${APP_URL}/my?${regParams.toString()}` } },
-                ]],
-              },
-            }),
-          });
-        } else if (pending.teamSlug) {
-          // Сценарий 3: запись через команду
-          pendingBookings.delete(chatId);
-          savePendingBookings();
-          await showTeamBookingButton(chatId, pending.teamSlug, pending.phone, name, tgUsername);
-          await setClientMenuButton(chatId);
-        } else {
-          // Сценарий 2: запись к конкретному мастеру
-          pendingBookings.delete(chatId);
-          savePendingBookings();
-          await showBookingButton(chatId, pending.slug, pending.phone, name, tgUsername);
-          await setClientMenuButton(chatId);
-        }
+        pendingBookings.set(chatId, {
+          mode: "registered",
+          phone: pending.phone,
+          name,
+          tgUsername,
+        });
+        savePendingBookings();
+        await setClientMenuButton(chatId, pending.phone, name);
+        const regParams = new URLSearchParams({ tg_id: String(chatId), tg_phone: pending.phone, tg_name: name });
+        await fetch(`${bot.TG_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `✅ <b>Готово, ${name}!</b>\n\nВы зарегистрированы. Откройте кабинет — там можно найти мастера через поиск или отсканировать QR-код:`,
+            parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [[
+                { text: "📋 Мой кабинет", style: "primary", web_app: { url: `${APP_URL}/my?${regParams.toString()}` } },
+              ]],
+            },
+          }),
+        });
         return;
       }
     }
