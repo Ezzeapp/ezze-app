@@ -173,22 +173,6 @@ export function ClientCabinetPage() {
       if (tgClient?.name)    setUserName(tgClient.name)    // зарегистрированное имя из бота
       if (tgClient?.tg_name) setTgProfileName(prev => prev || tgClient!.tg_name!)  // TG-профиль как запасной
 
-      // Если нет имени в tg_clients (клиент не регистрировался через бот),
-      // пробуем получить display_name из master_profiles (мастер / администратор, тестирующий кабинет)
-      if (!tgClient?.name) {
-        try {
-          const { data: { user: sbUser } } = await supabase.auth.getUser()
-          if (sbUser?.id) {
-            const { data: masterProf } = await supabase
-              .from('master_profiles')
-              .select('display_name')
-              .eq('user_id', sbUser.id)
-              .maybeSingle()
-            if (masterProf?.display_name) setUserName(masterProf.display_name)
-          }
-        } catch { /* не критично */ }
-      }
-
       const { data: records } = await supabase
         .from('appointments')
         .select('*, service:services(name)')
