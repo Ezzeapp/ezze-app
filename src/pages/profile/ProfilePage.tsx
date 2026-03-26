@@ -779,7 +779,7 @@ export function ProfilePage() {
               <Input placeholder="my-studio" {...register('booking_slug')} />
               {errors.booking_slug && <p className="text-xs text-destructive">{errors.booking_slug.message}</p>}
             </div>
-            {/* QR-код Telegram Mini App для клиентов */}
+            {/* QR-код для клиентов — сканируется в Mini App */}
             {isPublic && (
               <div className="space-y-3">
                 {/* Telegram Mini App — только Pro */}
