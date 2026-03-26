@@ -823,6 +823,11 @@ export function ClientsPage() {
                         )
                       })()}
                     </div>
+                    {client.telegram && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Send className="h-3 w-3" />@{client.telegram.replace('@', '')}
+                      </p>
+                    )}
                     {client.email && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Mail className="h-3 w-3" />{client.email}

@@ -23,6 +23,7 @@ interface TgClientRow {
   name: string | null
   phone: string | null
   tg_username: string | null
+  tg_name: string | null
   is_blocked: boolean
   created_at: string
 }
@@ -46,6 +47,7 @@ interface UnifiedClient {
   phone: string | null
   tgChatId: string | null
   tgUsername: string | null
+  tgName: string | null
   masterName: string | null
   isBlocked: boolean
   createdAt: string
@@ -143,6 +145,7 @@ export function AdminTgClientsTab() {
         phone:      tc.phone,
         tgChatId:   tc.tg_chat_id,
         tgUsername: tc.tg_username,
+        tgName:     tc.tg_name ?? null,
         masterName: matched?.masterName ?? null,
         isBlocked:  tc.is_blocked,
         createdAt:  tc.created_at,
@@ -157,6 +160,7 @@ export function AdminTgClientsTab() {
       phone:      mc.phone,
       tgChatId:   mc.tg_chat_id,
       tgUsername: null,
+      tgName:     null,
       masterName: mc.masterName,
       isBlocked:  false,
       createdAt:  mc.created_at,
@@ -444,6 +448,12 @@ export function AdminTgClientsTab() {
                         </Badge>
                       )}
                     </div>
+                    {/* Telegram-имя профиля (если отличается от введённого) */}
+                    {client.tgName && client.tgName.toLowerCase() !== client.name.toLowerCase() && (
+                      <p className="text-[11px] text-muted-foreground/70 truncate leading-tight">
+                        TG: {client.tgName}
+                      </p>
+                    )}
                     <div className="flex items-center gap-3 flex-wrap">
                       {client.phone && (
                         <span className="flex items-center gap-1 text-xs text-muted-foreground">

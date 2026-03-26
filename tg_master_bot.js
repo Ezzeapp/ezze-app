@@ -7,15 +7,16 @@
 
 import { readFileSync, writeFileSync } from "fs";
 import {
-  supabase, APP_URL, MASTER_BOT_TOKEN,
+  supabase, APP_URL, MASTER_BOT_TOKEN, CLIENT_BOT_TOKEN,
   loadTgConfig, loadAIConfig,
   findMasterByChatId, autoFixMasterProfile,
   getMasterTools, executeMasterTool,
   handleAIMessage, runAgentic,
-  createBotHelpers,
+  createBotHelpers, fmtDate,
 } from "./tg_shared.js";
 
-const bot = createBotHelpers(MASTER_BOT_TOKEN);
+const bot       = createBotHelpers(MASTER_BOT_TOKEN);
+const clientBot = createBotHelpers(CLIENT_BOT_TOKEN); // для уведомлений клиентам
 
 // ── Persistent sessions (для phone-onboarding flow) ───────────────────────────
 
@@ -260,9 +261,69 @@ async function processUpdate(update) {
       const cancelText =
         `❌ <b>Запись отменена</b>\n\n` +
         (clientName ? `👤 <b>Клиент:</b> ${clientName}\n` : "") +
-        `📅 <b>Дата:</b> ${appt.date ?? "—"}\n` +
+        `📅 <b>Дата:</b> ${fmtDate(appt.date)}\n` +
         `🕐 <b>Время:</b> ${appt.start_time ?? "—"}`;
       if (msgId) await bot.editMessageText(chatId, msgId, cancelText);
+
+    } else if (data.startsWith("confirm_appt_")) {
+      // ── Мастер подтверждает запись прямо из уведомления ──────────────────
+      const apptId = data.replace("confirm_appt_", "");
+      const msgId = cb.message?.message_id;
+      await answerCbQuery(cb.id, "⏳");
+
+      const { data: appt } = await supabase
+        .from("appointments")
+        .select("id, status, confirmed_at, client_name, client_id, date, start_time, telegram_id")
+        .eq("id", apptId)
+        .maybeSingle();
+
+      if (!appt) {
+        if (msgId) await bot.editMessageText(chatId, msgId, "❌ Запись не найдена.");
+        return;
+      }
+      if (appt.confirmed_at) {
+        if (msgId) await bot.editMessageText(chatId, msgId, "✅ <b>Запись уже была подтверждена ранее.</b>");
+        return;
+      }
+      if (appt.status === "cancelled") {
+        if (msgId) await bot.editMessageText(chatId, msgId, "❌ <b>Запись отменена — подтвердить невозможно.</b>");
+        return;
+      }
+      if (appt.status === "done" || appt.status === "no_show") {
+        if (msgId) await bot.editMessageText(chatId, msgId, "ℹ️ <b>Визит уже состоялся — подтвердить невозможно.</b>");
+        return;
+      }
+
+      await supabase.from("appointments")
+        .update({ confirmed_at: new Date().toISOString() })
+        .eq("id", apptId);
+      console.log(`✅ [master] confirmed appt ${apptId} by master chat=${chatId}`);
+
+      // Подтягиваем имя клиента если не было в записи
+      let clientName = (appt.client_name ?? "").trim();
+      if (!clientName && appt.client_id) {
+        const { data: cl } = await supabase
+          .from("clients").select("first_name, last_name").eq("id", appt.client_id).maybeSingle();
+        if (cl) clientName = [cl.first_name, cl.last_name].filter(Boolean).join(" ");
+      }
+
+      const confirmText =
+        `✅ <b>Запись подтверждена</b>\n\n` +
+        (clientName ? `👤 <b>Клиент:</b> ${clientName}\n` : "") +
+        `📅 <b>Дата:</b> ${fmtDate(appt.date)}\n` +
+        `🕐 <b>Время:</b> ${appt.start_time ?? "—"}`;
+      if (msgId) await bot.editMessageText(chatId, msgId, confirmText);
+
+      // Уведомляем клиента через клиентский бот
+      if (appt.telegram_id) {
+        await clientBot.sendMessage(
+          appt.telegram_id,
+          `✅ <b>Ваша запись подтверждена!</b>\n\n` +
+          `📅 <b>Дата:</b> ${fmtDate(appt.date)}\n` +
+          `🕐 <b>Время:</b> ${appt.start_time ?? "—"}\n\n` +
+          `Ждём вас! 🎉`
+        );
+      }
 
     } else {
       await answerCbQuery(cb.id);

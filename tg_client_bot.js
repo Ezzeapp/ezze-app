@@ -55,19 +55,27 @@ const pendingBookings = loadPendingBookings();
 async function findTgClient(chatId) {
   const { data } = await supabase
     .from("tg_clients")
-    .select("id, name, phone, tg_username")
+    .select("id, name, phone, tg_username, tg_name")
     .eq("tg_chat_id", String(chatId))
     .maybeSingle();
   return data ?? null;
 }
 
-/** Сохраняет/обновляет клиента в tg_clients. */
-async function saveTgClient(chatId, name, phone, tgUsername = null) {
+/**
+ * Сохраняет/обновляет клиента в tg_clients.
+ * @param {number|string} chatId   — Telegram chat ID
+ * @param {string}        name     — имя, введённое клиентом
+ * @param {string}        phone    — телефон
+ * @param {string|null}   tgUsername — @никнейм из Telegram-профиля
+ * @param {string|null}   tgName   — отображаемое имя из Telegram-профиля (first_name + last_name)
+ */
+async function saveTgClient(chatId, name, phone, tgUsername = null, tgName = null) {
   const { error } = await supabase.from("tg_clients").upsert({
     tg_chat_id:  String(chatId),
     name,
     phone,
     tg_username: tgUsername || null,
+    tg_name:     tgName     || null,
     updated_at:  new Date().toISOString(),
   }, { onConflict: "tg_chat_id" });
   if (error) console.error("saveTgClient error:", error.message);
@@ -216,9 +224,14 @@ async function processUpdate(update) {
       const phone = message.contact.phone_number;
       const contactName = [message.contact.first_name, message.contact.last_name]
         .filter(Boolean).join(" ");
+      // tgProfileName — отображаемое имя из Telegram-профиля (может отличаться от имени контакта)
+      const tgProfileName = [message.from?.first_name, message.from?.last_name]
+        .filter(Boolean).join(" ") || contactName;
       pending.step = "waiting_name";
       pending.phone = phone;
       pending.tgName = contactName;
+      pending.tgProfileName = tgProfileName;
+      pending.tgUsername = message.from?.username || '';
       savePendingBookings();
       await bot.sendMessage(
         chatId,
@@ -279,10 +292,11 @@ async function processUpdate(update) {
       const pending = pendingBookings.get(chatId);
       if (pending?.step === "waiting_name") {
         const name = text.trim() || pending.tgName || firstName;
-        const tgUsername = pending.tgUsername || '';
+        const tgUsername   = pending.tgUsername   || '';
+        const tgProfileName = pending.tgProfileName || '';
 
         // ✅ Сохраняем клиента в tg_clients → всегда открываем кабинет
-        await saveTgClient(chatId, name, pending.phone, tgUsername);
+        await saveTgClient(chatId, name, pending.phone, tgUsername, tgProfileName);
 
         pendingBookings.set(chatId, {
           mode: "registered",

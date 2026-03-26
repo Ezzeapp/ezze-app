@@ -40,7 +40,7 @@ async function sendTg(chatId: string, text: string, _showMenu = false) {
   await sendTgVia(chatId, text, true)
 }
 
-// Отправляет мастеру уведомление через МАСТЕРСКИЙ бот с кнопкой "❌ Отменить запись"
+// Отправляет мастеру уведомление с кнопками "✅ Подтвердить" и "❌ Отменить"
 // callback_data обрабатывает master bot (tg_master_bot.js)
 async function sendTgMasterWithCancelButton(chatId: string, text: string, apptId: string) {
   if (!chatId || !text) return
@@ -53,7 +53,10 @@ async function sendTgMasterWithCancelButton(chatId: string, text: string, apptId
         text,
         parse_mode: 'HTML',
         reply_markup: {
-          inline_keyboard: [[{ text: '❌ Отменить запись', style: 'danger', callback_data: `cancel_appt_${apptId}` }]],
+          inline_keyboard: [[
+            { text: '✅ Подтвердить', callback_data: `confirm_appt_${apptId}` },
+            { text: '❌ Отменить',    callback_data: `cancel_appt_${apptId}` },
+          ]],
         },
       }),
     })
