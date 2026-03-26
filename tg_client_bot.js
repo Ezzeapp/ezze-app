@@ -178,7 +178,8 @@ async function sendClientMenuSmart(chatId, firstName) {
       }),
     });
   } else {
-    // Новый клиент — запускаем регистрацию
+    // Новый клиент — сбрасываем кнопку меню и запускаем регистрацию
+    await bot.setUserMenuButton(chatId); // убираем кнопку до окончания регистрации
     pendingBookings.set(chatId, {
       step: "waiting_phone",
       mode: "registration",
