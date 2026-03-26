@@ -102,7 +102,8 @@ export function ClientCabinetPage() {
   const [appointments, setAppointments] = useState<AppointmentWithMaster[]>([])
   const [loading, setLoading]           = useState(true)
   const [telegramId, setTelegramId]     = useState<string | null>(null)
-  const [userName, setUserName]         = useState('')
+  const [userName, setUserName]         = useState('')       // зарегистрированное имя (введённое в боте)
+  const [tgProfileName, setTgProfileName] = useState('')     // имя из Telegram-профиля
   const [telegramPhone, setTelegramPhone] = useState('')
   const [tgTopPadding, setTgTopPadding] = useState(0)
   const [loyaltySummary, setLoyaltySummary] = useState<any[]>([])
@@ -140,11 +141,13 @@ export function ClientCabinetPage() {
       }
     }
     const params = new URLSearchParams(window.location.search)
-    const tgId    = getTelegramUserId() || params.get('tg_id')
-    const tgName  = getTelegramDisplayName() || params.get('tg_name') || ''
-    const tgPhone = params.get('tg_phone') || ''
+    const tgId      = getTelegramUserId() || params.get('tg_id')
+    const tgWebName = getTelegramDisplayName() || '' // имя из Telegram-профиля (WebApp API)
+    const urlName   = params.get('tg_name') || ''   // имя из URL (registered name от бота)
+    const tgPhone   = params.get('tg_phone') || ''
     setTelegramId(tgId)
-    setUserName(tgName)
+    setUserName(tgWebName || urlName)       // начальное отображение (loadData перезапишет)
+    setTgProfileName(tgWebName)             // Telegram profile name для субтитра
     setTelegramPhone(tgPhone)
     if (tgId) {
       loadData(tgId)
@@ -163,11 +166,12 @@ export function ClientCabinetPage() {
       // Подгружаем телефон из tg_clients (бот сохраняет его туда при регистрации)
       const { data: tgClient } = await supabase
         .from('tg_clients')
-        .select('phone, name')
+        .select('phone, name, tg_name')
         .eq('tg_chat_id', tgId)
         .maybeSingle()
       if (tgClient?.phone) setTelegramPhone(tgClient.phone)
-      if (tgClient?.name) setUserName(tgClient.name) // зарегистрированное имя приоритетнее TG-профиля
+      if (tgClient?.name)    setUserName(tgClient.name)    // зарегистрированное имя из бота
+      if (tgClient?.tg_name) setTgProfileName(prev => prev || tgClient!.tg_name!)  // TG-профиль как запасной
 
       const { data: records } = await supabase
         .from('appointments')
@@ -377,7 +381,10 @@ export function ClientCabinetPage() {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <h1 className="text-base font-bold truncate">{userName || t('cabinet.myAppointments')}</h1>
+                <h1 className="text-base font-bold truncate">{userName || tgProfileName || t('cabinet.myAppointments')}</h1>
+                {tgProfileName && tgProfileName.toLowerCase() !== userName.toLowerCase() && (
+                  <p className="text-xs text-muted-foreground/70 truncate leading-tight">{tgProfileName}</p>
+                )}
                 <p className="text-xs text-muted-foreground">{t('cabinet.personalCabinet')}</p>
               </div>
             </div>
@@ -543,7 +550,10 @@ export function ClientCabinetPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold">{userName || '—'}</p>
+                      <p className="font-semibold">{userName || tgProfileName || '—'}</p>
+                      {tgProfileName && tgProfileName.toLowerCase() !== userName.toLowerCase() && (
+                        <p className="text-xs text-muted-foreground/70">{tgProfileName}</p>
+                      )}
                       {telegramId && <p className="text-xs text-muted-foreground">ID: {telegramId}</p>}
                     </div>
                   </div>
