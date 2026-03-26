@@ -185,11 +185,25 @@ export function useDeleteClient() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Перед удалением получаем tg_chat_id клиента, чтобы отправить уведомление
+      const { data: client } = await supabase
+        .from('clients')
+        .select('tg_chat_id')
+        .eq('id', id)
+        .maybeSingle()
+
       const { error } = await supabase
         .from('clients')
         .delete()
         .eq('id', id)
       if (error) throw error
+
+      // Уведомляем клиента в Telegram (если привязан)
+      if (client?.tg_chat_id) {
+        await supabase.functions.invoke('telegram-notifications', {
+          body: { type: 'CLIENT_DELETED', tg_chat_id: client.tg_chat_id },
+        }).catch(() => { /* не блокируем если уведомление не дошло */ })
+      }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [CLIENTS_KEY] }),
   })

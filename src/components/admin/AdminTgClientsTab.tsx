@@ -267,6 +267,14 @@ export function AdminTgClientsTab() {
         if ((count ?? 0) === 0) throw new Error('Нет доступа или клиент не найден')
         qc.invalidateQueries({ queryKey: ['admin_master_clients'] })
       }
+
+      // Уведомляем клиента в Telegram (если привязан)
+      if (client.tgChatId) {
+        await supabase.functions.invoke('telegram-notifications', {
+          body: { type: 'CLIENT_DELETED', tg_chat_id: client.tgChatId },
+        }).catch(() => { /* не блокируем если уведомление не дошло */ })
+      }
+
       toast.success('Клиент удалён')
     } catch (e: any) {
       toast.error(e?.message ?? 'Ошибка при удалении')

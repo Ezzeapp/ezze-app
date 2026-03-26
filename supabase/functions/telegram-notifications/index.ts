@@ -423,6 +423,28 @@ async function handleReminders() {
   }
 }
 
+// ── CLIENT_DELETED: уведомление клиенту + сброс кнопки меню ──────────────────
+
+async function handleClientDeleted(tgChatId: string) {
+  if (!tgChatId) return
+
+  // 1. Сбрасываем кнопку меню (убираем "Мой кабинет")
+  try {
+    await fetch(`https://api.telegram.org/bot${CLIENT_BOT_TOKEN}/setChatMenuButton`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: String(tgChatId), menu_button: { type: 'default' } }),
+    })
+  } catch (err) { console.error('setChatMenuButton error:', err) }
+
+  // 2. Отправляем уведомление об удалении
+  const msg =
+    `⛔ <b>Ваши данные удалены</b>\n\n` +
+    `Ваши данные были удалены из системы.\n\n` +
+    `Чтобы записаться снова — нажмите /start`
+  await sendTgVia(String(tgChatId), msg, false) // через клиентский бот
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
@@ -444,6 +466,10 @@ Deno.serve(async (req: Request) => {
     if (body.type === 'CRON' || body.reminders) {
       await handleReminders()
       return new Response(JSON.stringify({ ok: true, type: 'reminders' }))
+    }
+    if (body.type === 'CLIENT_DELETED' && body.tg_chat_id) {
+      await handleClientDeleted(body.tg_chat_id)
+      return new Response(JSON.stringify({ ok: true, type: 'client_deleted' }))
     }
 
     return new Response(JSON.stringify({ ok: true, skipped: true }))
