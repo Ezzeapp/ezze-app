@@ -360,11 +360,15 @@ async function handleUpdate(record: any, oldRecord: any) {
 async function handleReminders() {
   const now = new Date()
   const offsets = [60, 120, 24 * 60, 48 * 60]
+  // Appointments are stored in Tashkent local time (UTC+5).
+  // Deno runs in UTC, so we must shift 'now' by +5h before adding the reminder offset,
+  // so that the resulting tDate/tTime match the locally-stored values in the DB.
+  const TZ_OFFSET_MIN = 5 * 60 // UTC+5
 
   for (const offsetMin of offsets) {
-    const t = new Date(now.getTime() + offsetMin * 60000)
+    const t = new Date(now.getTime() + (TZ_OFFSET_MIN + offsetMin) * 60000)
     const tDate = t.toISOString().slice(0, 10)
-    const tTime = t.toTimeString().slice(0, 5)
+    const tTime = t.toISOString().slice(11, 16) // HH:MM in shifted (local) time
 
     const { data: appts } = await supabase
       .from('appointments')
