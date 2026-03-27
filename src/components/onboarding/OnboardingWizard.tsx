@@ -76,11 +76,15 @@ const PROFESSION_SUGGESTIONS = [
   'Автомеханик', 'Сантехник', 'Электрик', 'Строитель', 'Плотник', 'Сварщик',
 ]
 
-// Поиск по началу каждого слова в профессии
+// Поиск по вхождению строки или по началу каждого слова
 function matchesProfession(p: string, q: string): boolean {
   if (!q) return true
   const query = q.toLowerCase()
-  return p.toLowerCase().split(/\s+/).some(word => word.startsWith(query))
+  const prof = p.toLowerCase()
+  // Поиск по подстроке (покрывает многословные запросы: "тренер по бег")
+  if (prof.includes(query)) return true
+  // Поиск по началу слова (покрывает однословные: "тренер" → "тренер по бегу")
+  return prof.split(/\s+/).some(word => word.startsWith(query))
 }
 
 // ─── Props ───────────────────────────────────────────────────────────────────
@@ -580,7 +584,9 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
                           <button
                             key={p}
                             type="button"
-                            onMouseDown={() => {
+                            onMouseDown={(e) => {
+                              // preventDefault предотвращает blur инпута на мобильных устройствах
+                              e.preventDefault()
                               setProfession(p)
                               setProfessionQuery(p)
                               setShowProfSuggestions(false)
