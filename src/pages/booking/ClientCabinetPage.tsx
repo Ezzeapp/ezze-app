@@ -164,12 +164,11 @@ export function ClientCabinetPage() {
   const loadData = async (tgId: string) => {
     try {
       // Подгружаем телефон из tg_clients (бот сохраняет его туда при регистрации)
-      const { data: tgClient, error: tgClientError } = await supabase
+      const { data: tgClient } = await supabase
         .from('tg_clients')
         .select('phone, name, tg_name')
         .eq('tg_chat_id', tgId)
         .maybeSingle()
-      console.log('[cabinet] tgId:', tgId, 'tgClient:', tgClient, 'error:', tgClientError)
       if (tgClient?.phone) setTelegramPhone(tgClient.phone)
       if (tgClient?.name)    setUserName(tgClient.name)    // зарегистрированное имя из бота
       if (tgClient?.tg_name) setTgProfileName(prev => prev || tgClient!.tg_name!)  // TG-профиль как запасной
