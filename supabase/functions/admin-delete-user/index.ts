@@ -206,13 +206,17 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Step 11b: Delete TG auth user (tg_{chatId}@ezze.site) if exists ──────
+    // Ищем через public.users (быстро, без listUsers на все аккаунты)
     if (tgChatId) {
       try {
         const tgEmail = `tg_${tgChatId}@ezze.site`
-        const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
-        const tgAuthUser = usersData?.users?.find((u: { email?: string }) => u.email === tgEmail)
-        if (tgAuthUser) {
-          await supabaseAdmin.auth.admin.deleteUser(tgAuthUser.id)
+        const { data: tgPublicUser } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('email', tgEmail)
+          .maybeSingle()
+        if (tgPublicUser?.id) {
+          await supabaseAdmin.auth.admin.deleteUser(tgPublicUser.id)
           console.log(`[admin-delete-user] deleted TG auth user: ${tgEmail}`)
         }
       } catch (e) {
@@ -232,10 +236,10 @@ Deno.serve(async (req: Request) => {
           chat_id: tgChatId,
           menu_button: { type: 'default' },
         }),
-      }).catch(() => {})
+      }).catch((e) => console.error('[admin-delete-user] setChatMenuButton error:', String(e)))
 
       // Send deletion notification message with Register button
-      await fetch(`${tgApi}/sendMessage`, {
+      const tgResp = await fetch(`${tgApi}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -248,11 +252,15 @@ Deno.serve(async (req: Request) => {
           parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [[
-              { text: '📝 Зарегистрироваться', callback_data: 'start_registration', style: 'primary' },
+              { text: '📝 Зарегистрироваться', callback_data: 'start_registration' },
             ]],
           },
         }),
-      }).catch(() => {})
+      }).catch((e) => { console.error('[admin-delete-user] sendMessage error:', String(e)); return null })
+      if (tgResp && !tgResp.ok) {
+        const body = await tgResp.text().catch(() => '')
+        console.error(`[admin-delete-user] TG sendMessage failed: ${tgResp.status} ${body}`)
+      }
     }
 
     return new Response(JSON.stringify({ message: 'ok' }), {

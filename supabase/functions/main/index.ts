@@ -15,7 +15,7 @@ serve(async (req: Request) => {
     const worker = await (EdgeRuntime as any).userWorkers.create({
       servicePath: `/home/deno/functions/${fnName}`,
       memoryLimitMb: 150,
-      workerTimeoutMs: 10 * 1000,
+      workerTimeoutMs: 30 * 1000,
       noModuleCache: false,
       envVars: [
         ['SUPABASE_URL', Deno.env.get('SUPABASE_URL') ?? ''],
