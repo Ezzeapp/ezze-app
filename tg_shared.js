@@ -44,20 +44,14 @@ export function fmtDate(s) {
 
 // ── Конфиги из app_settings (с кешем 5 мин) ──────────────────────────────────
 
-let _cachedTgConfig = null;
-let _tgConfigLoadedAt = 0;
-
 /** Сбрасывает кеш tg_config — вызывать при изменении настроек в admin */
 export function invalidateTgConfigCache() {
-  _cachedTgConfig = null;
-  _tgConfigLoadedAt = 0;
+  // no-op: кеш убран, конфиг всегда читается свежим из БД
 }
 
 export async function loadTgConfig() {
-  const now = Date.now();
-  if (_cachedTgConfig !== null && now - _tgConfigLoadedAt < 5 * 60_000) {
-    return _cachedTgConfig;
-  }
+  // Без кеша — всегда читаем актуальный config из БД.
+  // Вызывается только при взаимодействии пользователя с ботом → нагрузка минимальна.
   try {
     const { data } = await supabase
       .from("app_settings")
@@ -65,13 +59,12 @@ export async function loadTgConfig() {
       .eq("key", "tg_config")
       .maybeSingle();
     if (data?.value) {
-      _cachedTgConfig = JSON.parse(data.value);
-      _tgConfigLoadedAt = now;
+      return JSON.parse(data.value);
     }
   } catch (e) {
     console.error("Failed to load tg_config:", e.message);
   }
-  return _cachedTgConfig ?? { client_label: "Ezze", master_label: "Ezze" };
+  return { client_label: "Ezze", master_label: "Ezze" };
 }
 
 let _cachedAIConfig = null;
