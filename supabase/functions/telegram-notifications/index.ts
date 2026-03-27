@@ -426,12 +426,17 @@ async function handleReminders() {
   }
 }
 
-// ── CLIENT_DELETED: уведомление клиенту + сброс кнопки меню ──────────────────
+// ── CLIENT_DELETED: удаление из tg_clients + сброс меню + уведомление ─────────
 
 async function handleClientDeleted(tgChatId: string) {
   if (!tgChatId) return
 
-  // 1. Сбрасываем кнопку меню (убираем "Мой кабинет")
+  // 1. Удаляем запись из tg_clients — чтобы бот при /start показал регистрацию
+  try {
+    await supabase.from('tg_clients').delete().eq('tg_chat_id', String(tgChatId))
+  } catch (err) { console.error('tg_clients delete error:', err) }
+
+  // 2. Сбрасываем кнопку меню (убираем "Мой кабинет")
   try {
     await fetch(`https://api.telegram.org/bot${CLIENT_BOT_TOKEN}/setChatMenuButton`, {
       method: 'POST',
@@ -440,12 +445,27 @@ async function handleClientDeleted(tgChatId: string) {
     })
   } catch (err) { console.error('setChatMenuButton error:', err) }
 
-  // 2. Отправляем уведомление об удалении
+  // 3. Отправляем уведомление с кнопкой "Зарегистрироваться"
   const msg =
     `⛔ <b>Ваши данные удалены</b>\n\n` +
-    `Ваши данные были удалены из системы.\n\n` +
-    `Чтобы записаться снова — нажмите /start`
-  await sendTgVia(String(tgChatId), msg, false) // через клиентский бот
+    `Ваши данные были удалены из системы.\n` +
+    `Вы можете зарегистрироваться снова:`
+  try {
+    await fetch(`https://api.telegram.org/bot${CLIENT_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: String(tgChatId),
+        text: msg,
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [[
+            { text: '🔄 Зарегистрироваться', url: `https://t.me/ezzeclient_bot` },
+          ]],
+        },
+      }),
+    })
+  } catch (err) { console.error('sendMessage error:', err) }
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────

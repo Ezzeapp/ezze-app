@@ -234,40 +234,14 @@ async function showTeamBookingButton(chatId, teamSlug, phone, name, tgUsername =
 async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
   const greeting = `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>`;
 
-  // 1. Есть ли активные/прошлые записи по telegram_id?
-  const { count } = await supabase
-    .from("appointments")
-    .select("id", { count: "exact", head: true })
-    .eq("telegram_id", String(chatId));
+  // Источник истины — tg_clients. Если записи нет — клиент не зарегистрирован
+  // (в т.ч. после удаления через админ/мастера)
+  const knownTgClient = await findTgClient(chatId);
 
-  let isKnownClient = (count ?? 0) > 0;
-
-  // 2. Есть ли запись в clients.tg_chat_id (старый механизм)?
-  if (!isKnownClient) {
-    const { data: clientRecord } = await supabase
-      .from("clients").select("id").eq("tg_chat_id", String(chatId)).maybeSingle();
-    isKnownClient = !!clientRecord;
-  }
-
-  // 3. Зарегистрирован в tg_clients (платформенная регистрация)?
-  let knownTgClient = null;
-  if (!isKnownClient) {
-    knownTgClient = await findTgClient(chatId);
-    isKnownClient = !!knownTgClient;
-  } else {
-    knownTgClient = await findTgClient(chatId);
-  }
-
-  // 4. Есть ли сохранённая JSON-сессия (резервный вариант)?
-  const savedSession = pendingBookings.get(chatId);
-  if (!isKnownClient && savedSession?.mode === "registered") {
-    isKnownClient = true;
-  }
-
-  if (isKnownClient) {
-    const clientPhone = knownTgClient?.phone || '';
-    const clientName  = knownTgClient?.name  || '';
-    const clientLang  = getClientLang(knownTgClient?.lang || 'ru');
+  if (knownTgClient) {
+    const clientPhone = knownTgClient.phone || '';
+    const clientName  = knownTgClient.name  || '';
+    const clientLang  = getClientLang(knownTgClient.lang || 'ru');
     const s = CLIENT_LANG_STRINGS[clientLang];
     const cabinetParams = new URLSearchParams({ tg_id: String(chatId) });
     if (clientPhone) cabinetParams.set('tg_phone', clientPhone);
