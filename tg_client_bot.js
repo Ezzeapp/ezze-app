@@ -15,7 +15,7 @@
 import { readFileSync, writeFileSync } from "fs";
 import {
   supabase, APP_URL, CLIENT_BOT_TOKEN, MASTER_BOT_TOKEN,
-  loadTgConfig, loadAIConfig,
+  loadTgConfig, loadAIConfig, invalidateTgConfigCache,
   getClientTools, executeClientTool,
   handleAIMessage, fmtDate,
   createBotHelpers,
@@ -641,6 +641,31 @@ bot.deleteWebhook()
   .then(() => {
     console.log("✅ Client bot polling started (@ezzeclient_bot)");
     bot.startPolling(processUpdate);
+
+    // ── Realtime: tg_config изменился → обновляем кнопку меню у всех клиентов ────
+    // Требует миграции 017: app_settings в supabase_realtime
+    supabase
+      .channel('app_settings_tg_config_client')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_settings', filter: 'key=eq.tg_config' },
+        async () => {
+          invalidateTgConfigCache();
+          const newCfg = await loadTgConfig();
+          console.log(`🔄 tg_config обновлён: client_label="${newCfg.client_label}"`);
+          const { data: clients } = await supabase
+            .from('tg_clients').select('tg_chat_id, phone, name');
+          if (!clients?.length) return;
+          console.log(`🔄 Обновляем кнопку меню у ${clients.length} клиентов...`);
+          await Promise.allSettled(
+            clients.map(c => setClientMenuButton(c.tg_chat_id, c.phone || '', c.name || ''))
+          );
+          console.log(`✅ Кнопки меню клиентов обновлены`);
+        }
+      )
+      .subscribe((status) => {
+        console.log(`📡 app_settings Realtime (client): ${status}`);
+      });
 
     // ── Realtime: при удалении клиента из tg_clients — удаляем все кнопки в чате ─
     // Требует миграции 016: REPLICA IDENTITY FULL на tg_clients

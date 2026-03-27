@@ -47,6 +47,12 @@ export function fmtDate(s) {
 let _cachedTgConfig = null;
 let _tgConfigLoadedAt = 0;
 
+/** Сбрасывает кеш tg_config — вызывать при изменении настроек в admin */
+export function invalidateTgConfigCache() {
+  _cachedTgConfig = null;
+  _tgConfigLoadedAt = 0;
+}
+
 export async function loadTgConfig() {
   const now = Date.now();
   if (_cachedTgConfig !== null && now - _tgConfigLoadedAt < 5 * 60_000) {

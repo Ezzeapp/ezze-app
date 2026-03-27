@@ -8,7 +8,7 @@
 import { readFileSync, writeFileSync } from "fs";
 import {
   supabase, APP_URL, MASTER_BOT_TOKEN, CLIENT_BOT_TOKEN,
-  loadTgConfig, loadAIConfig,
+  loadTgConfig, loadAIConfig, invalidateTgConfigCache,
   findMasterByChatId, autoFixMasterProfile,
   getMasterTools, executeMasterTool,
   handleAIMessage, runAgentic,
@@ -589,4 +589,33 @@ bot.deleteWebhook()
   .then(() => {
     console.log("✅ Master bot polling started (@ezzeapp_bot)");
     bot.startPolling(processUpdate);
+
+    // ── Realtime: tg_config изменился → обновляем кнопку меню у всех мастеров ──
+    // Требует миграции 017: app_settings в supabase_realtime
+    supabase
+      .channel('app_settings_tg_config_master')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_settings', filter: 'key=eq.tg_config' },
+        async () => {
+          invalidateTgConfigCache();
+          const newCfg = await loadTgConfig();
+          console.log(`🔄 tg_config обновлён: master_label="${newCfg.master_label}"`);
+          const { data: masters } = await supabase
+            .from('master_profiles')
+            .select('tg_chat_id')
+            .not('tg_chat_id', 'is', null);
+          if (!masters?.length) return;
+          console.log(`🔄 Обновляем кнопку меню у ${masters.length} мастеров...`);
+          await Promise.allSettled(
+            masters.map(m =>
+              bot.setUserMenuButton(m.tg_chat_id, newCfg.master_label, `${APP_URL}/tg?start=master`)
+            )
+          );
+          console.log(`✅ Кнопки меню мастеров обновлены`);
+        }
+      )
+      .subscribe((status) => {
+        console.log(`📡 app_settings Realtime (master): ${status}`);
+      });
   });
