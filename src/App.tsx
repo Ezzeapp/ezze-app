@@ -13,6 +13,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { Toaster } from '@/components/shared/Toaster'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { useAppSettings } from '@/hooks/useAppSettings'
+import { RealtimeSync } from '@/providers/RealtimeProvider'
 
 // Static pages — всегда в главном бандле (нужны сразу или часто)
 import { LoginPage } from '@/pages/auth/LoginPage'
@@ -155,6 +156,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AppSettingsInitializer />
+      <RealtimeSync />
       <AuthProvider>
         <Suspense fallback={<LoadingSpinner fullScreen />}>
           <RouterProvider router={router} />

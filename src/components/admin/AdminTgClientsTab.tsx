@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Users, Search, Phone, MessageCircle, Calendar,
@@ -64,21 +64,6 @@ export function AdminTgClientsTab() {
   const [deleteKey, setDeleteKey]     = useState<string | null>(null)
   const [deleteApptCount, setDeleteApptCount] = useState(0)
   const [saving, setSaving]           = useState(false)
-
-  // ── Realtime подписки — обновление при появлении/удалении клиентов ───────────
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('admin_clients_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tg_clients' }, () => {
-        qc.invalidateQueries({ queryKey: ['admin_tg_clients'] })
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {
-        qc.invalidateQueries({ queryKey: ['admin_master_clients'] })
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [qc])
 
   // ── Запросы ──────────────────────────────────────────────────────────────────
 
