@@ -139,24 +139,41 @@ async function findTgClient(chatId) {
  * @param {string|null}   tgName     — отображаемое имя из Telegram-профиля
  * @param {string}        lang       — выбранный язык
  */
-async function saveTgClient(chatId, name, phone, tgUsername = null, tgName = null, lang = 'ru') {
+async function saveTgClient(chatId, name, phone, tgUsername = null, tgName = null, lang = 'ru', initialMessageIds = []) {
   const { error } = await supabase.from("tg_clients").upsert({
-    tg_chat_id:  String(chatId),
+    tg_chat_id:      String(chatId),
     name,
     phone,
-    tg_username: tgUsername || null,
-    tg_name:     tgName     || null,
-    lang:        lang       || 'ru',
-    updated_at:  new Date().toISOString(),
+    tg_username:     tgUsername || null,
+    tg_name:         tgName     || null,
+    lang:            lang       || 'ru',
+    bot_message_ids: initialMessageIds,
+    updated_at:      new Date().toISOString(),
   }, { onConflict: "tg_chat_id" });
   if (error) console.error("saveTgClient error:", error.message);
+}
+
+/** Дописывает message_id в bot_message_ids зарегистрированного клиента (fire-and-forget) */
+async function trackBotMessage(chatId, msgId) {
+  if (!msgId) return;
+  try {
+    const { data: cur } = await supabase
+      .from("tg_clients").select("bot_message_ids")
+      .eq("tg_chat_id", String(chatId)).maybeSingle();
+    if (!cur) return; // клиент ещё не зарегистрирован — не трекаем
+    const ids = (cur.bot_message_ids || []).slice(-199); // храним не более 200
+    ids.push(msgId);
+    await supabase.from("tg_clients")
+      .update({ bot_message_ids: ids })
+      .eq("tg_chat_id", String(chatId));
+  } catch { /* не блокируем основной поток */ }
 }
 
 // ── Выбор языка для клиента ───────────────────────────────────────────────────
 
 async function sendClientLangSelection(chatId, firstName) {
   const greeting = `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>`;
-  await fetch(`${bot.TG_API}/sendMessage`, {
+  const res = await fetch(`${bot.TG_API}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -181,6 +198,15 @@ async function sendClientLangSelection(chatId, firstName) {
       },
     }),
   });
+  // Трекаем message_id в pending (до сохранения в tg_clients)
+  const json = await res.json();
+  const msgId = json?.result?.message_id;
+  if (msgId) {
+    const pending = pendingBookings.get(chatId);
+    if (pending) {
+      (pending.messageIds = pending.messageIds || []).push(msgId);
+    }
+  }
 }
 
 // ── Клиентские хелперы ────────────────────────────────────────────────────────
@@ -248,7 +274,7 @@ async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
     if (clientName)  cabinetParams.set('tg_name', clientName);
     const cabinetUrl = `${APP_URL}/my?${cabinetParams.toString()}`;
     await setClientMenuButton(chatId, clientPhone, clientName);
-    await fetch(`${bot.TG_API}/sendMessage`, {
+    const cabRes = await fetch(`${bot.TG_API}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -262,6 +288,9 @@ async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
         },
       }),
     });
+    const cabJson = await cabRes.json();
+    const cabMsgId = cabJson?.result?.message_id;
+    if (cabMsgId) trackBotMessage(chatId, cabMsgId).catch(() => {});
   } else {
     // Новый клиент — сбрасываем кнопку меню, показываем выбор языка
     await bot.setUserMenuButton(chatId); // убираем кнопку до окончания регистрации
@@ -269,6 +298,7 @@ async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
       step: "waiting_language",
       mode: "registration",
       tgUsername,
+      messageIds: [],  // будем накапливать IDs сообщений регистрации
     });
     savePendingBookings();
     await sendClientLangSelection(chatId, firstName);
@@ -299,11 +329,15 @@ async function processUpdate(update) {
       pending.tgProfileName = tgProfileName;
       pending.tgUsername = message.from?.username || '';
       savePendingBookings();
-      await bot.sendMessage(
+      const nameReqResult = await bot.sendMessage(
         chatId,
         `${s.askName}${contactName ? s.askNameHint(contactName) : ""}`,
         { remove_keyboard: true }
       );
+      const nameReqMsgId = nameReqResult?.result?.message_id;
+      if (nameReqMsgId) {
+        (pending.messageIds = pending.messageIds || []).push(nameReqMsgId);
+      }
     }
     return;
   }
@@ -347,7 +381,7 @@ async function processUpdate(update) {
       if (pending?.step === "waiting_phone") {
         const lang = getClientLang(pending?.lang);
         const s = CLIENT_LANG_STRINGS[lang];
-        await fetch(`${bot.TG_API}/sendMessage`, {
+        const remindRes = await fetch(`${bot.TG_API}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -361,6 +395,11 @@ async function processUpdate(update) {
             },
           }),
         });
+        const remindJson = await remindRes.json();
+        const remindMsgId = remindJson?.result?.message_id;
+        if (remindMsgId) {
+          (pending.messageIds = pending.messageIds || []).push(remindMsgId);
+        }
         return;
       }
     }
@@ -375,19 +414,9 @@ async function processUpdate(update) {
         const lang          = getClientLang(pending?.lang);
         const s             = CLIENT_LANG_STRINGS[lang];
 
-        // ✅ Сохраняем клиента в tg_clients → всегда открываем кабинет
-        await saveTgClient(chatId, name, pending.phone, tgUsername, tgProfileName, lang);
-
-        pendingBookings.set(chatId, {
-          mode: "registered",
-          phone: pending.phone,
-          name,
-          tgUsername,
-        });
-        savePendingBookings();
-        await setClientMenuButton(chatId, pending.phone, name);
+        // Отправляем success-сообщение с кнопкой кабинета
         const regParams = new URLSearchParams({ tg_id: String(chatId), tg_phone: pending.phone, tg_name: name });
-        await fetch(`${bot.TG_API}/sendMessage`, {
+        const successRes = await fetch(`${bot.TG_API}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -401,6 +430,21 @@ async function processUpdate(update) {
             },
           }),
         });
+        const successJson = await successRes.json();
+        const successMsgId = successJson?.result?.message_id;
+
+        // ✅ Сохраняем клиента в tg_clients, включая все IDs сообщений регистрации
+        const allMsgIds = [...(pending.messageIds || []), successMsgId].filter(Boolean);
+        await saveTgClient(chatId, name, pending.phone, tgUsername, tgProfileName, lang, allMsgIds);
+
+        pendingBookings.set(chatId, {
+          mode: "registered",
+          phone: pending.phone,
+          name,
+          tgUsername,
+        });
+        savePendingBookings();
+        await setClientMenuButton(chatId, pending.phone, name);
         return;
       }
     }
@@ -438,7 +482,7 @@ async function processUpdate(update) {
         const s = CLIENT_LANG_STRINGS[selectedLang];
         const langNames = { ru: "🇷🇺 Русский", uz: "🇺🇿 O'zbek", en: "🇬🇧 English", tg: "🇹🇯 Тоҷикӣ", kz: "🇰🇿 Қазақша", ky: "🇰🇬 Кыргызча" };
         await bot.editMessageText(chatId, msgId, `✅ ${langNames[selectedLang] || selectedLang}`);
-        await fetch(`${bot.TG_API}/sendMessage`, {
+        const phoneRes = await fetch(`${bot.TG_API}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -452,6 +496,12 @@ async function processUpdate(update) {
             },
           }),
         });
+        const phoneJson = await phoneRes.json();
+        const phoneMsgId = phoneJson?.result?.message_id;
+        if (phoneMsgId) {
+          (pending.messageIds = pending.messageIds || []).push(phoneMsgId);
+          savePendingBookings();
+        }
       }
       return;
     }
@@ -465,6 +515,7 @@ async function processUpdate(update) {
         step: "waiting_language",
         mode: "registration",
         tgUsername,
+        messageIds: [],  // сбрасываем накопленные IDs (чистая регистрация)
       });
       savePendingBookings();
       await sendClientLangSelection(chatId, firstName);

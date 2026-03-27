@@ -431,12 +431,35 @@ async function handleReminders() {
 async function handleClientDeleted(tgChatId: string) {
   if (!tgChatId) return
 
-  // 1. Удаляем запись из tg_clients — чтобы бот при /start показал регистрацию
+  // 1. Читаем bot_message_ids перед удалением записи (для очистки чата)
+  let botMessageIds: number[] = []
+  try {
+    const { data: clientData } = await supabase
+      .from('tg_clients')
+      .select('bot_message_ids')
+      .eq('tg_chat_id', String(tgChatId))
+      .maybeSingle()
+    botMessageIds = clientData?.bot_message_ids ?? []
+  } catch { /* ignore */ }
+
+  // 2. Удаляем запись из tg_clients — чтобы бот при /start показал регистрацию
   try {
     await supabase.from('tg_clients').delete().eq('tg_chat_id', String(tgChatId))
   } catch (err) { console.error('tg_clients delete error:', err) }
 
-  // 2. Сбрасываем кнопку меню (убираем "Мой кабинет")
+  // 3. Очищаем чат: удаляем все отслеженные сообщения бота параллельно
+  //    (только сообщения не старше 48ч — Telegram API ограничение)
+  if (botMessageIds.length > 0) {
+    await Promise.allSettled(botMessageIds.map((msgId: number) =>
+      fetch(`https://api.telegram.org/bot${CLIENT_BOT_TOKEN}/deleteMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: String(tgChatId), message_id: msgId }),
+      })
+    ))
+  }
+
+  // 4. Сбрасываем кнопку меню (убираем "Мой кабинет")
   try {
     await fetch(`https://api.telegram.org/bot${CLIENT_BOT_TOKEN}/setChatMenuButton`, {
       method: 'POST',
@@ -445,7 +468,7 @@ async function handleClientDeleted(tgChatId: string) {
     })
   } catch (err) { console.error('setChatMenuButton error:', err) }
 
-  // 3. Отправляем уведомление с кнопкой "Зарегистрироваться"
+  // 5. Отправляем уведомление с кнопкой "Зарегистрироваться"
   // Кнопка callback_data: 'restart_registration' — бот запустит поток регистрации заново
   const msg =
     `⛔ <b>Ваши данные удалены</b>\n\n` +
