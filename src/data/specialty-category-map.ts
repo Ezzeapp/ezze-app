@@ -62,7 +62,8 @@ export const SPECIALTY_CATEGORY_MAP: SpecialtyCategoryMap[] = [
     productCategories: ['Татуаж и перманент', 'Расходники'],
   },
   {
-    keywords: ['груминг', 'зоо', 'pet', 'groo'],
+    // 'дрессир' / 'кинолог' — тренер для собак, дрессировщик
+    keywords: ['груминг', 'зоо', 'pet', 'groo', 'дрессир', 'кинолог', 'тренер для собак'],
     serviceCategories: ['Уход за животными'],
     productCategories: ['Ветеринария', 'Расходники'],
   },
@@ -79,7 +80,9 @@ export const SPECIALTY_CATEGORY_MAP: SpecialtyCategoryMap[] = [
     productCategories: [],
   },
   {
-    keywords: ['тренер', 'фитнес', 'fitness'],
+    // 'тренер по' покрывает: тренер по бегу, боксу, плаванию, теннису и т.д.
+    // НЕ покрывает: бизнес-тренер, кулинарный тренер, тренер для собак
+    keywords: ['тренер по', 'персональный тренер', 'спортивный тренер', 'фитнес', 'fitness'],
     serviceCategories: ['Фитнес', 'Фитнес и тренировки'],
     productCategories: [],
   },
@@ -106,8 +109,9 @@ export const SPECIALTY_CATEGORY_MAP: SpecialtyCategoryMap[] = [
     productCategories: [],
   },
   {
-    keywords: ['нлп', 'коуч', 'coach'],
-    serviceCategories: ['Коучинг', 'Психология'],
+    // 'бизнес-тренер' / 'бизнес тренер' — обучение и развитие в бизнес-сфере
+    keywords: ['нлп', 'коуч', 'coach', 'бизнес-тренер', 'бизнес тренер', 'тренинг'],
+    serviceCategories: ['Коучинг', 'Обучение', 'Психология'],
     productCategories: [],
   },
 
