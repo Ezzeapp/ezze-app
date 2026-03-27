@@ -554,12 +554,21 @@ async function processUpdate(update) {
     if (callback.data === "restart_registration") {
       const firstName = callback.from?.first_name || '';
       const tgUsername = callback.from?.username || '';
-      // Сбрасываем предыдущее состояние и запускаем выбор языка
+
+      // Проверяем — вдруг клиент уже зарегистрирован (повторное нажатие кнопки)
+      const alreadyExists = await findTgClient(chatId);
+      if (alreadyExists) {
+        // Клиент есть в базе — показываем кабинет вместо регистрации
+        await sendClientMenuSmart(chatId, firstName, tgUsername);
+        return;
+      }
+
+      // Клиента нет — запускаем регистрацию с выбора языка
       pendingBookings.set(chatId, {
         step: "waiting_language",
         mode: "registration",
         tgUsername,
-        messageIds: [],  // сбрасываем накопленные IDs (чистая регистрация)
+        messageIds: [],
       });
       savePendingBookings();
       await sendClientLangSelection(chatId, firstName);
