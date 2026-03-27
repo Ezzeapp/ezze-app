@@ -233,14 +233,33 @@ async function processUpdate(update) {
       }
 
     } else if (data === "start_registration") {
-      await answerCbQuery(cb.id, "✓");
-      // Если мастер уже зарегистрирован — просто показываем меню
+      await answerCbQuery(cb.id);
+      // ① Проверяем: аккаунт уже существует в БД?
       const existingMaster = await findMasterByChatId(chatId);
       if (existingMaster) {
-        await sendMasterMenu(chatId, cb.from?.first_name || "", existingMaster);
+        // Явно сообщаем, что аккаунт активен, и показываем меню
+        const cfg = await loadTgConfig();
+        const label = cfg.master_label || "Открыть приложение";
+        await bot.setUserMenuButton(chatId, label, `${APP_URL}/tg?start=master`);
+        await bot.sendMessage(
+          chatId,
+          `✅ <b>Ваш аккаунт уже активен.</b>\n\nВы зарегистрированы в <b>Ezze</b>.\nИспользуйте кнопку <b>${label}</b> рядом с полем ввода, чтобы открыть кабинет мастера.`,
+          { remove_keyboard: true }
+        );
         return;
       }
-      // Мастер не найден — запускаем онбординг заново
+      // ② Проверяем: регистрация уже идёт (незавершённый шаг)?
+      const pending = pendingMasters.get(chatId);
+      if (pending && pending.step !== "waiting_language") {
+        // Не сбрасываем — регистрация в процессе, напоминаем продолжить
+        await bot.sendMessage(
+          chatId,
+          `⏳ <b>Регистрация уже начата.</b>\n\nПожалуйста, завершите текущий шаг регистрации.`,
+          {}
+        );
+        return;
+      }
+      // ③ Мастер не найден, нет активной сессии — запускаем онбординг
       await bot.setUserMenuButton(chatId); // сброс кнопки меню
       pendingMasters.set(chatId, { step: "waiting_language" });
       savePendingSessions();
