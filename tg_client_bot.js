@@ -140,17 +140,26 @@ async function findTgClient(chatId) {
  * @param {string}        lang       — выбранный язык
  */
 async function saveTgClient(chatId, name, phone, tgUsername = null, tgName = null, lang = 'ru', initialMessageIds = []) {
+  // Основной upsert — без bot_message_ids, чтобы не падать если миграция ещё не применена
   const { error } = await supabase.from("tg_clients").upsert({
-    tg_chat_id:      String(chatId),
+    tg_chat_id:  String(chatId),
     name,
     phone,
-    tg_username:     tgUsername || null,
-    tg_name:         tgName     || null,
-    lang:            lang       || 'ru',
-    bot_message_ids: initialMessageIds,
-    updated_at:      new Date().toISOString(),
+    tg_username: tgUsername || null,
+    tg_name:     tgName     || null,
+    lang:        lang       || 'ru',
+    updated_at:  new Date().toISOString(),
   }, { onConflict: "tg_chat_id" });
   if (error) console.error("saveTgClient error:", error.message);
+
+  // Отдельно сохраняем IDs сообщений — fire-and-forget, не влияет на регистрацию
+  if (initialMessageIds.length > 0) {
+    supabase.from("tg_clients")
+      .update({ bot_message_ids: initialMessageIds })
+      .eq("tg_chat_id", String(chatId))
+      .then(({ error: e }) => { if (e) console.error("bot_message_ids update error:", e.message) })
+      .catch(() => {});
+  }
 }
 
 /** Дописывает message_id в bot_message_ids зарегистрированного клиента (fire-and-forget) */
