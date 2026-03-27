@@ -75,7 +75,7 @@ async function setChatMenuButton(chatId: string, label: string) {
       menu_button: {
         type: 'web_app',
         text: label,
-        web_app: { url: `${APP_URL}/dashboard` },
+        web_app: { url: `${APP_URL}/tg?start=master` },
       },
     }),
   })

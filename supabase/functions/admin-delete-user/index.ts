@@ -143,13 +143,15 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  // ── Pre-step: Grab tg_chat_id before deletion (for TG notification) ──────────
+  // ── Pre-step: Grab tg_chat_id + phone + lang before deletion ────────────────
   const { data: masterProfileSnap } = await supabaseAdmin
     .from('master_profiles')
-    .select('tg_chat_id')
+    .select('tg_chat_id, phone, lang')
     .eq('user_id', userId)
     .maybeSingle()
   const tgChatId: string | null = masterProfileSnap?.tg_chat_id ?? null
+  const masterPhone: string = masterProfileSnap?.phone ?? ''
+  const masterLang: string  = masterProfileSnap?.lang  ?? 'ru'
 
   const botToken   = Deno.env.get('TG_BOT_TOKEN') ?? ''
   const appUrl     = Deno.env.get('APP_URL') ?? 'https://ezze.site'
@@ -228,17 +230,27 @@ Deno.serve(async (req: Request) => {
     if (tgChatId && botToken) {
       const tgApi = `https://api.telegram.org/bot${botToken}`
 
-      // Reset the per-user menu button to default (no more master cabinet link)
+      // Строим URL для повторной регистрации с предзаполненным телефоном
+      const regUrl = masterPhone
+        ? `${appUrl}/register?lang=${masterLang}&phone=${encodeURIComponent(masterPhone)}`
+        : `${appUrl}/register?lang=${masterLang}`
+
+      // Меняем кнопку меню на "Зарегистрироваться" → открывает страницу регистрации
       await fetch(`${tgApi}/setChatMenuButton`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: tgChatId,
-          menu_button: { type: 'default' },
+          menu_button: {
+            type: 'web_app',
+            text: '📝 Зарегистрироваться',
+            web_app: { url: regUrl },
+          },
         }),
       }).catch((e) => console.error('[admin-delete-user] setChatMenuButton error:', String(e)))
 
-      // Send deletion notification message with Register button
+      // Отправляем уведомление об удалении — без inline-кнопок,
+      // пользователь нажимает кнопку меню рядом с полем ввода
       const tgResp = await fetch(`${tgApi}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -248,13 +260,9 @@ Deno.serve(async (req: Request) => {
             `🚫 <b>Ваша учётная запись удалена</b>\n\n` +
             `Ваш аккаунт мастера в <b>Ezze</b> был удалён администратором.\n\n` +
             `📞 <b>По всем вопросам обращайтесь к администратору платформы.</b>\n\n` +
-            `Если хотите, вы можете зарегистрироваться снова:`,
+            `Если хотите зарегистрироваться снова — нажмите кнопку <b>📝 Зарегистрироваться</b> рядом с полем ввода.`,
           parse_mode: 'HTML',
-          reply_markup: {
-            inline_keyboard: [[
-              { text: '📝 Зарегистрироваться', callback_data: 'start_registration', style: 'primary' },
-            ]],
-          },
+          reply_markup: { remove_keyboard: true },
         }),
       }).catch((e) => { console.error('[admin-delete-user] sendMessage error:', String(e)); return null })
       if (tgResp && !tgResp.ok) {

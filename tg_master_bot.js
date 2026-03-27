@@ -232,43 +232,6 @@ async function processUpdate(update) {
         await answerCbQuery(cb.id);
       }
 
-    } else if (data === "start_registration") {
-      await answerCbQuery(cb.id);
-      // ① Проверяем: аккаунт уже существует в БД?
-      const existingMaster = await findMasterByChatId(chatId);
-      if (existingMaster) {
-        // Явно сообщаем, что аккаунт активен, и показываем меню
-        if (pendingMasters.has(chatId)) {
-          pendingMasters.delete(chatId);
-          savePendingSessions();
-        }
-        const cfg = await loadTgConfig();
-        const label = cfg.master_label || "Открыть приложение";
-        await bot.setUserMenuButton(chatId, label, `${APP_URL}/tg?start=master`);
-        await bot.sendMessage(
-          chatId,
-          `✅ <b>Ваш аккаунт уже активен.</b>\n\nВы зарегистрированы в <b>Ezze</b>.\nИспользуйте кнопку <b>${label}</b> рядом с полем ввода, чтобы открыть кабинет мастера.`,
-          { remove_keyboard: true }
-        );
-        return;
-      }
-      // ② Проверяем: регистрация уже идёт (незавершённый шаг)?
-      const pending = pendingMasters.get(chatId);
-      if (pending && pending.step !== "waiting_language") {
-        // Не сбрасываем — регистрация в процессе, напоминаем продолжить
-        await bot.sendMessage(
-          chatId,
-          `⏳ <b>Регистрация уже начата.</b>\n\nПожалуйста, завершите текущий шаг регистрации.`,
-          {}
-        );
-        return;
-      }
-      // ③ Мастер не найден, нет активной сессии — запускаем онбординг
-      await bot.setUserMenuButton(chatId); // сброс кнопки меню
-      pendingMasters.set(chatId, { step: "waiting_language" });
-      savePendingSessions();
-      await sendLangSelection(chatId, cb.from?.first_name || "");
-
     } else if (data.startsWith("cancel_appt_")) {
       // ── Мастер отменяет запись прямо из уведомления ───────────────────────
       const apptId = data.replace("cancel_appt_", "");
