@@ -5,7 +5,7 @@
  * Body: { tg_chat_id: string, name: string, lang: string }
  *
  * Called by RegisterPage after a master auto-registers via Telegram Mini App.
- * Sets the chat menu button and sends a welcome message.
+ * Sets the chat menu button and sends a welcome message (no inline buttons).
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -20,36 +20,30 @@ const APP_URL = Deno.env.get('APP_URL') ?? 'https://ezze.site'
 
 // ── Локализованные тексты ──────────────────────────────────────────────────────
 
-const TEXTS: Record<string, { welcome: (name: string) => string; openApp: string }> = {
+const TEXTS: Record<string, { welcome: (name: string) => string }> = {
   ru: {
     welcome: (name) =>
-      `🎉 <b>Добро пожаловать${name ? ', ' + name : ''}!</b>\n\nВы успешно зарегистрировались в Ezze.\nОткройте приложение, чтобы завершить настройку профиля.`,
-    openApp: 'Открыть приложение',
+      `🎉 <b>Добро пожаловать${name ? ', ' + name : ''}!</b>\n\nВы успешно зарегистрировались в Ezze.\nИспользуйте кнопку меню, чтобы открыть кабинет мастера.`,
   },
   uz: {
     welcome: (name) =>
-      `🎉 <b>Xush kelibsiz${name ? ', ' + name : ''}!</b>\n\nSiz Ezzega muvaffaqiyatli ro'yxatdan o'tdingiz.\nProfilni sozlash uchun ilovani oching.`,
-    openApp: 'Ilovani ochish',
+      `🎉 <b>Xush kelibsiz${name ? ', ' + name : ''}!</b>\n\nSiz Ezzega muvaffaqiyatli ro'yxatdan o'tdingiz.\nUsta kabinetini ochish uchun menyu tugmasini bosing.`,
   },
   en: {
     welcome: (name) =>
-      `🎉 <b>Welcome${name ? ', ' + name : ''}!</b>\n\nYou have successfully registered in Ezze.\nOpen the app to set up your profile.`,
-    openApp: 'Open App',
+      `🎉 <b>Welcome${name ? ', ' + name : ''}!</b>\n\nYou have successfully registered in Ezze.\nUse the menu button to open your master cabinet.`,
   },
   tg: {
     welcome: (name) =>
-      `🎉 <b>Хуш омадед${name ? ', ' + name : ''}!</b>\n\nШумо бо муваффақият дар Ezze ба қайд гирифта шудед.\nБарои танзими профил барномаро кушоед.`,
-    openApp: 'Кушодани барнома',
+      `🎉 <b>Хуш омадед${name ? ', ' + name : ''}!</b>\n\nШумо бо муваффақият дар Ezze ба қайд гирифта шудед.\nБарои кушодани кабинети устод тугмаи менюро истифода баред.`,
   },
   kz: {
     welcome: (name) =>
-      `🎉 <b>Қош келдіңіз${name ? ', ' + name : ''}!</b>\n\nСіз Ezze-ге сәтті тіркелдіңіз.\nПрофильді реттеу үшін қолданбаны ашыңыз.`,
-    openApp: 'Қолданбаны ашу',
+      `🎉 <b>Қош келдіңіз${name ? ', ' + name : ''}!</b>\n\nСіз Ezze-ге сәтті тіркелдіңіз.\nШебер кабинетін ашу үшін мәзір түймесін пайдаланыңыз.`,
   },
   ky: {
     welcome: (name) =>
-      `🎉 <b>Кош келдиңиз${name ? ', ' + name : ''}!</b>\n\nСиз Ezzege ийгиликтүү катталдыңыз.\nПрофилиңизди орнотуу үшүн колдонмону ачыңыз.`,
-    openApp: 'Колдонмону ачуу',
+      `🎉 <b>Кош келдиңиз${name ? ', ' + name : ''}!</b>\n\nСиз Ezzege ийгиликтүү катталдыңыз.\nУста кабинетин ачуу үчүн меню баскычын колдонуңуз.`,
   },
 }
 
@@ -87,8 +81,8 @@ async function setChatMenuButton(chatId: string, label: string) {
   })
 }
 
-async function sendWelcomeMessage(chatId: string, text: string, openAppLabel: string) {
-  // Сначала убираем reply-клавиатуру (если осталась кнопка "Поделиться номером")
+async function sendWelcomeMessage(chatId: string, text: string) {
+  // Убираем reply-клавиатуру (если осталась) и отправляем приветствие без inline-кнопок
   await fetch(`${TG_API_URL}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -97,20 +91,6 @@ async function sendWelcomeMessage(chatId: string, text: string, openAppLabel: st
       text,
       parse_mode: 'HTML',
       reply_markup: { remove_keyboard: true },
-    }),
-  })
-  // Затем отправляем inline-кнопку отдельным сообщением
-  await fetch(`${TG_API_URL}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: openAppLabel,
-      reply_markup: {
-        inline_keyboard: [[
-          { text: openAppLabel, web_app: { url: `${APP_URL}/dashboard` }, style: 'primary' },
-        ]],
-      },
     }),
   })
 }
@@ -157,10 +137,10 @@ Deno.serve(async (req: Request) => {
   const menuLabel = await getMasterMenuLabel()
 
   try {
-    // Fire both in parallel — non-critical if they fail
+    // Устанавливаем кнопку меню и отправляем приветствие параллельно
     await Promise.allSettled([
       setChatMenuButton(tg_chat_id, menuLabel),
-      sendWelcomeMessage(tg_chat_id, t.welcome(name), t.openApp),
+      sendWelcomeMessage(tg_chat_id, t.welcome(name)),
     ])
   } catch { /* non-fatal */ }
 
