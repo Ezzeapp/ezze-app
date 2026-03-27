@@ -238,6 +238,10 @@ async function processUpdate(update) {
       const existingMaster = await findMasterByChatId(chatId);
       if (existingMaster) {
         // Явно сообщаем, что аккаунт активен, и показываем меню
+        if (pendingMasters.has(chatId)) {
+          pendingMasters.delete(chatId);
+          savePendingSessions();
+        }
         const cfg = await loadTgConfig();
         const label = cfg.master_label || "Открыть приложение";
         await bot.setUserMenuButton(chatId, label, `${APP_URL}/tg?start=master`);
@@ -516,6 +520,11 @@ async function processUpdate(update) {
       }
 
       if (masterProfile) {
+        // Очищаем pending_web_registration если регистрация завершена
+        if (pendingMasters.has(chatId)) {
+          pendingMasters.delete(chatId);
+          savePendingSessions();
+        }
         if (tgUsername) {
           supabase.from("master_profiles").update({ telegram: "@" + tgUsername })
             .eq("id", masterProfile.id).then(() => {}).catch(() => {});
@@ -565,7 +574,10 @@ async function processUpdate(update) {
         const s = LANG_STRINGS[lang];
         const regUrl = `${APP_URL}/register?lang=${lang}&phone=${encodeURIComponent(pending.phone || "")}&name=${encodeURIComponent(name)}`;
 
-        pendingMasters.delete(chatId);
+        // Переводим в состояние ожидания веб-регистрации.
+        // НЕ удаляем из pendingMasters — иначе повторное нажатие "Зарегистрироваться"
+        // перезапустит весь флоу, пока пользователь ещё не закончил регистрацию в веб-приложении.
+        pendingMasters.set(chatId, { step: "pending_web_registration", lang, phone: pending.phone || "" });
         savePendingSessions();
 
         // Кнопка меню → страница регистрации с предзаполненными данными
