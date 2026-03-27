@@ -59,7 +59,7 @@ const LANG_STRINGS = {
     openApp:      "Открыть приложение",
     askName:      `👤 Как вас зовут? Введите своё имя:`,
     askNameHint:  name => `\n\n<i>Можете написать: ${name}</i>`,
-    successReg:   name => `✅ <b>Отлично, ${name}!</b>\n\nПройдите быструю регистрацию — ваши данные уже заполнены:`,
+    successReg:   name => `✅ <b>Отлично, ${name}!</b>\n\nНажмите кнопку меню рядом с полем ввода, чтобы пройти регистрацию — ваши данные уже заполнены.`,
   },
   uz: {
     phonePrompt:  `📱 Telefon raqamingizni ulashish uchun quyidagi tugmani bosing:`,
@@ -71,7 +71,7 @@ const LANG_STRINGS = {
     openApp:      "Ilovani ochish",
     askName:      `👤 Ismingiz nima? Ismingizni kiriting:`,
     askNameHint:  name => `\n\n<i>Yozishingiz mumkin: ${name}</i>`,
-    successReg:   name => `✅ <b>Ajoyib, ${name}!</b>\n\nTez ro'yxatdan o'ting — ma'lumotlaringiz allaqachon to'ldirilgan:`,
+    successReg:   name => `✅ <b>Ajoyib, ${name}!</b>\n\nRo'yxatdan o'tish uchun kiritish maydoni yonidagi menyu tugmasini bosing — ma'lumotlaringiz allaqachon to'ldirilgan.`,
   },
   en: {
     phonePrompt:  `📱 Press the button below to share your phone number:`,
@@ -83,7 +83,7 @@ const LANG_STRINGS = {
     openApp:      "Open App",
     askName:      `👤 What is your name? Please enter it:`,
     askNameHint:  name => `\n\n<i>You can type: ${name}</i>`,
-    successReg:   name => `✅ <b>Great, ${name}!</b>\n\nComplete quick registration — your details are pre-filled:`,
+    successReg:   name => `✅ <b>Great, ${name}!</b>\n\nPress the menu button next to the input field to complete registration — your details are pre-filled.`,
   },
   tg: {
     phonePrompt:  `📱 Барои мубодилаи рақами телефон тугмаи зеринро пахш кунед:`,
@@ -95,7 +95,7 @@ const LANG_STRINGS = {
     openApp:      "Кушодани барнома",
     askName:      `👤 Номи шумо чист? Номатонро ворид кунед:`,
     askNameHint:  name => `\n\n<i>Навиштан мумкин: ${name}</i>`,
-    successReg:   name => `✅ <b>Аъло, ${name}!</b>\n\nБақайдгириро анҷом диҳед — маълумоти шумо аллакай пур шудааст:`,
+    successReg:   name => `✅ <b>Аъло, ${name}!</b>\n\nБарои бақайдгирӣ тугмаи менюи паҳлӯи майдони вуруд фишор диҳед — маълумоти шумо аллакай пур шудааст.`,
   },
   kz: {
     phonePrompt:  `📱 Телефон нөміріңізді бөлісу үшін төмендегі түймені басыңыз:`,
@@ -107,7 +107,7 @@ const LANG_STRINGS = {
     openApp:      "Қолданбаны ашу",
     askName:      `👤 Атыңыз қалай? Атыңызды енгізіңіз:`,
     askNameHint:  name => `\n\n<i>Жазуыңызға болады: ${name}</i>`,
-    successReg:   name => `✅ <b>Тамаша, ${name}!</b>\n\nЖылдам тіркелуді аяқтаңыз — деректеріңіз толтырылды:`,
+    successReg:   name => `✅ <b>Тамаша, ${name}!</b>\n\nТіркелу үшін енгізу өрісінің жанындағы мәзір түймесін басыңыз — деректеріңіз толтырылды.`,
   },
   ky: {
     phonePrompt:  `📱 Телефон номериңизди бөлүшүү үчүн төмөндөгү баскычты басыңыз:`,
@@ -119,7 +119,7 @@ const LANG_STRINGS = {
     openApp:      "Колдонмону ачуу",
     askName:      `👤 Атыңыз кандай? Атыңызды киргизиңиз:`,
     askNameHint:  name => `\n\n<i>Жазсаңыз болот: ${name}</i>`,
-    successReg:   name => `✅ <b>Мыкты, ${name}!</b>\n\nТез катталууну аяктаңыз — дайындарыңыз толтурулду:`,
+    successReg:   name => `✅ <b>Мыкты, ${name}!</b>\n\nКатталуу үчүн киргизүү талаасынын жанындагы меню баскычын басыңыз — дайындарыңыз толтурулду.`,
   },
 };
 
@@ -233,8 +233,14 @@ async function processUpdate(update) {
       }
 
     } else if (data === "start_registration") {
-      // Удалённый мастер хочет зарегистрироваться заново → запускаем онбординг
       await answerCbQuery(cb.id, "✓");
+      // Если мастер уже зарегистрирован — просто показываем меню
+      const existingMaster = await findMasterByChatId(chatId);
+      if (existingMaster) {
+        await sendMasterMenu(chatId, cb.from?.first_name || "", existingMaster);
+        return;
+      }
+      // Мастер не найден — запускаем онбординг заново
       await bot.setUserMenuButton(chatId); // сброс кнопки меню
       pendingMasters.set(chatId, { step: "waiting_language" });
       savePendingSessions();
@@ -546,20 +552,8 @@ async function processUpdate(update) {
         // Кнопка меню → страница регистрации с предзаполненными данными
         await bot.setUserMenuButton(chatId, s.registerBtn, regUrl);
 
-        await fetch(`${bot.TG_API}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: s.successReg(name),
-            parse_mode: "HTML",
-            reply_markup: {
-              inline_keyboard: [[
-                { text: s.registerBtn, web_app: { url: regUrl }, style: "primary" },
-              ]],
-            },
-          }),
-        });
+        // Текстовое сообщение — без inline-кнопки, направляем к кнопке меню
+        await bot.sendMessage(chatId, s.successReg(name));
         return;
       }
     }
