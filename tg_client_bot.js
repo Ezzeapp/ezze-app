@@ -49,6 +49,59 @@ function savePendingBookings() {
 
 const pendingBookings = loadPendingBookings();
 
+// ── Файловое хранилище ID сообщений кабинета (для удаления при DELETE клиента) ─
+
+const CABINET_MSGS_FILE = "./tg_client_cabinet_msgs.json";
+
+function loadCabinetMsgs() {
+  try {
+    return JSON.parse(readFileSync(CABINET_MSGS_FILE, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function saveCabinetMsgs(data) {
+  try {
+    writeFileSync(CABINET_MSGS_FILE, JSON.stringify(data));
+  } catch (e) {
+    console.error("saveCabinetMsgs error:", e.message);
+  }
+}
+
+/** Добавляет message_id-шники для chatId в файловое хранилище (макс 100) */
+function addCabinetMsgs(chatId, msgIds) {
+  if (!msgIds || msgIds.length === 0) return;
+  const data = loadCabinetMsgs();
+  const key = String(chatId);
+  const existing = data[key] || [];
+  data[key] = [...existing, ...msgIds.filter(Boolean)].slice(-100);
+  saveCabinetMsgs(data);
+}
+
+/** Удаляет через Telegram API все сохранённые сообщения бота для данного chatId */
+async function deleteStoredMsgs(chatId) {
+  const data = loadCabinetMsgs();
+  const key = String(chatId);
+  const msgIds = data[key] || [];
+  if (msgIds.length === 0) {
+    console.log(`🗑️ deleteStoredMsgs: нет сохранённых сообщений для chat ${chatId}`);
+    return;
+  }
+  console.log(`🗑️ deleteStoredMsgs: удаляем ${msgIds.length} сообщений для chat ${chatId}`);
+  await Promise.allSettled(
+    msgIds.map(msgId =>
+      fetch(`${bot.TG_API}/deleteMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: String(chatId), message_id: msgId }),
+      }).catch(() => {})
+    )
+  );
+  delete data[key];
+  saveCabinetMsgs(data);
+}
+
 // ── Многоязычные строки клиентского бота ──────────────────────────────────────
 
 const CLIENT_LANG_STRINGS = {
@@ -299,7 +352,10 @@ async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
     });
     const cabJson = await cabRes.json();
     const cabMsgId = cabJson?.result?.message_id;
-    if (cabMsgId) trackBotMessage(chatId, cabMsgId).catch(() => {});
+    if (cabMsgId) {
+      addCabinetMsgs(chatId, [cabMsgId]);          // файловое хранилище (основной путь)
+      trackBotMessage(chatId, cabMsgId).catch(() => {}); // DB — fire-and-forget (резерв)
+    }
   } else {
     // Новый клиент — сбрасываем кнопку меню, показываем выбор языка
     await bot.setUserMenuButton(chatId); // убираем кнопку до окончания регистрации
@@ -454,7 +510,10 @@ async function processUpdate(update) {
         const successJson = await successRes.json();
         const successMsgId = successJson?.result?.message_id;
 
-        // 3. Трекаем ID success-сообщения отдельно (fire-and-forget)
+        // 3. Сохраняем ВСЕ сообщения регистрации + success в файловое хранилище
+        //    (используется при Realtime DELETE для очистки чата)
+        addCabinetMsgs(chatId, [...(pending.messageIds || []), successMsgId]);
+        // DB — fire-and-forget (резервный путь)
         if (successMsgId) trackBotMessage(chatId, successMsgId).catch(() => {});
 
         return;
@@ -600,4 +659,25 @@ bot.deleteWebhook()
   .then(() => {
     console.log("✅ Client bot polling started (@ezzeclient_bot)");
     bot.startPolling(processUpdate);
+
+    // ── Realtime: при удалении клиента из tg_clients — удаляем все кнопки в чате ─
+    // Требует миграции 016: REPLICA IDENTITY FULL на tg_clients
+    supabase
+      .channel('tg_clients_delete_bot')
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'tg_clients' },
+        async (payload) => {
+          const tgChatId = payload.old?.tg_chat_id;
+          if (!tgChatId) {
+            console.log('⚠️ tg_clients DELETE: tg_chat_id отсутствует в payload.old');
+            return;
+          }
+          console.log(`🗑️ tg_clients DELETE → очищаем чат ${tgChatId}`);
+          await deleteStoredMsgs(tgChatId);
+        }
+      )
+      .subscribe((status) => {
+        console.log(`📡 tg_clients Realtime: ${status}`);
+      });
   });
