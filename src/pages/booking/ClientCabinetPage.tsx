@@ -279,10 +279,11 @@ export function ClientCabinetPage() {
   // ── Хелперы ─────────────────────────────────────────────────────────────────
   const handleWidgetAuth = (user: Record<string, unknown>) => {
     const tgId = String(user.id ?? '')
-    const name = [user.first_name, user.last_name].filter(Boolean).join(' ')
+    const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || String(user.username ?? '')
     if (!tgId) return
     setTelegramId(tgId)
     setUserName(name)
+    setTgProfileName(name)   // сохраняем TG-имя как субтитр (loadData перезапишет основное)
     setLoading(true)
     loadData(tgId)
   }
