@@ -251,9 +251,8 @@ Deno.serve(async (req: Request) => {
             `Если хотите, вы можете зарегистрироваться снова:`,
           parse_mode: 'HTML',
           reply_markup: {
-            // web_app-кнопка отображается синим акцентным цветом в Telegram
             inline_keyboard: [[
-              { text: '📝 Зарегистрироваться', web_app: { url: `${appUrl}/register` } },
+              { text: '📝 Зарегистрироваться', callback_data: 'start_registration', style: 'primary' },
             ]],
           },
         }),
