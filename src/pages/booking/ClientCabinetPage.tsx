@@ -177,17 +177,9 @@ export function ClientCabinetPage() {
         .eq('tg_chat_id', tgId)
         .maybeSingle()
 
-      // Если клиент удалён из системы — показываем экран "не клиент"
-      // (срабатывает при нажатии на старую кнопку "Мой кабинет" после удаления)
-      if (!tgClient) {
-        setIsNotRegistered(true)
-        setLoading(false)
-        return
-      }
-
-      if (tgClient.phone) setTelegramPhone(tgClient.phone)
-      if (tgClient.name)    setUserName(tgClient.name)
-      if (tgClient.tg_name) setTgProfileName(prev => prev || tgClient!.tg_name!)
+      if (tgClient?.phone) setTelegramPhone(tgClient.phone)
+      if (tgClient?.name)    setUserName(tgClient.name)
+      if (tgClient?.tg_name) setTgProfileName(prev => prev || tgClient!.tg_name!)
 
       const { data: records } = await supabase
         .from('appointments')
