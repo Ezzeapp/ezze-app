@@ -253,7 +253,7 @@ Deno.serve(async (req: Request) => {
             `Если хотите зарегистрироваться снова — нажмите кнопку ниже 👇`,
           parse_mode: 'HTML',
           reply_markup: {
-            inline_keyboard: [[{ text: '📝 Зарегистрироваться', callback_data: 'register_after_delete' }]],
+            inline_keyboard: [[{ text: '📝 Зарегистрироваться', callback_data: 'register_after_delete', style: 'primary' }]],
           },
         }),
       }).catch((e) => { console.error('[admin-delete-user] sendMessage error:', String(e)); return null })
