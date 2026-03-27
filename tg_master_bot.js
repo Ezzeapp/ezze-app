@@ -552,6 +552,25 @@ async function processUpdate(update) {
       }
     }
 
+    // ── Кнопка «Зарегистрироваться» (отправляется после удаления аккаунта) ──────
+    if (text === '📝 Зарегистрироваться') {
+      // Очищаем любое pending-состояние (на случай прерванной регистрации)
+      pendingMasters.delete(chatId);
+      savePendingSessions();
+      // Если аккаунт уже восстановлен — показываем меню мастера
+      const existingProfile = await findMasterByChatId(chatId);
+      if (existingProfile) {
+        await sendMasterMenu(chatId, firstName, existingProfile);
+        return;
+      }
+      // Иначе запускаем стандартный flow: выбор языка → телефон → имя
+      await bot.setUserMenuButton(chatId); // сброс к default
+      pendingMasters.set(chatId, { step: 'waiting_language' });
+      savePendingSessions();
+      await sendLangSelection(chatId, firstName);
+      return;
+    }
+
     // ── AI-сообщения от мастеров ──────────────────────────────────────────────
     if (!text.startsWith("/")) {
       const masterProfile = await findMasterByChatId(chatId);

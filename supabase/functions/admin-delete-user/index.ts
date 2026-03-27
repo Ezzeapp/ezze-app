@@ -229,27 +229,18 @@ Deno.serve(async (req: Request) => {
     if (tgChatId && botToken) {
       const tgApi = `https://api.telegram.org/bot${botToken}`
 
-      // Строим URL для повторной регистрации с предзаполненным телефоном
-      const regUrl = masterPhone
-        ? `${appUrl}/register?phone=${encodeURIComponent(masterPhone)}`
-        : `${appUrl}/register`
-
-      // Меняем кнопку меню на "Зарегистрироваться" → открывает страницу регистрации
+      // Сбрасываем кнопку меню на default (убираем web_app кабинета)
       await fetch(`${tgApi}/setChatMenuButton`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: tgChatId,
-          menu_button: {
-            type: 'web_app',
-            text: '📝 Зарегистрироваться',
-            web_app: { url: regUrl },
-          },
+          menu_button: { type: 'default' },
         }),
       }).catch((e) => console.error('[admin-delete-user] setChatMenuButton error:', String(e)))
 
-      // Отправляем уведомление об удалении — без inline-кнопок,
-      // пользователь нажимает кнопку меню рядом с полем ввода
+      // Отправляем уведомление с reply-keyboard кнопкой «📝 Зарегистрироваться»
+      // По нажатию бот получает этот текст и запускает стандартный flow (язык → телефон → имя)
       const tgResp = await fetch(`${tgApi}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -259,9 +250,12 @@ Deno.serve(async (req: Request) => {
             `🚫 <b>Ваша учётная запись удалена</b>\n\n` +
             `Ваш аккаунт мастера в <b>Ezze</b> был удалён администратором.\n\n` +
             `📞 <b>По всем вопросам обращайтесь к администратору платформы.</b>\n\n` +
-            `Если хотите зарегистрироваться снова — нажмите кнопку <b>📝 Зарегистрироваться</b> рядом с полем ввода.`,
+            `Если хотите зарегистрироваться снова — нажмите кнопку ниже 👇`,
           parse_mode: 'HTML',
-          reply_markup: { remove_keyboard: true },
+          reply_markup: {
+            keyboard: [[{ text: '📝 Зарегистрироваться' }]],
+            resize_keyboard: true,
+          },
         }),
       }).catch((e) => { console.error('[admin-delete-user] sendMessage error:', String(e)); return null })
       if (tgResp && !tgResp.ok) {
