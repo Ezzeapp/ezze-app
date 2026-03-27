@@ -144,21 +144,16 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── Pre-step: Grab tg_chat_id + phone before deletion ───────────────────────
-  const { data: masterProfileSnap, error: profileSnapError } = await supabaseAdmin
+  const { data: masterProfileSnap } = await supabaseAdmin
     .from('master_profiles')
     .select('tg_chat_id, phone')
     .eq('user_id', userId)
     .maybeSingle()
-  if (profileSnapError) {
-    console.error('[admin-delete-user] pre-step query error:', profileSnapError.message)
-  }
   const tgChatId: string | null = masterProfileSnap?.tg_chat_id ?? null
   const masterPhone: string = masterProfileSnap?.phone ?? ''
-  console.log(`[admin-delete-user] pre-step: userId=${userId} tgChatId=${tgChatId} phone=${masterPhone}`)
 
   const botToken   = Deno.env.get('TG_BOT_TOKEN') ?? ''
   const appUrl     = Deno.env.get('APP_URL') ?? 'https://ezze.site'
-  console.log(`[admin-delete-user] botToken set=${!!botToken} appUrl=${appUrl}`)
 
   try {
     // ── Step 1: email_log via appointments ────────────────────────────────────
@@ -231,7 +226,6 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Step 12: Telegram notification to deleted master ─────────────────────
-    console.log(`[admin-delete-user] step12: tgChatId=${tgChatId} botToken=${!!botToken}`)
     if (tgChatId && botToken) {
       const tgApi = `https://api.telegram.org/bot${botToken}`
 
@@ -240,10 +234,8 @@ Deno.serve(async (req: Request) => {
         ? `${appUrl}/register?phone=${encodeURIComponent(masterPhone)}`
         : `${appUrl}/register`
 
-      console.log(`[admin-delete-user] sending TG notification to chatId=${tgChatId} regUrl=${regUrl}`)
-
       // Меняем кнопку меню на "Зарегистрироваться" → открывает страницу регистрации
-      const menuResp = await fetch(`${tgApi}/setChatMenuButton`, {
+      await fetch(`${tgApi}/setChatMenuButton`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -254,11 +246,7 @@ Deno.serve(async (req: Request) => {
             web_app: { url: regUrl },
           },
         }),
-      }).catch((e) => { console.error('[admin-delete-user] setChatMenuButton error:', String(e)); return null })
-      if (menuResp) {
-        const menuBody = await menuResp.text().catch(() => '')
-        console.log(`[admin-delete-user] setChatMenuButton: ${menuResp.status} ${menuBody}`)
-      }
+      }).catch((e) => console.error('[admin-delete-user] setChatMenuButton error:', String(e)))
 
       // Отправляем уведомление об удалении — без inline-кнопок,
       // пользователь нажимает кнопку меню рядом с полем ввода
@@ -276,12 +264,10 @@ Deno.serve(async (req: Request) => {
           reply_markup: { remove_keyboard: true },
         }),
       }).catch((e) => { console.error('[admin-delete-user] sendMessage error:', String(e)); return null })
-      if (tgResp) {
-        const respBody = await tgResp.text().catch(() => '')
-        console.log(`[admin-delete-user] sendMessage: ${tgResp.status} ${respBody}`)
+      if (tgResp && !tgResp.ok) {
+        const body = await tgResp.text().catch(() => '')
+        console.error(`[admin-delete-user] TG sendMessage failed: ${tgResp.status} ${body}`)
       }
-    } else {
-      console.log(`[admin-delete-user] skip TG notification: tgChatId=${tgChatId} botToken=${!!botToken}`)
     }
 
     return new Response(JSON.stringify({ message: 'ok' }), {
