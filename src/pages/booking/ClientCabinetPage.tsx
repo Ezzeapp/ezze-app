@@ -146,10 +146,16 @@ export function ClientCabinetPage() {
     const tgWebName = getTelegramDisplayName() || '' // имя из Telegram-профиля (WebApp API)
     const urlName   = params.get('tg_name') || ''   // имя из URL (registered name от бота)
     const tgPhone   = params.get('tg_phone') || ''
+    const deleted   = params.get('deleted') === '1'  // пришёл из уведомления об удалении
     setTelegramId(tgId)
     setUserName(tgWebName || urlName)       // начальное отображение (loadData перезапишет)
     setTgProfileName(tgWebName)             // Telegram profile name для субтитра
     setTelegramPhone(tgPhone)
+    if (deleted) {
+      setIsNotRegistered(true)
+      setLoading(false)
+      return
+    }
     if (tgId) {
       loadData(tgId)
     } else if (import.meta.env.DEV) {
@@ -171,16 +177,9 @@ export function ClientCabinetPage() {
         .eq('tg_chat_id', tgId)
         .maybeSingle()
 
-      // Клиент был удалён — показываем экран "не являетесь клиентом"
-      if (!tgClient) {
-        setIsNotRegistered(true)
-        setLoading(false)
-        return
-      }
-
-      if (tgClient.phone) setTelegramPhone(tgClient.phone)
-      if (tgClient.name)    setUserName(tgClient.name)
-      if (tgClient.tg_name) setTgProfileName(prev => prev || tgClient!.tg_name!)
+      if (tgClient?.phone) setTelegramPhone(tgClient.phone)
+      if (tgClient?.name)    setUserName(tgClient.name)
+      if (tgClient?.tg_name) setTgProfileName(prev => prev || tgClient!.tg_name!)
 
       const { data: records } = await supabase
         .from('appointments')

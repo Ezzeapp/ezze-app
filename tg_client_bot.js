@@ -166,16 +166,16 @@ async function sendClientLangSelection(chatId, firstName) {
       reply_markup: {
         inline_keyboard: [
           [
-            { text: "🇷🇺 Русский",   callback_data: "lang_ru" },
-            { text: "🇺🇿 O'zbek",    callback_data: "lang_uz" },
+            { text: "🇷🇺 Русский",   callback_data: "lang_ru", style: "primary" },
+            { text: "🇺🇿 O'zbek",    callback_data: "lang_uz", style: "primary" },
           ],
           [
-            { text: "🇬🇧 English",   callback_data: "lang_en" },
-            { text: "🇹🇯 Тоҷикӣ",   callback_data: "lang_tg" },
+            { text: "🇬🇧 English",   callback_data: "lang_en", style: "primary" },
+            { text: "🇹🇯 Тоҷикӣ",   callback_data: "lang_tg", style: "primary" },
           ],
           [
-            { text: "🇰🇿 Қазақша",  callback_data: "lang_kz" },
-            { text: "🇰🇬 Кыргызча", callback_data: "lang_ky" },
+            { text: "🇰🇿 Қазақша",  callback_data: "lang_kz", style: "primary" },
+            { text: "🇰🇬 Кыргызча", callback_data: "lang_ky", style: "primary" },
           ],
         ],
       },
@@ -355,7 +355,7 @@ async function processUpdate(update) {
             text: s.remindShare,
             parse_mode: "HTML",
             reply_markup: {
-              keyboard: [[{ text: s.shareBtn, request_contact: true }]],
+              keyboard: [[{ text: s.shareBtn, request_contact: true, style: "primary" }]],
               resize_keyboard: true,
               one_time_keyboard: true,
             },
@@ -446,7 +446,7 @@ async function processUpdate(update) {
             text: s.phonePrompt,
             parse_mode: "HTML",
             reply_markup: {
-              keyboard: [[{ text: s.shareBtn, request_contact: true }]],
+              keyboard: [[{ text: s.shareBtn, request_contact: true, style: "primary" }]],
               resize_keyboard: true,
               one_time_keyboard: true,
             },
