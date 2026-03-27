@@ -456,6 +456,21 @@ async function processUpdate(update) {
       return;
     }
 
+    // ── Перезапуск регистрации после удаления ─────────────────────────────────
+    if (callback.data === "restart_registration") {
+      const firstName = callback.from?.first_name || '';
+      const tgUsername = callback.from?.username || '';
+      // Сбрасываем предыдущее состояние и запускаем выбор языка
+      pendingBookings.set(chatId, {
+        step: "waiting_language",
+        mode: "registration",
+        tgUsername,
+      });
+      savePendingBookings();
+      await sendClientLangSelection(chatId, firstName);
+      return;
+    }
+
     if (callback.data === "open_cabinet") {
       const tgCl = await findTgClient(chatId);
       const cbParams = new URLSearchParams({ tg_id: String(chatId) });

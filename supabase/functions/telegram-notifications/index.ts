@@ -446,8 +446,7 @@ async function handleClientDeleted(tgChatId: string) {
   } catch (err) { console.error('setChatMenuButton error:', err) }
 
   // 3. Отправляем уведомление с кнопкой "Зарегистрироваться"
-  // Кнопка ведёт на /my?tg_id=...&deleted=1 — Mini App покажет экран "не клиент"
-  const cabinetDeletedUrl = `${APP_URL}/my?tg_id=${encodeURIComponent(tgChatId)}&deleted=1`
+  // Кнопка callback_data: 'restart_registration' — бот запустит поток регистрации заново
   const msg =
     `⛔ <b>Ваши данные удалены</b>\n\n` +
     `Ваши данные были удалены из системы.\n` +
@@ -462,7 +461,7 @@ async function handleClientDeleted(tgChatId: string) {
         parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [[
-            { text: '🔄 Зарегистрироваться', web_app: { url: cabinetDeletedUrl } },
+            { text: '🔄 Зарегистрироваться', callback_data: 'restart_registration', style: 'primary' },
           ]],
         },
       }),
