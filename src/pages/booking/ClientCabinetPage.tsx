@@ -148,7 +148,7 @@ export function ClientCabinetPage() {
     const tgPhone   = params.get('tg_phone') || ''
     const deleted   = params.get('deleted') === '1'  // пришёл из уведомления об удалении
     setTelegramId(tgId)
-    setUserName(tgWebName || urlName)       // начальное отображение (loadData перезапишет)
+    setUserName(urlName || tgWebName)       // зарегистрированное имя из URL приоритетнее TG-профиля (loadData перезапишет из БД)
     setTgProfileName(tgWebName)             // Telegram profile name для субтитра
     setTelegramPhone(tgPhone)
     if (deleted) {
