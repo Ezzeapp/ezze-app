@@ -62,6 +62,9 @@ jobs:
               echo "Applying $f..."
               docker compose exec -T db psql -U postgres -d postgres < "$f" || true
             done
+            # Перезапускаем Realtime чтобы подхватить изменения в публикациях
+            docker compose restart realtime
+            echo "✅ Realtime restarted"
 
       # ── Deploy Edge Functions ─────────────────────────────────────
       - name: Deploy Edge Functions to VPS
