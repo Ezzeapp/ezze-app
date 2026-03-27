@@ -423,7 +423,19 @@ async function processUpdate(update) {
         const lang          = getClientLang(pending?.lang);
         const s             = CLIENT_LANG_STRINGS[lang];
 
-        // Отправляем success-сообщение с кнопкой кабинета
+        // ✅ 1. Сначала сохраняем клиента в tg_clients — до отправки кнопки кабинета!
+        await saveTgClient(chatId, name, pending.phone, tgUsername, tgProfileName, lang, pending.messageIds || []);
+
+        pendingBookings.set(chatId, {
+          mode: "registered",
+          phone: pending.phone,
+          name,
+          tgUsername,
+        });
+        savePendingBookings();
+        await setClientMenuButton(chatId, pending.phone, name);
+
+        // 2. Только после записи в БД — отправляем кнопку кабинета
         const regParams = new URLSearchParams({ tg_id: String(chatId), tg_phone: pending.phone, tg_name: name });
         const successRes = await fetch(`${bot.TG_API}/sendMessage`, {
           method: "POST",
@@ -442,18 +454,9 @@ async function processUpdate(update) {
         const successJson = await successRes.json();
         const successMsgId = successJson?.result?.message_id;
 
-        // ✅ Сохраняем клиента в tg_clients, включая все IDs сообщений регистрации
-        const allMsgIds = [...(pending.messageIds || []), successMsgId].filter(Boolean);
-        await saveTgClient(chatId, name, pending.phone, tgUsername, tgProfileName, lang, allMsgIds);
+        // 3. Трекаем ID success-сообщения отдельно (fire-and-forget)
+        if (successMsgId) trackBotMessage(chatId, successMsgId).catch(() => {});
 
-        pendingBookings.set(chatId, {
-          mode: "registered",
-          phone: pending.phone,
-          name,
-          tgUsername,
-        });
-        savePendingBookings();
-        await setClientMenuButton(chatId, pending.phone, name);
         return;
       }
     }
