@@ -239,8 +239,8 @@ Deno.serve(async (req: Request) => {
         }),
       }).catch((e) => console.error('[admin-delete-user] setChatMenuButton error:', String(e)))
 
-      // Отправляем уведомление с reply-keyboard кнопкой «📝 Зарегистрироваться»
-      // По нажатию бот получает этот текст и запускает стандартный flow (язык → телефон → имя)
+      // Отправляем уведомление с inline-кнопкой «📝 Зарегистрироваться»
+      // По нажатию бот получает callback_data=register_after_delete и запускает flow (язык → телефон → имя)
       const tgResp = await fetch(`${tgApi}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -253,8 +253,7 @@ Deno.serve(async (req: Request) => {
             `Если хотите зарегистрироваться снова — нажмите кнопку ниже 👇`,
           parse_mode: 'HTML',
           reply_markup: {
-            keyboard: [[{ text: '📝 Зарегистрироваться' }]],
-            resize_keyboard: true,
+            inline_keyboard: [[{ text: '📝 Зарегистрироваться', callback_data: 'register_after_delete' }]],
           },
         }),
       }).catch((e) => { console.error('[admin-delete-user] sendMessage error:', String(e)); return null })

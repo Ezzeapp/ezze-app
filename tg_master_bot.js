@@ -201,7 +201,26 @@ async function processUpdate(update) {
     const chatId = cb.message?.chat?.id || cb.from?.id;
     const data = cb.data || "";
 
-    if (data.startsWith("lang_")) {
+    if (data === "register_after_delete") {
+      await answerCbQuery(cb.id, "✓");
+      const firstName = cb.from?.first_name || "";
+      // Очищаем любое pending-состояние
+      pendingMasters.delete(chatId);
+      savePendingSessions();
+      // Если мастер уже зарегистрировался — показываем меню
+      const existingProfile = await findMasterByChatId(chatId);
+      if (existingProfile) {
+        await sendMasterMenu(chatId, firstName, existingProfile);
+        return;
+      }
+      // Запускаем стандартный flow: выбор языка → телефон → имя → регистрация
+      await bot.setUserMenuButton(chatId); // сброс к default
+      pendingMasters.set(chatId, { step: "waiting_language" });
+      savePendingSessions();
+      await sendLangSelection(chatId, firstName);
+      return;
+
+    } else if (data.startsWith("lang_")) {
       const lang = data.slice(5); // "ru", "uz", "en", "tg", "kz", "kg"
       if (!LANG_STRINGS[lang]) {
         await answerCbQuery(cb.id);
@@ -550,25 +569,6 @@ async function processUpdate(update) {
         await bot.sendMessage(chatId, s.successReg(name));
         return;
       }
-    }
-
-    // ── Кнопка «Зарегистрироваться» (отправляется после удаления аккаунта) ──────
-    if (text === '📝 Зарегистрироваться') {
-      // Очищаем любое pending-состояние (на случай прерванной регистрации)
-      pendingMasters.delete(chatId);
-      savePendingSessions();
-      // Если аккаунт уже восстановлен — показываем меню мастера
-      const existingProfile = await findMasterByChatId(chatId);
-      if (existingProfile) {
-        await sendMasterMenu(chatId, firstName, existingProfile);
-        return;
-      }
-      // Иначе запускаем стандартный flow: выбор языка → телефон → имя
-      await bot.setUserMenuButton(chatId); // сброс к default
-      pendingMasters.set(chatId, { step: 'waiting_language' });
-      savePendingSessions();
-      await sendLangSelection(chatId, firstName);
-      return;
     }
 
     // ── AI-сообщения от мастеров ──────────────────────────────────────────────
