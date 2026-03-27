@@ -111,9 +111,9 @@ const CLIENT_LANG_STRINGS = {
     remindShare: `📱 Пожалуйста, нажмите кнопку <b>«Поделиться номером»</b> ниже.`,
     askName:     `👤 Как вас зовут?`,
     askNameHint: name => `\n\n<i>Можете написать: ${name}</i>`,
-    registered:  name => `✅ <b>Готово, ${name}!</b>\n\nВы зарегистрированы. Откройте кабинет — там можно найти мастера через поиск или отсканировать QR-код:`,
+    registered:  name => `✅ <b>Готово, ${name}!</b>\n\nВы зарегистрированы. Нажмите кнопку меню внизу, чтобы открыть кабинет.`,
     cabinetBtn:  '📋 Мой кабинет',
-    welcomeBack: `Рады видеть вас снова в <b>Ezze</b>!\n\nНажмите кнопку ниже, чтобы открыть личный кабинет:`,
+    welcomeBack: `Рады видеть вас снова в <b>Ezze</b>!\n\nНажмите кнопку меню внизу для открытия кабинета.`,
   },
   uz: {
     phonePrompt: `📱 Telefon raqamingizni ulashing:`,
@@ -121,9 +121,9 @@ const CLIENT_LANG_STRINGS = {
     remindShare: `📱 Iltimos, <b>«Raqamni ulashish»</b> tugmasini bosing.`,
     askName:     `👤 Ismingiz nima?`,
     askNameHint: name => `\n\n<i>Yozishingiz mumkin: ${name}</i>`,
-    registered:  name => `✅ <b>Tayyor, ${name}!</b>\n\nSiz ro'yxatdan o'tdingiz. Kabinetni oching — u yerda usta qidirish yoki QR-kod skanerlash mumkin:`,
+    registered:  name => `✅ <b>Tayyor, ${name}!</b>\n\nSiz ro'yxatdan o'tdingiz. Kabinetni ochish uchun pastdagi menyu tugmasini bosing.`,
     cabinetBtn:  "📋 Mening kabinetim",
-    welcomeBack: `<b>Ezze</b>ga yana xush kelibsiz!\n\nShaxsiy kabinetingizni ochish uchun tugmani bosing:`,
+    welcomeBack: `<b>Ezze</b>ga yana xush kelibsiz!\n\nKabinetni ochish uchun pastdagi menyu tugmasini bosing.`,
   },
   en: {
     phonePrompt: `📱 Please share your phone number:`,
@@ -131,9 +131,9 @@ const CLIENT_LANG_STRINGS = {
     remindShare: `📱 Please press the <b>«Share phone number»</b> button below.`,
     askName:     `👤 What is your name?`,
     askNameHint: name => `\n\n<i>You can type: ${name}</i>`,
-    registered:  name => `✅ <b>Done, ${name}!</b>\n\nYou're registered. Open your cabinet — search for a master or scan a QR code:`,
+    registered:  name => `✅ <b>Done, ${name}!</b>\n\nYou're registered. Press the menu button below to open your cabinet.`,
     cabinetBtn:  "📋 My Cabinet",
-    welcomeBack: `Welcome back to <b>Ezze</b>!\n\nPress the button below to open your personal cabinet:`,
+    welcomeBack: `Welcome back to <b>Ezze</b>!\n\nPress the menu button below to open your cabinet.`,
   },
   tg: {
     phonePrompt: `📱 Рақами телефони худро мубодила кунед:`,
@@ -141,9 +141,9 @@ const CLIENT_LANG_STRINGS = {
     remindShare: `📱 Лутфан тугмаи <b>«Мубодилаи рақам»</b>-ро пахш кунед.`,
     askName:     `👤 Номи шумо чист?`,
     askNameHint: name => `\n\n<i>Навиштан мумкин: ${name}</i>`,
-    registered:  name => `✅ <b>Тайёр, ${name}!</b>\n\nШумо сабти ном шудед. Кабинетро кушоед:`,
+    registered:  name => `✅ <b>Тайёр, ${name}!</b>\n\nШумо сабти ном шудед. Тугмаи менюи поёниро пахш кунед.`,
     cabinetBtn:  "📋 Кабинети ман",
-    welcomeBack: `Ба <b>Ezze</b> хуш омадед!\n\nБарои кушодани кабинет тугмаро пахш кунед:`,
+    welcomeBack: `Ба <b>Ezze</b> хуш омадед!\n\nТугмаи менюи поёниро пахш кунед.`,
   },
   kz: {
     phonePrompt: `📱 Телефон нөміріңізді бөлісіңіз:`,
@@ -151,9 +151,9 @@ const CLIENT_LANG_STRINGS = {
     remindShare: `📱 <b>«Нөмірді бөлісу»</b> түймесін басыңыз.`,
     askName:     `👤 Атыңыз қалай?`,
     askNameHint: name => `\n\n<i>Жазуыңызға болады: ${name}</i>`,
-    registered:  name => `✅ <b>Дайын, ${name}!</b>\n\nТіркелдіңіз. Кабинетіңізді ашыңыз:`,
+    registered:  name => `✅ <b>Дайын, ${name}!</b>\n\nТіркелдіңіз. Кабинетті ашу үшін төмендегі мәзір түймесін басыңыз.`,
     cabinetBtn:  "📋 Менің кабинетім",
-    welcomeBack: `<b>Ezze</b>-ге қайта қош келдіңіз!\n\nКабинетті ашу үшін түймені басыңыз:`,
+    welcomeBack: `<b>Ezze</b>-ге қайта қош келдіңіз!\n\nКабинетті ашу үшін төмендегі мәзір түймесін басыңыз.`,
   },
   ky: {
     phonePrompt: `📱 Телефон номериңизди бөлүшүңүз:`,
@@ -161,9 +161,9 @@ const CLIENT_LANG_STRINGS = {
     remindShare: `📱 <b>«Номерди бөлүшүү»</b> баскычын басыңыз.`,
     askName:     `👤 Атыңыз кандай?`,
     askNameHint: name => `\n\n<i>Жазсаңыз болот: ${name}</i>`,
-    registered:  name => `✅ <b>Даяр, ${name}!</b>\n\nКаттоодон өттүңүз. Кабинетиңизди ачыңыз:`,
+    registered:  name => `✅ <b>Даяр, ${name}!</b>\n\nКаттоодон өттүңүз. Кабинетти ачуу үчүн ылдыйдагы меню баскычын басыңыз.`,
     cabinetBtn:  "📋 Менин кабинетим",
-    welcomeBack: `<b>Ezze</b>-ге кайра кош келиңиз!\n\nКабинетти ачуу үчүн баскычты басыңыз:`,
+    welcomeBack: `<b>Ezze</b>-ге кайра кош келиңиз!\n\nКабинетти ачуу үчүн ылдыйдагы меню баскычын басыңыз.`,
   },
 };
 
@@ -331,31 +331,17 @@ async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
     const clientName  = knownTgClient.name  || '';
     const clientLang  = getClientLang(knownTgClient.lang || 'ru');
     const s = CLIENT_LANG_STRINGS[clientLang];
-    const cabinetParams = new URLSearchParams({ tg_id: String(chatId) });
-    if (clientPhone) cabinetParams.set('tg_phone', clientPhone);
-    if (clientName)  cabinetParams.set('tg_name', clientName);
-    const cabinetUrl = `${APP_URL}/my?${cabinetParams.toString()}`;
+    // Обновляем кнопку меню (единственная точка входа в кабинет)
     await setClientMenuButton(chatId, clientPhone, clientName);
-    const cabRes = await fetch(`${bot.TG_API}/sendMessage`, {
+    await fetch(`${bot.TG_API}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
         text: `${greeting}\n\n${s.welcomeBack}`,
         parse_mode: "HTML",
-        reply_markup: {
-          inline_keyboard: [[
-            { text: s.cabinetBtn, style: "primary", web_app: { url: cabinetUrl } },
-          ]],
-        },
       }),
     });
-    const cabJson = await cabRes.json();
-    const cabMsgId = cabJson?.result?.message_id;
-    if (cabMsgId) {
-      addCabinetMsgs(chatId, [cabMsgId]);          // файловое хранилище (основной путь)
-      trackBotMessage(chatId, cabMsgId).catch(() => {}); // DB — fire-and-forget (резерв)
-    }
   } else {
     // Новый клиент — сбрасываем кнопку меню, показываем выбор языка
     await bot.setUserMenuButton(chatId); // убираем кнопку до окончания регистрации
@@ -491,30 +477,17 @@ async function processUpdate(update) {
         savePendingBookings();
         await setClientMenuButton(chatId, pending.phone, name);
 
-        // 2. Только после записи в БД — отправляем кнопку кабинета
-        const regParams = new URLSearchParams({ tg_id: String(chatId), tg_phone: pending.phone, tg_name: name });
-        const successRes = await fetch(`${bot.TG_API}/sendMessage`, {
+        // 2. Отправляем сообщение об успешной регистрации (без инлайн-кнопок)
+        //    Кабинет доступен через кнопку меню (setClientMenuButton выше)
+        await fetch(`${bot.TG_API}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
             text: s.registered(name),
             parse_mode: "HTML",
-            reply_markup: {
-              inline_keyboard: [[
-                { text: s.cabinetBtn, style: "primary", web_app: { url: `${APP_URL}/my?${regParams.toString()}` } },
-              ]],
-            },
           }),
         });
-        const successJson = await successRes.json();
-        const successMsgId = successJson?.result?.message_id;
-
-        // 3. Сохраняем ВСЕ сообщения регистрации + success в файловое хранилище
-        //    (используется при Realtime DELETE для очистки чата)
-        addCabinetMsgs(chatId, [...(pending.messageIds || []), successMsgId]);
-        // DB — fire-and-forget (резервный путь)
-        if (successMsgId) trackBotMessage(chatId, successMsgId).catch(() => {});
 
         return;
       }
