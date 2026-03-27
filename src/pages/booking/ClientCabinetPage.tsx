@@ -109,6 +109,7 @@ export function ClientCabinetPage() {
   const [loyaltySummary, setLoyaltySummary] = useState<any[]>([])
   const [copied, setCopied]             = useState(false)
   const [searchQuery, setSearchQuery]   = useState('')
+  const [isNotRegistered, setIsNotRegistered] = useState(false)  // удалён / не зарегистрирован
   const [theme, setThemeState]          = useState<'light' | 'dark'>(() => {
     const s = getStoredTheme()
     return s === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : s
@@ -169,9 +170,17 @@ export function ClientCabinetPage() {
         .select('phone, name, tg_name')
         .eq('tg_chat_id', tgId)
         .maybeSingle()
-      if (tgClient?.phone) setTelegramPhone(tgClient.phone)
-      if (tgClient?.name)    setUserName(tgClient.name)    // зарегистрированное имя из бота
-      if (tgClient?.tg_name) setTgProfileName(prev => prev || tgClient!.tg_name!)  // TG-профиль как запасной
+
+      // Клиент был удалён — показываем экран "не являетесь клиентом"
+      if (!tgClient) {
+        setIsNotRegistered(true)
+        setLoading(false)
+        return
+      }
+
+      if (tgClient.phone) setTelegramPhone(tgClient.phone)
+      if (tgClient.name)    setUserName(tgClient.name)
+      if (tgClient.tg_name) setTgProfileName(prev => prev || tgClient!.tg_name!)
 
       const { data: records } = await supabase
         .from('appointments')
@@ -359,6 +368,35 @@ export function ClientCabinetPage() {
   }
 
   if (loading) return <LoadingSpinner fullScreen />
+
+  // ── Экран удалённого / незарегистрированного клиента ────────────────────────
+  if (isNotRegistered && telegramId) {
+    const openBot = () => {
+      const tg = (window as any).Telegram?.WebApp
+      if (tg?.openTelegramLink) {
+        tg.openTelegramLink('https://t.me/ezzeclient_bot')
+      } else {
+        window.open('https://t.me/ezzeclient_bot', '_blank')
+      }
+    }
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] p-6 text-center gap-5">
+        <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
+          <User className="h-8 w-8 text-destructive" />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-xl font-bold">Вы не являетесь клиентом</h1>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            Ваши данные были удалены из системы.<br />
+            Для продолжения необходимо зарегистрироваться снова.
+          </p>
+        </div>
+        <Button onClick={openBot} className="gap-2 px-6">
+          🔄 Зарегистрироваться
+        </Button>
+      </div>
+    )
+  }
 
   const today    = dayjs().format('YYYY-MM-DD')
   const upcoming = appointments.filter(a => a.status === 'scheduled' && a.date >= today)
