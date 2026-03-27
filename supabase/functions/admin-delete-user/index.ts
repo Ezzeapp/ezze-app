@@ -143,15 +143,14 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  // ── Pre-step: Grab tg_chat_id + phone + lang before deletion ────────────────
+  // ── Pre-step: Grab tg_chat_id + phone before deletion ───────────────────────
   const { data: masterProfileSnap } = await supabaseAdmin
     .from('master_profiles')
-    .select('tg_chat_id, phone, lang')
+    .select('tg_chat_id, phone')
     .eq('user_id', userId)
     .maybeSingle()
   const tgChatId: string | null = masterProfileSnap?.tg_chat_id ?? null
   const masterPhone: string = masterProfileSnap?.phone ?? ''
-  const masterLang: string  = masterProfileSnap?.lang  ?? 'ru'
 
   const botToken   = Deno.env.get('TG_BOT_TOKEN') ?? ''
   const appUrl     = Deno.env.get('APP_URL') ?? 'https://ezze.site'
@@ -232,8 +231,8 @@ Deno.serve(async (req: Request) => {
 
       // Строим URL для повторной регистрации с предзаполненным телефоном
       const regUrl = masterPhone
-        ? `${appUrl}/register?lang=${masterLang}&phone=${encodeURIComponent(masterPhone)}`
-        : `${appUrl}/register?lang=${masterLang}`
+        ? `${appUrl}/register?phone=${encodeURIComponent(masterPhone)}`
+        : `${appUrl}/register`
 
       // Меняем кнопку меню на "Зарегистрироваться" → открывает страницу регистрации
       await fetch(`${tgApi}/setChatMenuButton`, {
