@@ -498,8 +498,8 @@ export function MobileCalendar({
       {!limitReached && (
         <button
           onClick={() => onOpenCreate(selectedDate)}
-          className="fixed bottom-[88px] right-4 z-20 flex items-center justify-center w-13 h-13 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all active:scale-95 hover:brightness-110"
-          style={{ width: 52, height: 52 }}
+          className="fixed right-4 z-20 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all active:scale-95 hover:brightness-110"
+          style={{ width: 52, height: 52, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}
           aria-label={t('appointments.add')}
         >
           <Plus className="h-5 w-5" />
