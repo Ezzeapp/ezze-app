@@ -306,14 +306,16 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
 
   const saveProfile = async (profileData: Record<string, any> | FormData) => {
     const { data: existing } = await supabase
-      .from('master_profiles').select('id').eq('user_id', user!.id).maybeSingle()
+      .from('master_profiles').select('id, booking_slug').eq('user_id', user!.id).maybeSingle()
     if (existing) {
+      // Если booking_slug ещё не сгенерирован (профиль создан через saveTgProfile) — добавляем сейчас
+      const missingSlug = !existing.booking_slug ? { booking_slug: generateSlug() } : {}
       if (profileData instanceof FormData) {
-        const obj: Record<string, any> = {}
+        const obj: Record<string, any> = { ...missingSlug }
         profileData.forEach((v, k) => { obj[k] = v })
         await supabase.from('master_profiles').update(obj).eq('id', existing.id)
       } else {
-        await supabase.from('master_profiles').update(profileData).eq('id', existing.id)
+        await supabase.from('master_profiles').update({ ...profileData, ...missingSlug }).eq('id', existing.id)
       }
     } else {
       if (profileData instanceof FormData) {

@@ -53,7 +53,7 @@ export function RegisterPage() {
   useEffect(() => {
     if (isTg) return
     if (!authLoading && isAuthenticated) {
-      navigate(inviteCode ? `/join/${inviteCode}` : '/dashboard', { replace: true })
+      navigate(inviteCode ? `/join/${inviteCode}` : '/calendar', { replace: true })
     }
   }, [isAuthenticated, authLoading, navigate, inviteCode, isTg])
 
@@ -90,7 +90,7 @@ export function RegisterPage() {
     })
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then((_data: any) => {
-        navigate('/dashboard', { replace: true })
+        navigate('/calendar', { replace: true })
       })
       .catch(() => {
         // Не найден — продолжаем (авто-регистрация)
@@ -172,7 +172,7 @@ export function RegisterPage() {
                   access_token: authData.access_token,
                   refresh_token: authData.refresh_token,
                 })
-                navigate('/dashboard', { replace: true })
+                navigate('/calendar', { replace: true })
                 return
               }
             } catch {}
@@ -259,7 +259,7 @@ export function RegisterPage() {
     return (
       <OnboardingWizard
         open={true}
-        onComplete={() => navigate('/dashboard', { replace: true })}
+        onComplete={() => navigate('/calendar', { replace: true })}
         prefill={{ name: nameParam || wizardName || '', phone: phoneParam || '' }}
       />
     )

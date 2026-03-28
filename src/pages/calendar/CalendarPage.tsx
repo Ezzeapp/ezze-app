@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, Search, ChevronDown, Ch
 import { MobileCalendar, type MobileViewMode } from '@/components/calendar/MobileCalendar'
 import { AppointmentDialog, type AppointmentFormData } from '@/components/calendar/AppointmentDialog'
 import { AppointmentPreviewSheet } from '@/components/calendar/AppointmentPreviewSheet'
+import { BlockTimeDialog } from '@/components/calendar/BlockTimeDialog'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import { useAppointments, useMonthAppointments, useCreateAppointmentWithServices, useUpdateAppointmentWithServices, useDeleteAppointment, getAppointmentServiceNames, getAppointmentServices, cleanAppointmentNotes } from '@/hooks/useAppointments'
@@ -87,6 +88,9 @@ export function CalendarPage() {
   const [mobileView, setMobileView] = useState<MobileViewMode>('day')
   // QR-диалог
   const [qrOpen, setQrOpen] = useState(false)
+  // Блокировка времени
+  const [blockOpen, setBlockOpen]   = useState(false)
+  const [blockDate,  setBlockDate]  = useState('')
 
   // List view state
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -186,7 +190,8 @@ export function CalendarPage() {
   }
 
   const handleBlockTime = (date: string) => {
-    openCreate(date)
+    setBlockDate(date)
+    setBlockOpen(true)
   }
 
   const openEdit = (appt: Appointment) => {
@@ -995,6 +1000,13 @@ export function CalendarPage() {
         loading={del.isPending}
       />
 
+      {/* Диалог блокировки времени */}
+      <BlockTimeDialog
+        open={blockOpen}
+        date={blockDate}
+        onClose={() => setBlockOpen(false)}
+      />
+
       {/* QR-диалог онлайн-записи */}
       {(() => {
         const slug = profile?.booking_slug
@@ -1022,11 +1034,6 @@ export function CalendarPage() {
                       className="block"
                     />
                   </div>
-
-                  {/* Ссылка */}
-                  <p className="text-xs text-muted-foreground text-center break-all px-2">
-                    {bookingUrl}
-                  </p>
 
                   {/* Кнопки */}
                   <div className="flex gap-2 w-full">
