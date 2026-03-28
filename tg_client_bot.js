@@ -19,6 +19,7 @@ import {
   getClientTools, executeClientTool,
   handleAIMessage, fmtDate,
   createBotHelpers,
+  escapeHtml, sessionEntry, cleanupSessions,
 } from "./tg_shared.js";
 
 const bot = createBotHelpers(CLIENT_BOT_TOKEN);
@@ -234,7 +235,7 @@ async function trackBotMessage(chatId, msgId) {
 // ── Выбор языка для клиента ───────────────────────────────────────────────────
 
 async function sendClientLangSelection(chatId, firstName) {
-  const greeting = `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>`;
+  const greeting = `👋 <b>Привет${firstName ? ", " + escapeHtml(firstName) : ""}!</b>`;
   const res = await fetch(`${bot.TG_API}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -296,7 +297,7 @@ async function showBookingButton(chatId, slug, phone, name, tgUsername = '') {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chatId,
-      text: `✅ <b>Отлично, ${name}!</b>\n\nВсё готово — нажмите кнопку ниже, чтобы выбрать услугу и удобное время:`,
+      text: `✅ <b>Отлично, ${escapeHtml(name)}!</b>\n\nВсё готово — нажмите кнопку ниже, чтобы выбрать услугу и удобное время:`,
       parse_mode: "HTML",
       reply_markup: { inline_keyboard: [[{ text: "📅 Записаться", style: "primary", web_app: { url: bookUrl } }]] },
     }),
@@ -312,7 +313,7 @@ async function showTeamBookingButton(chatId, teamSlug, phone, name, tgUsername =
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chatId,
-      text: `✅ <b>Отлично, ${name}!</b>\n\nНажмите кнопку ниже, чтобы выбрать мастера и записаться:`,
+      text: `✅ <b>Отлично, ${escapeHtml(name)}!</b>\n\nНажмите кнопку ниже, чтобы выбрать мастера и записаться:`,
       parse_mode: "HTML",
       reply_markup: { inline_keyboard: [[{ text: "👥 Выбрать мастера", style: "primary", web_app: { url: teamUrl } }]] },
     }),
@@ -320,7 +321,7 @@ async function showTeamBookingButton(chatId, teamSlug, phone, name, tgUsername =
 }
 
 async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
-  const greeting = `👋 <b>Привет${firstName ? ", " + firstName : ""}!</b>`;
+  const greeting = `👋 <b>Привет${firstName ? ", " + escapeHtml(firstName) : ""}!</b>`;
 
   // Источник истины — tg_clients. Если записи нет — клиент не зарегистрирован
   // (в т.ч. после удаления через админ/мастера)
@@ -345,12 +346,12 @@ async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
   } else {
     // Новый клиент — сбрасываем кнопку меню, показываем выбор языка
     await bot.setUserMenuButton(chatId); // убираем кнопку до окончания регистрации
-    pendingBookings.set(chatId, {
+    pendingBookings.set(chatId, sessionEntry({
       step: "waiting_language",
       mode: "registration",
       tgUsername,
       messageIds: [],  // будем накапливать IDs сообщений регистрации
-    });
+    }));
     savePendingBookings();
     await sendClientLangSelection(chatId, firstName);
   }
@@ -382,7 +383,7 @@ async function processUpdate(update) {
       savePendingBookings();
       const nameReqResult = await bot.sendMessage(
         chatId,
-        `${s.askName}${contactName ? s.askNameHint(contactName) : ""}`,
+        `${s.askName}${contactName ? s.askNameHint(escapeHtml(contactName)) : ""}`,
         { remove_keyboard: true }
       );
       const nameReqMsgId = nameReqResult?.result?.message_id;
@@ -468,12 +469,12 @@ async function processUpdate(update) {
         // ✅ 1. Сначала сохраняем клиента в tg_clients — до отправки кнопки кабинета!
         await saveTgClient(chatId, name, pending.phone, tgUsername, tgProfileName, lang, pending.messageIds || []);
 
-        pendingBookings.set(chatId, {
+        pendingBookings.set(chatId, sessionEntry({
           mode: "registered",
           phone: pending.phone,
           name,
           tgUsername,
-        });
+        }));
         savePendingBookings();
         await setClientMenuButton(chatId, pending.phone, name);
 
@@ -484,7 +485,7 @@ async function processUpdate(update) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: s.registered(name),
+            text: s.registered(escapeHtml(name)),
             parse_mode: "HTML",
           }),
         });
@@ -564,12 +565,12 @@ async function processUpdate(update) {
       }
 
       // Клиента нет — запускаем регистрацию с выбора языка
-      pendingBookings.set(chatId, {
+      pendingBookings.set(chatId, sessionEntry({
         step: "waiting_language",
         mode: "registration",
         tgUsername,
         messageIds: [],
-      });
+      }));
       savePendingBookings();
       await sendClientLangSelection(chatId, firstName);
       return;
@@ -641,6 +642,12 @@ bot.deleteWebhook()
   .then(() => {
     console.log("✅ Client bot polling started (@ezzeclient_bot)");
     bot.startPolling(processUpdate);
+
+    // Очищаем устаревшие сессии каждые 10 минут
+    setInterval(() => {
+      const removed = cleanupSessions(pendingBookings);
+      if (removed > 0) savePendingBookings();
+    }, 10 * 60 * 1000);
 
     // ── Realtime: tg_config изменился → обновляем кнопку меню у всех клиентов ────
     // Требует миграции 017: app_settings в supabase_realtime

@@ -483,10 +483,24 @@ async function handleComplete(params: Record<string, string>): Promise<Response>
     return clickResp(CLICK_ERR_INTERNAL, 'DB error')
   }
 
+  // Обновляем план пользователя с повторной попыткой при ошибке
+  const doUpgradePlan = async () => {
+    const { error: planErr } = await supabaseAdmin.from('users').update({ plan }).eq('id', userId)
+    if (planErr) throw planErr
+  }
   try {
-    await supabaseAdmin.from('users').update({ plan }).eq('id', userId)
+    await doUpgradePlan()
   } catch (e) {
-    console.error('[click] upgradePlan error:', e)
+    console.error('[click] upgradePlan failed, retrying in 2s...', e)
+    await new Promise(r => setTimeout(r, 2000))
+    try {
+      await doUpgradePlan()
+      console.warn('[click] upgradePlan succeeded on retry for userId:', userId)
+    } catch (e2) {
+      // Платёж зафиксирован в subscriptions, но план не обновлён.
+      // При следующем входе пользователя план можно восстановить по таблице subscriptions.
+      console.error('[click] upgradePlan FAILED after retry. userId:', userId, 'plan:', plan, 'error:', e2)
+    }
   }
 
   return clickResp(CLICK_OK, 'OK', {

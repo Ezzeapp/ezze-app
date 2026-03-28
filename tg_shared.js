@@ -11,13 +11,15 @@ import { createClient } from "@supabase/supabase-js";
 try {
   const env = readFileSync(".env", "utf8");
   env.split("\n").forEach((line) => {
-    const idx = line.indexOf("=");
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) return; // пропускаем пустые строки и комментарии
+    const idx = trimmed.indexOf("=");
     if (idx === -1) return;
-    const key = line.slice(0, idx).trim();
-    const val = line.slice(idx + 1).trim().replace(/^["']|["']$/g, "");
+    const key = trimmed.slice(0, idx).trim();
+    const val = trimmed.slice(idx + 1).trim().replace(/^["']|["']$/g, "");
     if (key && !process.env[key]) process.env[key] = val;
   });
-} catch {}
+} catch { /* .env не найден — используем только process.env */ }
 
 // ── Константы ─────────────────────────────────────────────────────────────────
 
@@ -26,12 +28,59 @@ export const SUPABASE_URL = process.env.SUPABASE_URL || "http://127.0.0.1:8001";
 export const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
 export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
 
-export const MASTER_BOT_TOKEN = process.env.TG_BOT_TOKEN || "8365728736:AAHdA_B9bVQQLqqCsJsSzBk9ej2Mocsw_7M";
-export const CLIENT_BOT_TOKEN = process.env.TG_CLIENT_BOT_TOKEN || "8767615503:AAF7hZEf6wZqZk_CDd42_ceLAqltdrjcbY0";
+export const MASTER_BOT_TOKEN = process.env.TG_BOT_TOKEN || "";
+export const CLIENT_BOT_TOKEN = process.env.TG_CLIENT_BOT_TOKEN || "";
+
+// Проверяем наличие обязательных переменных среды при запуске
+if (!MASTER_BOT_TOKEN) {
+  console.error("❌ TG_BOT_TOKEN не задан. Укажите его в .env или переменных окружения.");
+  process.exit(1);
+}
+if (!CLIENT_BOT_TOKEN) {
+  console.error("❌ TG_CLIENT_BOT_TOKEN не задан. Укажите его в .env или переменных окружения.");
+  process.exit(1);
+}
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // ── Утилиты ───────────────────────────────────────────────────────────────────
+
+/**
+ * Экранирует HTML-спецсимволы в пользовательском тексте.
+ * Используется перед вставкой имён/текста в Telegram-сообщения с parse_mode="HTML".
+ */
+export function escapeHtml(text) {
+  return String(text ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/**
+ * Создаёт объект сессии с временной меткой (для TTL-очистки).
+ */
+export function sessionEntry(data) {
+  return { ...data, _ts: Date.now() };
+}
+
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 часа
+
+/**
+ * Удаляет устаревшие сессии из Map (старше 24 часов).
+ * Вызывать периодически (setInterval) и сохранять результат в файл.
+ */
+export function cleanupSessions(sessions) {
+  const now = Date.now();
+  let count = 0;
+  for (const [key, val] of sessions.entries()) {
+    if (val._ts && now - val._ts > SESSION_TTL_MS) {
+      sessions.delete(key);
+      count++;
+    }
+  }
+  if (count > 0) console.log(`🧹 Очищено устаревших сессий: ${count}`);
+  return count;
+}
 
 export function fmtDate(s) {
   const months = ['января','февраля','марта','апреля','мая','июня',

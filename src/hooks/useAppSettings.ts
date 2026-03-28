@@ -388,6 +388,9 @@ export interface AIConfig {
   base_url?: string  // для provider='custom'
 }
 
+/** Sentinel: если api_key === AI_KEY_MASK → ключ не изменился (сохраняем старый) */
+export const AI_KEY_MASK = '●●●●●●●●'
+
 export const DEFAULT_AI_CONFIG: AIConfig = {
   enabled: false,
   provider: 'anthropic',
@@ -407,7 +410,9 @@ export function useAIConfig() {
         .maybeSingle()
       if (!data?.value) return DEFAULT_AI_CONFIG
       try {
-        return { ...DEFAULT_AI_CONFIG, ...JSON.parse(data.value) } as AIConfig
+        const cfg = { ...DEFAULT_AI_CONFIG, ...JSON.parse(data.value) } as AIConfig
+        // Маскируем ключ: он не должен попадать в React Query cache или DevTools
+        return { ...cfg, api_key: cfg.api_key ? AI_KEY_MASK : '' }
       } catch {
         return DEFAULT_AI_CONFIG
       }
@@ -420,7 +425,20 @@ export function useUpdateAIConfig() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (config: AIConfig) => {
-      const value = JSON.stringify(config)
+      let finalConfig = config
+      // Если api_key не изменился (пользователь не вводил новый ключ),
+      // подгружаем существующий ключ из БД, чтобы не затереть его
+      if (config.api_key === AI_KEY_MASK || config.api_key === '') {
+        const { data: existing } = await supabase
+          .from('app_settings').select('value').eq('key', 'ai_config').maybeSingle()
+        if (existing?.value) {
+          try {
+            const existingCfg = JSON.parse(existing.value)
+            finalConfig = { ...config, api_key: existingCfg.api_key || '' }
+          } catch { /* оставляем как есть */ }
+        }
+      }
+      const value = JSON.stringify(finalConfig)
       const { data, error } = await supabase
         .from('app_settings')
         .upsert({ key: 'ai_config', value }, { onConflict: 'key' })

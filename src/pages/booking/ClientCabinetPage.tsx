@@ -176,11 +176,11 @@ export function ClientCabinetPage() {
   const loadData = async (tgId: string) => {
     try {
       // Подгружаем телефон из tg_clients (бот сохраняет его туда при регистрации)
+      // Используем SECURITY DEFINER RPC вместо прямого чтения tg_clients (014 политика закрыта в 015)
+      type TgClientRow = { phone: string | null; name: string | null; tg_name: string | null; lang: string | null }
       const { data: tgClient } = await supabase
-        .from('tg_clients')
-        .select('phone, name, tg_name')
-        .eq('tg_chat_id', tgId)
-        .maybeSingle()
+        .rpc('get_tg_client_safe', { p_tg_chat_id: tgId })
+        .maybeSingle() as { data: TgClientRow | null; error: unknown }
 
       if (tgClient?.phone) setTelegramPhone(tgClient.phone)
       if (tgClient?.name)    setUserName(tgClient.name)

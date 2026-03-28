@@ -13,6 +13,7 @@ import {
   getMasterTools, executeMasterTool,
   handleAIMessage, runAgentic,
   createBotHelpers, fmtDate,
+  escapeHtml, sessionEntry, cleanupSessions,
 } from "./tg_shared.js";
 
 const bot       = createBotHelpers(MASTER_BOT_TOKEN);
@@ -130,10 +131,10 @@ function getLang(pending) {
 // ── Мастерское меню ───────────────────────────────────────────────────────────
 
 async function sendMasterMenu(chatId, firstName, masterProfile) {
-  const masterName = masterProfile.profession || firstName || "Мастер";
+  const masterName = escapeHtml(masterProfile.profession || firstName || "Мастер");
   const cfg = await loadTgConfig();
-  const label = cfg.master_label;
-  await bot.setUserMenuButton(chatId, label, `${APP_URL}/tg?start=master`);
+  const label = escapeHtml(cfg.master_label);
+  await bot.setUserMenuButton(chatId, cfg.master_label, `${APP_URL}/tg?start=master`);
   await bot.sendMessage(
     chatId,
     `👋 <b>Привет, ${masterName}!</b>\n\nРады видеть вас снова в <b>Ezze</b>.\n\nИспользуйте кнопку <b>${label}</b> рядом с полем ввода, чтобы открыть кабинет мастера.`,
@@ -215,7 +216,7 @@ async function processUpdate(update) {
       }
       // Запускаем стандартный flow: выбор языка → телефон → имя → регистрация
       await bot.setUserMenuButton(chatId); // сброс к default
-      pendingMasters.set(chatId, { step: "waiting_language" });
+      pendingMasters.set(chatId, sessionEntry({ step: "waiting_language" }));
       savePendingSessions();
       await sendLangSelection(chatId, firstName);
       return;
@@ -229,7 +230,7 @@ async function processUpdate(update) {
       const pending = pendingMasters.get(chatId);
       if (pending?.step === "waiting_language") {
         console.log(`🌐 [master] chat=${chatId} lang=${lang}`);
-        pendingMasters.set(chatId, { step: "waiting_phone", lang });
+        pendingMasters.set(chatId, sessionEntry({ step: "waiting_phone", lang }));
         savePendingSessions();
         await answerCbQuery(cb.id, "✓");
         const s = LANG_STRINGS[lang];
@@ -397,14 +398,14 @@ async function processUpdate(update) {
       } else {
         // Не найден — спрашиваем имя для предзаполнения регистрации
         const tgFullName = [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ");
-        pendingMasters.set(chatId, {
+        pendingMasters.set(chatId, sessionEntry({
           step: "waiting_master_name",
           lang,
           phone: message.contact.phone_number,
           tgName: tgFullName,
-        });
+        }));
         savePendingSessions();
-        const askText = `${s.askName}${tgFullName ? s.askNameHint(tgFullName) : ""}`;
+        const askText = `${s.askName}${tgFullName ? s.askNameHint(escapeHtml(tgFullName)) : ""}`;
         await bot.sendMessage(chatId, askText, { remove_keyboard: true });
       }
     }
@@ -450,14 +451,14 @@ async function processUpdate(update) {
     } else {
       // Не найден — спрашиваем имя для предзаполнения регистрации
       const tgFullName = [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ");
-      pendingMasters.set(chatId, {
+      pendingMasters.set(chatId, sessionEntry({
         step: "waiting_master_name",
         lang,
         phone,
         tgName: tgFullName,
-      });
+      }));
       savePendingSessions();
-      const askText = `${s.askName}${tgFullName ? s.askNameHint(tgFullName) : ""}`;
+      const askText = `${s.askName}${tgFullName ? s.askNameHint(escapeHtml(tgFullName)) : ""}`;
       await bot.sendMessage(chatId, askText);
     }
     return;
@@ -515,7 +516,7 @@ async function processUpdate(update) {
       } else {
         // Не найден — показываем выбор языка (шаг 1 онбординга)
         await bot.setUserMenuButton(chatId); // сброс к default
-        pendingMasters.set(chatId, { step: "waiting_language" });
+        pendingMasters.set(chatId, sessionEntry({ step: "waiting_language" }));
         savePendingSessions();
         await sendLangSelection(chatId, firstName);
       }
@@ -559,14 +560,14 @@ async function processUpdate(update) {
         // Переводим в состояние ожидания веб-регистрации.
         // НЕ удаляем из pendingMasters — иначе повторное нажатие "Зарегистрироваться"
         // перезапустит весь флоу, пока пользователь ещё не закончил регистрацию в веб-приложении.
-        pendingMasters.set(chatId, { step: "pending_web_registration", lang, phone: pending.phone || "" });
+        pendingMasters.set(chatId, sessionEntry({ step: "pending_web_registration", lang, phone: pending.phone || "" }));
         savePendingSessions();
 
         // Кнопка меню → страница регистрации с предзаполненными данными
         await bot.setUserMenuButton(chatId, s.registerBtn, regUrl);
 
         // Текстовое сообщение — без inline-кнопки, направляем к кнопке меню
-        await bot.sendMessage(chatId, s.successReg(name));
+        await bot.sendMessage(chatId, s.successReg(escapeHtml(name)));
         return;
       }
     }
@@ -596,6 +597,12 @@ bot.deleteWebhook()
   .then(() => {
     console.log("✅ Master bot polling started (@ezzeapp_bot)");
     bot.startPolling(processUpdate);
+
+    // Очищаем устаревшие сессии каждые 10 минут
+    setInterval(() => {
+      const removed = cleanupSessions(pendingMasters);
+      if (removed > 0) savePendingSessions();
+    }, 10 * 60 * 1000);
 
     // ── Realtime: tg_config изменился → обновляем кнопку меню у всех мастеров ──
     // Требует миграции 017: app_settings в supabase_realtime
