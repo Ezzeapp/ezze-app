@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight, ChevronDown, Plus, Clock, UserCircle, CalendarDays, CalendarRange } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, Clock, UserCircle, CalendarDays, CalendarRange, CalendarPlus, Ban, QrCode } from 'lucide-react'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import { Badge } from '@/components/ui/badge'
@@ -45,6 +45,8 @@ interface MobileCalendarProps {
   onDateChange: (date: dayjs.Dayjs) => void
   onOpenCreate: (date: string, time?: string) => void
   onOpenEdit: (appt: Appointment) => void
+  onBlockTime?: (date: string) => void
+  onShowQR?: () => void
   mobileView?: MobileViewMode
   onMobileViewChange?: (v: MobileViewMode) => void
   limitReached?: boolean
@@ -58,6 +60,8 @@ export function MobileCalendar({
   onDateChange,
   onOpenCreate,
   onOpenEdit,
+  onBlockTime,
+  onShowQR,
   mobileView = 'day',
   onMobileViewChange,
   limitReached = false,
@@ -68,6 +72,12 @@ export function MobileCalendar({
   const selectedDate = currentDate.format('YYYY-MM-DD')
   const stripRef = useRef<HTMLDivElement>(null)
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
+  const [fabOpen, setFabOpen] = useState(false)
+
+  const closeFab = () => setFabOpen(false)
+  const handleNewAppt = () => { closeFab(); onOpenCreate(selectedDate) }
+  const handleBlock   = () => { closeFab(); onBlockTime?.(selectedDate) }
+  const handleQR      = () => { closeFab(); onShowQR?.() }
 
   const toggleDay = (fmt: string) => {
     setExpandedDays(prev => {
@@ -494,16 +504,92 @@ export function MobileCalendar({
           </div>
       )}
 
-      {/* FAB — новая запись */}
+      {/* Speed Dial FAB */}
       {!limitReached && (
-        <button
-          onClick={() => onOpenCreate(selectedDate)}
-          className="fixed right-4 z-20 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all active:scale-95 hover:brightness-110"
-          style={{ width: 52, height: 52, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}
-          aria-label={t('appointments.add')}
-        >
-          <Plus className="h-5 w-5" />
-        </button>
+        <>
+          {/* Backdrop — закрывает Speed Dial при тапе мимо */}
+          <div
+            className={cn(
+              'fixed inset-0 z-10 transition-opacity duration-200',
+              fabOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            )}
+            onClick={closeFab}
+          />
+
+          {/* Speed Dial контейнер */}
+          <div
+            className="fixed right-4 z-20 flex flex-col items-end"
+            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}
+          >
+            {/* Мини-кнопки (всегда в DOM, скрываются через opacity) */}
+            <div className="flex flex-col items-end gap-3 mb-3">
+
+              {/* QR-код — дальняя, появляется последней */}
+              <div
+                className={cn('flex items-center gap-2 transition-all duration-150', fabOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none')}
+                style={{ transitionDelay: fabOpen ? '100ms' : '0ms' }}
+              >
+                <span className="bg-background border text-foreground text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
+                  QR-код записи
+                </span>
+                <button
+                  onClick={handleQR}
+                  className="flex items-center justify-center rounded-full bg-background border shadow-md text-foreground transition-all active:scale-95 hover:bg-muted"
+                  style={{ width: 40, height: 40 }}
+                  aria-label="QR-код записи"
+                >
+                  <QrCode className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Блокировка времени */}
+              <div
+                className={cn('flex items-center gap-2 transition-all duration-150', fabOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none')}
+                style={{ transitionDelay: fabOpen ? '50ms' : '0ms' }}
+              >
+                <span className="bg-background border text-foreground text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
+                  Заблокировать время
+                </span>
+                <button
+                  onClick={handleBlock}
+                  className="flex items-center justify-center rounded-full bg-background border shadow-md text-foreground transition-all active:scale-95 hover:bg-muted"
+                  style={{ width: 40, height: 40 }}
+                  aria-label="Заблокировать время"
+                >
+                  <Ban className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Новая запись — ближайшая, появляется первой */}
+              <div
+                className={cn('flex items-center gap-2 transition-all duration-150', fabOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none')}
+                style={{ transitionDelay: '0ms' }}
+              >
+                <span className="bg-background border text-foreground text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
+                  Новая запись
+                </span>
+                <button
+                  onClick={handleNewAppt}
+                  className="flex items-center justify-center rounded-full bg-background border shadow-md text-foreground transition-all active:scale-95 hover:bg-muted"
+                  style={{ width: 40, height: 40 }}
+                  aria-label="Новая запись"
+                >
+                  <CalendarPlus className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Главная FAB-кнопка */}
+            <button
+              onClick={() => setFabOpen(v => !v)}
+              className="flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all active:scale-95 hover:brightness-110"
+              style={{ width: 52, height: 52 }}
+              aria-label={t('appointments.add')}
+            >
+              <Plus className={cn('h-5 w-5 transition-transform duration-200', fabOpen && 'rotate-45')} />
+            </button>
+          </div>
+        </>
       )}
     </div>
   )

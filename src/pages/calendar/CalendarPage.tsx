@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate as useNav } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, Search, ChevronDown, ChevronUp, ChevronsUpDown, Clock, UserCircle, Download } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, Search, ChevronDown, ChevronUp, ChevronsUpDown, Clock, UserCircle, Download, Copy, Share2 } from 'lucide-react'
 import { MobileCalendar, type MobileViewMode } from '@/components/calendar/MobileCalendar'
 import { AppointmentDialog, type AppointmentFormData } from '@/components/calendar/AppointmentDialog'
 import { AppointmentPreviewSheet } from '@/components/calendar/AppointmentPreviewSheet'
@@ -14,6 +14,7 @@ import { useServices } from '@/hooks/useServices'
 import { useProfile } from '@/hooks/useProfile'
 import { useSchedule } from '@/hooks/useSchedule'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -84,6 +85,8 @@ export function CalendarPage() {
 
   // Mobile view mode: day (default) or week overview
   const [mobileView, setMobileView] = useState<MobileViewMode>('day')
+  // QR-диалог
+  const [qrOpen, setQrOpen] = useState(false)
 
   // List view state
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -180,6 +183,10 @@ export function CalendarPage() {
     setDefaultTime(time)
     setWizardKey(k => k + 1)
     setDialogOpen(true)
+  }
+
+  const handleBlockTime = (date: string) => {
+    openCreate(date)
   }
 
   const openEdit = (appt: Appointment) => {
@@ -543,6 +550,8 @@ export function CalendarPage() {
           onDateChange={setCurrentDate}
           onOpenCreate={openCreate}
           onOpenEdit={openPreview}
+          onBlockTime={handleBlockTime}
+          onShowQR={() => setQrOpen(true)}
           mobileView={mobileView}
           onMobileViewChange={setMobileView}
           limitReached={apptLimitReached}
@@ -985,6 +994,74 @@ export function CalendarPage() {
         title={t('calendar.deleteSelectedConfirm', { count: deleteIds.length })}
         loading={del.isPending}
       />
+
+      {/* QR-диалог онлайн-записи */}
+      {(() => {
+        const slug = profile?.booking_slug
+        const bookingUrl = slug ? `${window.location.origin}/book/${slug}` : null
+        const qrImgUrl = bookingUrl
+          ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=${encodeURIComponent(bookingUrl)}`
+          : null
+
+        return (
+          <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+            <DialogContent className="max-w-xs w-full p-6">
+              <DialogHeader>
+                <DialogTitle className="text-center">QR-код для записи</DialogTitle>
+              </DialogHeader>
+
+              {bookingUrl && qrImgUrl ? (
+                <div className="flex flex-col items-center gap-4 pt-2">
+                  {/* QR */}
+                  <div className="rounded-2xl border bg-white p-2 shadow-sm">
+                    <img
+                      src={qrImgUrl}
+                      alt="QR-код записи"
+                      width={200}
+                      height={200}
+                      className="block"
+                    />
+                  </div>
+
+                  {/* Ссылка */}
+                  <p className="text-xs text-muted-foreground text-center break-all px-2">
+                    {bookingUrl}
+                  </p>
+
+                  {/* Кнопки */}
+                  <div className="flex gap-2 w-full">
+                    <Button
+                      variant="outline"
+                      className="flex-1 gap-2"
+                      onClick={() => {
+                        navigator.clipboard.writeText(bookingUrl)
+                        toast.success('Ссылка скопирована')
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                      Копировать
+                    </Button>
+                    {typeof navigator.share === 'function' && (
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-2"
+                        onClick={() => navigator.share({ url: bookingUrl, title: 'Запись онлайн' })}
+                      >
+                        <Share2 className="h-4 w-4" />
+                        Поделиться
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground py-6">
+                  Профиль не найден или ссылка на запись недоступна.
+                </p>
+              )}
+            </DialogContent>
+          </Dialog>
+        )
+      })()}
     </div>
   )
 }
