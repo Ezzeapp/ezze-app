@@ -519,7 +519,7 @@ export function MobileCalendar({
           {/* Speed Dial контейнер */}
           <div
             className="fixed right-4 z-20 flex flex-col items-end"
-            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}
+            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 92px)' }}
           >
             {/* Мини-кнопки (всегда в DOM, скрываются через opacity) */}
             <div className="flex flex-col items-end gap-3 mb-3">
