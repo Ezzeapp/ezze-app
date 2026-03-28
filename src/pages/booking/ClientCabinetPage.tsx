@@ -66,7 +66,7 @@ interface MasterResult {
   profession: string | null
   avatar: string | null
   phone: string | null
-  user: { name: string } | null
+  display_name: string | null
 }
 
 interface TeamResult {
@@ -84,6 +84,11 @@ const DEV_MOCK: AppointmentWithMaster[] = [
   { id: 'mock1', collectionId: '', collectionName: 'appointments', created: '', updated: '', master: 'mock', client: '', service: '', date: dayjs().add(2, 'day').format('YYYY-MM-DD'), start_time: '14:00', end_time: '15:00', status: 'scheduled', price: 2500, notes: '[Стрижка + укладка]', cancel_token: 'mock-token', masterName: 'Парикмахер', serviceName: 'Стрижка', bookingSlug: 'mock-master' },
   { id: 'mock2', collectionId: '', collectionName: 'appointments', created: '', updated: '', master: 'mock', client: '', service: '', date: dayjs().subtract(10, 'day').format('YYYY-MM-DD'), start_time: '11:00', end_time: '12:00', status: 'done', price: 1500, notes: '[Окрашивание]', cancel_token: '', masterName: 'Колорист', serviceName: 'Окрашивание', bookingSlug: 'mock-master-2' },
 ]
+
+// ── Утилиты ──────────────────────────────────────────────────────────────────
+/** Убирает эмодзи из строки для «умного» поиска без учёта смайликов */
+const stripEmoji = (s: string) =>
+  s.replace(/\p{Extended_Pictographic}/gu, '').replace(/\s+/g, ' ').trim().toLowerCase()
 
 // ── Статусы ──────────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -226,7 +231,7 @@ export function ClientCabinetPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('master_profiles')
-        .select('booking_slug, profession, avatar, phone, user:users(name)')
+        .select('booking_slug, profession, avatar, phone, display_name')
         .not('booking_slug', 'is', null)
         .eq('is_public', true)
         .order('created_at', { ascending: false })
@@ -252,11 +257,12 @@ export function ClientCabinetPage() {
   })
 
   const filteredTeams = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase()
+    const q = stripEmoji(searchQuery)
     if (!q) return allTeams
     return allTeams.filter(t =>
+      stripEmoji(t.name).includes(q) ||
       t.name.toLowerCase().includes(q) ||
-      (t.description ?? '').toLowerCase().includes(q)
+      stripEmoji(t.description ?? '').includes(q)
     )
   }, [allTeams, searchQuery])
 
@@ -268,13 +274,20 @@ export function ClientCabinetPage() {
   }, [appointments])
 
   const filteredMasters = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase()
-    const list = q
-      ? allMasters.filter(m =>
-          (m.user?.name ?? '').toLowerCase().includes(q) ||
-          (m.profession ?? '').toLowerCase().includes(q) ||
-          (m.phone ?? '').replace(/\D/g, '').includes(q.replace(/\D/g, ''))
-        )
+    const q        = stripEmoji(searchQuery)
+    const qRaw     = searchQuery.trim().toLowerCase()
+    const qDigits  = qRaw.replace(/\D/g, '')
+    const list = qRaw
+      ? allMasters.filter(m => {
+          const name = m.display_name ?? ''
+          return (
+            stripEmoji(name).includes(q) ||          // поиск без смайликов
+            name.toLowerCase().includes(qRaw) ||      // поиск с смайликами
+            stripEmoji(m.profession ?? '').includes(q) ||
+            (m.profession ?? '').toLowerCase().includes(qRaw) ||
+            (qDigits && (m.phone ?? '').replace(/\D/g, '').includes(qDigits))
+          )
+        })
       : allMasters
     // Избранные сверху
     return [...list].sort((a, b) => {
@@ -508,7 +521,7 @@ export function ClientCabinetPage() {
                 <Input
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Имя или специальность..."
+                  placeholder="Имя, телефон, специальность или команда…"
                   className="pl-9 pr-9"
                   autoFocus
                 />
@@ -807,9 +820,11 @@ function TeamCard({ team, onClick }: { team: TeamResult; onClick: () => void }) 
 }
 
 function MasterCard({ master, isFav, onClick }: { master: MasterResult; isFav?: boolean; onClick: () => void }) {
-  const name      = master.user?.name ?? 'Мастер'
+  const name      = master.display_name ?? 'Мастер'
   const avatarUrl = master.avatar ? getFileUrl('master_profiles', master.avatar) : undefined
-  const initials  = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+  // Инициалы — берём только буквы/цифры, игнорируя эмодзи
+  const cleanName = stripEmoji(name) || name
+  const initials  = cleanName.split(' ').map(w => w[0]).filter(Boolean).join('').slice(0, 2).toUpperCase() || '?'
 
   return (
     <button
