@@ -5,7 +5,7 @@ import { useFeature } from '@/hooks/useFeatureFlags'
 import {
   Users, UserPlus, Copy, Trash2, UserMinus, Check,
   LogIn, ChevronRight, Loader2, KeyRound, AlertTriangle,
-  PauseCircle, PlayCircle,
+  PauseCircle, PlayCircle, QrCode, ScanBarcode,
 } from 'lucide-react'
 import { useMyTeam, useTeamMembers, useCreateTeam, useRemoveTeamMember, useLeaveTeam, useTogglePauseTeamMember, useUpdateMemberCommission } from '@/hooks/useTeam'
 import { useTeamInvites, useCreateTeamInvite, useDeactivateTeamInvite, useJoinTeam } from '@/hooks/useTeamInvites'
@@ -73,6 +73,49 @@ function ConfirmDialog({
             {confirmLabel ?? t('common.confirm')}
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── QR-диалог для кода приглашения ───────────────────────────────────────────
+
+function InviteQrDialog({ code, open, onClose }: { code: string; open: boolean; onClose: () => void }) {
+  const [copied, setCopied] = useState(false)
+  const joinUrl = `${window.location.origin}/join/${code}`
+  const qrUrl   = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(joinUrl)}`
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(joinUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-xs w-full p-6">
+        <DialogHeader>
+          <DialogTitle className="text-center">QR-код приглашения</DialogTitle>
+          <DialogDescription className="text-center text-xs">
+            Покажите мастеру — он сканирует и сразу вступает в команду
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col items-center gap-4 pt-1">
+          {/* QR */}
+          <div className="rounded-2xl border bg-white p-2 shadow-sm">
+            <img src={qrUrl} alt="QR-код приглашения" width={200} height={200} className="block" />
+          </div>
+          {/* Код текстом */}
+          <div className="flex items-center gap-2 bg-muted rounded-lg px-3 py-1.5">
+            <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="font-mono text-sm font-bold tracking-widest">{code}</span>
+          </div>
+          {/* Кнопки */}
+          <Button variant="outline" className="w-full gap-2" onClick={handleCopy}>
+            {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+            {copied ? 'Скопировано!' : 'Копировать ссылку'}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )
@@ -224,19 +267,61 @@ function JoinTeamForm() {
     }
   }
 
+  const handleScanQr = () => {
+    const tg = (window as any).Telegram?.WebApp
+    if (!tg?.showScanQrPopup) {
+      toast.error('QR-сканер доступен только в Telegram')
+      return
+    }
+    tg.showScanQrPopup({ text: 'Наведите камеру на QR-код приглашения команды' }, (data: string) => {
+      tg.closeScanQrPopup?.()
+      try {
+        const url = new URL(data)
+        // Формат: https://ezze.site/join/ABCD1234
+        const match = url.pathname.match(/\/join\/([^/]+)$/)
+        if (match) {
+          const inviteCode = match[1]
+          setCode(inviteCode)
+          joinTeam.mutateAsync({ code: inviteCode })
+            .then(() => toast.success(t('team.joinSuccess')))
+            .catch((err: any) => {
+              if (err.message === 'already_member') toast.error(t('team.alreadyMember'))
+              else if (err.message === 'invite_expired') toast.error(t('team.expiredInvite'))
+              else toast.error(t('team.invalidInvite'))
+            })
+          return true
+        }
+      } catch {}
+      toast.error('Не удалось распознать QR-код')
+      return true
+    })
+  }
+
   return (
     <Card>
       <CardContent className="pt-5">
         <form onSubmit={handleJoin} className="space-y-3">
           <div className="space-y-1">
             <Label className="text-xs">{t('team.inviteCode')}</Label>
-            <Input
-              value={code}
-              onChange={e => setCode(e.target.value)}
-              placeholder={t('team.enterInviteCode')}
-              className="font-mono"
-              autoFocus
-            />
+            <div className="flex gap-2">
+              <Input
+                value={code}
+                onChange={e => setCode(e.target.value)}
+                placeholder={t('team.enterInviteCode')}
+                className="font-mono flex-1"
+                autoFocus
+              />
+              {/* Кнопка сканирования QR (в TMA) */}
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleScanQr}
+                title="Сканировать QR-код"
+              >
+                <ScanBarcode className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           <Button type="submit" className="w-full" loading={joinTeam.isPending} disabled={!code.trim()}>
             {t('team.joinTeam')}
@@ -249,7 +334,7 @@ function JoinTeamForm() {
 
 // ── Карточка приглашения ─────────────────────────────────────────────────────
 
-function InviteRow({ invite }: { invite: any }) {
+function InviteRow({ invite, onShowQR }: { invite: any; onShowQR?: (code: string) => void }) {
   const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
   const deactivate = useDeactivateTeamInvite()
@@ -288,9 +373,14 @@ function InviteRow({ invite }: { invite: any }) {
       </div>
       <div className="flex gap-1 shrink-0">
         {isActive && (
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleCopy} title={t('team.copyCode')}>
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-          </Button>
+          <>
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onShowQR?.(invite.code)} title="Показать QR-код">
+              <QrCode className="h-3.5 w-3.5" />
+            </Button>
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleCopy} title={t('team.copyCode')}>
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+            </Button>
+          </>
         )}
         {invite.is_active && (
           <Button
@@ -317,6 +407,7 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
   const [newInviteCode, setNewInviteCode] = useState<string | null>(null)
   const [copiedNew, setCopiedNew] = useState(false)
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null)
+  const [qrCode, setQrCode] = useState<string | null>(null)
 
   const { data: invites = [], isLoading: invitesLoading } = useTeamInvites(team.id)
   const createInvite = useCreateTeamInvite()
@@ -403,6 +494,9 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
                 <span className="font-mono text-sm font-bold tracking-widest text-emerald-700 dark:text-emerald-400 flex-1">
                   {newInviteCode}
                 </span>
+                <Button size="sm" variant="ghost" className="h-7 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-100 shrink-0" onClick={() => setQrCode(newInviteCode)} title="Показать QR-код">
+                  <QrCode className="h-3.5 w-3.5" />
+                </Button>
                 <Button size="sm" variant="ghost" className="h-7 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-100 shrink-0" onClick={handleCopyNew}>
                   {copiedNew ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 </Button>
@@ -433,7 +527,7 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
             ) : (
               <div>
                 {activeInvites.map((inv: any) => (
-                  <InviteRow key={inv.id} invite={inv} />
+                  <InviteRow key={inv.id} invite={inv} onShowQR={code => setQrCode(code)} />
                 ))}
               </div>
             )}
@@ -550,6 +644,13 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
         loading={removeM.isPending}
         onConfirm={handleRemoveConfirmed}
         onCancel={() => setConfirmRemoveId(null)}
+      />
+
+      {/* QR-диалог для кода приглашения */}
+      <InviteQrDialog
+        open={!!qrCode}
+        code={qrCode ?? ''}
+        onClose={() => setQrCode(null)}
       />
     </div>
   )
