@@ -28,7 +28,7 @@ jobs:
           VITE_SUPABASE_URL: https://ezze.site
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
-      # ── Deploy frontend → ezze.site ──────────────────────────────
+      # Deploy frontend to ezze.site
       - name: Deploy frontend to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -39,7 +39,7 @@ jobs:
           target: '/var/www/ezze-app/'
           strip_components: 1
 
-      # ── Apply DB migrations ──────────────────────────────────────
+      # Apply DB migrations
       - name: Copy migrations to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -74,11 +74,10 @@ jobs:
             if [ $MIGRATION_ERRORS -gt 0 ]; then
               echo "WARNING: $MIGRATION_ERRORS migration(s) had issues - check logs above"
             fi
-            # Перезапускаем Realtime чтобы подхватить изменения в публикациях
             docker compose restart realtime
             echo "Realtime restarted"
 
-      # ── Deploy Edge Functions ─────────────────────────────────────
+      # Deploy Edge Functions
       - name: Deploy Edge Functions to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -97,7 +96,7 @@ jobs:
           key: ${{ secrets.DEPLOY_KEY }}
           script: cd /app/supabase && docker compose restart functions
 
-      # ── Deploy Telegram bots ──────────────────────────────────────
+      # Deploy Telegram bots
       - name: Deploy bot files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
