@@ -55,7 +55,11 @@ export function useUpsertProfile() {
         delete payload._portfolioFiles
         if (files.length > 0) {
           const paths = await Promise.all(
-            files.map(f => uploadFile('portfolio', `${user!.id}/${f.name}`, f))
+            files.map(f => {
+              // Убираем расширение — uploadImage добавит .webp автоматически
+              const nameWithoutExt = f.name.replace(/\.[^.]+$/, '')
+              return uploadImage('portfolio', `${user!.id}/${nameWithoutExt}`, f, 'banner')
+            })
           )
           payload.portfolio = [...(payload.portfolio ?? []), ...paths]
         }
