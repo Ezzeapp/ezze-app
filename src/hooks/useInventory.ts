@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
-import { uploadFile } from '@/lib/storage'
+import { uploadFile, uploadImage } from '@/lib/storage'
 import type { InventoryItem } from '@/types'
 
 export const INVENTORY_KEY = 'inventory'
@@ -83,7 +83,7 @@ export function useCreateInventoryItem() {
           .select()
           .single()
         if (insErr) throw insErr
-        const imagePath = await uploadFile('inventory', `${user!.id}/${created.id}`, _imageFile)
+        const imagePath = await uploadImage('inventory', `${user!.id}/${created.id}`, _imageFile, 'service')
         const { data: updated, error: upErr } = await supabase
           .from('inventory_items')
           .update({ image: imagePath })
@@ -116,7 +116,7 @@ export function useUpdateInventoryItem() {
       let payload = { ...rest }
 
       if (_imageFile instanceof File) {
-        const imagePath = await uploadFile('inventory', `${user!.id}/${id}`, _imageFile)
+        const imagePath = await uploadImage('inventory', `${user!.id}/${id}`, _imageFile, 'service')
         payload.image = imagePath
       }
 

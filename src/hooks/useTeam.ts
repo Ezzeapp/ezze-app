@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { uploadFile } from '@/lib/storage'
+import { uploadFile, uploadImage } from '@/lib/storage'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Team, TeamMember, TeamRole } from '@/types'
 
@@ -172,7 +172,7 @@ export function useUpdateTeam() {
       const { logoFile, ...rest } = data as any
 
       if (logoFile) {
-        await uploadFile('teams', `${id}/logo`, logoFile)
+        await uploadImage('teams', `${id}/logo`, logoFile, 'logo')
       }
 
       const { data: team, error } = await supabase

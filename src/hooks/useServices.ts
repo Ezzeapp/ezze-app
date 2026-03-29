@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
-import { uploadFile } from '@/lib/storage'
+import { uploadFile, uploadImage } from '@/lib/storage'
 import type { Service, ServiceCategory } from '@/types'
 
 export const SERVICES_KEY = 'services'
@@ -124,7 +124,7 @@ export function useCreateService() {
           .select()
           .single()
         if (insErr) throw insErr
-        const imagePath = await uploadFile('services', `${user!.id}/${created.id}`, _imageFile)
+        const imagePath = await uploadImage('services', `${user!.id}/${created.id}`, _imageFile, 'service')
         const { data: updated, error: upErr } = await supabase
           .from('services')
           .update({ image: imagePath })
@@ -161,7 +161,7 @@ export function useUpdateService() {
       let payload = { ...rest, ...categoryPatch }
 
       if (_imageFile instanceof File) {
-        const imagePath = await uploadFile('services', `${user!.id}/${id}`, _imageFile)
+        const imagePath = await uploadImage('services', `${user!.id}/${id}`, _imageFile, 'service')
         payload.image = imagePath
       }
 

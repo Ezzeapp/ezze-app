@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
-import { getFileUrl, uploadFile } from '@/lib/storage'
+import { getFileUrl, uploadFile, uploadImage } from '@/lib/storage'
 import type { MasterProfile } from '@/types'
 
 export const PROFILE_KEY = 'master_profile'
@@ -42,7 +42,7 @@ export function useUpsertProfile() {
         const file: File | null = payload._avatarFile
         delete payload._avatarFile
         if (file) {
-          const path = await uploadFile('avatars', `${user!.id}/avatar`, file)
+          const path = await uploadImage('avatars', `${user!.id}/avatar`, file, 'avatar')
           payload.avatar = path
         } else {
           payload.avatar = null

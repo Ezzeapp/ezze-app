@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
-import { uploadFile } from '@/lib/storage'
+import { uploadFile, uploadImage } from "@/lib/storage"
 import type { Client } from '@/types'
 
 export const CLIENTS_KEY = 'clients'
@@ -165,7 +165,7 @@ export function useUpdateClientAvatar() {
     mutationFn: async ({ id, file }: { id: string; file: File | null }) => {
       let avatar: string | null = null
       if (file) {
-        avatar = await uploadFile('avatars', `clients/${id}/avatar`, file)
+        avatar = await uploadImage('avatars', `clients/${id}/avatar`, file, 'avatar')
       }
       const { data: updated, error } = await supabase
         .from('clients')

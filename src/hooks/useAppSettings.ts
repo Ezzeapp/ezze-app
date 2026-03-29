@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { uploadFile, getFileUrl } from '@/lib/storage'
+import { uploadImage, getFileUrl } from "@/lib/storage"
 import { useAuth } from '@/contexts/AuthContext'
 
 export const APP_SETTINGS_KEY = 'app_settings'
@@ -349,7 +349,7 @@ export function useUpdateAppLogo() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (file: File) => {
-      await uploadFile('teams', 'app-logo', file)
+      await uploadImage("teams", "app-logo", file, "logo")
       // Store a marker that logo exists
       const { data, error } = await supabase
         .from('app_settings')
