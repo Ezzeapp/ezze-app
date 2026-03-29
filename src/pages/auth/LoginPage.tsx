@@ -235,8 +235,24 @@ export function LoginPage() {
           </CardHeader>
           <CardContent className="space-y-4">
 
-            {/* Divider removed - email/password only */}
-            <div className="hidden relative">
+            {/* Telegram Login Widget */}
+            {tgAuthLoading ? (
+              <div className="flex justify-center py-2">
+                <LoadingSpinner />
+              </div>
+            ) : (
+              <TelegramLoginWidget onAuth={handleTelegramWidgetAuth} />
+            )}
+
+            {tgNotFound && (
+              <p className="text-center text-xs text-destructive">
+                Telegram не привязан к аккаунту.{' '}
+                <Link to="/register" className="underline">Зарегистрируйтесь</Link>
+              </p>
+            )}
+
+            {/* Divider */}
+            <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
