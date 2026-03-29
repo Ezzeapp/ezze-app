@@ -28,93 +28,63 @@ jobs:
           VITE_SUPABASE_URL: https://ezze.site
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
-      # Deploy frontend to ezze.site
-      - name: Deploy frontend to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          source: 'dist/*'
-          target: '/var/www/ezze-app/'
-          strip_components: 1
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
-      # Apply DB migrations
+      - name: Deploy frontend to VPS
+        run: |
+          rsync -az --delete dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/var/www/ezze-app/
+
       - name: Copy migrations to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          source: 'supabase/migrations/*.sql'
-          target: '/tmp/ezze-migrations/'
-          strip_components: 2
+        run: |
+          rsync -az supabase/migrations/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/ezze-migrations/
 
       - name: Apply DB migrations
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          script: |
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} '
             cd /app/supabase
             MIGRATION_ERRORS=0
-            for f in $(ls /tmp/ezze-migrations/*.sql | sort); do
+            for f in $(ls /tmp/ezze-migrations/*.sql 2>/dev/null | sort); do
               echo "Applying $f..."
               output=$(docker compose exec -T db psql -U postgres -d postgres < "$f" 2>&1)
               exit_code=$?
               echo "$output"
               if [ $exit_code -ne 0 ]; then
-                echo "WARNING: Migration $f returned exit code $exit_code (may be already applied)"
+                echo "WARNING: Migration $f returned exit code $exit_code"
                 MIGRATION_ERRORS=$((MIGRATION_ERRORS + 1))
               else
                 echo "OK: $f"
               fi
             done
             if [ $MIGRATION_ERRORS -gt 0 ]; then
-              echo "WARNING: $MIGRATION_ERRORS migration(s) had issues - check logs above"
+              echo "WARNING: $MIGRATION_ERRORS migration(s) had issues"
             fi
             docker compose restart realtime
             echo "Realtime restarted"
+          '
 
-      # Deploy Edge Functions
       - name: Deploy Edge Functions to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          source: 'supabase/functions/*'
-          target: '/app/supabase/volumes/functions/'
-          strip_components: 2
+        run: |
+          rsync -az supabase/functions/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/app/supabase/volumes/functions/
 
       - name: Reload Edge Functions runtime
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          script: cd /app/supabase && docker compose restart functions
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} 'cd /app/supabase && docker compose restart functions'
 
-      # Deploy Telegram bots
-      - name: Deploy bot files to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          source: 'tg_shared.js,tg_master_bot.js,tg_client_bot.js,tg_polling.js'
-          target: '/app/ezze-app/'
+      - name: Deploy Telegram bots to VPS
+        run: |
+          rsync -az tg_shared.js tg_master_bot.js tg_client_bot.js tg_polling.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/app/ezze-app/
 
-      - name: Restart both bot services
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          script: |
+      - name: Restart bot services
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} '
             systemctl restart ezze-master-bot
             systemctl restart ezze-client-bot
+          '
 
       - name: Notify success
-        run: echo "Deployed successfully to https://pro.ezze.site (API: https://ezze.site)"
+        run: echo "Deployed successfully to https://pro.ezze.site"
