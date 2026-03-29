@@ -157,9 +157,6 @@ export function AdminAppearanceTab() {
   // Registration state
   const [regSaving, setRegSaving] = useState(false)
 
-  // Web Access state
-  const [webSaving, setWebSaving] = useState(false)
-
   // Defaults state
   const [defLang, setDefLang] = useState('')
   const [defCurrency, setDefCurrency] = useState('')
@@ -318,22 +315,6 @@ export function AdminAppearanceTab() {
     }
   }
 
-  async function toggleWebAccess() {
-    if (!settings) return
-    setWebSaving(true)
-    const next = (settings.web_registration_enabled && settings.web_access_enabled) ? 'false' : 'true'
-    try {
-      await Promise.all([
-        updateSetting.mutateAsync({ key: 'web_registration_enabled', value: next }),
-        updateSetting.mutateAsync({ key: 'web_access_enabled', value: next }),
-      ])
-      toast.success(t('common.saved'))
-    } catch {
-      toast.error(t('common.saveError'))
-    } finally {
-      setWebSaving(false)
-    }
-  }
 
   async function saveDefaults() {
     setDefSaving(true)
@@ -595,37 +576,6 @@ export function AdminAppearanceTab() {
                   {t('admin.registrationDesc')}
                 </p>
               )}
-            </div>
-          </button>
-        </CardContent>
-      </Card>
-
-      {/* ── 6. Веб-доступ ───────────────────────────────────────────────── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Globe className="h-4 w-4" />
-            Веб-доступ
-          </CardTitle>
-          <CardDescription>Управление доступом через браузер vs Telegram Mini App</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <button
-            onClick={toggleWebAccess}
-            disabled={webSaving}
-            className="flex items-center gap-3 w-full p-3 rounded-xl border hover:bg-muted/40 transition-colors text-left"
-          >
-            {(settings?.web_registration_enabled && settings?.web_access_enabled)
-              ? <ToggleRight className="h-6 w-6 text-primary shrink-0" />
-              : <ToggleLeft className="h-6 w-6 text-muted-foreground shrink-0" />
-            }
-            <div>
-              <p className="text-sm font-medium">Веб-доступ</p>
-              <p className="text-xs text-muted-foreground">
-                {(settings?.web_registration_enabled && settings?.web_access_enabled)
-                  ? 'Регистрация и вход доступны через браузер и Telegram'
-                  : 'Доступ только через Telegram Mini App'}
-              </p>
             </div>
           </button>
         </CardContent>

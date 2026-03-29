@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { Send, Zap } from 'lucide-react'
+import { Zap } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAppSettings } from '@/hooks/useAppSettings'
 import { Button } from '@/components/ui/button'
@@ -58,7 +58,6 @@ export function LoginPage() {
   const { login, isAuthenticated, isLoading: authLoading } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
-  const [forceWeb, setForceWeb] = useState(false)
   const { data: appSettings } = useAppSettings()
 
   // Redirect when auth state becomes valid (handles race condition after login)
@@ -163,41 +162,6 @@ export function LoginPage() {
     } finally {
       setTgAuthLoading(false)
     }
-  }
-
-  // ── Веб-доступ отключён — только через Telegram ──────────────────────────
-  const logoUrl = appSettings?.logo_url
-  if (appSettings && !isTg && !forceWeb && appSettings.web_access_enabled === false) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 text-center gap-5">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary overflow-hidden">
-          {logoUrl
-            ? <img src={logoUrl} alt="" className="h-14 w-14 object-cover" />
-            : <Zap className="h-7 w-7 text-primary-foreground" />
-          }
-        </div>
-        <div className="space-y-2">
-          <h1 className="text-xl font-semibold">Вход только через Telegram</h1>
-          <p className="text-muted-foreground text-sm max-w-xs">
-            Используйте Telegram Mini App для входа в кабинет
-          </p>
-        </div>
-        <a
-          href="https://t.me/ezzeapp_bot"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#2AABEE] hover:bg-[#2AABEE]/90 text-white text-sm font-medium transition-colors"
-        >
-          <Send className="h-4 w-4" />
-          Открыть @ezzeapp_bot
-        </a>
-        {/* Скрытый обход для администратора */}
-        <button
-          onClick={() => setForceWeb(true)}
-          className="text-xs text-muted-foreground/30 mt-4 hover:text-muted-foreground transition-colors"
-        >
-          Войти как администратор
-        </button>
-      </div>
-    )
   }
 
   // ── Telegram Mini App: спиннер ────────────────────────────────────────────
