@@ -65,18 +65,18 @@ jobs:
               exit_code=$?
               echo "$output"
               if [ $exit_code -ne 0 ]; then
-                echo "⚠️  Migration $f returned exit code $exit_code (may be already applied)"
+                echo "WARNING: Migration $f returned exit code $exit_code (may be already applied)"
                 MIGRATION_ERRORS=$((MIGRATION_ERRORS + 1))
               else
-                echo "✅ OK: $f"
+                echo "OK: $f"
               fi
             done
             if [ $MIGRATION_ERRORS -gt 0 ]; then
-              echo "⚠️  $MIGRATION_ERRORS migration(s) had issues — check logs above"
+              echo "WARNING: $MIGRATION_ERRORS migration(s) had issues - check logs above"
             fi
             # Перезапускаем Realtime чтобы подхватить изменения в публикациях
             docker compose restart realtime
-            echo "✅ Realtime restarted"
+            echo "Realtime restarted"
 
       # ── Deploy Edge Functions ─────────────────────────────────────
       - name: Deploy Edge Functions to VPS
