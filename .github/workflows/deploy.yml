@@ -118,4 +118,4 @@ jobs:
             systemctl restart ezze-client-bot
 
       - name: Notify success
-        run: echo "✅ Deployed successfully to https://pro.ezze.site (API: https://ezze.site)"
+        run: echo "Deployed successfully to https://pro.ezze.site (API: https://ezze.site)"
