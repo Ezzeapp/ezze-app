@@ -1,6 +1,6 @@
 /**
  * tg_master_bot.js — Telegram бот для МАСТЕРОВ
- * Бот: @ezzeapp_bot | Token: TG_BOT_TOKEN
+ * Бот: @ezzepro_bot | Token: TG_BOT_TOKEN
  * Запуск: node tg_master_bot.js
  * Systemd: ezze-master-bot.service
  */
@@ -595,7 +595,7 @@ console.log(`App URL: ${APP_URL}`);
 bot.deleteWebhook()
   .then(() => bot.setupDefaultMenuButton())
   .then(() => {
-    console.log("✅ Master bot polling started (@ezzeapp_bot)");
+    console.log("✅ Master bot polling started (@ezzepro_bot)");
     bot.startPolling(processUpdate);
 
     // Очищаем устаревшие сессии каждые 10 минут

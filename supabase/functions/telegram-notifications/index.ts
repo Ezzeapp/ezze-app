@@ -14,15 +14,15 @@ const supabase = createClient(
 )
 
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://ezze.site'
-// Мастерский бот (@ezzeapp_bot) — уведомления мастерам
-const MASTER_BOT_TOKEN = Deno.env.get('TG_BOT_TOKEN') ?? '8365728736:AAHdA_B9bVQQLqqCsJsSzBk9ej2Mocsw_7M'
-// Клиентский бот (@ezzeclient_bot) — уведомления клиентам
-const CLIENT_BOT_TOKEN = Deno.env.get('TG_CLIENT_BOT_TOKEN') ?? '8767615503:AAF7hZEf6wZqZk_CDd42_ceLAqltdrjcbY0'
+// Мастерский бот (@ezzepro_bot) — уведомления мастерам
+const MASTER_BOT_TOKEN = Deno.env.get('TG_BOT_TOKEN') ?? '8697435799:AAHc9O3_lQLTU4fbY45QRysPnxleOKGpa1Y'
+// Клиентский бот (@ezzeprogo_bot) — уведомления клиентам
+const CLIENT_BOT_TOKEN = Deno.env.get('TG_CLIENT_BOT_TOKEN') ?? '8763631667:AAHEOpGJ_59hfgpsdai_6GEdec7xcBALFNk'
 
 // ── Telegram helpers ──────────────────────────────────────────────────────────
 
 // Отправляет сообщение через нужный бот
-// toMaster=true → @ezzeapp_bot, toMaster=false → @ezzeclient_bot
+// toMaster=true → @ezzepro_bot, toMaster=false → @ezzeprogo_bot
 async function sendTgVia(chatId: string, text: string, toMaster: boolean) {
   if (!chatId || !text) return
   const token = toMaster ? MASTER_BOT_TOKEN : CLIENT_BOT_TOKEN

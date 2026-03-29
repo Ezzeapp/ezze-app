@@ -1,6 +1,6 @@
 /**
  * tg_client_bot.js — Telegram бот для КЛИЕНТОВ
- * Бот: @ezzeclient_bot | Token: TG_CLIENT_BOT_TOKEN
+ * Бот: @ezzeprogo_bot | Token: TG_CLIENT_BOT_TOKEN
  * Запуск: node tg_client_bot.js
  * Systemd: ezze-client-bot.service
  *
@@ -640,7 +640,7 @@ console.log(`App URL: ${APP_URL}`);
 bot.deleteWebhook()
   .then(() => bot.setupDefaultMenuButton())
   .then(() => {
-    console.log("✅ Client bot polling started (@ezzeclient_bot)");
+    console.log("✅ Client bot polling started (@ezzeprogo_bot)");
     bot.startPolling(processUpdate);
 
     // Очищаем устаревшие сессии каждые 10 минут

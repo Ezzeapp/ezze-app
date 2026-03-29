@@ -660,8 +660,8 @@ export function AdminAppearanceTab() {
           <CardDescription className="space-y-1">
             <span className="block">Название кнопки рядом с полем ввода. Макс. 16 символов.</span>
             <span className="block text-xs">
-              <span className="font-medium text-foreground">@ezzeclient_bot</span> — для клиентов &nbsp;·&nbsp;
-              <span className="font-medium text-foreground">@ezzeapp_bot</span> — для мастеров
+              <span className="font-medium text-foreground">@ezzeprogo_bot</span> — для клиентов &nbsp;·&nbsp;
+              <span className="font-medium text-foreground">@ezzepro_bot</span> — для мастеров
             </span>
           </CardDescription>
         </CardHeader>
@@ -670,7 +670,7 @@ export function AdminAppearanceTab() {
             <div className="space-y-1.5">
               <Label className="text-xs">
                 Кнопка для клиентов
-                <span className="ml-1.5 text-muted-foreground font-normal">(@ezzeclient_bot)</span>
+                <span className="ml-1.5 text-muted-foreground font-normal">(@ezzeprogo_bot)</span>
               </Label>
               <Input
                 value={tgClientLabel}
@@ -683,7 +683,7 @@ export function AdminAppearanceTab() {
             <div className="space-y-1.5">
               <Label className="text-xs">
                 Кнопка для мастеров
-                <span className="ml-1.5 text-muted-foreground font-normal">(@ezzeapp_bot)</span>
+                <span className="ml-1.5 text-muted-foreground font-normal">(@ezzepro_bot)</span>
               </Label>
               <Input
                 value={tgMasterLabel}

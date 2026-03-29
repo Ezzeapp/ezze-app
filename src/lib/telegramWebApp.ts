@@ -183,22 +183,22 @@ export function hapticImpact(): void {
 
 /**
  * Сформировать ссылку для клиентов.
- * Клиентский бот: @ezzeclient_bot
- * Формат: t.me/ezzeclient_bot?start=book_{slug}
+ * Клиентский бот: @ezzeprogo_bot
+ * Формат: t.me/ezzeprogo_bot?start=book_{slug}
  */
 export function buildClientBookingLink(bookingSlug: string): string {
-  return `https://t.me/ezzeclient_bot?start=book_${bookingSlug}`
+  return `https://t.me/ezzeprogo_bot?start=book_${bookingSlug}`
 }
 
 /**
  * Сформировать ссылку на публичную запись команды через Telegram Mini App.
- * Формат: t.me/ezzeclient_bot?start=team_{teamSlug}
+ * Формат: t.me/ezzeprogo_bot?start=team_{teamSlug}
  */
 export function buildTeamBookingLink(teamSlug: string): string {
-  return `https://t.me/ezzeclient_bot?start=team_${teamSlug}`
+  return `https://t.me/ezzeprogo_bot?start=team_${teamSlug}`
 }
 
 /** Сформировать ссылку на личный кабинет клиента */
 export function buildClientCabinetLink(): string {
-  return `https://t.me/ezzeclient_bot`
+  return `https://t.me/ezzeprogo_bot`
 }
