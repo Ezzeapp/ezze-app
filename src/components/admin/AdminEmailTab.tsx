@@ -44,6 +44,20 @@ export function AdminEmailTab() {
 
   return (
     <div className="space-y-5">
+      <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/30">
+        <span className="mt-0.5 text-blue-500 shrink-0">ℹ️</span>
+        <p className="text-xs text-blue-700 dark:text-blue-300">
+          SMTP используется для всей платформы.{' '}
+          <a
+            href="https://admin.ezze.site/dashboard/settings/email"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2 font-medium"
+          >
+            Управлять в Суперадмине →
+          </a>
+        </p>
+      </div>
       <p className="text-sm text-muted-foreground">{t('admin.emailDesc')}</p>
 
       {/* Global toggle */}

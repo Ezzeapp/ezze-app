@@ -604,6 +604,22 @@ function PlanFeaturesEditor() {
 export function AdminBillingTab() {
   return (
     <div className="space-y-8">
+      {/* Глобальные настройки — инфо */}
+      <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/30">
+        <span className="mt-0.5 text-blue-500 shrink-0">ℹ️</span>
+        <p className="text-xs text-blue-700 dark:text-blue-300">
+          Изменения применяются ко всей платформе.{' '}
+          В будущем каждый продукт сможет переопределить свои тарифы.{' '}
+          <a
+            href="https://admin.ezze.site/dashboard/settings/billing"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2 font-medium"
+          >
+            Управлять глобально в Суперадмине →
+          </a>
+        </p>
+      </div>
       <PlanSettings />
       <div className="border-t pt-6">
         <PlanFeaturesEditor />
