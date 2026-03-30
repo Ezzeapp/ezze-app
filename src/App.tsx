@@ -125,7 +125,7 @@ function AppSettingsInitializer() {
     document.documentElement.style.setProperty('--primary', color)
     document.documentElement.style.setProperty('--ring', color)
     document.documentElement.style.setProperty('--sidebar-primary', color)
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="hsl(${color})"/><path d="M8 16h16M16 8v16" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>`
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="hsl(${color})"/><polygon points="17.3,2.7 4,18.7 16,18.7 14.7,29.3 28,13.3 16,13.3" fill="white"/></svg>`
     const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
     if (link) link.href = `data:image/svg+xml,${encodeURIComponent(svg)}`
 
