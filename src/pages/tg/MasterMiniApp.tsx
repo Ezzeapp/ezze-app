@@ -28,7 +28,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 
-const APP_URL = 'https://ezze.site'
+const APP_URL = import.meta.env.VITE_APP_URL || import.meta.env.VITE_SUPABASE_URL
 
 interface MasterProfile {
   id: string

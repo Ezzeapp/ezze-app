@@ -462,7 +462,7 @@ export interface TgConfig {
 export const DEFAULT_TG_CONFIG: TgConfig = {
   client_label: 'Ezze',
   master_label: 'Ezze',
-  welcome_text: '👋 <b>Привет, {name}!</b>\n\nДобро пожаловать в <b>Ezze</b> — сервис для мастеров красоты.\n\n🌐 <b>Выберите язык:</b>',
+  welcome_text: '👋 <b>Привет, {name}!</b>\n\nДобро пожаловать в <b>Ezze</b>.\n\n🌐 <b>Выберите язык:</b>',
 }
 
 export function useTgConfig() {

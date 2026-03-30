@@ -19,7 +19,7 @@ import {
   getClientTools, executeClientTool,
   handleAIMessage, fmtDate,
   createBotHelpers,
-  escapeHtml, sessionEntry, cleanupSessions,
+  escapeHtml, sessionEntry, cleanupSessions, PRODUCT,
 } from "./tg_shared.js";
 
 const bot = createBotHelpers(CLIENT_BOT_TOKEN);
@@ -634,7 +634,7 @@ async function processUpdate(update) {
 
 // ── Запуск ────────────────────────────────────────────────────────────────────
 
-console.log("👤 Ezze Client Bot starting...");
+console.log(`👤 [${PRODUCT}] Ezze Client Bot starting...`);
 console.log(`App URL: ${APP_URL}`);
 
 bot.deleteWebhook()

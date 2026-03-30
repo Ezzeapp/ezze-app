@@ -13,7 +13,7 @@ import {
   getMasterTools, executeMasterTool,
   handleAIMessage, runAgentic,
   createBotHelpers, fmtDate,
-  escapeHtml, sessionEntry, cleanupSessions,
+  escapeHtml, sessionEntry, cleanupSessions, PRODUCT,
 } from "./tg_shared.js";
 
 const bot       = createBotHelpers(MASTER_BOT_TOKEN);
@@ -589,7 +589,7 @@ async function processUpdate(update) {
 
 // ── Запуск ────────────────────────────────────────────────────────────────────
 
-console.log("👷 Ezze Master Bot starting...");
+console.log(`👷 [${PRODUCT}] Ezze Master Bot starting...`);
 console.log(`App URL: ${APP_URL}`);
 
 bot.deleteWebhook()

@@ -27,6 +27,7 @@ export const APP_URL = process.env.APP_URL || "https://pro.ezze.site";
 export const SUPABASE_URL = process.env.SUPABASE_URL || "http://127.0.0.1:8001";
 export const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
 export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
+export const PRODUCT = process.env.PRODUCT || "beauty";
 
 export const MASTER_BOT_TOKEN = process.env.TG_BOT_TOKEN || "";
 export const CLIENT_BOT_TOKEN = process.env.TG_CLIENT_BOT_TOKEN || "";
