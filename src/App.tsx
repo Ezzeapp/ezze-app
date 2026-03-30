@@ -127,12 +127,11 @@ function AppSettingsInitializer() {
     document.documentElement.style.setProperty('--sidebar-primary', color)
     const hslColor = `hsl(${color})`
     try { localStorage.setItem('ezze_primary_cache', hslColor) } catch { /* ignore */ }
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none"><rect width="32" height="32" fill="${hslColor}"/><polygon points="17.3,2.7 4,18.7 16,18.7 14.7,29.3 28,13.3 16,13.3" fill="white"/></svg>`
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="${hslColor}"/><polygon points="17.3,2.7 4,18.7 16,18.7 14.7,29.3 28,13.3 16,13.3" fill="white"/></svg>`
     const faviconUrl = `data:image/svg+xml,${encodeURIComponent(svg)}`
     document.querySelectorAll<HTMLLinkElement>('link[rel="icon"]').forEach(l => l.parentNode?.removeChild(l))
     const faviconLink = document.createElement('link')
-    faviconLink.rel = 'icon'; faviconLink.type = 'image/svg+xml'
-    faviconLink.setAttribute('sizes', 'any'); faviconLink.href = faviconUrl
+    faviconLink.rel = 'icon'; faviconLink.type = 'image/svg+xml'; faviconLink.href = faviconUrl
     document.head.appendChild(faviconLink)
 
     // Размер шрифта: мобильный — выбранный, десктоп — компактнее
