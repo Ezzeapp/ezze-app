@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, Zap, Crown, Building2, CreditCard, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
+import { Check, Zap, Crown, Building2, CreditCard, ExternalLink, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import dayjs from 'dayjs'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAppSettings, usePlanPrices, DEFAULT_PLAN_PRICES, usePlanLimits, DEFAULT_PLAN_LIMITS, usePlanFeatures, DEFAULT_PLAN_FEATURES, type PlanFeaturesConfig } from '@/hooks/useAppSettings'
@@ -12,7 +12,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { formatCurrency } from '@/lib/utils'
 import { buildPaymeUrl } from '@/lib/payme'
-import { buildClickUrl } from '@/lib/click'
+import { buildClickUrl, createClickInvoice } from '@/lib/click'
+import { toast } from '@/components/shared/Toaster'
+import { useProfile } from '@/hooks/useProfile'
 import type { SubscriptionPlan } from '@/types'
 
 // ── Интерфейсы ────────────────────────────────────────────────────────────────
@@ -43,6 +45,8 @@ function PaymentDialog({ plan, onClose }: PaymentDialogProps) {
   const { user }              = useAuth()
   const { data: settings }    = useAppSettings()
   const { data: planPrices }  = usePlanPrices()
+  const { data: profile }     = useProfile()
+  const [clickLoading, setClickLoading] = useState(false)
 
   if (!plan || plan === 'free') return null
 
@@ -56,10 +60,25 @@ function PaymentDialog({ plan, onClose }: PaymentDialogProps) {
     window.open(url, '_blank')
   }
 
-  const handleClick = () => {
+  const handleClick = async () => {
     if (!settings?.click_service_id || !settings?.click_merchant_id || !user?.id) return
-    const url = buildClickUrl(settings.click_service_id, settings.click_merchant_id, user.id, plan, priceUZS)
-    window.open(url, '_blank')
+    setClickLoading(true)
+    try {
+      const { payment_url } = await createClickInvoice(
+        user.id,
+        plan,
+        priceUZS,
+        profile?.phone ?? undefined,
+      )
+      window.open(payment_url, '_blank')
+    } catch {
+      // Fallback to legacy URL on any error
+      const url = buildClickUrl(settings.click_service_id, settings.click_merchant_id, user.id, plan, priceUZS)
+      window.open(url, '_blank')
+      toast.error(t('common.error'))
+    } finally {
+      setClickLoading(false)
+    }
   }
 
   return (
@@ -91,8 +110,12 @@ function PaymentDialog({ plan, onClose }: PaymentDialogProps) {
               variant="outline"
               className="w-full gap-2"
               onClick={handleClick}
+              disabled={clickLoading}
             >
-              <ExternalLink className="h-4 w-4" />
+              {clickLoading
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <ExternalLink className="h-4 w-4" />
+              }
               {t('billing.payDialog.click')}
             </Button>
           )}
