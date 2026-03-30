@@ -29,14 +29,12 @@ function hslToHex(hsl: string): string {
 }
 
 function setFaviconHref(href: string) {
-  let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
-  if (!link) {
-    link = document.createElement('link')
-    link.rel = 'icon'
-    document.head.appendChild(link)
-  }
+  document.querySelectorAll<HTMLLinkElement>('link[rel="icon"]').forEach(l => l.parentNode?.removeChild(l))
+  const link = document.createElement('link')
+  link.rel = 'icon'
   link.type = href.startsWith('data:image/png') ? 'image/png' : 'image/svg+xml'
   link.href = href
+  document.head.appendChild(link)
 }
 
 export function useDynamicFavicon() {
@@ -64,15 +62,9 @@ export function useDynamicFavicon() {
       img.onerror = () => {/* fallback to svg */}
       img.src = settings.logo_url
     } else {
-      // Дефолтный SVG — заменяем цвет
-      fetch('/logo-default.svg')
-        .then(r => r.text())
-        .then(svg => {
-          const colored = svg.replace(/#6366f1/gi, primaryHex)
-          const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(colored)
-          setFaviconHref(dataUrl)
-        })
-        .catch(() => {/* keep current favicon */})
+      // Дефолтный — правильный 32x32 SVG без скруглений (как у admin.ezze.site)
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="${primaryHex}"/><polygon points="17.3,2.7 4,18.7 16,18.7 14.7,29.3 28,13.3 16,13.3" fill="white"/></svg>`
+      setFaviconHref('data:image/svg+xml,' + encodeURIComponent(svg))
     }
   }, [settings?.primary_color, settings?.logo_url])
 }
