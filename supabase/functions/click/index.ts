@@ -513,6 +513,14 @@ async function handleComplete(params: Record<string, string>): Promise<Response>
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
+  // Click validates URLs by sending GET/HEAD requests — respond with 200 OK
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    return new Response(JSON.stringify({ status: 'ok' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ message: 'Method not allowed' }), {
       status: 405,
@@ -528,7 +536,18 @@ Deno.serve(async (req: Request) => {
     return clickResp(CLICK_ERR_INCORRECT_PARAM, 'Cannot parse body')
   }
 
-  const action = parseInt(formParams['action'] ?? '-99', 10)
+  // Route by URL path (/prepare or /complete) OR by action field in body
+  const url      = new URL(req.url)
+  const pathname = url.pathname.toLowerCase()
+  const byPath   = pathname.endsWith('/prepare') ? 0
+                 : pathname.endsWith('/complete') ? 1
+                 : null
+
+  const action = byPath !== null
+    ? byPath
+    : parseInt(formParams['action'] ?? '-99', 10)
+
+  console.log(`[click] path=${pathname} action=${action}`)
 
   if (action === 0) {
     return handlePrepare(formParams)
