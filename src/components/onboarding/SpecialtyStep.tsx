@@ -12,6 +12,49 @@ import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 
+// Маппинг специальностей на категории global_services / global_products
+const SPECIALTY_TO_CATEGORY: Record<string, string> = {
+  // Волосы
+  'Парикмахер':                        'Волосы',
+  'Барбер':                            'Волосы',
+  'Стилист':                           'Волосы',
+  'Стилист-парикмахер':                'Волосы',
+  'Мастер по окрашиванию':             'Волосы',
+  'Мастер по наращиванию волос':       'Волосы',
+  'Трихолог':                          'Волосы',
+  // Ногти
+  'Мастер ногтей':                     'Ногти',
+  'Маникюрист':                        'Ногти',
+  'Педикюрист':                        'Ногти',
+  'Нейл-мастер':                       'Ногти',
+  'Мастер маникюра и педикюра':        'Ногти',
+  'Нейл-арт мастер':                   'Ногти',
+  // Косметология
+  'Косметолог':                        'Косметология',
+  'Косметолог-эстетист':               'Косметология',
+  'Дерматолог-косметолог':             'Косметология',
+  'Специалист по уходу за лицом':      'Косметология',
+  // Брови и ресницы
+  'Бровист':                           'Брови и ресницы',
+  'Лэшмейкер':                         'Брови и ресницы',
+  'Визажист':                          'Брови и ресницы',
+  'Мастер по бровям и ресницам':       'Брови и ресницы',
+  'Мастер по наращиванию ресниц':      'Брови и ресницы',
+  // Массаж
+  'Массажист':                         'Массаж',
+  'Массажист-реабилитолог':            'Массаж',
+  'SPA-мастер':                        'Массаж',
+  // Перманентный макияж
+  'Мастер перманентного макияжа':      'Перманентный макияж',
+  'Татуажист':                         'Перманентный макияж',
+  'PMU-мастер':                        'Перманентный макияж',
+  // Эпиляция
+  'Специалист по депиляции':           'Эпиляция',
+  'Мастер эпиляции':                   'Эпиляция',
+  'Мастер шугаринга':                  'Эпиляция',
+  'Шугаринг-мастер':                   'Эпиляция',
+}
+
 const FALLBACK_SPECIALTIES = [
   'Парикмахер', 'Косметолог', 'Мастер ногтей', 'Массажист',
   'Визажист', 'Бровист', 'Лэшмейкер', 'Барбер', 'Стилист',
@@ -71,42 +114,46 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
 
       localStorage.setItem(`ezze_onboarded_${userId}`, '1')
 
-      // 3. Авто-импорт услуг из global_services по выбранной специальности
-      const { data: svcTemplates } = await supabase
-        .from('global_services')
-        .select('name')
-        .eq('category', selected)
-        .limit(15)
+      // 3. Авто-импорт услуг и товаров из global_* по категории специальности
+      const globalCategory = SPECIALTY_TO_CATEGORY[selected]
+      if (globalCategory && userId) {
+        const [{ data: svcTemplates }, { data: prodTemplates }] = await Promise.all([
+          supabase.from('global_services').select('name').eq('category', globalCategory).limit(15),
+          supabase.from('global_products').select('name, unit').eq('category', globalCategory).limit(15),
+        ])
 
-      if (svcTemplates?.length && userId) {
-        await supabase.from('services').insert(
-          svcTemplates.map((t: { name: string }) => ({
-            master_id:    userId,
-            name:         t.name,
-            duration_min: 30,
-            price:        0,
-            is_active:    true,
-            is_bookable:  true,
-          }))
-        )
-      }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const inserts: PromiseLike<any>[] = []
 
-      // 4. Авто-импорт товаров из global_products по выбранной специальности
-      const { data: prodTemplates } = await supabase
-        .from('global_products')
-        .select('name, unit')
-        .eq('category', selected)
-        .limit(15)
+        if (svcTemplates?.length) {
+          inserts.push(
+            supabase.from('services').insert(
+              svcTemplates.map((t: { name: string }) => ({
+                master_id:    userId,
+                name:         t.name,
+                duration_min: 30,
+                price:        0,
+                is_active:    true,
+                is_bookable:  true,
+              }))
+            )
+          )
+        }
 
-      if (prodTemplates?.length && userId) {
-        await supabase.from('inventory_items').insert(
-          prodTemplates.map((t: { name: string; unit: string }) => ({
-            master_id: userId,
-            name:      t.name,
-            unit:      t.unit || 'шт',
-            quantity:  0,
-          }))
-        )
+        if (prodTemplates?.length) {
+          inserts.push(
+            supabase.from('inventory_items').insert(
+              prodTemplates.map((t: { name: string; unit: string }) => ({
+                master_id: userId,
+                name:      t.name,
+                unit:      t.unit || 'шт',
+                quantity:  0,
+              }))
+            )
+          )
+        }
+
+        if (inserts.length) await Promise.all(inserts)
       }
 
       // 5. Обновляем кнопку меню в боте + отправляем приветствие
