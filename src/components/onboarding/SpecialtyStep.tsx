@@ -57,22 +57,59 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
     if (!selected || saving) return
     setSaving(true)
     try {
-      // Сохраняем специальность в master_profiles
+      // 1. Сохраняем специальность в master_profiles
       await supabase
         .from('master_profiles')
         .update({ profession: selected })
         .eq('user_id', userId)
 
-      // Помечаем onboarding как завершённый — иначе AppLayout покажет OnboardingWizard
+      // 2. Помечаем onboarding как завершённый
       await supabase
         .from('users')
         .update({ onboarded: true })
         .eq('id', userId)
 
-      // LocalStorage флаг чтобы AppLayout не показал визард в этой сессии
       localStorage.setItem(`ezze_onboarded_${userId}`, '1')
 
-      // Обновляем кнопку меню в боте + отправляем приветствие
+      // 3. Авто-импорт услуг из global_services по выбранной специальности
+      const { data: svcTemplates } = await supabase
+        .from('global_services')
+        .select('name')
+        .eq('category', selected)
+        .limit(15)
+
+      if (svcTemplates?.length && userId) {
+        await supabase.from('services').insert(
+          svcTemplates.map((t: { name: string }) => ({
+            master_id:    userId,
+            name:         t.name,
+            duration_min: 30,
+            price:        0,
+            is_active:    true,
+            is_bookable:  true,
+          }))
+        )
+      }
+
+      // 4. Авто-импорт товаров из global_products по выбранной специальности
+      const { data: prodTemplates } = await supabase
+        .from('global_products')
+        .select('name, unit')
+        .eq('category', selected)
+        .limit(15)
+
+      if (prodTemplates?.length && userId) {
+        await supabase.from('inventory_items').insert(
+          prodTemplates.map((t: { name: string; unit: string }) => ({
+            master_id: userId,
+            name:      t.name,
+            unit:      t.unit || 'шт',
+            quantity:  0,
+          }))
+        )
+      }
+
+      // 5. Обновляем кнопку меню в боте + отправляем приветствие
       if (tgChatId) {
         await supabase.functions.invoke('tg-master-welcome', {
           body: { tg_chat_id: tgChatId, name, lang },

@@ -68,7 +68,7 @@ export function RegisterPage() {
     const initData = window.Telegram?.WebApp?.initData
     if (!initData) { setTgChecking(false); return }
 
-    supabase.functions.invoke('tg-auth', { body: { initData } })
+    supabase.functions.invoke('tg-auth', { body: { initData, silent: true } })
       .then(({ data, error }) => {
         if (!error && data?.access_token) {
           supabase.auth.setSession({
