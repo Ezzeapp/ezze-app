@@ -314,6 +314,19 @@ async function handlePrepare(params: Record<string, string>): Promise<Response> 
     return clickResp(CLICK_ERR_ACTION, 'Incorrect action for prepare')
   }
 
+  // ── Click URL validation probe ────────────────────────────────────────────
+  // Click sends a POST probe with click_trans_id=0 (or empty) to verify the
+  // Prepare URL before saving it. We must respond with error:0 immediately,
+  // without signature verification (test probes have no valid signature).
+  if (!clickTransId || clickTransId === '0') {
+    console.log('[click] prepare probe detected (click_trans_id=0), returning OK')
+    return clickResp(CLICK_OK, 'OK', {
+      click_trans_id:      clickTransId || '0',
+      merchant_trans_id:   merchantTransId || '0',
+      merchant_prepare_id: 0,
+    })
+  }
+
   const signOk = verifyClickSign({
     click_trans_id:    clickTransId,
     service_id:        serviceId,
