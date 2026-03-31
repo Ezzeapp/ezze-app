@@ -1,8 +1,8 @@
 /**
  * SpecialtyStep — экран выбора специальности после TG авто-регистрации.
  * Заменяет полный OnboardingWizard: показывает только поиск + список специальностей.
- * После выбора: сохраняет profession в master_profiles, обновляет TG кнопку меню,
- * отправляет приветственное сообщение в бот и редиректит в /calendar.
+ * После выбора: сохраняет profession в master_profiles, ставит onboarded=true в users,
+ * обновляет TG кнопку меню, отправляет приветственное сообщение и редиректит в /calendar.
  */
 
 import { useState, useEffect, useMemo } from 'react'
@@ -10,7 +10,6 @@ import { useNavigate } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 
 const FALLBACK_SPECIALTIES = [
@@ -33,15 +32,19 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
   const [selected,    setSelected]    = useState('')
   const [saving,      setSaving]      = useState(false)
 
-  // Загружаем специальности из БД
+  // Загружаем специальности из БД (дедупликация на случай дублей)
   useEffect(() => {
     supabase
       .from('specialties')
       .select('name')
       .order('name')
       .then(({ data }) => {
-        if (data?.length) setSpecialties(data.map((s: { name: string }) => s.name))
-        else              setSpecialties(FALLBACK_SPECIALTIES)
+        if (data?.length) {
+          const unique = [...new Set(data.map((s: { name: string }) => s.name))]
+          setSpecialties(unique)
+        } else {
+          setSpecialties(FALLBACK_SPECIALTIES)
+        }
       }, () => setSpecialties(FALLBACK_SPECIALTIES))
   }, [])
 
@@ -59,6 +62,15 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
         .from('master_profiles')
         .update({ profession: selected })
         .eq('user_id', userId)
+
+      // Помечаем onboarding как завершённый — иначе AppLayout покажет OnboardingWizard
+      await supabase
+        .from('users')
+        .update({ onboarded: true })
+        .eq('id', userId)
+
+      // LocalStorage флаг чтобы AppLayout не показал визард в этой сессии
+      localStorage.setItem(`ezze_onboarded_${userId}`, '1')
 
       // Обновляем кнопку меню в боте + отправляем приветствие
       if (tgChatId) {
@@ -85,15 +97,25 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
           </p>
         </div>
 
-        {/* Поиск */}
+        {/* Поиск — нативный input для надёжности в TG Mini App webview */}
         <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+          <input
+            type="text"
             placeholder="Поиск..."
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="pl-9"
-            autoFocus
+            onInput={e => setSearch((e.target as HTMLInputElement).value)}
+            className={[
+              'flex h-10 w-full rounded-md border border-input bg-background',
+              'px-3 py-2 pl-9 text-sm ring-offset-background',
+              'placeholder:text-muted-foreground',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            ].join(' ')}
           />
         </div>
 
