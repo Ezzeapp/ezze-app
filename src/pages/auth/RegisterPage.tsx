@@ -69,12 +69,36 @@ export function RegisterPage() {
     if (!initData) { setTgChecking(false); return }
 
     supabase.functions.invoke('tg-auth', { body: { initData, silent: true } })
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (!error && data?.access_token) {
-          supabase.auth.setSession({
+          const { error: sessionErr } = await supabase.auth.setSession({
             access_token:  data.access_token,
             refresh_token: data.refresh_token,
-          }).then(() => navigate('/calendar', { replace: true }))
+          })
+          if (sessionErr) { setTgChecking(false); return }
+
+          // Если онбординг не завершён — показываем SpecialtyStep, а не /calendar
+          const { data: { user: sbUser } } = await supabase.auth.getUser()
+          if (sbUser?.id) {
+            const lsKey = `ezze_onboarded_${sbUser.id}`
+            const locallyDone = localStorage.getItem(lsKey) === '1'
+            if (!locallyDone) {
+              const { data: ud } = await supabase
+                .from('users').select('onboarded').eq('id', sbUser.id).maybeSingle()
+              if (!ud?.onboarded) {
+                const displayName = nameParam
+                  || getTelegramDisplayName()
+                  || (sbUser.user_metadata?.name as string)
+                  || ''
+                setRegisteredUserId(sbUser.id)
+                setRegisteredName(displayName)
+                setTgChecking(false)
+                setShowSpecialtyStep(true)
+                return
+              }
+            }
+          }
+          navigate('/calendar', { replace: true })
         } else {
           setTgChecking(false)
         }

@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Search } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -70,6 +71,15 @@ interface SpecialtyStepProps {
 
 export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepProps) {
   const navigate = useNavigate()
+  const { t, i18n } = useTranslation()
+
+  // Применяем язык из бота (если ещё не применён)
+  useEffect(() => {
+    if (lang && i18n.language !== lang) {
+      i18n.changeLanguage(lang)
+    }
+  }, [lang, i18n])
+
   const [search,      setSearch]      = useState('')
   const [specialties, setSpecialties] = useState<string[]>([])
   const [selected,    setSelected]    = useState('')
@@ -175,9 +185,9 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
 
         {/* Заголовок */}
         <div className="mb-5 pt-4">
-          <h1 className="text-xl font-bold">Выберите специальность</h1>
+          <h1 className="text-xl font-bold">{t('specialty.select')}</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Это поможет клиентам найти вас
+            {t('specialty.hint')}
           </p>
         </div>
 
@@ -186,7 +196,7 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
           <input
             type="text"
-            placeholder="Поиск..."
+            placeholder={t('specialty.search')}
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
@@ -207,7 +217,7 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
         <div className="flex-1 overflow-y-auto rounded-xl border bg-card divide-y" style={{ maxHeight: '55vh' }}>
           {filtered.length === 0 ? (
             <p className="text-center text-muted-foreground text-sm py-8">
-              Ничего не найдено
+              {t('specialty.notFound')}
             </p>
           ) : (
             filtered.map(spec => (
@@ -235,7 +245,7 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
             disabled={!selected || saving}
             onClick={handleSave}
           >
-            {saving ? <LoadingSpinner /> : 'Начать работу →'}
+            {saving ? <LoadingSpinner /> : t('onboarding.finish')}
           </Button>
         </div>
 

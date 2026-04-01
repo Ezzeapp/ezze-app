@@ -734,7 +734,8 @@
     "search": "Mutaxassislikni qidirish...",
     "all": "Barchasi",
     "notFound": "Mutaxassisliklar topilmadi",
-    "empty": "Maʼlumotnoma boʻsh. Administrator bilan bogʻlaning."
+    "empty": "Maʼlumotnoma boʻsh. Administrator bilan bogʻlaning.",
+    "hint": "Bu mijozlarga sizni topishda yordam beradi"
   },
   "admin": {
     "pageTitle": "Administrator paneli",

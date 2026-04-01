@@ -51,7 +51,8 @@ export function AppLayout() {
   )
 
   // Show onboarding if: user exists, not previously onboarded in DB, and not dismissed this session
-  const showOnboarding = !onboardingDone && user && user.onboarded !== true
+  // В TG-контексте мастер проходит SpecialtyStep через RegisterPage — полный визард не нужен
+  const showOnboarding = !onboardingDone && user && user.onboarded !== true && !inTelegram
 
   // Данные для предзаполнения визарда (телефон и язык из Telegram-регистрации)
   const [wizardPrefill] = useState<{ phone?: string; language?: string; name?: string } | undefined>(() => {

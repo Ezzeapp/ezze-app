@@ -734,7 +734,8 @@
     "search": "Мамандықты излеу...",
     "all": "Бәрі",
     "notFound": "Мамандықлар табылмады",
-    "empty": "Маълыўматнама бос. Администратормен байланысыңыз."
+    "empty": "Маълыўматнама бос. Администратормен байланысыңыз.",
+    "hint": "Bul xaridarlarga sizni tabiwga jardem beredi"
   },
   "admin": {
     "pageTitle": "Administrator paneli",

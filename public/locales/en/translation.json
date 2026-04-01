@@ -758,7 +758,8 @@
     "search": "Search specialty...",
     "all": "All",
     "notFound": "No specialties found",
-    "empty": "Directory is empty. Contact the administrator."
+    "empty": "Directory is empty. Contact the administrator.",
+    "hint": "This will help clients find you"
   },
   "admin": {
     "pageTitle": "Admin Panel",
