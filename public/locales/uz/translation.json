@@ -1117,7 +1117,8 @@
       "payme": "Payme orqali to'lash",
       "click": "Click.uz orqali to'lash",
       "notConfigured": "To'lov provayderlari sozlanmagan. Administrator bilan bog'laning.",
-      "hint": "Siz himoyalangan to'lov sahifasiga yo'naltirilasiz"
+      "hint": "Siz himoyalangan to'lov sahifasiga yo'naltirilasiz",
+      "upgradeWarning": "Joriy obunaning qolgan kunlari qaytarishsiz bekor qilinadi"
     },
     "history": {
       "title": "To'lov tarixi"

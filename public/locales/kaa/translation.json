@@ -1117,7 +1117,8 @@
       "payme": "Payme arqalı tólaw",
       "click": "Click.uz arqalı tólaw",
       "notConfigured": "Tólem provayderları sazlanbaǵan. Administratorǵa xabarlasıń.",
-      "hint": "Siz qorǵalǵan tólem betine jiberilesiź"
+      "hint": "Siz qorǵalǵan tólem betine jiberilesiź",
+      "upgradeWarning": "Járamlı obunańızdıń qalǵan kúnleri qaytarıwsız bekor etiledi"
     },
     "history": {
       "title": "Tólem tarixi"

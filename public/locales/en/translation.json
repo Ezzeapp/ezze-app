@@ -1145,7 +1145,8 @@
       "payme": "Pay via Payme",
       "click": "Pay via Click.uz",
       "notConfigured": "Payment providers not configured. Contact administrator.",
-      "hint": "You will be redirected to a secure payment page"
+      "hint": "You will be redirected to a secure payment page",
+      "upgradeWarning": "Remaining days of your current subscription will be cancelled without refund"
     },
     "history": {
       "title": "Payment history"

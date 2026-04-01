@@ -182,6 +182,14 @@ function PaymentDialog({ plan, onClose }: PaymentDialogProps) {
                 </p>
               )}
 
+              {/* Предупреждение при апгрейде с платного плана */}
+              {user?.plan && user.plan !== 'free' && user.plan !== plan && (
+                <p className="text-xs text-amber-600 dark:text-amber-500 text-center bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2">
+                  {t('billing.payDialog.upgradeWarning',
+                    'Оставшиеся дни текущей подписки аннулируются без возврата средств')}
+                </p>
+              )}
+
               <p className="text-xs text-muted-foreground text-center">
                 {t('billing.payDialog.hint')}
               </p>
