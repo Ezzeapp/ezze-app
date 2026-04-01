@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Zap } from 'lucide-react'
@@ -33,6 +33,10 @@ export function RegisterPage() {
   const [showSpecialtyStep, setShowSpecialtyStep] = useState(false)
   const [registeredUserId,  setRegisteredUserId]  = useState('')
   const [registeredName,    setRegisteredName]    = useState('')
+
+  // Флаг: tgChecking useEffect уже обработал пользователя (показал SpecialtyStep)
+  // Предотвращает запуск авто-регистрации когда tgChecking → false
+  const tgPreHandled = useRef(false)
 
   const isTg   = isTelegramMiniApp()
   const tgUser = isTg ? getTelegramUser() : null
@@ -90,6 +94,7 @@ export function RegisterPage() {
                   || getTelegramDisplayName()
                   || (sbUser.user_metadata?.name as string)
                   || ''
+                tgPreHandled.current = true   // блокируем авто-регистрацию
                 setRegisteredUserId(sbUser.id)
                 setRegisteredName(displayName)
                 setTgChecking(false)
@@ -136,7 +141,8 @@ export function RegisterPage() {
   const [tgRegError,      setTgRegError]      = useState(false)
 
   useEffect(() => {
-    if (tgChecking || !isTg || !tgId) return
+    // tgPreHandled.current = true означает что tgChecking useEffect уже показал SpecialtyStep
+    if (tgChecking || !isTg || !tgId || tgPreHandled.current) return
 
     const rawName = nameParam || getTelegramDisplayName() || tgUser?.username || ''
     const name    = rawName.trim().length >= 2 ? rawName.trim() : (tgUser?.username || 'Новый пользователь')
