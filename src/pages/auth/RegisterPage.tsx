@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from '@/components/shared/Toaster'
 import { useAppSettings } from '@/hooks/useAppSettings'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
+import { TelegramSplash } from '@/components/shared/TelegramSplash'
 import { supabase } from '@/lib/supabase'
 import {
   isTelegramMiniApp,
@@ -227,8 +228,8 @@ export function RegisterPage() {
     )
   }
 
-  // ── Проверка / авто-регистрация — спиннер ────────────────────────────────
-  if (tgChecking || autoRegistering) return <LoadingSpinner fullScreen />
+  // ── Проверка / авто-регистрация — брендовый сплэш ───────────────────────
+  if (tgChecking || autoRegistering) return <TelegramSplash />
 
   // ── Выбор специальности (только TG, после авто-регистрации) ──────────────
   if (showSpecialtyStep && tgId) {
@@ -255,7 +256,7 @@ export function RegisterPage() {
       </div>
     )
   }
-  if (isTg) return <LoadingSpinner fullScreen />
+  if (isTg) return <TelegramSplash />
 
   // ── Браузер: направляем в Telegram бот ───────────────────────────────────
   return (

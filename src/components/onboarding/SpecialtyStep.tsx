@@ -110,10 +110,25 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
     if (!selected || saving) return
     setSaving(true)
     try {
-      // 1. Сохраняем специальность в master_profiles (upsert — на случай если запись не создалась)
+      // 1. Получаем текущий профиль — чтобы не перезаписать уже выданный booking_slug
+      const { data: existingProfile } = await supabase
+        .from('master_profiles')
+        .select('booking_slug')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      // Генерируем slug только если его ещё нет
+      const slugBase = (name || 'master').trim().toLowerCase().replace(/[^a-z0-9]/g, '') || 'master'
+      const booking_slug = existingProfile?.booking_slug
+        || `${slugBase}${Math.random().toString(36).slice(2, 7)}`
+
+      // Сохраняем специальность + slug + is_public в master_profiles
       await supabase
         .from('master_profiles')
-        .upsert({ user_id: userId, profession: selected }, { onConflict: 'user_id' })
+        .upsert(
+          { user_id: userId, profession: selected, booking_slug, is_public: true },
+          { onConflict: 'user_id' },
+        )
 
       // 2. Помечаем onboarding как завершённый
       await supabase

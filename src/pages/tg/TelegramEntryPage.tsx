@@ -8,7 +8,7 @@ import {
   getTelegramUserId,
   getTelegramStartParam,
 } from '@/lib/telegramWebApp'
-import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
+import { TelegramSplash } from '@/components/shared/TelegramSplash'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -106,7 +106,7 @@ export function TelegramEntryPage() {
     )
   }
 
-  return <LoadingSpinner fullScreen />
+  return <TelegramSplash />
 }
 
 /**
