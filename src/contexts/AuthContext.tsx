@@ -11,6 +11,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string, name: string) => Promise<void>
   logout: () => void
+  refetchUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -155,6 +156,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }, [])
 
+  const refetchUser = useCallback(async () => {
+    const { data: { session: s } } = await supabase.auth.getSession()
+    if (s?.user) {
+      const appUser = await fetchAppUser(s.user.id)
+      if (appUser) setUser(appUser)
+    }
+  }, [])
+
   const value = useMemo(() => ({
     user,
     session,
@@ -163,7 +172,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     register,
     logout,
-  }), [user, session, isLoading, login, register, logout])
+    refetchUser,
+  }), [user, session, isLoading, login, register, logout, refetchUser])
 
   return (
     <AuthContext.Provider value={value}>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Check, Zap, Crown, Building2, CreditCard, ExternalLink, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import dayjs from 'dayjs'
@@ -42,11 +42,50 @@ interface PaymentDialogProps {
 
 function PaymentDialog({ plan, onClose }: PaymentDialogProps) {
   const { t, i18n } = useTranslation()
-  const { user }              = useAuth()
-  const { data: settings }    = useAppSettings()
-  const { data: planPrices }  = usePlanPrices()
-  const { data: profile }     = useProfile()
-  const [clickLoading, setClickLoading] = useState(false)
+  const { user, refetchUser }  = useAuth()
+  const { data: settings }     = useAppSettings()
+  const { data: planPrices }   = usePlanPrices()
+  const { data: profile }      = useProfile()
+  const [clickLoading, setClickLoading]   = useState(false)
+  const [waitingPayment, setWaitingPayment] = useState(false)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const targetPlan = useRef<string | null>(null)
+
+  // Когда план пользователя изменился — платёж прошёл
+  useEffect(() => {
+    if (waitingPayment && user?.plan === targetPlan.current) {
+      clearInterval(pollingRef.current!)
+      pollingRef.current = null
+      setWaitingPayment(false)
+      toast.success(t('billing.paySuccess', 'Тариф успешно активирован!'))
+      onClose()
+    }
+  }, [user?.plan, waitingPayment, onClose, t])
+
+  // Очищаем интервал при размонтировании
+  useEffect(() => () => { if (pollingRef.current) clearInterval(pollingRef.current) }, [])
+
+  const startPolling = (expectedPlan: string) => {
+    targetPlan.current = expectedPlan
+    setWaitingPayment(true)
+    // Слушаем фокус вкладки — пользователь вернулся после оплаты
+    const onFocus = () => refetchUser()
+    window.addEventListener('focus', onFocus, { once: false })
+    // Дополнительный polling каждые 4 сек, до 5 минут
+    let attempts = 0
+    pollingRef.current = setInterval(async () => {
+      attempts++
+      await refetchUser()
+      if (attempts >= 75) { // 75 × 4s = 5 min
+        clearInterval(pollingRef.current!)
+        pollingRef.current = null
+        setWaitingPayment(false)
+        window.removeEventListener('focus', onFocus)
+      }
+    }, 4000)
+    // Убираем listener при закрытии
+    return () => window.removeEventListener('focus', onFocus)
+  }
 
   if (!plan || plan === 'free') return null
 
@@ -58,6 +97,7 @@ function PaymentDialog({ plan, onClose }: PaymentDialogProps) {
     if (!settings?.payme_merchant_id || !user?.id) return
     const url = buildPaymeUrl(settings.payme_merchant_id, user.id, plan, priceUZS, i18n.language)
     window.open(url, '_blank')
+    startPolling(plan)
   }
 
   const handleClick = async () => {
@@ -75,10 +115,10 @@ function PaymentDialog({ plan, onClose }: PaymentDialogProps) {
       // Fallback to legacy URL on any error
       const url = buildClickUrl(settings.click_service_id, settings.click_merchant_id, user.id, plan, priceUZS)
       window.open(url, '_blank')
-      toast.error(t('common.error'))
     } finally {
       setClickLoading(false)
     }
+    startPolling(plan)
   }
 
   return (
@@ -95,40 +135,58 @@ function PaymentDialog({ plan, onClose }: PaymentDialogProps) {
         </DialogHeader>
 
         <div className="space-y-3 pt-2">
-          {providers.includes('payme') && settings?.payme_merchant_id && (
-            <Button
-              className="w-full gap-2"
-              onClick={handlePayme}
-            >
-              <ExternalLink className="h-4 w-4" />
-              {t('billing.payDialog.payme')}
-            </Button>
-          )}
+          {/* Состояние ожидания подтверждения платежа */}
+          {waitingPayment ? (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm font-medium text-center">
+                {t('billing.payDialog.waiting', 'Ожидаем подтверждение оплаты...')}
+              </p>
+              <p className="text-xs text-muted-foreground text-center">
+                {t('billing.payDialog.waitingHint', 'Вернитесь на эту страницу после оплаты')}
+              </p>
+              <Button variant="outline" size="sm" onClick={() => refetchUser()}>
+                {t('billing.payDialog.checkNow', 'Проверить сейчас')}
+              </Button>
+            </div>
+          ) : (
+            <>
+              {providers.includes('payme') && settings?.payme_merchant_id && (
+                <Button
+                  className="w-full gap-2"
+                  onClick={handlePayme}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  {t('billing.payDialog.payme')}
+                </Button>
+              )}
 
-          {providers.includes('click') && settings?.click_service_id && (
-            <Button
-              variant="outline"
-              className="w-full gap-2"
-              onClick={handleClick}
-              disabled={clickLoading}
-            >
-              {clickLoading
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <ExternalLink className="h-4 w-4" />
-              }
-              {t('billing.payDialog.click')}
-            </Button>
-          )}
+              {providers.includes('click') && settings?.click_service_id && (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={handleClick}
+                  disabled={clickLoading}
+                >
+                  {clickLoading
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <ExternalLink className="h-4 w-4" />
+                  }
+                  {t('billing.payDialog.click')}
+                </Button>
+              )}
 
-          {providers.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              {t('billing.payDialog.notConfigured')}
-            </p>
-          )}
+              {providers.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  {t('billing.payDialog.notConfigured')}
+                </p>
+              )}
 
-          <p className="text-xs text-muted-foreground text-center">
-            {t('billing.payDialog.hint')}
-          </p>
+              <p className="text-xs text-muted-foreground text-center">
+                {t('billing.payDialog.hint')}
+              </p>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
