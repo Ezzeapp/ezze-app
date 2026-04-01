@@ -153,6 +153,20 @@ async function doTgAuth(
         refresh_token: data.refresh_token,
       })
       if (!sessionError) {
+        // Если мастер ещё не завершил онбординг — отправляем в /register (там покажется SpecialtyStep)
+        const { data: { user: sbUser } } = await supabase.auth.getUser()
+        if (sbUser?.id) {
+          const lsKey = `ezze_onboarded_${sbUser.id}`
+          const locallyDone = localStorage.getItem(lsKey) === '1'
+          if (!locallyDone) {
+            const { data: ud } = await supabase
+              .from('users').select('onboarded').eq('id', sbUser.id).maybeSingle()
+            if (!ud?.onboarded) {
+              navigate('/register', { replace: true })
+              return
+            }
+          }
+        }
         navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard', { replace: true })
         return
       }
