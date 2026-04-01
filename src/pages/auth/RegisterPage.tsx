@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Zap, Search, Phone, Globe } from 'lucide-react'
+import { Zap, Search, Phone, Globe, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/shared/Toaster'
@@ -183,12 +183,27 @@ export function RegisterPage() {
   const [contactRequested, setContactRequested] = useState(false)
 
   const requestTgContact = useCallback(() => {
-    if (!window.Telegram?.WebApp?.requestContact) return
+    const wa = window.Telegram?.WebApp
+    if (!wa) return
     setContactRequested(true)
-    window.Telegram.WebApp.requestContact((shared, response) => {
+
+    // Bot API 7.2+ — event-based
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleContactEvent: () => void = (data?: any) => {
+      ;(wa.offEvent as any)?.('contactRequested', handleContactEvent)
       setContactRequested(false)
-      if (shared && response?.contact?.phone_number) {
-        setFormPhone(response.contact.phone_number)
+      if (data?.status === 'sent' && data?.contact?.phone_number) {
+        setFormPhone(data.contact.phone_number)
+      }
+    }
+    wa.onEvent?.('contactRequested', handleContactEvent)
+
+    // Fallback: callback-based (older clients)
+    wa.requestContact?.((shared: boolean, res: any) => {
+      ;(wa.offEvent as any)?.('contactRequested', handleContactEvent)
+      setContactRequested(false)
+      if (shared && res?.contact?.phone_number) {
+        setFormPhone(res.contact.phone_number)
       }
     })
   }, [])
@@ -330,12 +345,12 @@ export function RegisterPage() {
           </div>
 
           {/* Имя */}
-          <label className="text-sm font-medium mb-1">{t('profile.name')}</label>
+          <label className="text-sm font-medium mb-1">{t('auth.name')}</label>
           <input
             type="text"
             value={formName}
             onChange={e => setFormName(e.target.value)}
-            placeholder={t('profile.name')}
+            placeholder={t('auth.namePlaceholder')}
             autoComplete="name"
             className={[
               'flex h-10 w-full rounded-md border border-input bg-background',
@@ -362,7 +377,7 @@ export function RegisterPage() {
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               ].join(' ')}
             />
-            {window.Telegram?.WebApp?.requestContact && (
+            {window.Telegram?.WebApp && (
               <Button
                 type="button"
                 variant="outline"
@@ -370,7 +385,7 @@ export function RegisterPage() {
                 className="h-10 w-10 shrink-0"
                 disabled={contactRequested}
                 onClick={requestTgContact}
-                title={t('profile.sharePhone')}
+                title="Поделиться номером"
               >
                 <Phone className="h-4 w-4" />
               </Button>
@@ -381,19 +396,32 @@ export function RegisterPage() {
           <label className="text-sm font-medium mb-1">{t('specialty.select')}</label>
           <p className="text-muted-foreground text-xs mb-2">{t('specialty.hint')}</p>
 
+          {/* Выбранная специальность */}
+          {formSpecialty && !specSearch && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 mb-2">
+              <span className="text-sm font-medium text-primary flex-1">{formSpecialty}</span>
+              <button
+                type="button"
+                onClick={() => setFormSpecialty('')}
+                className="text-primary/60 hover:text-primary transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
           {/* Поиск */}
-          <div className="relative mb-2">
+          <div className="relative mb-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
             <input
               type="text"
-              placeholder={t('specialty.search')}
+              placeholder={formSpecialty ? t('specialty.search') : t('specialty.search')}
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
               spellCheck={false}
               value={specSearch}
               onChange={e => setSpecSearch(e.target.value)}
-              onInput={e => setSpecSearch((e.target as HTMLInputElement).value)}
               className={[
                 'flex h-10 w-full rounded-md border border-input bg-background',
                 'px-3 py-2 pl-9 text-sm ring-offset-background',
@@ -403,29 +431,31 @@ export function RegisterPage() {
             />
           </div>
 
-          {/* Список специальностей */}
-          <div className="flex-1 overflow-y-auto rounded-xl border bg-card divide-y" style={{ maxHeight: '40vh' }}>
-            {filtered.length === 0 ? (
-              <p className="text-center text-muted-foreground text-sm py-6">
-                {t('specialty.notFound')}
-              </p>
-            ) : (
-              filtered.map(spec => (
-                <button
-                  key={spec}
-                  onClick={() => setFormSpecialty(spec)}
-                  className={[
-                    'w-full text-left px-4 py-2.5 text-sm transition-colors',
-                    formSpecialty === spec
-                      ? 'bg-primary text-primary-foreground font-medium'
-                      : 'hover:bg-muted',
-                  ].join(' ')}
-                >
-                  {spec}
-                </button>
-              ))
-            )}
-          </div>
+          {/* Выпадающий список — только при вводе */}
+          {specSearch.length > 0 && (
+            <div className="overflow-y-auto rounded-xl border bg-card divide-y shadow-lg mb-2" style={{ maxHeight: '40vh' }}>
+              {filtered.length === 0 ? (
+                <p className="text-center text-muted-foreground text-sm py-6">
+                  {t('specialty.notFound')}
+                </p>
+              ) : (
+                filtered.map(spec => (
+                  <button
+                    key={spec}
+                    onClick={() => { setFormSpecialty(spec); setSpecSearch('') }}
+                    className={[
+                      'w-full text-left px-4 py-2.5 text-sm transition-colors',
+                      formSpecialty === spec
+                        ? 'bg-primary text-primary-foreground font-medium'
+                        : 'hover:bg-muted',
+                    ].join(' ')}
+                  >
+                    {spec}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
 
           {/* Кнопка */}
           <div className="mt-4 pb-safe-bottom pb-4">
