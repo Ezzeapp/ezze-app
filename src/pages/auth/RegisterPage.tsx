@@ -184,28 +184,44 @@ export function RegisterPage() {
 
   const requestTgContact = useCallback(() => {
     const wa = window.Telegram?.WebApp
-    if (!wa) return
+    if (!wa?.requestContact) return
     setContactRequested(true)
 
-    // Bot API 7.2+ — event-based
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleContactEvent: () => void = (data?: any) => {
+      clearTimeout(timer)
       ;(wa.offEvent as any)?.('contactRequested', handleContactEvent)
       setContactRequested(false)
       if (data?.status === 'sent' && data?.contact?.phone_number) {
         setFormPhone(data.contact.phone_number)
       }
     }
+
+    // Таймаут-сброс — Desktop и старые клиенты могут проигнорировать запрос
+    const timer = setTimeout(() => {
+      ;(wa.offEvent as any)?.('contactRequested', handleContactEvent)
+      setContactRequested(false)
+    }, 12000)
+
+    // Bot API 7.2+ — event-based (приоритет)
     wa.onEvent?.('contactRequested', handleContactEvent)
 
-    // Fallback: callback-based (older clients)
-    wa.requestContact?.((shared: boolean, res: any) => {
+    // Callback-based — старые клиенты
+    const ok = wa.requestContact((shared: boolean, res: any) => {
+      clearTimeout(timer)
       ;(wa.offEvent as any)?.('contactRequested', handleContactEvent)
       setContactRequested(false)
       if (shared && res?.contact?.phone_number) {
         setFormPhone(res.contact.phone_number)
       }
     })
+
+    // requestContact вернул false — платформа не поддерживает (Desktop/Web)
+    if (ok === false) {
+      clearTimeout(timer)
+      ;(wa.offEvent as any)?.('contactRequested', handleContactEvent)
+      setContactRequested(false)
+    }
   }, [])
 
   // ── Фильтрация специальностей ─────────────────────────────────────────────
