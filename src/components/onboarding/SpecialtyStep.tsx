@@ -110,11 +110,10 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
     if (!selected || saving) return
     setSaving(true)
     try {
-      // 1. Сохраняем специальность в master_profiles
+      // 1. Сохраняем специальность в master_profiles (upsert — на случай если запись не создалась)
       await supabase
         .from('master_profiles')
-        .update({ profession: selected })
-        .eq('user_id', userId)
+        .upsert({ user_id: userId, profession: selected }, { onConflict: 'user_id' })
 
       // 2. Помечаем onboarding как завершённый
       await supabase

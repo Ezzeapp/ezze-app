@@ -379,9 +379,12 @@ async function processUpdate(update) {
       const profile = (profiles || []).find(p => {
         if (!p.phone) return false;
         const stored = normalizePhone(p.phone);
-        return stored === phoneDigits
-          || stored.endsWith(phoneDigits)
-          || phoneDigits.endsWith(stored);
+        if (stored === phoneDigits) return true;
+        // Сравниваем последние 10 цифр (страновой код может отличаться)
+        if (stored.length >= 10 && phoneDigits.length >= 10) {
+          return stored.slice(-10) === phoneDigits.slice(-10);
+        }
+        return false;
       });
 
       pendingMasters.delete(chatId);
@@ -433,9 +436,12 @@ async function processUpdate(update) {
     const profile = (profiles || []).find(p => {
       if (!p.phone) return false;
       const stored = normalizePhone(p.phone);
-      return stored === phoneDigits
-        || stored.endsWith(phoneDigits)
-        || phoneDigits.endsWith(stored);
+      if (stored === phoneDigits) return true;
+      // Сравниваем последние 10 цифр (страновой код может отличаться)
+      if (stored.length >= 10 && phoneDigits.length >= 10) {
+        return stored.slice(-10) === phoneDigits.slice(-10);
+      }
+      return false;
     });
 
     pendingMasters.delete(chatId);
@@ -514,11 +520,25 @@ async function processUpdate(update) {
         }
         await sendMasterMenu(chatId, firstName, masterProfile);
       } else {
-        // Не найден — показываем выбор языка (шаг 1 онбординга)
-        await bot.setUserMenuButton(chatId); // сброс к default
-        pendingMasters.set(chatId, sessionEntry({ step: "waiting_language" }));
-        savePendingSessions();
-        await sendLangSelection(chatId, firstName);
+        // Не найден — проверяем, вдруг мастер уже прошёл шаги но не завершил регистрацию
+        const existingSession = pendingMasters.get(chatId);
+        if (existingSession?.step === "pending_web_registration") {
+          // Мастер ввёл имя, получил кнопку, но мини-апп не открыл/закрыл до конца
+          // Восстанавливаем кнопку меню с URL регистрации (не сбрасываем сессию)
+          const lang = existingSession.lang || "ru";
+          const s = LANG_STRINGS[lang];
+          const cfg = await loadTgConfig();
+          const menuBtnLabel = cfg.master_label || s.registerBtn;
+          const regUrl = `${APP_URL}/register?lang=${lang}&phone=${encodeURIComponent(existingSession.phone || "")}`;
+          await bot.setUserMenuButton(chatId, menuBtnLabel, regUrl);
+          await bot.sendMessage(chatId, s.successReg(escapeHtml(firstName)));
+        } else {
+          // Совсем новый — показываем выбор языка (шаг 1 онбординга)
+          await bot.setUserMenuButton(chatId); // сброс к default
+          pendingMasters.set(chatId, sessionEntry({ step: "waiting_language" }));
+          savePendingSessions();
+          await sendLangSelection(chatId, firstName);
+        }
       }
       return;
     }
