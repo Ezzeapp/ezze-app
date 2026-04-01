@@ -109,6 +109,7 @@ export function RegisterPage() {
 
   // ── Авто-регистрация через Telegram (без формы) ───────────────────────────
   const [autoRegistering, setAutoRegistering] = useState(false)
+  const [tgRegError,      setTgRegError]      = useState(false)
 
   useEffect(() => {
     if (tgChecking || !isTg || !tgId) return
@@ -168,6 +169,7 @@ export function RegisterPage() {
         }
 
         if (!alreadyExists) toast.error('Ошибка регистрации')
+        if (isTg) setTgRegError(true)
         setAutoRegistering(false)
       } finally {
         setLoading(false)
@@ -210,7 +212,19 @@ export function RegisterPage() {
     )
   }
 
-  // ── В Telegram-контексте без showSpecialtyStep — спиннер ──────────────────
+  // ── В Telegram-контексте без showSpecialtyStep — спиннер или ошибка ────────
+  if (isTg && tgRegError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 gap-4 text-center">
+        <p className="text-sm text-muted-foreground">
+          Произошла ошибка при регистрации. Закройте это окно и попробуйте снова.
+        </p>
+        <Button variant="outline" onClick={() => window.Telegram?.WebApp?.close?.()}>
+          Закрыть
+        </Button>
+      </div>
+    )
+  }
   if (isTg) return <LoadingSpinner fullScreen />
 
   // ── Браузер: направляем в Telegram бот ───────────────────────────────────

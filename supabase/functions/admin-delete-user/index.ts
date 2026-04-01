@@ -152,6 +152,24 @@ Deno.serve(async (req: Request) => {
   const tgChatId: string | null = masterProfileSnap?.tg_chat_id ?? null
   const masterPhone: string = masterProfileSnap?.phone ?? ''
 
+  // Pre-step B: find TG auth user ID (tg_{chatId}@ezze.site) BEFORE any deletions.
+  // Step 11b must use this pre-captured ID — public.users is deleted in Step 10.
+  let tgAuthUserId: string | null = null
+  if (tgChatId && tgChatId !== userId) {
+    // Only if the TG user is a separate account (not the main account itself)
+    try {
+      const tgEmail = `tg_${tgChatId}@ezze.site`
+      const { data: tgUserRow } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('email', tgEmail)
+        .maybeSingle()
+      if (tgUserRow?.id && tgUserRow.id !== userId) {
+        tgAuthUserId = tgUserRow.id
+      }
+    } catch (_) { /* non-critical */ }
+  }
+
   const botToken   = Deno.env.get('TG_BOT_TOKEN') ?? ''
   const appUrl     = Deno.env.get('APP_URL') ?? 'https://ezze.site'
 
@@ -206,20 +224,12 @@ Deno.serve(async (req: Request) => {
       console.error('[admin-delete-user] auth.admin.deleteUser error:', deleteAuthError.message)
     }
 
-    // ── Step 11b: Delete TG auth user (tg_{chatId}@ezze.site) if exists ──────
-    // Ищем через public.users (быстро, без listUsers на все аккаунты)
-    if (tgChatId) {
+    // ── Step 11b: Delete separate TG auth user if exists ───────────────────────
+    // Uses pre-captured tgAuthUserId (from Pre-step B, before public.users deletion).
+    if (tgAuthUserId) {
       try {
-        const tgEmail = `tg_${tgChatId}@ezze.site`
-        const { data: tgPublicUser } = await supabaseAdmin
-          .from('users')
-          .select('id')
-          .eq('email', tgEmail)
-          .maybeSingle()
-        if (tgPublicUser?.id) {
-          await supabaseAdmin.auth.admin.deleteUser(tgPublicUser.id)
-          console.log(`[admin-delete-user] deleted TG auth user: ${tgEmail}`)
-        }
+        await supabaseAdmin.auth.admin.deleteUser(tgAuthUserId)
+        console.log(`[admin-delete-user] deleted TG auth user id=${tgAuthUserId}`)
       } catch (e) {
         console.error('[admin-delete-user] TG auth user delete error:', String(e))
       }

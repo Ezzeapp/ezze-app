@@ -96,9 +96,12 @@ Deno.serve(async (req: Request) => {
 
   // 1. Parse body
   let initData = ''
+  let silent = false
   try {
     const body = await req.json()
     initData = String(body?.initData || '')
+    // silent=true: skip TG notification on 404 (user is about to register)
+    silent = Boolean(body?.silent)
   } catch (_) {
     return new Response(JSON.stringify({ message: 'initData required' }), {
       status: 400,
@@ -216,7 +219,7 @@ Deno.serve(async (req: Request) => {
 
   // 6. Not found — send TG message and return 404
   if (!userId) {
-    if (botToken) {
+    if (botToken && !silent) {
       await sendTelegramMessage(
         botToken,
         tgId,
