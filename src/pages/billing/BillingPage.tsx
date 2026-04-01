@@ -344,10 +344,9 @@ function PlanCard({ plan, currentPlan, onUpgrade }: PlanCardProps) {
         <Button
           variant={isCurrent ? 'outline' : 'default'}
           className="w-full"
-          disabled={isCurrent}
           onClick={() => onUpgrade(plan.id)}
         >
-          {isCurrent ? t('billing.activated') : t('billing.upgrade')}
+          {isCurrent ? t('billing.renew', 'Продлить') : t('billing.upgrade')}
         </Button>
       )}
     </div>

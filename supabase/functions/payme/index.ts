@@ -270,6 +270,14 @@ async function handlePerformTransaction(id: unknown, params: Record<string, unkn
     return jsonErr(id, ERR.INTERNAL, 'DB error')
   }
 
+  // Отменяем предыдущие активные подписки (апгрейд / продление)
+  await supabaseAdmin
+    .from('subscriptions')
+    .update({ status: 'expired', expires_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .neq('id', rec.id)
+
   await upgradePlan(userId, plan)
 
   return jsonResp(id, {
@@ -296,9 +304,19 @@ async function handleCancelTransaction(id: unknown, params: Record<string, unkno
     newState = TX_STATE_CANCELLED
   } else if (state === TX_STATE_COMPLETED) {
     newState = TX_STATE_CANCELLED_AFTER
-    // Downgrade user plan back to free
+    // Умный даунгрейд: если есть другая активная подписка — остаёмся на её плане
     try {
-      await supabaseAdmin.from('users').update({ plan: 'free' }).eq('id', rec.user_id)
+      const { data: otherSub } = await supabaseAdmin
+        .from('subscriptions')
+        .select('plan')
+        .eq('user_id', rec.user_id)
+        .eq('status', 'active')
+        .neq('id', rec.id)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .maybeSingle()
+      const downgradeTo = otherSub?.plan ?? 'free'
+      await supabaseAdmin.from('users').update({ plan: downgradeTo }).eq('id', rec.user_id)
     } catch (e) {
       console.error('[payme] CancelTransaction downgrade error:', e)
     }

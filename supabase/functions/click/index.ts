@@ -508,6 +508,14 @@ async function handleComplete(params: Record<string, string>): Promise<Response>
     return clickResp(CLICK_ERR_INTERNAL, 'DB error')
   }
 
+  // Отменяем предыдущие активные подписки (апгрейд / продление)
+  await supabaseAdmin
+    .from('subscriptions')
+    .update({ status: 'expired', expires_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .neq('id', rec.id)
+
   // Обновляем план пользователя с повторной попыткой при ошибке
   const doUpgradePlan = async () => {
     const { error: planErr } = await supabaseAdmin.from('users').update({ plan }).eq('id', userId)

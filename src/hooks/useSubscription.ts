@@ -18,6 +18,7 @@ export function useMySubscription() {
         .select('*')
         .eq('user_id', user!.id)
         .eq('status', 'active')
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
         .order('created_at', { ascending: false })
         .maybeSingle()
       return (data as Subscription | null) ?? null

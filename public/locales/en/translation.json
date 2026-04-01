@@ -1110,6 +1110,7 @@
     "expiresAt": "Active until {{date}}",
     "current": "Current",
     "activated": "Activated",
+    "renew": "Renew",
     "upgrade": "Upgrade to this plan",
     "free": "Free",
     "perMonth": "mo",

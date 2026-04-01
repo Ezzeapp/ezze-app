@@ -1082,6 +1082,7 @@
     "expiresAt": "{{date}} gacha amal qiladi",
     "current": "Joriy",
     "activated": "Faollashtirilgan",
+    "renew": "Yangilash",
     "upgrade": "Ushbu rejaga o'tish",
     "free": "Bepul",
     "perMonth": "oy",
