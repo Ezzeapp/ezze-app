@@ -564,7 +564,9 @@ async function processUpdate(update) {
         savePendingSessions();
 
         // Кнопка меню → страница регистрации с предзаполненными данными
-        await bot.setUserMenuButton(chatId, s.registerBtn, regUrl);
+        const cfg = await loadTgConfig();
+        const menuBtnLabel = cfg.master_label || s.registerBtn;
+        await bot.setUserMenuButton(chatId, menuBtnLabel, regUrl);
 
         // Текстовое сообщение — без inline-кнопки, направляем к кнопке меню
         await bot.sendMessage(chatId, s.successReg(escapeHtml(name)));
