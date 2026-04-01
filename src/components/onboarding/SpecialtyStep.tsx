@@ -1,8 +1,7 @@
 /**
  * SpecialtyStep — экран выбора специальности после TG авто-регистрации.
- * Заменяет полный OnboardingWizard: показывает только поиск + список специальностей.
- * После выбора: сохраняет profession в master_profiles, ставит onboarded=true в users,
- * обновляет TG кнопку меню, отправляет приветственное сообщение и редиректит в /calendar.
+ * Backward compat: для пользователей, начавших старый поток и не завершивших онбординг.
+ * Новые пользователи проходят через единую форму в RegisterPage.
  */
 
 import { useState, useEffect, useMemo } from 'react'
@@ -12,55 +11,12 @@ import { Search } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
-
-// Маппинг специальностей на категории global_services / global_products
-const SPECIALTY_TO_CATEGORY: Record<string, string> = {
-  // Волосы
-  'Парикмахер':                        'Волосы',
-  'Барбер':                            'Волосы',
-  'Стилист':                           'Волосы',
-  'Стилист-парикмахер':                'Волосы',
-  'Мастер по окрашиванию':             'Волосы',
-  'Мастер по наращиванию волос':       'Волосы',
-  'Трихолог':                          'Волосы',
-  // Ногти
-  'Мастер ногтей':                     'Ногти',
-  'Маникюрист':                        'Ногти',
-  'Педикюрист':                        'Ногти',
-  'Нейл-мастер':                       'Ногти',
-  'Мастер маникюра и педикюра':        'Ногти',
-  'Нейл-арт мастер':                   'Ногти',
-  // Косметология
-  'Косметолог':                        'Косметология',
-  'Косметолог-эстетист':               'Косметология',
-  'Дерматолог-косметолог':             'Косметология',
-  'Специалист по уходу за лицом':      'Косметология',
-  // Брови и ресницы
-  'Бровист':                           'Брови и ресницы',
-  'Лэшмейкер':                         'Брови и ресницы',
-  'Визажист':                          'Брови и ресницы',
-  'Мастер по бровям и ресницам':       'Брови и ресницы',
-  'Мастер по наращиванию ресниц':      'Брови и ресницы',
-  // Массаж
-  'Массажист':                         'Массаж',
-  'Массажист-реабилитолог':            'Массаж',
-  'SPA-мастер':                        'Массаж',
-  // Перманентный макияж
-  'Мастер перманентного макияжа':      'Перманентный макияж',
-  'Татуажист':                         'Перманентный макияж',
-  'PMU-мастер':                        'Перманентный макияж',
-  // Эпиляция
-  'Специалист по депиляции':           'Эпиляция',
-  'Мастер эпиляции':                   'Эпиляция',
-  'Мастер шугаринга':                  'Эпиляция',
-  'Шугаринг-мастер':                   'Эпиляция',
-}
-
-const FALLBACK_SPECIALTIES = [
-  'Парикмахер', 'Косметолог', 'Мастер ногтей', 'Массажист',
-  'Визажист', 'Бровист', 'Лэшмейкер', 'Барбер', 'Стилист',
-  'Маникюрист', 'Педикюрист', 'Нутрициолог', 'Другое',
-]
+import {
+  FALLBACK_SPECIALTIES,
+  autoImportServices,
+  completeOnboarding,
+  saveProfession,
+} from '@/lib/onboarding-utils'
 
 interface SpecialtyStepProps {
   userId:   string
@@ -73,7 +29,6 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
 
-  // Применяем язык из бота (если ещё не применён)
   useEffect(() => {
     if (lang && i18n.language !== lang) {
       i18n.changeLanguage(lang)
@@ -85,7 +40,6 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
   const [selected,    setSelected]    = useState('')
   const [saving,      setSaving]      = useState(false)
 
-  // Загружаем специальности из БД (дедупликация на случай дублей)
   useEffect(() => {
     supabase
       .from('specialties')
@@ -110,83 +64,9 @@ export function SpecialtyStep({ userId, tgChatId, name, lang }: SpecialtyStepPro
     if (!selected || saving) return
     setSaving(true)
     try {
-      // 1. Получаем текущий профиль — чтобы не перезаписать уже выданный booking_slug
-      const { data: existingProfile } = await supabase
-        .from('master_profiles')
-        .select('booking_slug')
-        .eq('user_id', userId)
-        .maybeSingle()
-
-      // Генерируем slug только если его ещё нет
-      const slugBase = (name || 'master').trim().toLowerCase().replace(/[^a-z0-9]/g, '') || 'master'
-      const booking_slug = existingProfile?.booking_slug
-        || `${slugBase}${Math.random().toString(36).slice(2, 7)}`
-
-      // Сохраняем специальность + slug + is_public в master_profiles
-      await supabase
-        .from('master_profiles')
-        .upsert(
-          { user_id: userId, profession: selected, booking_slug, is_public: true },
-          { onConflict: 'user_id' },
-        )
-
-      // 2. Помечаем onboarding как завершённый
-      await supabase
-        .from('users')
-        .update({ onboarded: true })
-        .eq('id', userId)
-
-      localStorage.setItem(`ezze_onboarded_${userId}`, '1')
-
-      // 3. Авто-импорт услуг и товаров из global_* по категории специальности
-      const globalCategory = SPECIALTY_TO_CATEGORY[selected]
-      if (globalCategory && userId) {
-        const [{ data: svcTemplates }, { data: prodTemplates }] = await Promise.all([
-          supabase.from('global_services').select('name').eq('category', globalCategory).limit(15),
-          supabase.from('global_products').select('name, unit').eq('category', globalCategory).limit(15),
-        ])
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const inserts: PromiseLike<any>[] = []
-
-        if (svcTemplates?.length) {
-          inserts.push(
-            supabase.from('services').insert(
-              svcTemplates.map((t: { name: string }) => ({
-                master_id:    userId,
-                name:         t.name,
-                duration_min: 30,
-                price:        0,
-                is_active:    true,
-                is_bookable:  true,
-              }))
-            )
-          )
-        }
-
-        if (prodTemplates?.length) {
-          inserts.push(
-            supabase.from('inventory_items').insert(
-              prodTemplates.map((t: { name: string; unit: string }) => ({
-                master_id: userId,
-                name:      t.name,
-                unit:      t.unit || 'шт',
-                quantity:  0,
-              }))
-            )
-          )
-        }
-
-        if (inserts.length) await Promise.all(inserts)
-      }
-
-      // 5. Обновляем кнопку меню в боте + отправляем приветствие
-      if (tgChatId) {
-        await supabase.functions.invoke('tg-master-welcome', {
-          body: { tg_chat_id: tgChatId, name, lang },
-        })
-      }
-
+      await saveProfession(userId, selected, name)
+      await autoImportServices(userId, selected)
+      await completeOnboarding(userId, tgChatId, name, lang)
       navigate('/calendar', { replace: true })
     } catch {
       setSaving(false)

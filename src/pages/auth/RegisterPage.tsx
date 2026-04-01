@@ -1,9 +1,8 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Zap } from 'lucide-react'
+import { Zap, Search, Phone, Globe } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { SpecialtyStep } from '@/components/onboarding/SpecialtyStep'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/shared/Toaster'
 import { useAppSettings } from '@/hooks/useAppSettings'
@@ -16,7 +15,25 @@ import {
   getTelegramUser,
   getTelegramUserId,
   getTelegramDisplayName,
+  getTelegramLanguageCode,
 } from '@/lib/telegramWebApp'
+import {
+  SPECIALTY_TO_CATEGORY,
+  FALLBACK_SPECIALTIES,
+  autoImportServices,
+  completeOnboarding,
+  saveProfession,
+} from '@/lib/onboarding-utils'
+
+// Поддерживаемые языки
+const SUPPORTED_LANGS = [
+  { code: 'ru', label: 'Русский' },
+  { code: 'uz', label: "O'zbekcha" },
+  { code: 'en', label: 'English' },
+  { code: 'tg', label: 'Тоҷикӣ' },
+  { code: 'kz', label: 'Қазақша' },
+  { code: 'ky', label: 'Кыргызча' },
+]
 
 // ── Компонент ──────────────────────────────────────────────────────────────
 
@@ -30,15 +47,6 @@ export function RegisterPage() {
   const phoneParam = searchParams.get('phone')
   const nameParam  = searchParams.get('name')
 
-  const [loading,           setLoading]           = useState(false)
-  const [showSpecialtyStep, setShowSpecialtyStep] = useState(false)
-  const [registeredUserId,  setRegisteredUserId]  = useState('')
-  const [registeredName,    setRegisteredName]    = useState('')
-
-  // Флаг: tgChecking useEffect уже обработал пользователя (показал SpecialtyStep)
-  // Предотвращает запуск авто-регистрации когда tgChecking → false
-  const tgPreHandled = useRef(false)
-
   const isTg   = isTelegramMiniApp()
   const tgUser = isTg ? getTelegramUser() : null
   const tgId   = isTg ? getTelegramUserId() : null
@@ -47,13 +55,31 @@ export function RegisterPage() {
   const platformName = appSettings?.platform_name ?? 'Ezze'
   const logoUrl      = appSettings?.logo_url
 
-  // Язык из бота — применяем сразу
+  // ── Состояние формы ──────────────────────────────────────────────────────
+
+  const [formLang, setFormLang] = useState(
+    langParam || (isTg ? getTelegramLanguageCode() : 'ru')
+  )
+  const [formName, setFormName] = useState(
+    nameParam || (isTg ? getTelegramDisplayName() : '') || ''
+  )
+  const [formPhone, setFormPhone] = useState(phoneParam || '')
+  const [formSpecialty, setFormSpecialty] = useState('')
+  const [specSearch, setSpecSearch] = useState('')
+  const [specialties, setSpecialties] = useState<string[]>([])
+  const [saving, setSaving] = useState(false)
+
+  // Для уже зарегистрированных, но не онбордeнных
+  const [existingUserId, setExistingUserId] = useState('')
+  const alreadyRegistered = !!existingUserId
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  // Применяем язык
   useEffect(() => {
-    if (langParam) {
-      i18n.changeLanguage(langParam)
-      sessionStorage.setItem('ezze_prefill_lang', langParam)
-    }
-  }, [langParam, i18n])
+    const lang = SUPPORTED_LANGS.find(l => l.code === formLang) ? formLang : 'ru'
+    if (i18n.language !== lang) i18n.changeLanguage(lang)
+  }, [formLang, i18n])
 
   // Redirect браузерных пользователей после авторизации
   useEffect(() => {
@@ -62,6 +88,21 @@ export function RegisterPage() {
       navigate(inviteCode ? `/join/${inviteCode}` : '/calendar', { replace: true })
     }
   }, [isAuthenticated, authLoading, navigate, inviteCode, isTg])
+
+  // Загружаем специальности из БД
+  useEffect(() => {
+    supabase
+      .from('specialties')
+      .select('name')
+      .order('name')
+      .then(({ data }) => {
+        if (data?.length) {
+          setSpecialties([...new Set(data.map((s: { name: string }) => s.name))])
+        } else {
+          setSpecialties(FALLBACK_SPECIALTIES)
+        }
+      }, () => setSpecialties(FALLBACK_SPECIALTIES))
+  }, [])
 
   // ── Telegram: проверяем — вдруг уже зарегистрирован ──────────────────────
   const [tgChecking, setTgChecking] = useState(isTg)
@@ -82,7 +123,6 @@ export function RegisterPage() {
           })
           if (sessionErr) { setTgChecking(false); return }
 
-          // Если онбординг не завершён — показываем SpecialtyStep, а не /calendar
           const { data: { user: sbUser } } = await supabase.auth.getUser()
           if (sbUser?.id) {
             const lsKey = `ezze_onboarded_${sbUser.id}`
@@ -91,15 +131,17 @@ export function RegisterPage() {
               const { data: ud } = await supabase
                 .from('users').select('onboarded').eq('id', sbUser.id).maybeSingle()
               if (!ud?.onboarded) {
-                const displayName = nameParam
-                  || getTelegramDisplayName()
-                  || (sbUser.user_metadata?.name as string)
-                  || ''
-                tgPreHandled.current = true   // блокируем авто-регистрацию
-                setRegisteredUserId(sbUser.id)
-                setRegisteredName(displayName)
+                // Зарегистрирован, но не онбордeн — показываем форму с предзаполненными данными
+                const { data: profile } = await supabase
+                  .from('master_profiles')
+                  .select('display_name, phone, profession')
+                  .eq('user_id', sbUser.id)
+                  .maybeSingle()
+                if (profile?.display_name) setFormName(profile.display_name)
+                if (profile?.phone) setFormPhone(profile.phone)
+                if (profile?.profession) setFormSpecialty(profile.profession)
+                setExistingUserId(sbUser.id)
                 setTgChecking(false)
-                setShowSpecialtyStep(true)
                 return
               }
             }
@@ -113,7 +155,7 @@ export function RegisterPage() {
   }, [isTg, navigate])
 
   // ── Сохраняем TG профиль в master_profiles ────────────────────────────────
-  const saveTgProfile = useCallback(async (userId: string, displayName?: string) => {
+  const saveTgProfile = useCallback(async (userId: string, displayName: string, phone: string) => {
     if (!tgId || !userId) return
     try {
       const { data: existing } = await supabase
@@ -123,7 +165,7 @@ export function RegisterPage() {
           tg_chat_id: tgId,
           ...(tgUser?.username  ? { telegram:     '@' + tgUser.username } : {}),
           ...(displayName       ? { display_name: displayName }           : {}),
-          ...(phoneParam        ? { phone:        phoneParam }            : {}),
+          ...(phone             ? { phone }                               : {}),
         }).eq('id', existing.id)
       } else {
         await supabase.from('master_profiles').insert({
@@ -131,83 +173,110 @@ export function RegisterPage() {
           tg_chat_id:   tgId,
           telegram:     tgUser?.username ? '@' + tgUser.username : '',
           ...(displayName ? { display_name: displayName } : {}),
-          ...(phoneParam  ? { phone:        phoneParam }  : {}),
+          ...(phone       ? { phone }                     : {}),
         })
       }
     } catch { /* non-critical */ }
-  }, [tgId, tgUser, phoneParam])
+  }, [tgId, tgUser])
 
-  // ── Авто-регистрация через Telegram (без формы) ───────────────────────────
-  const [autoRegistering, setAutoRegistering] = useState(false)
-  const [tgRegError,      setTgRegError]      = useState(false)
+  // ── Поделиться телефоном из Telegram ──────────────────────────────────────
+  const [contactRequested, setContactRequested] = useState(false)
 
-  useEffect(() => {
-    // tgPreHandled.current = true означает что tgChecking useEffect уже показал SpecialtyStep
-    if (tgChecking || !isTg || !tgId || tgPreHandled.current) return
+  const requestTgContact = useCallback(() => {
+    if (!window.Telegram?.WebApp?.requestContact) return
+    setContactRequested(true)
+    window.Telegram.WebApp.requestContact((shared, response) => {
+      setContactRequested(false)
+      if (shared && response?.contact?.phone_number) {
+        setFormPhone(response.contact.phone_number)
+      }
+    })
+  }, [])
 
-    const rawName = nameParam || getTelegramDisplayName() || tgUser?.username || ''
-    const name    = rawName.trim().length >= 2 ? rawName.trim() : (tgUser?.username || 'Новый пользователь')
+  // ── Фильтрация специальностей ─────────────────────────────────────────────
+  const filtered = useMemo(
+    () => specialties.filter(s => s.toLowerCase().includes(specSearch.toLowerCase())),
+    [specialties, specSearch]
+  )
 
-    sessionStorage.setItem('ezze_prefill_name',  name)
-    sessionStorage.setItem('ezze_tg_notify_id',  String(tgId))
-    if (phoneParam) sessionStorage.setItem('ezze_prefill_phone', phoneParam)
-    if (langParam)  sessionStorage.setItem('ezze_prefill_lang',  langParam)
+  // ── Валидация формы ───────────────────────────────────────────────────────
+  const canSubmit = formName.trim().length >= 2
+    && formPhone.replace(/\D/g, '').length >= 7
+    && !!formSpecialty
+    && !saving
 
-    setAutoRegistering(true)
-    ;(async () => {
-      try {
-        setLoading(true)
+  // ── Сабмит — регистрация + онбординг за один раз ──────────────────────────
+  const handleSubmit = async () => {
+    if (!canSubmit || !tgId) return
+    setSaving(true)
+    try {
+      let userId = existingUserId
+
+      if (!alreadyRegistered) {
+        // 1. Создаём аккаунт
         const email    = `tg_${tgId}@ezze.site`
         const password = crypto.randomUUID()
-        await registerUser(email, password, name)
+        await registerUser(email, password, formName.trim())
 
         const { data: { user: sbUser } } = await supabase.auth.getUser()
-        if (sbUser?.id) {
-          await saveTgProfile(sbUser.id, name)
-          setRegisteredUserId(sbUser.id)
-        }
+        if (!sbUser?.id) throw new Error('No user after signup')
+        userId = sbUser.id
 
-        setRegisteredName(name)
-        setAutoRegistering(false)
-        // Показываем выбор специальности вместо полного OnboardingWizard
-        setShowSpecialtyStep(true)
+        // 2. Сохраняем TG профиль
+        await saveTgProfile(userId, formName.trim(), formPhone)
+      }
 
-      } catch (e: any) {
-        const errMsg    = (e as Error)?.message || ''
-        const alreadyExists =
-          errMsg.toLowerCase().includes('already registered') ||
-          errMsg.toLowerCase().includes('already exists') ||
-          errMsg.toLowerCase().includes('email address is already')
+      if (!userId) throw new Error('No userId')
 
-        if (alreadyExists || isTg) {
-          // В TG-контексте — пробуем войти через tg-auth
-          const initData = window.Telegram?.WebApp?.initData
-          if (initData) {
-            try {
-              const { data: authData, error: authErr } = await supabase.functions.invoke('tg-auth', {
-                body: { initData },
+      // 3. Сохраняем профессию + slug
+      await saveProfession(userId, formSpecialty, formName.trim())
+
+      // 4. Авто-импорт услуг и товаров
+      await autoImportServices(userId, formSpecialty)
+
+      // 5. Завершаем онбординг + tg-master-welcome
+      await completeOnboarding(userId, String(tgId), formName.trim(), formLang)
+
+      navigate('/calendar', { replace: true })
+    } catch (e: any) {
+      const errMsg = (e as Error)?.message || ''
+      const alreadyExists =
+        errMsg.toLowerCase().includes('already registered') ||
+        errMsg.toLowerCase().includes('already exists') ||
+        errMsg.toLowerCase().includes('email address is already')
+
+      if (alreadyExists) {
+        // Пробуем войти через tg-auth
+        const initData = window.Telegram?.WebApp?.initData
+        if (initData) {
+          try {
+            const { data: authData, error: authErr } = await supabase.functions.invoke('tg-auth', {
+              body: { initData },
+            })
+            if (!authErr && authData?.access_token) {
+              await supabase.auth.setSession({
+                access_token:  authData.access_token,
+                refresh_token: authData.refresh_token,
               })
-              if (!authErr && authData?.access_token) {
-                await supabase.auth.setSession({
-                  access_token:  authData.access_token,
-                  refresh_token: authData.refresh_token,
-                })
+              // Получаем userId и завершаем онбординг
+              const { data: { user: sbUser } } = await supabase.auth.getUser()
+              if (sbUser?.id) {
+                await saveTgProfile(sbUser.id, formName.trim(), formPhone)
+                await saveProfession(sbUser.id, formSpecialty, formName.trim())
+                await autoImportServices(sbUser.id, formSpecialty)
+                await completeOnboarding(sbUser.id, String(tgId), formName.trim(), formLang)
                 navigate('/calendar', { replace: true })
                 return
               }
-            } catch {}
-          }
+            }
+          } catch { /* fallthrough */ }
         }
-
-        if (!alreadyExists) toast.error('Ошибка регистрации')
-        if (isTg) setTgRegError(true)
-        setAutoRegistering(false)
-      } finally {
-        setLoading(false)
       }
-    })()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tgChecking])
+
+      if (!alreadyExists) toast.error('Ошибка регистрации')
+      setSaving(false)
+    }
+  }
 
   // ── Регистрация закрыта (только для веб, не для TG) ───────────────────────
   if (appSettings && !appSettings.registration_open && !isTg) {
@@ -228,35 +297,152 @@ export function RegisterPage() {
     )
   }
 
-  // ── Проверка / авто-регистрация — брендовый сплэш ───────────────────────
-  if (tgChecking || autoRegistering) return <TelegramSplash />
+  // ── Проверка TG — брендовый сплэш ─────────────────────────────────────────
+  if (tgChecking) return <TelegramSplash />
 
-  // ── Выбор специальности (только TG, после авто-регистрации) ──────────────
-  if (showSpecialtyStep && tgId) {
+  // ── TG: единая форма регистрации ──────────────────────────────────────────
+  if (isTg && tgId) {
     return (
-      <SpecialtyStep
-        userId={registeredUserId}
-        tgChatId={String(tgId)}
-        name={registeredName}
-        lang={langParam || sessionStorage.getItem('ezze_prefill_lang') || 'ru'}
-      />
-    )
-  }
+      <div className="min-h-screen flex flex-col bg-background">
+        <div className="flex-1 flex flex-col max-w-md mx-auto w-full p-4">
 
-  // ── В Telegram-контексте без showSpecialtyStep — спиннер или ошибка ────────
-  if (isTg && tgRegError) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 gap-4 text-center">
-        <p className="text-sm text-muted-foreground">
-          Произошла ошибка при регистрации. Закройте это окно и попробуйте снова.
-        </p>
-        <Button variant="outline" onClick={() => window.Telegram?.WebApp?.close?.()}>
-          Закрыть
-        </Button>
+          {/* Заголовок */}
+          <div className="mb-4 pt-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold">{t('auth.register')}</h1>
+              <p className="text-muted-foreground text-sm mt-0.5">
+                {platformName}
+              </p>
+            </div>
+            {/* Выбор языка */}
+            <div className="relative">
+              <Globe className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <select
+                value={formLang}
+                onChange={e => setFormLang(e.target.value)}
+                className="h-8 pl-7 pr-2 rounded-md border border-input bg-background text-xs appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {SUPPORTED_LANGS.map(l => (
+                  <option key={l.code} value={l.code}>{l.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Имя */}
+          <label className="text-sm font-medium mb-1">{t('profile.name')}</label>
+          <input
+            type="text"
+            value={formName}
+            onChange={e => setFormName(e.target.value)}
+            placeholder={t('profile.name')}
+            autoComplete="name"
+            className={[
+              'flex h-10 w-full rounded-md border border-input bg-background',
+              'px-3 py-2 text-sm ring-offset-background',
+              'placeholder:text-muted-foreground',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              'mb-3',
+            ].join(' ')}
+          />
+
+          {/* Телефон */}
+          <label className="text-sm font-medium mb-1">{t('profile.phone')}</label>
+          <div className="flex gap-2 mb-3">
+            <input
+              type="tel"
+              value={formPhone}
+              onChange={e => setFormPhone(e.target.value)}
+              placeholder="+998 90 123 45 67"
+              autoComplete="tel"
+              className={[
+                'flex h-10 flex-1 rounded-md border border-input bg-background',
+                'px-3 py-2 text-sm ring-offset-background',
+                'placeholder:text-muted-foreground',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              ].join(' ')}
+            />
+            {window.Telegram?.WebApp?.requestContact && (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 shrink-0"
+                disabled={contactRequested}
+                onClick={requestTgContact}
+                title={t('profile.sharePhone')}
+              >
+                <Phone className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
+          {/* Специальность */}
+          <label className="text-sm font-medium mb-1">{t('specialty.select')}</label>
+          <p className="text-muted-foreground text-xs mb-2">{t('specialty.hint')}</p>
+
+          {/* Поиск */}
+          <div className="relative mb-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+            <input
+              type="text"
+              placeholder={t('specialty.search')}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              value={specSearch}
+              onChange={e => setSpecSearch(e.target.value)}
+              onInput={e => setSpecSearch((e.target as HTMLInputElement).value)}
+              className={[
+                'flex h-10 w-full rounded-md border border-input bg-background',
+                'px-3 py-2 pl-9 text-sm ring-offset-background',
+                'placeholder:text-muted-foreground',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              ].join(' ')}
+            />
+          </div>
+
+          {/* Список специальностей */}
+          <div className="flex-1 overflow-y-auto rounded-xl border bg-card divide-y" style={{ maxHeight: '40vh' }}>
+            {filtered.length === 0 ? (
+              <p className="text-center text-muted-foreground text-sm py-6">
+                {t('specialty.notFound')}
+              </p>
+            ) : (
+              filtered.map(spec => (
+                <button
+                  key={spec}
+                  onClick={() => setFormSpecialty(spec)}
+                  className={[
+                    'w-full text-left px-4 py-2.5 text-sm transition-colors',
+                    formSpecialty === spec
+                      ? 'bg-primary text-primary-foreground font-medium'
+                      : 'hover:bg-muted',
+                  ].join(' ')}
+                >
+                  {spec}
+                </button>
+              ))
+            )}
+          </div>
+
+          {/* Кнопка */}
+          <div className="mt-4 pb-safe-bottom pb-4">
+            <Button
+              className="w-full"
+              size="lg"
+              disabled={!canSubmit}
+              onClick={handleSubmit}
+            >
+              {saving ? <LoadingSpinner /> : t('onboarding.finish')}
+            </Button>
+          </div>
+
+        </div>
       </div>
     )
   }
-  if (isTg) return <TelegramSplash />
 
   // ── Браузер: направляем в Telegram бот ───────────────────────────────────
   return (
@@ -283,7 +469,7 @@ export function RegisterPage() {
 
         <Button asChild size="lg" className="w-full">
           <a href="https://t.me/ezzepro_bot" target="_blank" rel="noreferrer">
-            📱 Открыть @ezzepro_bot
+            Открыть @ezzepro_bot
           </a>
         </Button>
 

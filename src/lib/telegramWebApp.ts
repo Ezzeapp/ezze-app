@@ -154,6 +154,11 @@ export function initMiniApp(): void {
   }
 }
 
+/** Получить язык пользователя из Telegram */
+export function getTelegramLanguageCode(): string {
+  return window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code ?? 'ru'
+}
+
 /** Закрыть Mini App */
 export function closeMiniApp(): void {
   window.Telegram?.WebApp?.close()
