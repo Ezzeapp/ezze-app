@@ -855,7 +855,7 @@
     "deleteUserTitle": "Delete user?",
     "deleteUserDesc": "This action is irreversible.",
     "deleteIrreversible": "All data will be permanently deleted.",
-    "deleteUserDetails": "User: {{name}} ({{email}})",
+    "deleteUserDetails": "All appointments, clients, services, products and history will be deleted.",
     "deleting": "Deleting...",
     "featuresDesc": "Enable or disable platform features and set minimum plan requirements",
     "searchFeature": "Search feature...",

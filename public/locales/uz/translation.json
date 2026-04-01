@@ -831,7 +831,7 @@
     "deleteUserTitle": "Foydalanuvchini o'chirish kerakmi?",
     "deleteUserDesc": "Bu amal qaytarib bo'lmaydi.",
     "deleteIrreversible": "Barcha ma'lumotlar butunlay o'chiriladi.",
-    "deleteUserDetails": "Foydalanuvchi: {{name}} ({{email}})",
+    "deleteUserDetails": "Barcha yozuvlar, mijozlar, xizmatlar, tovarlar va tarix oʼchiriladi.",
     "deleting": "O'chirilmoqda...",
     "featuresDesc": "Platforma funksiyalarini yoqing va o'chiring, minimal kirish rejasini belgilang",
     "searchFeature": "Funksiyani qidirish...",
