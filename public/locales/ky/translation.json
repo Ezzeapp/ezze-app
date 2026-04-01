@@ -597,7 +597,8 @@
     "tabInterface": "Интерфейс",
     "tabIntegrations": "Интеграциялар",
     "tabAdmin": "Администрация",
-    "tabAppearance": "Интерфейс"
+    "tabAppearance": "Интерфейс",
+    "tabPublicPage": "Menin barakcham"
   },
   "catalog": {
     "searchServices": "Кызматтарды же категорияларды издөө...",
@@ -1286,5 +1287,38 @@
     "holidayDiscountHint": "Additional discount % on top of level discount",
     "holidayActive": "Active",
     "holidayInactive": "Inactive"
+  },
+  "publicPage": {
+    "pageStatus": "Barakcha abaly",
+    "pageEnabled": "Barakcha aktivduu",
+    "pageEnabled2": "Barakcha oshurulgan",
+    "pageEnabledHint": "Shilteme arkylu baaryna zhetiktiuu",
+    "pageDisabledHint": "Ech kim barakchanу acha albayт",
+    "pageDisabled": "Barakcha ubaktyluu zhetiksiiz",
+    "copyLink": "Kochuruu",
+    "qrHint": "QR-koddu Instagram’ynyzga jaygashtyruynuz жe kardarlar uchun basyp chygarynyz",
+    "design": "Barakcha dizaynы",
+    "template": "Shablon",
+    "accentColor": "Aktsent tusu",
+    "customColor": "Oz tusu",
+    "btnShape": "Baskych formasy",
+    "btnRounded": "Tegerek",
+    "btnPill": "Kapsula",
+    "btnSquare": "Burchtu",
+    "font": "Shrift",
+    "coverPhoto": "Mukaba surotu",
+    "uploadCover": "Mukaba juktoo (16:6)",
+    "socialLinks": "Sotsialdyk tarmaktar",
+    "location": "Jaygashu",
+    "products": "Tovarlar",
+    "addProduct": "Tovar kosuu",
+    "editProduct": "Tovarу ondoo",
+    "productNamePlaceholder": "Mysaly: Chach maskasy",
+    "isAvailable": "Bar",
+    "outOfStock": "Zhok",
+    "bookOnline": "Onlayn zhazyluu",
+    "allServices": "Barlyk kyzmatter",
+    "openInMaps": "Kartada achuu",
+    "poweredBy": "Ezze’de ishteyt"
   }
 }

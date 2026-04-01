@@ -597,7 +597,8 @@
     "tabInterface": "Інтерфейс",
     "tabIntegrations": "Інтеграції",
     "tabAdmin": "Адміністрування",
-    "tabAppearance": "Інтерфейс"
+    "tabAppearance": "Інтерфейс",
+    "tabPublicPage": "Moya storinka"
   },
   "catalog": {
     "searchServices": "Пошук за послугами або категоріями...",
@@ -1286,5 +1287,38 @@
     "holidayDiscountHint": "Additional discount % on top of level discount",
     "holidayActive": "Active",
     "holidayInactive": "Inactive"
+  },
+  "publicPage": {
+    "pageStatus": "Status storinky",
+    "pageEnabled": "Storinka aktyvna",
+    "pageEnabled2": "Storinka vymknena",
+    "pageEnabledHint": "Dostupna vsim za posylankoyu",
+    "pageDisabledHint": "Nikhto ne mozhe vidkryty storinku",
+    "pageDisabled": "Storinka tymchasovo nedostupna",
+    "copyLink": "Skopiуuvaty",
+    "qrHint": "Rozmistit QR-kod u svoyemu Instagram abo rozdruкuyte dlya kliyentiv",
+    "design": "Dyzayn storinky",
+    "template": "Shablon",
+    "accentColor": "Kolir aktsentu",
+    "customColor": "Sviy kolir",
+    "btnShape": "Forma knopok",
+    "btnRounded": "Zaokrugleni",
+    "btnPill": "Pіlulya",
+    "btnSquare": "Priami",
+    "font": "Shryft",
+    "coverPhoto": "Obkladynka",
+    "uploadCover": "Zavantazhyty obkladynku (16:6)",
+    "socialLinks": "Sotsialny merezhi",
+    "location": "Mistseznahodzhennya",
+    "products": "Tovary",
+    "addProduct": "Dodaty tovar",
+    "editProduct": "Redahuvaty tovar",
+    "productNamePlaceholder": "Naprуklad: Maska dlya volossia",
+    "isAvailable": "V nayavnosti",
+    "outOfStock": "Nemaye v nayavnosti",
+    "bookOnline": "Zapysatysya onlayn",
+    "allServices": "Vsi posluhy",
+    "openInMaps": "Vidkryty na karti",
+    "poweredBy": "Pratsуuye na Ezze"
   }
 }

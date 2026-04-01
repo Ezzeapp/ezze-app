@@ -597,7 +597,8 @@
     "tabInterface": "Интерфейс",
     "tabIntegrations": "Интеграциялар",
     "tabAdmin": "Әкімшілік",
-    "tabAppearance": "Интерфейс"
+    "tabAppearance": "Интерфейс",
+    "tabPublicPage": "Menin betim"
   },
   "catalog": {
     "searchServices": "Қызметтерді немесе санаттарды іздеу...",
@@ -1286,5 +1287,38 @@
     "holidayDiscountHint": "Additional discount % on top of level discount",
     "holidayActive": "Active",
     "holidayInactive": "Inactive"
+  },
+  "publicPage": {
+    "pageStatus": "Bet kuyi",
+    "pageEnabled": "Bet belsendy",
+    "pageEnabled2": "Bet oshirilgen",
+    "pageEnabledHint": "Silteme arqyly barshasyna qol zhetimdi",
+    "pageDisabledHint": "Eshkim betty asha almaydy",
+    "pageDisabled": "Bet uaqytsha qol zhetimdi emes",
+    "copyLink": "Koshiru",
+    "qrHint": "QR-kodty Instagram-ga ornalastyrynyz nemese kliyentter ushin basynp shygarynyz",
+    "design": "Bet dizayni",
+    "template": "Ulgi",
+    "accentColor": "Aktsent tusy",
+    "customColor": "Oz tusy",
+    "btnShape": "Batyrma pishini",
+    "btnRounded": "Donggelek",
+    "btnPill": "Kapsul",
+    "btnSquare": "Tik buryshhty",
+    "font": "Qarip",
+    "coverPhoto": "Muqaba suwret",
+    "uploadCover": "Muqaba juktew (16:6)",
+    "socialLinks": "Aleumettik zhelier",
+    "location": "Ornalasuy",
+    "products": "Tauarlar",
+    "addProduct": "Tauаr qosu",
+    "editProduct": "Tauardy ondeu",
+    "productNamePlaceholder": "Mysaly: Shas maskasy",
+    "isAvailable": "Qol zhetimdi",
+    "outOfStock": "Tausylghan",
+    "bookOnline": "Onlayn zhazylу",
+    "allServices": "Barlyk qyzmetler",
+    "openInMaps": "Kartada ashu",
+    "poweredBy": "Ezze platformasynda zhumys ysteydi"
   }
 }

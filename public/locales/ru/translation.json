@@ -617,7 +617,8 @@
     "tabInterface": "Интерфейс",
     "tabNotifications": "Уведомления",
     "tabIntegrations": "Интеграции",
-    "tabAdmin": "Администрирование"
+    "tabAdmin": "Администрирование",
+    "tabPublicPage": "Моя страница"
   },
   "onboarding": {
     "title": "Добро пожаловать в Ezze!",
@@ -1314,5 +1315,38 @@
     "holidayDiscountHint": "Процент скидки в праздник (сверх уровневой)",
     "holidayActive": "Активно",
     "holidayInactive": "Неактивно"
+  },
+  "publicPage": {
+    "pageStatus": "Статус страницы",
+    "pageEnabled": "Страница активна",
+    "pageEnabled2": "Страница отключена",
+    "pageEnabledHint": "Доступна всем по ссылке",
+    "pageDisabledHint": "Никто не может открыть страницу",
+    "pageDisabled": "Страница временно недоступна",
+    "copyLink": "Скопировать",
+    "qrHint": "Разместите QR-код в своём Instagram или распечатайте для клиентов",
+    "design": "Дизайн страницы",
+    "template": "Шаблон",
+    "accentColor": "Цвет акцента",
+    "customColor": "Свой цвет",
+    "btnShape": "Форма кнопок",
+    "btnRounded": "Скруглённые",
+    "btnPill": "Пилюля",
+    "btnSquare": "Прямые",
+    "font": "Шрифт",
+    "coverPhoto": "Обложка",
+    "uploadCover": "Загрузить обложку (16:6)",
+    "socialLinks": "Социальные сети",
+    "location": "Местоположение",
+    "products": "Товары",
+    "addProduct": "Добавить товар",
+    "editProduct": "Редактировать товар",
+    "productNamePlaceholder": "Например: Маска для волос",
+    "isAvailable": "В наличии",
+    "outOfStock": "Нет в наличии",
+    "bookOnline": "Записаться онлайн",
+    "allServices": "Все услуги",
+    "openInMaps": "Открыть в картах",
+    "poweredBy": "Работает на Ezze"
   }
 }

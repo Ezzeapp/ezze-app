@@ -59,6 +59,27 @@ export interface GlobalProduct extends BaseRecord {
   order?: number
 }
 
+export interface PageSettings {
+  template?:   'minimal' | 'dark' | 'bold' | 'elegant'
+  accent?:     string
+  bg?:         'white' | 'dark' | 'soft' | 'custom'
+  bg_custom?:  string
+  btn_shape?:  'rounded' | 'pill' | 'square'
+  font?:       'inter' | 'montserrat' | 'playfair'
+}
+
+export interface MasterProduct {
+  id:           string
+  user_id:      string
+  name:         string
+  description?: string
+  price:        number
+  photo_url?:   string
+  is_available: boolean
+  order_index:  number
+  created_at:   string
+}
+
 export interface MasterProfile extends BaseRecord {
   user: string
   display_name?: string    // Отображаемое имя мастера (ФИО или псевдоним)
@@ -85,6 +106,13 @@ export interface MasterProfile extends BaseRecord {
   remind_client_hours?: number   // 0 = выключено, 1/2/24 = за N часов
   booking_theme?: string
   notification_email?: string  // email для уведомлений (если нет email в users)
+  cover_url?:     string
+  lat?:           number
+  lng?:           number
+  page_enabled?:  boolean
+  youtube?:       string
+  tiktok?:        string
+  page_settings?: PageSettings
 }
 
 export interface Client extends BaseRecord {

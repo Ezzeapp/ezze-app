@@ -597,7 +597,8 @@
     "tabInterface": "Інтэрфейс",
     "tabIntegrations": "Інтэграцыі",
     "tabAdmin": "Адміністраванне",
-    "tabAppearance": "Інтэрфейс"
+    "tabAppearance": "Інтэрфейс",
+    "tabPublicPage": "Maya staronka"
   },
   "catalog": {
     "searchServices": "Пошук па паслугах ці катэгорыях...",
@@ -1286,5 +1287,38 @@
     "holidayDiscountHint": "Additional discount % on top of level discount",
     "holidayActive": "Active",
     "holidayInactive": "Inactive"
+  },
+  "publicPage": {
+    "pageStatus": "Status staronki",
+    "pageEnabled": "Staronka aktyunaya",
+    "pageEnabled2": "Staronka adkluchanaya",
+    "pageEnabledHint": "Dastupnaya usim pa spasyltsye",
+    "pageDisabledHint": "Nіkhto ne mozhe adkryt staronku",
+    "pageDisabled": "Staronka chasova nedastupnaya",
+    "copyLink": "Skapіravats",
+    "qrHint": "Razmyastsіtse QR-kod u svaіm Instagram abo razdrukaіtse dlya klіentau",
+    "design": "Dyzaіn staronki",
+    "template": "Shablon",
+    "accentColor": "Koler aktsentu",
+    "customColor": "Svoy koler",
+    "btnShape": "Forma knopal",
+    "btnRounded": "Zakruglenyi",
+    "btnPill": "Pіlyulya",
+    "btnSquare": "Pramyya",
+    "font": "Shryft",
+    "coverPhoto": "Vokladka",
+    "uploadCover": "Zagruzіts vokladku (16:6)",
+    "socialLinks": "Satsyyalnyya setkі",
+    "location": "Mescaznahodzhanne",
+    "products": "Tavary",
+    "addProduct": "Dadat tavar",
+    "editProduct": "Redagavats tavar",
+    "productNamePlaceholder": "Napryklad: Maska dlya valos",
+    "isAvailable": "U nayaunastsi",
+    "outOfStock": "Nyama u nayaunastsi",
+    "bookOnline": "Zapisatsa anlayn",
+    "allServices": "Usіye paslugi",
+    "openInMaps": "Adkrits na karce",
+    "poweredBy": "Pratsuye na Ezze"
   }
 }

@@ -597,7 +597,8 @@
     "tabInterface": "Интерфейс",
     "tabNotifications": "Хабарламалар",
     "tabIntegrations": "Интеграциялар",
-    "tabAdmin": "Басқарыў"
+    "tabAdmin": "Басқарыў",
+    "tabPublicPage": "Menin betim"
   },
   "catalog": {
     "searchServices": "Хызметлер яки категориялар бойынша излеу...",
@@ -1286,5 +1287,38 @@
     "holidayDiscountHint": "Additional discount % on top of level discount",
     "holidayActive": "Active",
     "holidayInactive": "Inactive"
+  },
+  "publicPage": {
+    "pageStatus": "Bet jağdayı",
+    "pageEnabled": "Bet aktiv",
+    "pageEnabled2": "Bet ózgirilgen",
+    "pageEnabledHint": "Silteмe arqılı hámmege qoljetimli",
+    "pageDisabledHint": "Heshkim bettiń ashıp bilmeydi",
+    "pageDisabled": "Bet waqıtsha qoljetimli emes",
+    "copyLink": "Kóshiriw",
+    "qrHint": "QR-kodtı Instagram’ıńızğa ornaslastırıń yaki xarıdorlar ushın basıp shığarıń",
+    "design": "Bet dizaynı",
+    "template": "Shablon",
+    "accentColor": "Aksent rengi",
+    "customColor": "Óz rengi",
+    "btnShape": "Tüyme formasi",
+    "btnRounded": "Dóńgeleklengen",
+    "btnPill": "Kapsul",
+    "btnSquare": "Tuwrı müyeshli",
+    "font": "Shrift",
+    "coverPhoto": "Müqaba süwret",
+    "uploadCover": "Müqaba jüklew (16:6)",
+    "socialLinks": "Sociallıq tarmaqlar",
+    "location": "Orınlasıwı",
+    "products": "Tovarlar",
+    "addProduct": "Tovar qosıw",
+    "editProduct": "Tovardı ózgertiw",
+    "productNamePlaceholder": "Mısalı: Shash maskası",
+    "isAvailable": "Bar",
+    "outOfStock": "Tamam boldı",
+    "bookOnline": "Onlayn jazılıw",
+    "allServices": "Barlıq xızmetler",
+    "openInMaps": "Kartada ashıw",
+    "poweredBy": "Ezze’de islep atır"
   }
 }

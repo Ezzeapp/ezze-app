@@ -617,7 +617,8 @@
     "tabInterface": "Interface",
     "tabNotifications": "Notifications",
     "tabIntegrations": "Integrations",
-    "tabAdmin": "Administration"
+    "tabAdmin": "Administration",
+    "tabPublicPage": "My Page"
   },
   "catalog": {
     "searchServices": "Search services or categories...",
@@ -1314,5 +1315,38 @@
     "holidayDiscountHint": "Additional discount % on top of level discount",
     "holidayActive": "Active",
     "holidayInactive": "Inactive"
+  },
+  "publicPage": {
+    "pageStatus": "Page status",
+    "pageEnabled": "Page is active",
+    "pageEnabled2": "Page is disabled",
+    "pageEnabledHint": "Accessible to everyone via link",
+    "pageDisabledHint": "No one can open the page",
+    "pageDisabled": "Page is temporarily unavailable",
+    "copyLink": "Copy",
+    "qrHint": "Place the QR code in your Instagram or print it for clients",
+    "design": "Page design",
+    "template": "Template",
+    "accentColor": "Accent color",
+    "customColor": "Custom color",
+    "btnShape": "Button shape",
+    "btnRounded": "Rounded",
+    "btnPill": "Pill",
+    "btnSquare": "Square",
+    "font": "Font",
+    "coverPhoto": "Cover photo",
+    "uploadCover": "Upload cover (16:6)",
+    "socialLinks": "Social media",
+    "location": "Location",
+    "products": "Products",
+    "addProduct": "Add product",
+    "editProduct": "Edit product",
+    "productNamePlaceholder": "e.g. Hair mask",
+    "isAvailable": "In stock",
+    "outOfStock": "Out of stock",
+    "bookOnline": "Book online",
+    "allServices": "All services",
+    "openInMaps": "Open in maps",
+    "poweredBy": "Powered by Ezze"
   }
 }

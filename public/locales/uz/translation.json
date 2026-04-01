@@ -597,7 +597,8 @@
     "tabInterface": "Interfeys",
     "tabNotifications": "Bildirishnomalar",
     "tabIntegrations": "Integratsiyalar",
-    "tabAdmin": "Boshqaruv"
+    "tabAdmin": "Boshqaruv",
+    "tabPublicPage": "Mening sahifam"
   },
   "catalog": {
     "searchServices": "Xizmatlar yoki toifalar boʻyicha qidirish...",
@@ -1286,5 +1287,38 @@
     "holidayDiscountHint": "Additional discount % on top of level discount",
     "holidayActive": "Active",
     "holidayInactive": "Inactive"
+  },
+  "publicPage": {
+    "pageStatus": "Sahifa holati",
+    "pageEnabled": "Sahifa faol",
+    "pageEnabled2": "Sahifa o’chirilgan",
+    "pageEnabledHint": "Havola orqali hamma ko’ra oladi",
+    "pageDisabledHint": "Hech kim sahifani ochib bo’lmaydi",
+    "pageDisabled": "Sahifa vaqtincha mavjud emas",
+    "copyLink": "Nusxalash",
+    "qrHint": "QR-kodni Instagram’ga joylashtiring yoki mijozlar uchun chop eting",
+    "design": "Sahifa dizayni",
+    "template": "Shablon",
+    "accentColor": "Aksent rangi",
+    "customColor": "O’z rangi",
+    "btnShape": "Tugma shakli",
+    "btnRounded": "Yumaloq",
+    "btnPill": "Kapsula",
+    "btnSquare": "To’g’ri burchak",
+    "font": "Shrift",
+    "coverPhoto": "Muqova rasm",
+    "uploadCover": "Muqova yuklash (16:6)",
+    "socialLinks": "Ijtimoiy tarmoqlar",
+    "location": "Joylashuv",
+    "products": "Mahsulotlar",
+    "addProduct": "Mahsulot qo’shish",
+    "editProduct": "Mahsulotni tahrirlash",
+    "productNamePlaceholder": "Masalan: Soch maskasi",
+    "isAvailable": "Mavjud",
+    "outOfStock": "Tugagan",
+    "bookOnline": "Onlayn yozilish",
+    "allServices": "Barcha xizmatlar",
+    "openInMaps": "Xaritada ochish",
+    "poweredBy": "Ezze asosida ishlaydi"
   }
 }

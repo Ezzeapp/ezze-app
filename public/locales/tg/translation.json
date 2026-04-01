@@ -597,7 +597,8 @@
     "tabInterface": "Интерфейс",
     "tabIntegrations": "Интегратсияҳо",
     "tabAdmin": "Маъмурият",
-    "tabAppearance": "Интерфейс"
+    "tabAppearance": "Интерфейс",
+    "tabPublicPage": "Sahifai man"
   },
   "catalog": {
     "searchServices": "Ҷустуҷӯи хизматҳо ё категорияҳо...",
@@ -1286,5 +1287,38 @@
     "holidayDiscountHint": "Additional discount % on top of level discount",
     "holidayActive": "Active",
     "holidayInactive": "Inactive"
+  },
+  "publicPage": {
+    "pageStatus": "Holati sahifa",
+    "pageEnabled": "Sahifa faol ast",
+    "pageEnabled2": "Sahifa khomush ast",
+    "pageEnabledHint": "Tavassuti istinod baroi hama dastrаs ast",
+    "pageDisabledHint": "Hech kas sahifaro kushoda natаvonad",
+    "pageDisabled": "Sahifa muvaqqatan dastrаs nest",
+    "copyLink": "Nusha giriftan",
+    "qrHint": "QR-kodro dar Instagram-i khud guzored yo baroi mushtariyon chop kuned",
+    "design": "Dizayni sahifa",
+    "template": "Namuna",
+    "accentColor": "Rangi aktsent",
+    "customColor": "Rangi khud",
+    "btnShape": "Shakli tugma",
+    "btnRounded": "Girdkunja",
+    "btnPill": "Kapsula",
+    "btnSquare": "Tava",
+    "font": "Khat",
+    "coverPhoto": "Aksi ruipush",
+    "uploadCover": "Bor kardani ruipush (16:6)",
+    "socialLinks": "Shabakahoi ijtimoyi",
+    "location": "Joygirshavi",
+    "products": "Molho",
+    "addProduct": "Afzudani mol",
+    "editProduct": "Tahriri mol",
+    "productNamePlaceholder": "Masalan: Nigorandi mu",
+    "isAvailable": "Mavjud ast",
+    "outOfStock": "Tamom shudaast",
+    "bookOnline": "Navbat giriftan onlayn",
+    "allServices": "Hamayi khizmatho",
+    "openInMaps": "Dar harita kushodan",
+    "poweredBy": "Dar Ezze kor mekunad"
   }
 }

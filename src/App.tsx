@@ -41,6 +41,7 @@ const CancelBookingPage = lazy(() => import('@/pages/booking/CancelBookingPage')
 const TeamBookingPage = lazy(() => import('@/pages/booking/TeamBookingPage').then(m => ({ default: m.TeamBookingPage })))
 const ClientCabinetPage = lazy(() => import('@/pages/booking/ClientCabinetPage').then(m => ({ default: m.ClientCabinetPage })))
 const MasterSearchPage = lazy(() => import('@/pages/booking/MasterSearchPage').then(m => ({ default: m.MasterSearchPage })))
+const PublicProfilePage = lazy(() => import('@/pages/public/PublicProfilePage').then(m => ({ default: m.PublicProfilePage })))
 const MiniAppLayout = lazy(() => import('@/components/layout/MiniAppLayout').then(m => ({ default: m.MiniAppLayout })))
 const TelegramEntryPage = lazy(() => import('@/pages/tg/TelegramEntryPage').then(m => ({ default: m.TelegramEntryPage })))
 const PhoneSharePage = lazy(() => import('@/pages/tg/PhoneSharePage').then(m => ({ default: m.PhoneSharePage })))
@@ -54,6 +55,7 @@ const router = createBrowserRouter([
   { path: '/register', element: <RegisterPage /> },
   { path: '/book/team/:teamSlug', element: <TeamBookingPage /> },
   { path: '/book/:masterId', element: <PublicBookingPage /> },
+  { path: '/p/:slug', element: <PublicProfilePage /> },
   { path: '/cancel/:token', element: <CancelBookingPage /> },
   { path: '/join/:code', element: <JoinTeamPage /> },
 
