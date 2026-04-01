@@ -33,15 +33,23 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          printf 'Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n' > ~/.ssh/config
+          printf 'Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  ConnectTimeout 30\n  ServerAliveInterval 15\n  ServerAliveCountMax 4\n' > ~/.ssh/config
 
       - name: Deploy frontend to VPS
-        run: |
-          rsync -az --delete dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/var/www/ezze-app/
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: rsync -az --delete dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/var/www/ezze-app/
 
       - name: Copy migrations to VPS
-        run: |
-          rsync -az supabase/migrations/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/ezze-migrations/
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 3
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: rsync -az supabase/migrations/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/ezze-migrations/
 
       - name: Apply DB migrations
         run: |
@@ -68,16 +76,24 @@ jobs:
           '
 
       - name: Deploy Edge Functions to VPS
-        run: |
-          rsync -az supabase/functions/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/app/supabase/volumes/functions/
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 3
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: rsync -az supabase/functions/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/app/supabase/volumes/functions/
 
       - name: Reload Edge Functions runtime
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} 'cd /app/supabase && docker compose restart functions'
 
       - name: Deploy Telegram bots to VPS
-        run: |
-          rsync -az tg_shared.js tg_master_bot.js tg_client_bot.js tg_polling.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/app/ezze-app/
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 3
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: rsync -az tg_shared.js tg_master_bot.js tg_client_bot.js tg_polling.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/app/ezze-app/
 
       - name: Restart bot services
         run: |
