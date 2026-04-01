@@ -426,6 +426,18 @@ async function handleComplete(params: Record<string, string>): Promise<Response>
     return clickResp(CLICK_ERR_ACTION, 'Incorrect action for complete')
   }
 
+  // ── Click URL validation probe ────────────────────────────────────────────
+  // Click sends a POST probe with click_trans_id=0 to verify the Complete URL.
+  // Must respond with error:0 immediately, before signature verification.
+  if (!clickTransId || clickTransId === '0') {
+    console.log('[click] complete probe detected (click_trans_id=0), returning OK')
+    return clickResp(CLICK_OK, 'OK', {
+      click_trans_id:      clickTransId || '0',
+      merchant_trans_id:   merchantTransId || '0',
+      merchant_confirm_id: 0,
+    })
+  }
+
   const signOk = verifyClickSign({
     click_trans_id:      clickTransId,
     service_id:          serviceId,

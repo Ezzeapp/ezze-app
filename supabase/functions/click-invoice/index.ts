@@ -150,7 +150,7 @@ Deno.serve(async (req: Request) => {
 
     if (clickData.error_code !== 0 || !clickData.invoice_id) {
       // Click Merchant API returned an error — fallback to legacy URL
-      console.error('[click-invoice] API error:', clickData)
+      console.error('[click-invoice] API error:', JSON.stringify(clickData), 'http_status:', clickRes.status)
       const params = new URLSearchParams({
         service_id:        creds.serviceId,
         merchant_id:       creds.merchantId,
@@ -162,7 +162,8 @@ Deno.serve(async (req: Request) => {
           payment_url: `${CLICK_PAY_BASE}?${params.toString()}`,
           invoice_id:  null,
           method:      'legacy_fallback',
-          api_error:   clickData.error_note ?? 'unknown',
+          api_error:   JSON.stringify(clickData),
+          http_status: clickRes.status,
         }),
         { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
       )
