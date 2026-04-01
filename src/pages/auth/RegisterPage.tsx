@@ -179,6 +179,15 @@ export function RegisterPage() {
     } catch { /* non-critical */ }
   }, [tgId, tgUser])
 
+  // ── Телефон из initData (если уже делился ранее) ─────────────────────────
+  useEffect(() => {
+    if (!formPhone && isTg) {
+      const phone = window.Telegram?.WebApp?.initDataUnsafe?.user?.phone_number
+      if (phone) setFormPhone(phone)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTg])
+
   // ── Поделиться телефоном из Telegram ──────────────────────────────────────
   const [contactRequested, setContactRequested] = useState(false)
 
@@ -187,41 +196,19 @@ export function RegisterPage() {
     if (!wa?.requestContact) return
     setContactRequested(true)
 
+    const timer = setTimeout(() => setContactRequested(false), 12000)
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleContactEvent: () => void = (data?: any) => {
-      clearTimeout(timer)
-      ;(wa.offEvent as any)?.('contactRequested', handleContactEvent)
-      setContactRequested(false)
-      if (data?.status === 'sent' && data?.contact?.phone_number) {
-        setFormPhone(data.contact.phone_number)
-      }
-    }
-
-    // Таймаут-сброс — Desktop и старые клиенты могут проигнорировать запрос
-    const timer = setTimeout(() => {
-      ;(wa.offEvent as any)?.('contactRequested', handleContactEvent)
-      setContactRequested(false)
-    }, 12000)
-
-    // Bot API 7.2+ — event-based (приоритет)
-    wa.onEvent?.('contactRequested', handleContactEvent)
-
-    // Callback-based — старые клиенты
     const ok = wa.requestContact((shared: boolean, res: any) => {
       clearTimeout(timer)
-      ;(wa.offEvent as any)?.('contactRequested', handleContactEvent)
       setContactRequested(false)
-      if (shared && res?.contact?.phone_number) {
-        setFormPhone(res.contact.phone_number)
-      }
+      // res может прийти как { contact: {...} } или как полный event { status, contact }
+      const phone: string = res?.contact?.phone_number ?? res?.phone_number ?? ''
+      if (shared && phone) setFormPhone(phone)
     })
 
-    // requestContact вернул false — платформа не поддерживает (Desktop/Web)
-    if (ok === false) {
-      clearTimeout(timer)
-      ;(wa.offEvent as any)?.('contactRequested', handleContactEvent)
-      setContactRequested(false)
-    }
+    // Desktop / Web возвращают false — не поддерживается
+    if (ok === false) { clearTimeout(timer); setContactRequested(false) }
   }, [])
 
   // ── Фильтрация специальностей ─────────────────────────────────────────────

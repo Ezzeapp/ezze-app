@@ -11,6 +11,7 @@ export interface TelegramUser {
   language_code?: string
   photo_url?: string
   is_premium?: boolean
+  phone_number?: string
 }
 
 export interface TelegramWebApp {
