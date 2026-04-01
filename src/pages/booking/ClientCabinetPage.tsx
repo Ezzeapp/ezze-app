@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
+import { TelegramSplash } from '@/components/shared/TelegramSplash'
 import { toast } from '@/components/shared/Toaster'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
@@ -379,7 +380,7 @@ export function ClientCabinetPage() {
     )
   }
 
-  if (loading) return <LoadingSpinner fullScreen />
+  if (loading) return <TelegramSplash />
 
   // ── Экран удалённого / незарегистрированного клиента ────────────────────────
   if (isNotRegistered && telegramId) {
