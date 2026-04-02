@@ -223,21 +223,10 @@ async function processUpdate(update) {
       savePendingSessions();
 
       const greetingText = firstName
-        ? `👋 <b>Привет, ${escapeHtml(firstName)}!</b>\n\nДобро пожаловать в <b>Ezze</b>!\nНажми кнопку ниже, чтобы зарегистрироваться:`
-        : `👋 <b>Привет!</b>\n\nДобро пожаловать в <b>Ezze</b>!\nНажми кнопку ниже, чтобы зарегистрироваться:`;
+        ? `👋 <b>Привет, ${escapeHtml(firstName)}!</b>\n\nДобро пожаловать в <b>Ezze</b>!\nНажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`
+        : `👋 <b>Привет!</b>\n\nДобро пожаловать в <b>Ezze</b>!\nНажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`;
 
-      await fetch(`${bot.TG_API}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: greetingText,
-          parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [[{ text: "📱 " + menuBtnLabel, web_app: { url: regUrl }, style: "primary" }]],
-          },
-        }),
-      });
+      await bot.sendMessage(chatId, greetingText);
       return;
 
     } else if (data.startsWith("lang_")) {
@@ -599,26 +588,11 @@ async function processUpdate(update) {
           pendingMasters.set(chatId, sessionEntry({ step: "pending_web_registration" }));
           savePendingSessions();
 
-          const defaultText =
-            `👋 <b>Привет, {name}!</b>\n\n` +
-            `Добро пожаловать в <b>Ezze</b>!\n` +
-            `Нажми кнопку ниже, чтобы зарегистрироваться:`;
           const greetingText = firstName
-            ? defaultText.replace("{name}", escapeHtml(firstName))
-            : defaultText.replace(", {name}", "").replace("{name}", "");
+            ? `👋 <b>Привет, ${escapeHtml(firstName)}!</b>\n\nДобро пожаловать в <b>Ezze</b>!\nНажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`
+            : `👋 <b>Привет!</b>\n\nДобро пожаловать в <b>Ezze</b>!\nНажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`;
 
-          await fetch(`${bot.TG_API}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: greetingText,
-              parse_mode: "HTML",
-              reply_markup: {
-                inline_keyboard: [[{ text: "📱 " + menuBtnLabel, web_app: { url: regUrl }, style: "primary" }]],
-              },
-            }),
-          });
+          await bot.sendMessage(chatId, greetingText);
         }
       }
       return;
