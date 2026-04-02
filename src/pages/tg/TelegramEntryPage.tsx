@@ -153,9 +153,9 @@ async function doTgAuth(
         refresh_token: data.refresh_token,
       })
       if (!sessionError) {
-        // Если мастер ещё не завершил онбординг — отправляем в /register (там покажется SpecialtyStep)
         const { data: { user: sbUser } } = await supabase.auth.getUser()
         if (sbUser?.id) {
+          // Проверяем онбординг
           const lsKey = `ezze_onboarded_${sbUser.id}`
           const locallyDone = localStorage.getItem(lsKey) === '1'
           if (!locallyDone) {
@@ -165,6 +165,26 @@ async function doTgAuth(
               navigate('/register', { replace: true })
               return
             }
+          }
+
+          // Проверяем наличие master_profiles (мог быть удалён админом)
+          const tgId = getTelegramUserId()
+          const { data: profile } = await supabase
+            .from('master_profiles')
+            .select('id, tg_chat_id')
+            .eq('user_id', sbUser.id)
+            .maybeSingle()
+          if (!profile) {
+            // Профиль удалён — сбрасываем флаг онбординга, отправляем на регистрацию
+            localStorage.removeItem(lsKey)
+            await supabase.from('users').update({ onboarded: false }).eq('id', sbUser.id)
+            navigate('/register', { replace: true })
+            return
+          }
+
+          // Обновляем tg_chat_id если не привязан
+          if (tgId && !profile.tg_chat_id) {
+            supabase.from('master_profiles').update({ tg_chat_id: tgId }).eq('id', profile.id)
           }
         }
         navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard', { replace: true })

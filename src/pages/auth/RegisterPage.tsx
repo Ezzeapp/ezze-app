@@ -127,19 +127,31 @@ export function RegisterPage() {
           if (sbUser?.id) {
             const lsKey = `ezze_onboarded_${sbUser.id}`
             const locallyDone = localStorage.getItem(lsKey) === '1'
+
+            // Проверяем наличие master_profiles (мог быть удалён админом)
+            const { data: profile } = await supabase
+              .from('master_profiles')
+              .select('display_name, phone, profession')
+              .eq('user_id', sbUser.id)
+              .maybeSingle()
+
+            if (!profile) {
+              // Профиль удалён — сбрасываем онбординг, показываем форму заново
+              localStorage.removeItem(lsKey)
+              await supabase.from('users').update({ onboarded: false }).eq('id', sbUser.id)
+              setExistingUserId(sbUser.id)
+              setTgChecking(false)
+              return
+            }
+
             if (!locallyDone) {
               const { data: ud } = await supabase
                 .from('users').select('onboarded').eq('id', sbUser.id).maybeSingle()
               if (!ud?.onboarded) {
                 // Зарегистрирован, но не онбордeн — показываем форму с предзаполненными данными
-                const { data: profile } = await supabase
-                  .from('master_profiles')
-                  .select('display_name, phone, profession')
-                  .eq('user_id', sbUser.id)
-                  .maybeSingle()
-                if (profile?.display_name) setFormName(profile.display_name)
-                if (profile?.phone) setFormPhone(profile.phone)
-                if (profile?.profession) setFormSpecialty(profile.profession)
+                if (profile.display_name) setFormName(profile.display_name)
+                if (profile.phone) setFormPhone(profile.phone)
+                if (profile.profession) setFormSpecialty(profile.profession)
                 setExistingUserId(sbUser.id)
                 setTgChecking(false)
                 return
@@ -190,26 +202,75 @@ export function RegisterPage() {
 
   // ── Поделиться телефоном из Telegram ──────────────────────────────────────
   const [contactRequested, setContactRequested] = useState(false)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Polling — забираем телефон из tg_phone_cache (fallback если callback не сработал)
+  const startPhonePolling = useCallback(() => {
+    if (!tgId) return
+    // Останавливаем предыдущий polling
+    if (pollRef.current) clearInterval(pollRef.current)
+
+    let attempts = 0
+    pollRef.current = setInterval(async () => {
+      attempts++
+      if (attempts > 15) { // 30 секунд (15 × 2с)
+        if (pollRef.current) clearInterval(pollRef.current)
+        pollRef.current = null
+        return
+      }
+      try {
+        const { data } = await supabase
+          .from('tg_phone_cache')
+          .select('phone')
+          .eq('tg_chat_id', tgId)
+          .maybeSingle()
+        if (data?.phone) {
+          setFormPhone(data.phone)
+          setContactRequested(false)
+          // Удаляем из кеша
+          await supabase.from('tg_phone_cache').delete().eq('tg_chat_id', tgId)
+          if (pollRef.current) clearInterval(pollRef.current)
+          pollRef.current = null
+        }
+      } catch { /* ignore */ }
+    }, 2000)
+  }, [tgId])
+
+  // Cleanup polling при размонтировании
+  useEffect(() => {
+    return () => { if (pollRef.current) clearInterval(pollRef.current) }
+  }, [])
 
   const requestTgContact = useCallback(() => {
     const wa = window.Telegram?.WebApp
     if (!wa?.requestContact) return
     setContactRequested(true)
 
-    const timer = setTimeout(() => setContactRequested(false), 12000)
+    const timer = setTimeout(() => setContactRequested(false), 30000)
+
+    // Запускаем polling как fallback — если контакт уйдёт в чат бота
+    startPhonePolling()
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const ok = wa.requestContact((shared: boolean, res: any) => {
       clearTimeout(timer)
       setContactRequested(false)
-      // res может прийти как { contact: {...} } или как полный event { status, contact }
-      const phone: string = res?.contact?.phone_number ?? res?.phone_number ?? ''
-      if (shared && phone) setFormPhone(phone)
+      // Разные версии Telegram возвращают разные форматы:
+      // { contact: { phone_number } } | { responseUnsafe: { contact: { phone_number } } } | { phone_number }
+      const phone: string =
+        res?.responseUnsafe?.contact?.phone_number ??
+        res?.contact?.phone_number ??
+        res?.phone_number ?? ''
+      if (shared && phone) {
+        setFormPhone(phone)
+        // Останавливаем polling — телефон получен через callback
+        if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+      }
     })
 
     // Desktop / Web возвращают false — не поддерживается
     if (ok === false) { clearTimeout(timer); setContactRequested(false) }
-  }, [])
+  }, [startPhonePolling])
 
   // ── Фильтрация специальностей ─────────────────────────────────────────────
   const filtered = useMemo(

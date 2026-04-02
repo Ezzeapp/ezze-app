@@ -411,6 +411,17 @@ async function processUpdate(update) {
         const askText = `${s.askName}${tgFullName ? s.askNameHint(escapeHtml(tgFullName)) : ""}`;
         await bot.sendMessage(chatId, askText, { remove_keyboard: true });
       }
+    } else {
+      // Mini App вызвал requestContact() — контакт пришёл в чат бота
+      // Сохраняем телефон в кеш, Mini App заберёт его через polling
+      const phone = message.contact.phone_number;
+      if (phone) {
+        console.log(`📱 [master] phone cache: chat=${chatId} phone=${phone}`);
+        await supabase.from("tg_phone_cache").upsert(
+          { tg_chat_id: String(chatId), phone, created_at: new Date().toISOString() },
+          { onConflict: "tg_chat_id" }
+        );
+      }
     }
     return;
   }
@@ -522,7 +533,35 @@ async function processUpdate(update) {
       } else {
         // Не найден — проверяем, вдруг мастер уже прошёл шаги но не завершил регистрацию
         const existingSession = pendingMasters.get(chatId);
-        if (existingSession?.step === "pending_web_registration") {
+        const isInFlow = existingSession?.step === "waiting_phone"
+          || existingSession?.step === "waiting_language"
+          || existingSession?.step === "waiting_master_name";
+
+        if (isInFlow) {
+          // Мастер в процессе onboarding через бот (выбор языка/телефон/имя)
+          // Не сбрасываем, а напоминаем текущий шаг
+          const lang = getLang(existingSession);
+          const s = LANG_STRINGS[lang];
+          if (existingSession.step === "waiting_language") {
+            await sendLangSelection(chatId, firstName);
+          } else if (existingSession.step === "waiting_phone") {
+            await fetch(`${bot.TG_API}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId, text: s.remindShare, parse_mode: "HTML",
+                reply_markup: {
+                  keyboard: [[{ text: s.shareBtn, request_contact: true }]],
+                  resize_keyboard: true, one_time_keyboard: true,
+                },
+              }),
+            });
+          } else if (existingSession.step === "waiting_master_name") {
+            const tgFullName = [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ");
+            const askText = `${s.askName}${tgFullName ? s.askNameHint(escapeHtml(tgFullName)) : ""}`;
+            await bot.sendMessage(chatId, askText, { remove_keyboard: true });
+          }
+        } else if (existingSession?.step === "pending_web_registration") {
           // Мастер ввёл имя, получил кнопку, но мини-апп не открыл/закрыл до конца
           // Восстанавливаем кнопку меню с URL регистрации (не сбрасываем сессию)
           const lang = existingSession.lang || "ru";
@@ -617,15 +656,28 @@ async function processUpdate(update) {
       }
     }
 
-    // ── AI-сообщения от мастеров ──────────────────────────────────────────────
+    // ── AI-сообщения от мастеров / подсказки для незарегистрированных ─────────
     if (!text.startsWith("/")) {
+      // Если в состоянии pending_web_registration — направляем к кнопке меню
+      const pending = pendingMasters.get(chatId);
+      if (pending?.step === "pending_web_registration") {
+        const lang = getLang(pending);
+        const s = LANG_STRINGS[lang];
+        const cfg = await loadTgConfig();
+        const menuBtnLabel = cfg.master_label || s.registerBtn;
+        await bot.sendMessage(chatId,
+          `ℹ️ Для завершения регистрации нажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода сообщения.`
+        );
+        return;
+      }
+
       const masterProfile = await findMasterByChatId(chatId);
       if (masterProfile) {
         const cfg = await loadAIConfig();
         await handleAIMessage(chatId, text, masterProfile, bot, cfg);
       } else {
         await bot.sendMessage(chatId,
-          `ℹ️ Этот бот только для мастеров Ezze.\n\nЕсли вы мастер — подключите Telegram в профиле приложения.`
+          `ℹ️ Вы ещё не зарегистрированы.\n\nНажмите /start чтобы начать регистрацию.`
         );
       }
     }
