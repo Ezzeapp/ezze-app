@@ -258,7 +258,7 @@ function CurrentPlanCard() {
                   ? '❌ Подписка истекла'
                   : isCritical
                     ? `🔴 Критически мало — осталось ${daysLeft} ${daysLeft === 1 ? 'день' : 'дня'}`
-                    : `⚠️ Осталось ${daysLeft} дней`
+                    : `⚠️ Осталось ${daysLeft} ${daysLeft === 4 ? 'дня' : 'дней'}`
                 }
               </div>
             )
