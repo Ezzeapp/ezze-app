@@ -193,13 +193,14 @@ Deno.serve(async (req: Request) => {
   }
 
   // Step B: fallback — find user by email tg_{id}@ezze.site
+  // Используем RPC вместо listUsers() (listUsers возвращает только первые 50 записей)
   if (!userId) {
     const tgEmail = `tg_${tgId}@ezze.site`
-    const { data: { users: authUsers } } = await supabaseAdmin.auth.admin.listUsers()
-    const matchedUser = authUsers?.find((u) => u.email === tgEmail)
+    const { data: foundUserId } = await supabaseAdmin
+      .rpc('get_auth_user_id_by_email', { p_email: tgEmail })
 
-    if (matchedUser) {
-      userId = matchedUser.id
+    if (foundUserId) {
+      userId = foundUserId
 
       // Sync tg_chat_id on master_profiles so Step A works next time
       const { data: profToFix } = await supabaseAdmin

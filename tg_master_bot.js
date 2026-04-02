@@ -624,6 +624,21 @@ async function processUpdate(update) {
       return;
     }
 
+    // ── Неизвестные команды (/help, /settings и т.д.) ──────────────────────────
+    if (text.startsWith("/") && !text.startsWith("/start")) {
+      const masterProfile = await findMasterByChatId(chatId);
+      if (masterProfile) {
+        await bot.sendMessage(chatId,
+          `ℹ️ Используйте кнопку меню рядом с полем ввода, чтобы открыть кабинет мастера.`
+        );
+      } else {
+        await bot.sendMessage(chatId,
+          `ℹ️ Доступные команды:\n\n/start — начать регистрацию`
+        );
+      }
+      return;
+    }
+
     // ── Текст при ожидании номера телефона ────────────────────────────────────
     if (!text.startsWith("/")) {
       const pending = pendingMasters.get(chatId);
