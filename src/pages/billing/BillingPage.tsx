@@ -234,11 +234,36 @@ function CurrentPlanCard() {
       {isLoading ? (
         <Skeleton className="h-4 w-48 mt-3" />
       ) : sub?.expires_at ? (
-        <p className="text-sm text-muted-foreground mt-3">
-          {t('billing.expiresAt', {
-            date: dayjs(sub.expires_at).format('D MMMM YYYY'),
-          })}
-        </p>
+        <>
+          <p className="text-sm text-muted-foreground mt-3">
+            {t('billing.expiresAt', {
+              date: dayjs(sub.expires_at).format('D MMMM YYYY'),
+            })}
+          </p>
+          {(() => {
+            const daysLeft = Math.ceil(
+              (new Date(sub.expires_at).getTime() - Date.now()) / 86400000
+            )
+            if (daysLeft > 7) return null
+            const isExpired  = daysLeft <= 0
+            const isCritical = daysLeft <= 3 && !isExpired
+            return (
+              <div className={[
+                'mt-2 px-3 py-2 rounded-lg text-sm font-medium',
+                isExpired  ? 'bg-red-500/10 text-red-600 dark:text-red-400' :
+                isCritical ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400' :
+                             'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+              ].join(' ')}>
+                {isExpired
+                  ? '❌ Подписка истекла'
+                  : isCritical
+                    ? `🔴 Критически мало — осталось ${daysLeft} ${daysLeft === 1 ? 'день' : 'дня'}`
+                    : `⚠️ Осталось ${daysLeft} дней`
+                }
+              </div>
+            )
+          })()}
+        </>
       ) : null}
     </div>
   )

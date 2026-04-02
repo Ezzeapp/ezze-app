@@ -98,6 +98,32 @@ async function findClickSub(clickTransId: string) {
   return data
 }
 
+/** Восстанавливает данные, деактивированные при истечении подписки */
+async function restoreAfterRenewal(userId: string) {
+  try {
+    // Восстанавливаем услуги
+    await supabaseAdmin
+      .from('services')
+      .update({ is_active: true, suspended_by_expiry: false })
+      .eq('master_id', userId)
+      .eq('suspended_by_expiry', true)
+
+    // Восстанавливаем членов команды
+    const { data: team } = await supabaseAdmin
+      .from('teams').select('id').eq('owner_id', userId).maybeSingle()
+    if (team) {
+      await supabaseAdmin
+        .from('team_members')
+        .update({ status: 'active', suspended_by_expiry: false })
+        .eq('team_id', team.id)
+        .eq('suspended_by_expiry', true)
+    }
+    console.log('[click] restoreAfterRenewal done for userId:', userId)
+  } catch (e) {
+    console.error('[click] restoreAfterRenewal error:', e)
+  }
+}
+
 function addMonths(months: number): string {
   const d = new Date()
   d.setMonth(d.getMonth() + months)
@@ -535,6 +561,9 @@ async function handleComplete(params: Record<string, string>): Promise<Response>
       console.error('[click] upgradePlan FAILED after retry. userId:', userId, 'plan:', plan, 'error:', e2)
     }
   }
+
+  // Восстанавливаем данные, деактивированные при истечении предыдущей подписки
+  await restoreAfterRenewal(userId)
 
   return clickResp(CLICK_OK, 'OK', {
     click_trans_id:      clickTransId,

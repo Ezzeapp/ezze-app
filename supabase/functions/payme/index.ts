@@ -137,6 +137,32 @@ async function upgradePlan(userId: string, plan: string) {
   }
 }
 
+/** Восстанавливает данные, деактивированные при истечении подписки */
+async function restoreAfterRenewal(userId: string) {
+  try {
+    // Восстанавливаем услуги
+    await supabaseAdmin
+      .from('services')
+      .update({ is_active: true, suspended_by_expiry: false })
+      .eq('master_id', userId)
+      .eq('suspended_by_expiry', true)
+
+    // Восстанавливаем членов команды
+    const { data: team } = await supabaseAdmin
+      .from('teams').select('id').eq('owner_id', userId).maybeSingle()
+    if (team) {
+      await supabaseAdmin
+        .from('team_members')
+        .update({ status: 'active', suspended_by_expiry: false })
+        .eq('team_id', team.id)
+        .eq('suspended_by_expiry', true)
+    }
+    console.log('[payme] restoreAfterRenewal done for userId:', userId)
+  } catch (e) {
+    console.error('[payme] restoreAfterRenewal error:', e)
+  }
+}
+
 // ── Method handlers ───────────────────────────────────────────────────────────
 
 async function handleCheckPerform(id: unknown, params: Record<string, unknown>): Promise<Response> {
@@ -279,6 +305,9 @@ async function handlePerformTransaction(id: unknown, params: Record<string, unkn
     .neq('id', rec.id)
 
   await upgradePlan(userId, plan)
+
+  // Восстанавливаем данные, деактивированные при истечении предыдущей подписки
+  await restoreAfterRenewal(userId)
 
   return jsonResp(id, {
     perform_time: performTime,
