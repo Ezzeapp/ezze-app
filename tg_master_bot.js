@@ -214,11 +214,30 @@ async function processUpdate(update) {
         await sendMasterMenu(chatId, firstName, existingProfile);
         return;
       }
-      // Запускаем стандартный flow: выбор языка → телефон → имя → регистрация
-      await bot.setUserMenuButton(chatId); // сброс к default
-      pendingMasters.set(chatId, sessionEntry({ step: "waiting_language" }));
+      // Запускаем регистрацию через Mini App
+      const regUrl = `${APP_URL}/register`;
+      const cfg = await loadTgConfig();
+      const menuBtnLabel = cfg.master_label || LANG_STRINGS.ru.registerBtn;
+      await bot.setUserMenuButton(chatId, menuBtnLabel, regUrl);
+      pendingMasters.set(chatId, sessionEntry({ step: "pending_web_registration" }));
       savePendingSessions();
-      await sendLangSelection(chatId, firstName);
+
+      const greetingText = firstName
+        ? `👋 <b>Привет, ${escapeHtml(firstName)}!</b>\n\nДобро пожаловать в <b>Ezze</b>!\nНажми кнопку ниже, чтобы зарегистрироваться:`
+        : `👋 <b>Привет!</b>\n\nДобро пожаловать в <b>Ezze</b>!\nНажми кнопку ниже, чтобы зарегистрироваться:`;
+
+      await fetch(`${bot.TG_API}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: greetingText,
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [[{ text: "📱 " + menuBtnLabel, web_app: { url: regUrl } }]],
+          },
+        }),
+      });
       return;
 
     } else if (data.startsWith("lang_")) {
