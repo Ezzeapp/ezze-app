@@ -234,7 +234,7 @@ async function processUpdate(update) {
           text: greetingText,
           parse_mode: "HTML",
           reply_markup: {
-            inline_keyboard: [[{ text: "📱 " + menuBtnLabel, web_app: { url: regUrl } }]],
+            inline_keyboard: [[{ text: "📱 " + menuBtnLabel, web_app: { url: regUrl }, style: "primary" }]],
           },
         }),
       });
