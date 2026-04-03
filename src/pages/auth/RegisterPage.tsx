@@ -556,21 +556,20 @@ export function RegisterPage() {
         <div>
           <h1 className="text-2xl font-bold">{platformName}</h1>
           <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-            Для регистрации откройте Telegram бот —<br />
-            это займёт меньше минуты
+            {t('auth.registerViaTelegram')}
           </p>
         </div>
 
-        <Button asChild size="lg" className="w-full">
-          <a href="https://t.me/ezzepro_bot" target="_blank" rel="noreferrer">
-            Открыть @ezzepro_bot
-          </a>
-        </Button>
+        <a href="https://t.me/ezzepro_bot" target="_blank" rel="noreferrer">
+          <Button size="lg" className="w-full">
+            {t('auth.openBot')}
+          </Button>
+        </a>
 
         <p className="text-sm text-muted-foreground">
-          Уже есть аккаунт?{' '}
+          {t('auth.hasAccount')}{' '}
           <Link to="/login" className="font-medium text-primary hover:underline">
-            Войти
+            {t('auth.login')}
           </Link>
         </p>
 

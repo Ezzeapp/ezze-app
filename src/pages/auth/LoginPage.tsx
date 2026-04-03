@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { Zap } from 'lucide-react'
+import { Zap, Phone } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAppSettings } from '@/hooks/useAppSettings'
 import { Button } from '@/components/ui/button'
@@ -68,6 +68,17 @@ export function LoginPage() {
   }, [isAuthenticated, authLoading, navigate])
   const [tgAuthLoading, setTgAuthLoading] = useState(false)
   const [tgNotFound, setTgNotFound] = useState(false)
+
+  // ── Phone login state ────────────────────────────────────────────────────
+  const [loginMode, setLoginMode] = useState<'email' | 'phone'>('email')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [phoneCode, setPhoneCode] = useState('')
+  const [phoneStep, setPhoneStep] = useState<'phone' | 'code'>('phone')
+  const [phoneSending, setPhoneSending] = useState(false)
+  const [phoneVerifying, setPhoneVerifying] = useState(false)
+  const [phoneCodeError, setPhoneCodeError] = useState('')
+  const [phoneCooldown, setPhoneCooldown] = useState(0)
+  const [phoneNotFound, setPhoneNotFound] = useState(false)
 
   const isTg = isTelegramMiniApp()
   const [tgLoading, setTgLoading] = useState(isTg)
@@ -164,6 +175,83 @@ export function LoginPage() {
     }
   }
 
+  // ── Phone login: cooldown timer ─────────────────────────────────────────
+  useEffect(() => {
+    if (phoneCooldown <= 0) return
+    const timer = setTimeout(() => setPhoneCooldown(c => c - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [phoneCooldown])
+
+  const handlePhoneSendCode = async () => {
+    if (!phoneNumber || phoneNumber.replace(/\D/g, '').length < 7 || phoneSending || phoneCooldown > 0) return
+    setPhoneSending(true)
+    setPhoneNotFound(false)
+    try {
+      const { data, error } = await supabase.functions.invoke('phone-auth', {
+        body: { action: 'send_code', phone: phoneNumber },
+      })
+      if (error || !data?.ok) {
+        const msg = data?.message || ''
+        if (msg === 'not_found') {
+          setPhoneNotFound(true)
+        } else if (msg === 'telegram_send_failed') {
+          toast.error(t('auth.codeSendError'))
+        } else {
+          toast.error(t('auth.codeSendError'))
+        }
+        return
+      }
+      setPhoneStep('code')
+      setPhoneCooldown(60)
+    } catch {
+      toast.error(t('auth.codeSendError'))
+    } finally {
+      setPhoneSending(false)
+    }
+  }
+
+  const handlePhoneVerifyCode = async () => {
+    if (!phoneCode || phoneCode.length < 4 || phoneVerifying) return
+    setPhoneVerifying(true)
+    setPhoneCodeError('')
+    setPhoneNotFound(false)
+    try {
+      const { data, error } = await supabase.functions.invoke('phone-auth', {
+        body: {
+          action: 'verify_code',
+          phone: phoneNumber,
+          code: phoneCode,
+        },
+      })
+
+      if (error || !data?.access_token) {
+        const msg = data?.message || ''
+        if (msg === 'not_found') {
+          setPhoneNotFound(true)
+        } else if (msg === 'invalid_code' || msg === 'verification_failed') {
+          setPhoneCodeError(t('auth.invalidCode'))
+        } else {
+          toast.error(t('auth.verifyError'))
+        }
+        return
+      }
+
+      const { error: sessionErr } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      })
+      if (sessionErr) {
+        toast.error(t('auth.verifyError'))
+      } else {
+        navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard', { replace: true })
+      }
+    } catch {
+      toast.error(t('auth.verifyError'))
+    } finally {
+      setPhoneVerifying(false)
+    }
+  }
+
   // ── Telegram Mini App: спиннер ────────────────────────────────────────────
   if (tgLoading) return <LoadingSpinner fullScreen />
 
@@ -221,40 +309,157 @@ export function LoginPage() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">или</span>
+                <span className="bg-card px-2 text-muted-foreground">{t('auth.loginSubtitle')}</span>
               </div>
             </div>
 
-            {/* Email / password form */}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">{t('auth.email')}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  {...register('email')}
-                />
-                {errors.email && (
-                  <p className="text-xs text-destructive">{t('auth.invalidEmail')}</p>
+            {/* Mode tabs */}
+            <div className="flex rounded-lg border border-input p-0.5 bg-muted/50">
+              <button
+                type="button"
+                onClick={() => setLoginMode('phone')}
+                className={[
+                  'flex-1 flex items-center justify-center gap-1.5 text-sm py-1.5 rounded-md transition-colors',
+                  loginMode === 'phone' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground',
+                ].join(' ')}
+              >
+                <Phone className="h-3.5 w-3.5" />
+                {t('auth.phoneLogin')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setLoginMode('email')}
+                className={[
+                  'flex-1 text-sm py-1.5 rounded-md transition-colors',
+                  loginMode === 'email' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground',
+                ].join(' ')}
+              >
+                {t('auth.emailLogin')}
+              </button>
+            </div>
+
+            {loginMode === 'phone' ? (
+              /* Phone login form */
+              <div className="space-y-4">
+                {phoneStep === 'phone' ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label>{t('auth.phone')}</Label>
+                      <Input
+                        type="tel"
+                        placeholder="+998 90 123 45 67"
+                        autoComplete="tel"
+                        value={phoneNumber}
+                        onChange={e => setPhoneNumber(e.target.value)}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      className="w-full"
+                      disabled={phoneNumber.replace(/\D/g, '').length < 7 || phoneSending || phoneCooldown > 0}
+                      onClick={handlePhoneSendCode}
+                    >
+                      {phoneSending ? <LoadingSpinner /> : t('auth.sendCode')}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">{t('auth.codeViaTelegram')}</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">
+                        {t('auth.codeSentTo')} <span className="font-medium text-foreground">{phoneNumber}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t('auth.checkTelegram')}</p>
+                    </div>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={phoneCode}
+                      onChange={e => {
+                        setPhoneCode(e.target.value.replace(/\D/g, ''))
+                        setPhoneCodeError('')
+                      }}
+                      placeholder="000000"
+                      className="text-center text-xl tracking-[0.4em] font-mono"
+                      autoFocus
+                    />
+                    {phoneCodeError && (
+                      <p className="text-xs text-destructive text-center">{phoneCodeError}</p>
+                    )}
+                    {phoneNotFound && (
+                      <p className="text-xs text-destructive text-center">
+                        {t('auth.noAccount')}{' '}
+                        <Link to="/register" className="underline">{t('auth.register')}</Link>
+                      </p>
+                    )}
+                    <Button
+                      type="button"
+                      className="w-full"
+                      disabled={phoneCode.length < 4 || phoneVerifying}
+                      onClick={handlePhoneVerifyCode}
+                    >
+                      {phoneVerifying ? <LoadingSpinner /> : t('auth.login')}
+                    </Button>
+                    <div className="text-center">
+                      {phoneCooldown > 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          {t('auth.resendIn')}{phoneCooldown}{t('auth.seconds')}
+                        </p>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handlePhoneSendCode}
+                          disabled={phoneSending}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          {t('auth.resendCode')}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => { setPhoneStep('phone'); setPhoneCode(''); setPhoneCodeError(''); setPhoneNotFound(false) }}
+                        className="block mx-auto mt-1 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        {t('common.back')}
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">{t('auth.password')}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  {...register('password')}
-                />
-                {errors.password && (
-                  <p className="text-xs text-destructive">{t('auth.passwordMin')}</p>
-                )}
-              </div>
-              <Button type="submit" className="w-full" loading={loading}>
-                {t('auth.login')}
-              </Button>
-            </form>
+            ) : (
+              /* Email / password form */
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">{t('auth.email')}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    {...register('email')}
+                  />
+                  {errors.email && (
+                    <p className="text-xs text-destructive">{t('auth.invalidEmail')}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">{t('auth.password')}</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    {...register('password')}
+                  />
+                  {errors.password && (
+                    <p className="text-xs text-destructive">{t('auth.passwordMin')}</p>
+                  )}
+                </div>
+                <Button type="submit" className="w-full" loading={loading}>
+                  {t('auth.login')}
+                </Button>
+              </form>
+            )}
 
             <p className="text-center text-sm text-muted-foreground">
               {t('auth.noAccount')}{' '}

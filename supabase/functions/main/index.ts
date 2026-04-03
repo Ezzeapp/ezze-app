@@ -25,6 +25,7 @@ serve(async (req: Request) => {
         ['JWT_SECRET', Deno.env.get('JWT_SECRET') ?? ''],
         ['TG_BOT_TOKEN', Deno.env.get('TG_BOT_TOKEN') ?? ''],
         ['APP_URL', Deno.env.get('APP_URL') ?? ''],
+        ['TG_GATEWAY_TOKEN', Deno.env.get('TG_GATEWAY_TOKEN') ?? ''],
       ],
       forceCreate: false,
     })
