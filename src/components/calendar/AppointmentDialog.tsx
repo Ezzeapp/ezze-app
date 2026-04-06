@@ -248,6 +248,10 @@ export function AppointmentDialog({
   const [weekStart, setWeekStart] = useState(() =>
     dayjs(defaultDate || dayjs()).startOf('isoWeek')
   )
+  // Месяц для десктоп-календаря (независимый от weekStart)
+  const [desktopMonth, setDesktopMonth] = useState(() =>
+    dayjs(defaultDate || dayjs()).startOf('month')
+  )
 
   // ── Клиент ────────────────────────────────────────────────────────────────
   const [clientSearch, setClientSearch] = useState('')
@@ -501,6 +505,16 @@ export function AppointmentDialog({
     }).filter(Boolean) as string[]
   }, [schedule])
 
+  // Ячейки месячного календаря для десктопа (0=пн … 6=вс)
+  const desktopMonthDays = useMemo(() => {
+    const start = desktopMonth.startOf('month')
+    const end   = desktopMonth.endOf('month')
+    const firstDow = (start.day() + 6) % 7
+    const cells: (dayjs.Dayjs | null)[] = Array(firstDow).fill(null)
+    for (let d = start; !d.isAfter(end); d = d.add(1, 'day')) cells.push(d)
+    return cells
+  }, [desktopMonth])
+
   // Если сегодня выходной — автоматически переключаемся на первый рабочий день
   // и синхронизируем неделю
   useEffect(() => {
@@ -513,6 +527,11 @@ export function AppointmentDialog({
       return first
     })
   }, [open, availableDates])
+
+  // Синхронизируем десктоп-месяц при изменении выбранной даты
+  useEffect(() => {
+    if (selectedDate) setDesktopMonth(dayjs(selectedDate).startOf('month'))
+  }, [selectedDate])
 
 
   // Поиск услуг
@@ -1065,7 +1084,7 @@ export function AppointmentDialog({
       {/* Мобиле: полноэкранный снизу вверх. Десктоп: центрированный диалог */}
       <DialogContent
         mobileFullscreen
-        className="w-full p-0 overflow-hidden flex flex-col sm:max-w-xl lg:max-w-3xl sm:h-[65vh] sm:max-h-[65vh]"
+        className="w-full p-0 overflow-hidden flex flex-col sm:max-w-xl lg:max-w-5xl sm:h-[65vh] sm:max-h-[65vh] lg:h-[85vh] lg:max-h-[85vh]"
       >
 
         {/* Заголовок */}
@@ -1232,8 +1251,8 @@ export function AppointmentDialog({
 
           return (
             <>
-              {/* ── WIZARD (все экраны) ─────────────────────────── */}
-              <div className="flex-1 flex flex-col min-h-0 lg:flex-row lg:overflow-hidden">
+              {/* ── МОБАЙЛ + малый десктоп (< lg) ─── */}
+              <div className="lg:hidden flex-1 flex flex-col min-h-0 overflow-hidden">
                 {/* Левая колонка: шаги визарда */}
                 <div className="flex flex-col min-h-0 flex-1 lg:flex-none lg:w-[60%] lg:border-r">
                 {/* Прогресс-бар — компактный */}
@@ -1651,7 +1670,361 @@ export function AppointmentDialog({
                     )}
                   </div>
                 </div>
-              </div>{/* end outer wizard */}
+              </div>{/* end mobile wizard */}
+
+              {/* ── БОЛЬШОЙ ДЕСКТОП (≥ lg) ─── */}
+              <div className="hidden lg:flex flex-col flex-1 overflow-hidden">
+                {/* 3 колонки */}
+                <div className="flex-1 flex overflow-hidden divide-x">
+
+                  {/* ── КОЛ 1: УСЛУГИ (28%) ── */}
+                  <div className="flex flex-col w-[28%] overflow-hidden">
+                    <div className="px-4 py-2.5 border-b shrink-0">
+                      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                        {t('appointments.service')}
+                      </p>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-3">
+                      {servicesBlock}
+                    </div>
+                    {selectedSvcs.length > 0 && (
+                      <div className="shrink-0 border-t px-4 py-2 bg-muted/20 text-xs text-muted-foreground flex items-center gap-3">
+                        <span className="font-medium text-foreground">{selectedSvcs.length} усл.</span>
+                        {totalDuration > 0 && <span>· {formatDuration(totalDuration, t)}</span>}
+                        {totalBasePrice > 0 && <span className="ml-auto font-semibold text-foreground">{formatCurrency(totalBasePrice, currency, i18n.language)}</span>}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── КОЛ 2: ДАТА + ВРЕМЯ (38%) ── */}
+                  <div className="flex flex-col w-[38%] overflow-hidden">
+                    {/* Месячный мини-календарь */}
+                    <div className="px-4 pt-3 pb-2 shrink-0">
+                      {/* Навигация месяц */}
+                      <div className="flex items-center justify-between mb-2">
+                        <button type="button"
+                          onClick={() => setDesktopMonth(m => m.subtract(1, 'month'))}
+                          disabled={desktopMonth.isBefore(dayjs().startOf('month'))}
+                          className="h-7 w-7 rounded-md border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                          <ChevronLeft className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="text-sm font-semibold capitalize">
+                          {desktopMonth.format('MMMM YYYY')}
+                        </span>
+                        <button type="button"
+                          onClick={() => setDesktopMonth(m => m.add(1, 'month'))}
+                          className="h-7 w-7 rounded-md border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors">
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {/* Заголовки дней недели */}
+                      <div className="grid grid-cols-7 mb-1">
+                        {Array.from({length: 7}, (_, i) => dayjs().startOf('isoWeek').add(i, 'day').format('dd')).map((d, i) => (
+                          <div key={i} className="text-center text-[10px] text-muted-foreground py-0.5">{d}</div>
+                        ))}
+                      </div>
+                      {/* Ячейки дней */}
+                      <div className="grid grid-cols-7 gap-0.5">
+                        {desktopMonthDays.map((d, i) => {
+                          if (!d) return <div key={`e${i}`} />
+                          const dateStr    = d.format('YYYY-MM-DD')
+                          const isToday    = d.isSame(dayjs(), 'day')
+                          const isPast     = d.isBefore(dayjs(), 'day')
+                          const isWeekend  = d.day() === 0 || d.day() === 6
+                          const isWorking  = availableDates.includes(dateStr)
+                          const isSelected = dateStr === selectedDate
+                          return (
+                            <button key={dateStr} type="button"
+                              disabled={isPast || !isWorking}
+                              onClick={() => { setSelectedDate(dateStr); setSelectedTime(''); setSvcBlockedWarning(null) }}
+                              className={`h-8 w-full text-xs rounded-md transition-all font-medium
+                                ${isSelected
+                                  ? 'bg-primary text-primary-foreground scale-105'
+                                  : isToday && !isSelected
+                                    ? 'ring-1 ring-primary text-primary hover:bg-muted cursor-pointer'
+                                    : isPast || !isWorking
+                                      ? 'opacity-30 cursor-not-allowed'
+                                      : isWeekend
+                                        ? 'text-red-500 hover:bg-muted cursor-pointer'
+                                        : 'hover:bg-muted cursor-pointer'
+                                }`}>
+                              {d.date()}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Слоты времени */}
+                    <div className="flex-1 overflow-y-auto border-t px-4 pt-3 pb-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-2">
+                        {t('appointments.time')}
+                        {totalDuration > 0 && <span className="font-normal normal-case text-muted-foreground">· {formatDuration(totalDuration, t)}</span>}
+                        {slotsLoading && <span className="ml-auto"><div className="h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></span>}
+                      </p>
+                      <div className={`relative transition-opacity duration-150 ${slotsLoading ? 'opacity-40 pointer-events-none' : ''}`}>
+                        {slots.length === 0 && !slotsLoading ? (
+                          <p className="text-sm text-muted-foreground italic py-1">{t('schedule.dayOff')}</p>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-5 gap-1">
+                              {slots.map(slot => {
+                                const isChosen   = selectedTime === slot.time
+                                const isDisabled = slot.busy
+                                return (
+                                  <button key={slot.time} type="button"
+                                    onClick={() => { if (isDisabled) return; setSelectedTime(slot.time); setSvcBlockedWarning(null) }}
+                                    className={`py-1.5 rounded-lg border text-xs font-medium transition-all
+                                      ${isDisabled
+                                        ? 'border-border bg-muted/40 text-muted-foreground/40 cursor-not-allowed line-through'
+                                        : isChosen
+                                          ? 'border-primary bg-primary text-primary-foreground shadow-sm scale-105'
+                                          : 'border-border hover:border-primary/60 hover:bg-primary/5 active:scale-95'
+                                      }`}>
+                                    {slot.time}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                            {(() => {
+                              const allBusy = slots.every(s => s.busy)
+                              if (allBusy) return <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5">{t('appointments.allSlotsBusy')}</p>
+                              const nextFree = selectedTime
+                                ? slots.find(s => !s.busy && s.time > selectedTime)
+                                : slots.find(s => !s.busy)
+                              if (nextFree) return (
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <p className="text-xs text-muted-foreground">
+                                    {selectedTime ? t('appointments.nextFree') : t('appointments.nearestFree')}:
+                                  </p>
+                                  <button type="button"
+                                    onClick={() => setSelectedTime(nextFree.time)}
+                                    className="text-xs font-semibold text-primary hover:underline">
+                                    {nextFree.time}
+                                  </button>
+                                </div>
+                              )
+                              return null
+                            })()}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── КОЛ 3: КЛИЕНТ + ОПЛАТА (34%) ── */}
+                  <div className="flex flex-col w-[34%] overflow-hidden">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+
+                      {/* Клиент */}
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2">
+                          {t('appointments.client')}
+                        </p>
+                        {clientBlock}
+                      </div>
+
+                      {/* Цена */}
+                      <div className="space-y-1 pt-2 border-t">
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2">
+                          {t('appointments.total')}
+                        </p>
+                        <div className="relative">
+                          <Input type="number" min={0}
+                            className="h-12 w-full text-2xl font-bold pr-14"
+                            placeholder={totalBasePrice > 0 ? String(totalBasePrice) : t('appointments.pricePlaceholder')}
+                            value={priceInput} onChange={e => setPriceInput(e.target.value)} />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
+                        </div>
+                        {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
+                          <div className="flex items-center justify-end gap-1.5 px-1">
+                            <span className="text-xs text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
+                            <span className="text-xs">→</span>
+                            <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : 'text-emerald-600'}`}>{formatCurrency(finalPrice, currency, i18n.language)}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Скидка / Наценка */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex rounded-lg border overflow-hidden shrink-0">
+                            <button type="button" onClick={() => handleModeSwitch('discount')}
+                              className={`px-3 h-7 text-xs font-medium transition-all border-r ${adjustMode === 'discount' ? 'bg-emerald-500 text-white' : 'bg-background text-muted-foreground hover:text-emerald-600'}`}>
+                              {t('appointments.discount')}
+                            </button>
+                            <button type="button" onClick={() => handleModeSwitch('surcharge')}
+                              className={`px-3 h-7 text-xs font-medium transition-all ${adjustMode === 'surcharge' ? 'bg-orange-500 text-white' : 'bg-background text-muted-foreground hover:text-orange-500'}`}>
+                              {t('appointments.surcharge')}
+                            </button>
+                          </div>
+                          <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : effectiveDiscount > 0 ? 'text-emerald-600' : 'text-muted-foreground/40'}`}>
+                            {effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : effectiveDiscount > 0 ? `−${effectiveDiscount}%` : adjustMode === 'discount' ? '−%' : '+%'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {PRESETS.map(p => (
+                            <button key={p} type="button" onClick={() => handlePresetClick(p)}
+                              className={`h-7 px-2 rounded-lg border text-xs font-medium transition-all flex-1 ${activePreset === p ? adjustMode === 'discount' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-orange-500 border-orange-500 text-white' : adjustMode === 'discount' ? 'border-border hover:border-emerald-400 hover:text-emerald-600' : 'border-border hover:border-orange-400 hover:text-orange-500'}`}>
+                              {p}%
+                            </button>
+                          ))}
+                          <div className="relative flex-1">
+                            <Percent className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+                            <Input type="number" min={0} max={100}
+                              className="h-7 w-full pr-6 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              placeholder="0" value={customAdjust} onChange={e => handleCustomChange(e.target.value)} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Способ оплаты */}
+                      <div className="grid grid-cols-2 gap-1">
+                        {([
+                          { key: 'cash',     label: t('appointments.paymentCash') },
+                          { key: 'card',     label: t('appointments.paymentCard') },
+                          { key: 'transfer', label: t('appointments.paymentTransfer') },
+                          { key: 'other',    label: t('appointments.paymentOther') },
+                        ] as const).map(m => (
+                          <button key={m.key} type="button"
+                            onClick={() => setPaymentMethod(paymentMethod === m.key ? '' : m.key)}
+                            className={`py-2 px-3 rounded-lg text-xs font-medium transition-colors ${paymentMethod === m.key ? 'bg-primary/10 text-primary' : 'bg-muted/40 text-muted-foreground hover:bg-muted'}`}>
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Заметки */}
+                      {showNotes && (
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
+                            {t('appointments.tabNote')}
+                          </p>
+                          <Textarea rows={2} className="text-sm resize-none min-h-0"
+                            placeholder={t('booking.commentPlaceholder')}
+                            value={notes} onChange={e => setNotes(e.target.value)} />
+                        </div>
+                      )}
+
+                      {/* TG уведомление + Повтор */}
+                      {!editAppt && (hasTelegram || showRecurring) && (
+                        <div className="space-y-2 pt-1 border-t">
+                          {hasTelegram && (
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs">{t('appointments.notifyTelegram')}</p>
+                              <Switch checked={notifyTg} onCheckedChange={setNotifyTg} />
+                            </div>
+                          )}
+                          {showRecurring && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs font-medium">{t('appointments.recurring')}</p>
+                                <Switch checked={recurring} onCheckedChange={setRecurring} />
+                              </div>
+                              {recurring && (
+                                <div className="flex items-center gap-2">
+                                  <p className="text-xs text-muted-foreground shrink-0">{t('appointments.recurringWeeks')}</p>
+                                  <Input type="number" min={2} max={52} className="w-20 h-7 text-xs"
+                                    value={recurringWeeks} onChange={e => setRecurringWeeks(Number(e.target.value))} />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Статус (только редактирование) */}
+                      {editAppt && (
+                        <div className="space-y-2 pt-2 border-t">
+                          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('appointments.statusLabel')}</p>
+                          <div className="grid grid-cols-2 gap-1">
+                            {([
+                              { value: 'scheduled', label: t('appointments.status.scheduled'), color: 'text-blue-500 border-blue-500/40 bg-blue-500/10' },
+                              { value: 'done',      label: t('appointments.status.done'),      color: 'text-emerald-500 border-emerald-500/40 bg-emerald-500/10' },
+                              { value: 'cancelled', label: t('appointments.status.cancelled'), color: 'text-red-500 border-red-500/40 bg-red-500/10' },
+                              { value: 'no_show',   label: t('appointments.status.no_show'),   color: 'text-amber-500 border-amber-500/40 bg-amber-500/10' },
+                            ] as const).map(opt => (
+                              <button key={opt.value} type="button"
+                                onClick={() => setStatus(opt.value)}
+                                className={`px-2 py-1.5 rounded-lg border text-xs font-medium transition-all text-left ${
+                                  status === opt.value ? opt.color : 'border-border text-muted-foreground hover:bg-muted/60'
+                                }`}>
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Баннер онлайн-подтверждения */}
+                      {editAppt?.booked_via === 'online' && !editAppt.confirmed_at && editAppt.status === 'scheduled' && !isConfirmedLocally && (
+                        <div className="p-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 flex items-start gap-2.5">
+                          <Clock className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-amber-700 dark:text-amber-300">Ожидает подтверждения</p>
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Онлайн-запись от клиента</p>
+                          </div>
+                          <Button type="button" size="sm"
+                            className="shrink-0 h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white"
+                            onClick={async () => {
+                              await confirm.mutateAsync(editAppt.id)
+                              setIsConfirmedLocally(true)
+                              toast.success('Запись подтверждена')
+                            }}
+                            disabled={confirm.isPending}>
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Подтвердить
+                          </Button>
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+
+                </div>{/* end 3 columns */}
+
+                {/* ── ФУТЕР ДЕСКТОПА ── */}
+                <div className="shrink-0 border-t px-4 py-3 flex items-center justify-between bg-background">
+                  <div className="flex items-center gap-2">
+                    {editAppt && onDelete && (
+                      <Button type="button" size="sm" variant="destructive" className="gap-1" onClick={onDelete}>
+                        {t('common.delete')}
+                      </Button>
+                    )}
+                    {editAppt && onDuplicate && !isReschedule && (
+                      <Button type="button" size="sm" variant="outline" className="gap-1" onClick={onDuplicate}>
+                        <Copy className="h-3.5 w-3.5" />{t('appointments.duplicate')}
+                      </Button>
+                    )}
+                    {editAppt && !isReschedule && (
+                      <Button type="button" size="sm" variant="outline"
+                        className="gap-1 text-amber-600 border-amber-200 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                        onClick={() => setIsReschedule(true)}>
+                        <ArrowRightLeft className="h-3.5 w-3.5" />{t('appointments.reschedule')}
+                      </Button>
+                    )}
+                    {editAppt && isReschedule && (
+                      <Button type="button" size="sm" variant="outline"
+                        className="gap-1 text-muted-foreground"
+                        onClick={() => { setIsReschedule(false); setSelectedTime(editAppt.start_time) }}>
+                        <X className="h-3.5 w-3.5" />{t('appointments.rescheduleCancel')}
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {editAppt && !isReschedule && (
+                      <Button type="button" variant="outline" className="h-8 w-8 p-0"
+                        onClick={() => printReceipt({ appointment: editAppt, masterName: user?.name || '', services: selectedSvcs, currency })}>
+                        <Printer className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    <Button type="button" loading={isLoading} disabled={!canSave} onClick={handleSubmit}>
+                      {t('common.save')}
+                    </Button>
+                  </div>
+                </div>
+
+              </div>{/* end desktop */}
 
             </>
           )
