@@ -8,7 +8,7 @@ export interface BroadcastCampaign {
   name: string
   message: string
   promo_code_id: string | null
-  filter_type: 'all' | 'tag' | 'level' | 'inactive' | 'birthday_month'
+  filter_type: 'all' | 'tag' | 'level' | 'inactive' | 'birthday_month' | 'selected'
   filter_value: string | null
   status: 'draft' | 'sending' | 'sent' | 'failed'
   total_recipients: number
@@ -62,6 +62,34 @@ export function useCreateBroadcast() {
   })
 }
 
+export function useUpdateBroadcast() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<CreateBroadcastData> & { status?: string } }) => {
+      const { data: result, error } = await supabase
+        .from('broadcast_campaigns')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      return result as BroadcastCampaign
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['broadcast_campaigns'] }),
+  })
+}
+
+export function useDeleteBroadcast() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('broadcast_campaigns').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['broadcast_campaigns'] }),
+  })
+}
+
 export function useSendBroadcast() {
   const qc = useQueryClient()
   return useMutation({
@@ -86,8 +114,10 @@ export function useBroadcastRecipientCount(
     queryKey: ['broadcast_recipient_count', masterId, filterType, filterValue],
     queryFn: async () => {
       if (!masterId) return 0
-      // birthday_month нельзя посчитать через count (нет server-side функции)
       if (filterType === 'birthday_month') return null
+      if (filterType === 'selected') {
+        try { return JSON.parse(filterValue || '[]').length } catch { return 0 }
+      }
 
       let query = supabase
         .from('clients')

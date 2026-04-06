@@ -1387,6 +1387,7 @@
       "audienceLevel": "По уровню",
       "audienceInactive": "Неактивные",
       "audienceBdayMonth": "День рождения (месяц)",
+      "audienceSelected": "Конкретные клиенты",
       "inactivityDays": "дней без визита",
       "message": "Текст сообщения",
       "attachPromo": "Прикрепить промокод",

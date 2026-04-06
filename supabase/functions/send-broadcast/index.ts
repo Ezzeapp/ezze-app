@@ -115,6 +115,14 @@ Deno.serve(async (req: Request) => {
         cutoff.setDate(cutoff.getDate() - days)
         query = query.or(`last_visit.is.null,last_visit.lte.${cutoff.toISOString().slice(0, 10)}`)
       }
+    } else if (filterType === 'selected' && filterValue) {
+      let ids: string[] = []
+      try { ids = JSON.parse(filterValue) } catch { ids = [] }
+      if (ids.length === 0) {
+        await supabase.from('broadcast_campaigns').update({ status: 'failed' }).eq('id', campaign_id)
+        return new Response(JSON.stringify({ error: 'No clients selected' }), { status: 400 })
+      }
+      query = query.in('id', ids)
     }
     // birthday_month — post-filter after fetch
 

@@ -1387,6 +1387,7 @@
       "audienceLevel": "By level",
       "audienceInactive": "Inactive",
       "audienceBdayMonth": "Birthday month",
+      "audienceSelected": "Specific clients",
       "inactivityDays": "days without visit",
       "message": "Message text",
       "attachPromo": "Attach promo code",
