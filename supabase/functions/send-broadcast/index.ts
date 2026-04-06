@@ -13,23 +13,35 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 )
 
+// Рассылка идёт через мастер-бот: именно с ним взаимодействуют клиенты
+// через записи и уведомления. CLIENT_BOT_TOKEN доступен только тем клиентам,
+// кто явно запустил @ezzeprogo_bot (кабинет клиента).
+const MASTER_BOT_TOKEN = Deno.env.get('TG_BOT_TOKEN') ?? ''
 const CLIENT_BOT_TOKEN = Deno.env.get('TG_CLIENT_BOT_TOKEN') ?? ''
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 
 async function sendTg(chatId: string, text: string): Promise<boolean> {
   if (!chatId || !text) return false
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${CLIENT_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
-    })
-    const data = await res.json()
-    return data.ok === true
-  } catch {
-    return false
+  // Пробуем мастер-бот (первичный канал), затем клиентский как fallback
+  for (const token of [MASTER_BOT_TOKEN, CLIENT_BOT_TOKEN]) {
+    if (!token) continue
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+      })
+      const data = await res.json()
+      if (data.ok === true) return true
+      // Если 403 (заблокирован) — смысла пробовать другой бот нет
+      if (data.error_code === 403) return false
+      // 404 — клиент не стартовал этот бот, пробуем следующий
+    } catch {
+      continue
+    }
   }
+  return false
 }
 
 Deno.serve(async (req: Request) => {
