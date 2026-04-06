@@ -109,6 +109,47 @@ function applyTemplate(tmpl: string, vars: Record<string, string>): string {
   return r
 }
 
+/**
+ * 3-уровневый поиск Telegram-идентификатора клиента:
+ *  1. appt.telegram_id          — онлайн-запись (клиент писал в бот)
+ *  2. clients.tg_chat_id        — был найден ранее и закеширован
+ *  3. tg_clients (global)       — ищем по номеру телефона в общей базе бота;
+ *                                  если нашли — кешируем обратно в clients.tg_chat_id
+ */
+async function resolveClientTgId(appt: any): Promise<{ tgId: string; tgUsr: string }> {
+  let tgId  = appt.telegram_id     ? String(appt.telegram_id) : ''
+  const tgUsr = appt.client_telegram ?? ''
+
+  if (!tgId && !tgUsr && appt.client_id) {
+    const { data: cl } = await supabase
+      .from('clients')
+      .select('tg_chat_id, phone')
+      .eq('id', appt.client_id)
+      .maybeSingle()
+
+    if (cl?.tg_chat_id) {
+      tgId = String(cl.tg_chat_id)
+    } else {
+      // Ищем в глобальной таблице tg_clients по телефону
+      const rawPhone = (cl?.phone || appt.client_phone || '').trim().replace(/[\s\-().]/g, '').replace(/^\+/, '')
+      if (rawPhone) {
+        const { data: tgRow } = await supabase
+          .from('tg_clients')
+          .select('tg_chat_id')
+          .or(`phone.eq.${rawPhone},phone.eq.+${rawPhone}`)
+          .maybeSingle()
+        if (tgRow?.tg_chat_id) {
+          tgId = String(tgRow.tg_chat_id)
+          // Кешируем в clients.tg_chat_id для будущих запросов
+          await supabase.from('clients').update({ tg_chat_id: tgId }).eq('id', appt.client_id)
+        }
+      }
+    }
+  }
+
+  return { tgId, tgUsr }
+}
+
 // ── INSERT: new appointment → notify master + confirm client ──────────────────
 
 async function handleInsert(record: any) {
@@ -238,14 +279,8 @@ async function handleInsert(record: any) {
     if (msg) await sendTgMasterWithCancelButton(masterTgId, msg, record.id)
   }
 
-  // Notify client — если запись мастером вручную, ищем tg_chat_id из таблицы clients
-  let clientTgId = record.telegram_id ? String(record.telegram_id) : ''
-  let clientTgUsr = record.client_telegram ?? ''
-  if (!clientTgId && !clientTgUsr && record.client_id) {
-    const { data: cl } = await supabase
-      .from('clients').select('tg_chat_id').eq('id', record.client_id).maybeSingle()
-    if (cl?.tg_chat_id) clientTgId = String(cl.tg_chat_id)
-  }
+  // Notify client — 3-уровневый поиск: telegram_id → clients.tg_chat_id → tg_clients по телефону
+  const { tgId: clientTgId, tgUsr: clientTgUsr } = await resolveClientTgId(record)
   if (clientTgId || clientTgUsr) {
     const cSetting = await getNotifSetting(masterId, 'appointment_confirmed')
     if (cSetting.enabled) {
@@ -288,14 +323,8 @@ async function handleUpdate(record: any, oldRecord: any) {
   const masterId = record.master_id
   if (!masterId) return
 
-  // Если запись мастером вручную — ищем tg_chat_id из таблицы clients
-  let clientTgId = record.telegram_id ? String(record.telegram_id) : ''
-  let clientTgUsr = record.client_telegram ?? ''
-  if (!clientTgId && !clientTgUsr && record.client_id) {
-    const { data: cl } = await supabase
-      .from('clients').select('tg_chat_id').eq('id', record.client_id).maybeSingle()
-    if (cl?.tg_chat_id) clientTgId = String(cl.tg_chat_id)
-  }
+  // 3-уровневый поиск: telegram_id → clients.tg_chat_id → tg_clients по телефону
+  const { tgId: clientTgId, tgUsr: clientTgUsr } = await resolveClientTgId(record)
   if (!clientTgId && !clientTgUsr) return
 
   const { data: prof } = await supabase.from('master_profiles').select('*').eq('user_id', masterId).maybeSingle()
@@ -414,14 +443,8 @@ async function handleReminders() {
       const clientName = appt.client_name ?? '-'
       const startTime = appt.start_time ?? '-'
       const masterTgId = prof.tg_chat_id ?? ''
-      // Если запись мастером вручную — ищем tg_chat_id из таблицы clients
-      let clientTgId = appt.telegram_id ? String(appt.telegram_id) : ''
-      let clientTgUsr = appt.client_telegram ?? ''
-      if (!clientTgId && !clientTgUsr && appt.client_id) {
-        const { data: cl } = await supabase
-          .from('clients').select('tg_chat_id').eq('id', appt.client_id).maybeSingle()
-        if (cl?.tg_chat_id) clientTgId = String(cl.tg_chat_id)
-      }
+      // 3-уровневый поиск: telegram_id → clients.tg_chat_id → tg_clients по телефону
+      const { tgId: clientTgId, tgUsr: clientTgUsr } = await resolveClientTgId(appt)
 
       // Reminder to master
       const mRS = await getNotifSetting(masterId, 'reminder_master')

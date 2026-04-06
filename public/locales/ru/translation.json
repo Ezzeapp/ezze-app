@@ -22,7 +22,8 @@
     "groupTeam": "Команда",
     "billing": "Подписка",
     "support": "Поддержка",
-    "loyalty": "Лояльность"
+    "loyalty": "Лояльность",
+    "marketing": "Маркетинг"
   },
   "feature": {
     "lockedDesc": "Доступно на плане {{plan}} и выше",
@@ -1367,5 +1368,39 @@
     "allServices": "Все услуги",
     "openInMaps": "Открыть в картах",
     "poweredBy": "Работает на Ezze"
+  },
+  "marketing": {
+    "title": "Маркетинг",
+    "subtitle": "Рассылки, уведомления, промокоды и лояльность",
+    "tabBroadcasts": "Рассылки",
+    "tabAuto": "Авто",
+    "tabPromo": "Промокоды",
+    "tabLoyalty": "Лояльность",
+    "tabReviews": "Отзывы",
+    "broadcasts": {
+      "new": "Новая рассылка",
+      "dialogTitle": "Новая рассылка",
+      "name": "Название кампании",
+      "audience": "Аудитория",
+      "audienceAll": "Все клиенты",
+      "audienceTag": "По тегу",
+      "audienceLevel": "По уровню",
+      "audienceInactive": "Неактивные",
+      "audienceBdayMonth": "День рождения (месяц)",
+      "inactivityDays": "дней без визита",
+      "message": "Текст сообщения",
+      "attachPromo": "Прикрепить промокод",
+      "promoNone": "Без промокода",
+      "send": "Отправить",
+      "historyTitle": "История кампаний",
+      "empty": "Нет рассылок",
+      "emptyDesc": "Создайте первую рассылку, чтобы отправить сообщения клиентам в Telegram",
+      "statCampaigns": "Кампаний",
+      "statSent": "Сообщений отправлено",
+      "statusSending": "Отправляется...",
+      "statusSent": "Отправлено",
+      "statusFailed": "Ошибка",
+      "estimatedRecipients": "Получателей"
+    }
   }
 }

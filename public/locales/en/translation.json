@@ -22,7 +22,8 @@
     "groupTeam": "Team",
     "billing": "Subscription",
     "support": "Support",
-    "loyalty": "Loyalty"
+    "loyalty": "Loyalty",
+    "marketing": "Marketing"
   },
   "feature": {
     "lockedDesc": "Available on {{plan}} plan and above",
@@ -1367,5 +1368,39 @@
     "allServices": "All services",
     "openInMaps": "Open in maps",
     "poweredBy": "Powered by Ezze"
+  },
+  "marketing": {
+    "title": "Marketing",
+    "subtitle": "Broadcasts, auto-notifications, promo codes and loyalty",
+    "tabBroadcasts": "Broadcasts",
+    "tabAuto": "Auto",
+    "tabPromo": "Promo Codes",
+    "tabLoyalty": "Loyalty",
+    "tabReviews": "Reviews",
+    "broadcasts": {
+      "new": "New broadcast",
+      "dialogTitle": "New broadcast",
+      "name": "Campaign name",
+      "audience": "Audience",
+      "audienceAll": "All clients",
+      "audienceTag": "By tag",
+      "audienceLevel": "By level",
+      "audienceInactive": "Inactive",
+      "audienceBdayMonth": "Birthday month",
+      "inactivityDays": "days without visit",
+      "message": "Message text",
+      "attachPromo": "Attach promo code",
+      "promoNone": "No promo code",
+      "send": "Send",
+      "historyTitle": "Campaign history",
+      "empty": "No broadcasts yet",
+      "emptyDesc": "Create your first broadcast to send messages to clients in Telegram",
+      "statCampaigns": "Campaigns",
+      "statSent": "Messages sent",
+      "statusSending": "Sending...",
+      "statusSent": "Sent",
+      "statusFailed": "Failed",
+      "estimatedRecipients": "Recipients"
+    }
   }
 }

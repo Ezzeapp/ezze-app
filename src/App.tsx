@@ -33,8 +33,7 @@ const AdminPage = lazy(() => import('@/pages/admin/AdminPage').then(m => ({ defa
 const TeamPage = lazy(() => import('@/pages/team/TeamPage').then(m => ({ default: m.TeamPage })))
 const JoinTeamPage = lazy(() => import('@/pages/team/JoinTeamPage').then(m => ({ default: m.JoinTeamPage })))
 const TeamAnalyticsPage = lazy(() => import('@/pages/team/TeamAnalyticsPage').then(m => ({ default: m.TeamAnalyticsPage })))
-const PromoCodesPage = lazy(() => import('@/pages/promo/PromoCodesPage').then(m => ({ default: m.PromoCodesPage })))
-const ReviewsPage = lazy(() => import('@/pages/reviews/ReviewsPage').then(m => ({ default: m.ReviewsPage })))
+const MarketingPage = lazy(() => import('@/pages/marketing/MarketingPage').then(m => ({ default: m.MarketingPage })))
 const BillingPage = lazy(() => import('@/pages/billing/BillingPage').then(m => ({ default: m.BillingPage })))
 const PublicBookingPage = lazy(() => import('@/pages/booking/PublicBookingPage').then(m => ({ default: m.PublicBookingPage })))
 const CancelBookingPage = lazy(() => import('@/pages/booking/CancelBookingPage').then(m => ({ default: m.CancelBookingPage })))
@@ -46,7 +45,6 @@ const MiniAppLayout = lazy(() => import('@/components/layout/MiniAppLayout').the
 const TelegramEntryPage = lazy(() => import('@/pages/tg/TelegramEntryPage').then(m => ({ default: m.TelegramEntryPage })))
 const PhoneSharePage = lazy(() => import('@/pages/tg/PhoneSharePage').then(m => ({ default: m.PhoneSharePage })))
 const SupportPage = lazy(() => import('@/pages/support/SupportPage'))
-const LoyaltyPage = lazy(() => import('@/pages/loyalty/LoyaltyPage'))
 const AIAssistantPage = lazy(() => import('@/pages/ai/AIAssistantPage').then(m => ({ default: m.AIAssistantPage })))
 
 const router = createBrowserRouter([
@@ -102,11 +100,12 @@ const router = createBrowserRouter([
       { path: 'admin', element: <AdminPage /> },
       { path: 'team', element: <TeamPage /> },
       { path: 'team/analytics', element: <TeamAnalyticsPage /> },
-      { path: 'promo-codes', element: <PromoCodesPage /> },
-      { path: 'reviews', element: <ReviewsPage /> },
+      { path: 'marketing', element: <MarketingPage /> },
+      { path: 'promo-codes', element: <Navigate to="/marketing?tab=promo" replace /> },
+      { path: 'reviews', element: <Navigate to="/marketing?tab=reviews" replace /> },
       { path: 'billing', element: <BillingPage /> },
       { path: 'support', element: <SupportPage /> },
-      { path: 'loyalty', element: <LoyaltyPage /> },
+      { path: 'loyalty', element: <Navigate to="/marketing?tab=loyalty" replace /> },
       { path: 'ai', element: <AIAssistantPage /> },
     ],
   },
