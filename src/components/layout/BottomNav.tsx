@@ -1,8 +1,8 @@
 import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  LayoutDashboard, CalendarDays, Users, MoreHorizontal, Bot,
-  Package, User, Settings, ShieldCheck, X, UsersRound, ChevronRight, Tag, Star, LogOut, CreditCard, LifeBuoy, Gift,
+  LayoutDashboard, CalendarDays, Users, MoreHorizontal, Bot, Megaphone,
+  Package, User, Settings, ShieldCheck, X, UsersRound, ChevronRight, LogOut, CreditCard, LifeBuoy,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -15,21 +15,17 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
   const { user, logout } = useAuth()
   const hasInventory = useFeature('inventory')
   const hasTeams     = useFeature('teams')
-  const hasPromos    = useFeature('promo_codes')
-  const hasReviews   = useFeature('reviews')
 
   const items = [
-    { icon: User,        label: t('nav.profile'),        to: '/profile',        highlight: false },
-    { icon: ServiceIcon, label: t('nav.services'),       to: '/services',       highlight: false },
-    hasInventory && { icon: Package,     label: t('nav.inventory'),     to: '/inventory',      highlight: false },
-    hasTeams     && { icon: UsersRound,  label: t('nav.team'),           to: '/team',           highlight: false },
-    hasPromos    && { icon: Tag,         label: t('nav.promoCodes'),     to: '/promo-codes',    highlight: false },
-    hasReviews   && { icon: Star,        label: t('nav.reviews'),        to: '/reviews',        highlight: false },
-    { icon: Gift,        label: t('nav.loyalty'),         to: '/loyalty',        highlight: false },
-    { icon: CreditCard,  label: t('nav.billing'),        to: '/billing',        highlight: false },
-    { icon: LifeBuoy,    label: t('nav.support'),        to: '/support',        highlight: false },
-    { icon: Settings,    label: t('nav.settings'),       to: '/settings',       highlight: false },
-    user?.is_admin && { icon: ShieldCheck, label: t('nav.admin'),        to: '/admin',          highlight: true },
+    { icon: User,        label: t('nav.profile'),    to: '/profile',   highlight: false },
+    { icon: ServiceIcon, label: t('nav.services'),   to: '/services',  highlight: false },
+    hasInventory && { icon: Package,    label: t('nav.inventory'), to: '/inventory', highlight: false },
+    hasTeams     && { icon: UsersRound, label: t('nav.team'),      to: '/team',      highlight: false },
+    { icon: Bot,         label: 'AI',                to: '/ai',        highlight: false },
+    { icon: CreditCard,  label: t('nav.billing'),    to: '/billing',   highlight: false },
+    { icon: LifeBuoy,    label: t('nav.support'),    to: '/support',   highlight: false },
+    { icon: Settings,    label: t('nav.settings'),   to: '/settings',  highlight: false },
+    user?.is_admin && { icon: ShieldCheck, label: t('nav.admin'), to: '/admin', highlight: true },
   ].filter(Boolean) as { icon: React.ComponentType<{ className?: string }>; label: string; to: string; highlight: boolean }[]
 
   return (
@@ -122,9 +118,9 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
             <LayoutDashboard className="h-5 w-5" />
             <span>{t('nav.dashboard')}</span>
           </NavLink>
-          {/* AI Ассистент */}
+          {/* Маркетинг */}
           <NavLink
-            to="/ai"
+            to="/marketing"
             onClick={onClose}
             className={({ isActive }) =>
               cn(
@@ -133,8 +129,8 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
               )
             }
           >
-            <Bot className="h-5 w-5" />
-            <span>AI</span>
+            <Megaphone className="h-5 w-5" />
+            <span>{t('nav.marketing')}</span>
           </NavLink>
           {/* Active "More" button */}
           <button
@@ -204,9 +200,9 @@ export function BottomNav() {
             <span>{t('nav.dashboard')}</span>
           </NavLink>
 
-          {/* AI Ассистент */}
+          {/* Маркетинг */}
           <NavLink
-            to="/ai"
+            to="/marketing"
             className={({ isActive }) =>
               cn(
                 'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
@@ -214,8 +210,8 @@ export function BottomNav() {
               )
             }
           >
-            <Bot className="h-5 w-5" />
-            <span>AI</span>
+            <Megaphone className="h-5 w-5" />
+            <span>{t('nav.marketing')}</span>
           </NavLink>
 
           {/* Ещё */}
