@@ -31,7 +31,7 @@ export function BulkActionBar({ count, isAllSelected, onToggleAll, onCancel, onD
 
       {/* Count */}
       <span className="text-xs sm:text-sm font-medium text-foreground sm:font-normal sm:text-muted-foreground">
-        {t('common.selectedCount', { n: count })}
+        {t('common.selectedCount', { n: count, defaultValue: `${count} выбрано` })}
       </span>
 
       {/* Actions */}

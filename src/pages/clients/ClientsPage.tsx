@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, KeyboardEvent, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, CheckCircle2, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2, Gift, TrendingUp, TrendingDown, Award, Crown, Gem, Star, Send } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2, Gift, TrendingUp, TrendingDown, Award, Crown, Gem, Star, Send } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -735,7 +735,7 @@ export function ClientsPage() {
               className={`transition-all cursor-pointer select-none ${isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/40'}`}
               onClick={() => {
                 if (longPressFiredRef.current) { longPressFiredRef.current = false; return }
-                isSomeSelected ? toggleSelect(client.id) : setStatsClient(client)
+                setStatsClient(client)
               }}
               onTouchStart={() => {
                 longPressFiredRef.current = false
@@ -750,14 +750,14 @@ export function ClientsPage() {
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  {/* Индикатор выделения — только в режиме выбора */}
-                  {isSomeSelected && (
-                    <div className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                      isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40'
-                    }`}>
-                      {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-primary-foreground" />}
-                    </div>
-                  )}
+                  {/* Чекбокс */}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); toggleSelect(client.id) }}
+                    className="flex items-center justify-center text-muted-foreground hover:text-primary transition-colors shrink-0 mt-0.5"
+                  >
+                    {isSelected ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
+                  </button>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">
                       {client.first_name} {client.last_name}
