@@ -22,7 +22,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { PlanLimitBanner } from '@/components/shared/PlanLimitBanner'
 import { toast } from '@/components/shared/Toaster'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, normalizePhone } from '@/lib/utils'
 import { useCurrency } from '@/hooks/useCurrency'
 import { usePlanLimitCheck, useAIConfig } from '@/hooks/useAppSettings'
 import { useAuth } from '@/contexts/AuthContext'
@@ -537,7 +537,11 @@ export function ClientsPage() {
 
   const onSubmit = async (values: FormValues) => {
     const birthdayISO = values.birthday ? birthdayToISO(values.birthday) : ''
-    const payload = { ...values, birthday: birthdayISO || undefined }
+    const payload = {
+      ...values,
+      phone: values.phone ? normalizePhone(values.phone) : undefined,
+      birthday: birthdayISO || undefined,
+    }
     try {
       let savedClient: Client
       if (editClient) {

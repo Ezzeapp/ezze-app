@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrency, formatDuration, parseTimeToMinutes, minutesToTime } from '@/lib/utils'
+import { formatCurrency, formatDuration, parseTimeToMinutes, minutesToTime, normalizePhone } from '@/lib/utils'
 import { useCurrency, useCurrencySymbol } from '@/hooks/useCurrency'
 import { useSchedule, useScheduleBreaks } from '@/hooks/useSchedule'
 import { useCreateClient } from '@/hooks/useClients'
@@ -578,7 +578,7 @@ export function AppointmentDialog({
     try {
       const c = await createClient.mutateAsync({
         first_name: newFirstName.trim(), last_name: newLastName.trim(),
-        phone: newPhone.trim(), email: newEmail.trim(),
+        phone: normalizePhone(newPhone), email: newEmail.trim(),
       } as any)
       setSelectedClient(c); setIsGuest(false); setShowNewClient(false)
       setNewFirstName(''); setNewLastName(''); setNewPhone(''); setNewEmail('')

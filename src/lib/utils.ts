@@ -13,6 +13,15 @@ export function getFileUrl(
   return `${base}/storage/v1/object/public/${bucket}/${path}`
 }
 
+/**
+ * Нормализует телефонный номер: убирает +, пробелы, дефисы, скобки.
+ * +998 99 403-87-64 → 998994038764
+ * Позволяет хранить и сравнивать номера в едином формате.
+ */
+export function normalizePhone(phone: string): string {
+  return phone.trim().replace(/[\s\-().]/g, '').replace(/^\+/, '')
+}
+
 export function formatCurrency(amount: number, currency = 'RUB', locale = 'ru'): string {
   try {
     return new Intl.NumberFormat(locale, {

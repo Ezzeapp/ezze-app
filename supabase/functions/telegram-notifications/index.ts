@@ -151,7 +151,9 @@ async function handleInsert(record: any) {
 
   // Найти или создать клиента, обновить client_id в записи (service role — bypass RLS)
   // Публичная страница бронирования не может INSERT в clients из-за RLS (auth.uid() ≠ master_id)
-  const clientPhone = record.client_phone ?? ''
+  // Нормализуем телефон: убираем + и пробелы (998XXXXXXXXX)
+  const rawPhone = record.client_phone ?? ''
+  const clientPhone = rawPhone.trim().replace(/[\s\-().]/g, '').replace(/^\+/, '')
   const clientTelegramUsername = (record.client_telegram ?? '').replace('@', '')
   const clientTelegramId = record.telegram_id ? String(record.telegram_id) : ''
   if (clientPhone) {
@@ -160,12 +162,12 @@ async function handleInsert(record: any) {
       if (clientTelegramUsername) telegramPatch.telegram = clientTelegramUsername
       if (clientTelegramId) telegramPatch.tg_chat_id = clientTelegramId
 
-      // Ищем клиента по телефону и мастеру
+      // Ищем клиента по телефону (оба формата: с + и без)
       let { data: clientRow } = await supabase
         .from('clients')
         .select('id')
         .eq('master_id', masterId)
-        .eq('phone', clientPhone)
+        .or(`phone.eq.${clientPhone},phone.eq.+${clientPhone}`)
         .maybeSingle()
 
       if (clientRow?.id) {

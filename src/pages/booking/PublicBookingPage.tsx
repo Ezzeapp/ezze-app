@@ -14,7 +14,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
-import { formatCurrency, formatDuration, parseTimeToMinutes, minutesToTime, getFileUrl } from '@/lib/utils'
+import { formatCurrency, formatDuration, parseTimeToMinutes, minutesToTime, getFileUrl, normalizePhone } from '@/lib/utils'
 import type { MasterProfile, Service, Schedule, ScheduleBreak, Appointment, Review, DateBlock } from '@/types'
 import { isTelegramMiniApp, getTelegramUser, getTelegramUserId, hapticSuccess, buildClientCabinetLink } from '@/lib/telegramWebApp'
 import { validatePromoCode } from '@/hooks/usePromoCodes'
@@ -559,14 +559,15 @@ export function PublicBookingPage() {
       const nameParts = values.client_name.trim().split(/\s+/)
       const firstName = nameParts[0]
       const lastName = nameParts.slice(1).join(' ')
+      const normalizedClientPhone = normalizePhone(values.client_phone)
 
       let clientId: string | null = null
-      // Ищем по телефону у этого мастера
+      // Ищем по телефону у этого мастера (оба формата: с + и без)
       const { data: existingClient } = await supabase
         .from('clients')
         .select('id, first_name, last_name')
         .eq('master_id', (master as any).user_id)
-        .eq('phone', values.client_phone)
+        .or(`phone.eq.${normalizedClientPhone},phone.eq.+${normalizedClientPhone}`)
         .maybeSingle()
 
       if (existingClient) {
@@ -590,7 +591,7 @@ export function PublicBookingPage() {
             master_id: (master as any).user_id,
             first_name: firstName,
             last_name: lastName,
-            phone: values.client_phone,
+            phone: normalizedClientPhone,
             source: 'online_booking',
             ...(tgNickname ? { telegram: tgNickname } : {}),
             ...(tgUserId ? { tg_chat_id: tgUserId } : {}),
@@ -615,7 +616,7 @@ export function PublicBookingPage() {
           cancel_token: cancelToken,
           notes: values.notes || '',
           client_name: values.client_name,
-          client_phone: values.client_phone,
+          client_phone: normalizedClientPhone,
           client_email: values.client_email || '',
           client_telegram: values.client_telegram || '',
           telegram_id: tgUserId || '',
