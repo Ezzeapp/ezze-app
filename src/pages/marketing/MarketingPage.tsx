@@ -45,7 +45,7 @@ export function MarketingPage() {
       />
 
       {/* Горизонтальные табы */}
-      <div className="grid grid-cols-5 gap-1 mb-6">
+      <div className="grid grid-cols-5 gap-1 mb-8 pb-2 border-b border-border">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
