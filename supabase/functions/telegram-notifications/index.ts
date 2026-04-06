@@ -236,9 +236,14 @@ async function handleInsert(record: any) {
     if (msg) await sendTgMasterWithCancelButton(masterTgId, msg, record.id)
   }
 
-  // Notify client
-  const clientTgId = record.telegram_id ?? ''
-  const clientTgUsr = record.client_telegram ?? ''
+  // Notify client — если запись мастером вручную, ищем tg_chat_id из таблицы clients
+  let clientTgId = record.telegram_id ? String(record.telegram_id) : ''
+  let clientTgUsr = record.client_telegram ?? ''
+  if (!clientTgId && !clientTgUsr && record.client_id) {
+    const { data: cl } = await supabase
+      .from('clients').select('tg_chat_id').eq('id', record.client_id).maybeSingle()
+    if (cl?.tg_chat_id) clientTgId = String(cl.tg_chat_id)
+  }
   if (clientTgId || clientTgUsr) {
     const cSetting = await getNotifSetting(masterId, 'appointment_confirmed')
     if (cSetting.enabled) {
@@ -279,9 +284,17 @@ async function handleInsert(record: any) {
 
 async function handleUpdate(record: any, oldRecord: any) {
   const masterId = record.master_id
-  const clientTgId = record.telegram_id ?? ''
-  const clientTgUsr = record.client_telegram ?? ''
-  if (!masterId || (!clientTgId && !clientTgUsr)) return
+  if (!masterId) return
+
+  // Если запись мастером вручную — ищем tg_chat_id из таблицы clients
+  let clientTgId = record.telegram_id ? String(record.telegram_id) : ''
+  let clientTgUsr = record.client_telegram ?? ''
+  if (!clientTgId && !clientTgUsr && record.client_id) {
+    const { data: cl } = await supabase
+      .from('clients').select('tg_chat_id').eq('id', record.client_id).maybeSingle()
+    if (cl?.tg_chat_id) clientTgId = String(cl.tg_chat_id)
+  }
+  if (!clientTgId && !clientTgUsr) return
 
   const { data: prof } = await supabase.from('master_profiles').select('*').eq('user_id', masterId).maybeSingle()
   if (!prof) return
@@ -399,8 +412,14 @@ async function handleReminders() {
       const clientName = appt.client_name ?? '-'
       const startTime = appt.start_time ?? '-'
       const masterTgId = prof.tg_chat_id ?? ''
-      const clientTgId = appt.telegram_id ?? ''
-      const clientTgUsr = appt.client_telegram ?? ''
+      // Если запись мастером вручную — ищем tg_chat_id из таблицы clients
+      let clientTgId = appt.telegram_id ? String(appt.telegram_id) : ''
+      let clientTgUsr = appt.client_telegram ?? ''
+      if (!clientTgId && !clientTgUsr && appt.client_id) {
+        const { data: cl } = await supabase
+          .from('clients').select('tg_chat_id').eq('id', appt.client_id).maybeSingle()
+        if (cl?.tg_chat_id) clientTgId = String(cl.tg_chat_id)
+      }
 
       // Reminder to master
       const mRS = await getNotifSetting(masterId, 'reminder_master')
