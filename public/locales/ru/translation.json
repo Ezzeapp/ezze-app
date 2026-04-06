@@ -102,7 +102,7 @@
     "open": "Открыть",
     "download": "Скачать",
     "nothingFound": "Ничего не найдено",
-    "selectedCount": "{{count}} выбрано"
+    "selectedCount": "{{n}} выбрано"
   },
   "dashboard": {
     "todayAppointments": "Записей сегодня",

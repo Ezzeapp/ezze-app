@@ -102,7 +102,7 @@
     "download": "Download",
     "nothingFound": "Nothing found",
     "confirm": "Confirm",
-    "selectedCount": "{{count}} selected"
+    "selectedCount": "{{n}} selected"
   },
   "dashboard": {
     "todayAppointments": "Today's appointments",
