@@ -205,6 +205,7 @@ Deno.serve(async (req: Request) => {
 
     if (!sent) {
       console.error('[phone-auth] failed to send TG message to', profile.tg_chat_id)
+      await supabaseAdmin.from('phone_codes').delete().eq('phone', phone).eq('code', code)
       return json({ message: 'telegram_send_failed' }, 500)
     }
 

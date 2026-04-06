@@ -211,7 +211,7 @@ export function LoginPage() {
   }
 
   const handlePhoneVerifyCode = async () => {
-    if (!phoneCode || phoneCode.length < 4 || phoneVerifying) return
+    if (!phoneCode || phoneCode.length < 6 || phoneVerifying) return
     setPhoneVerifying(true)
     setPhoneCodeError('')
     setPhoneNotFound(false)
@@ -397,7 +397,7 @@ export function LoginPage() {
                     <Button
                       type="button"
                       className="w-full"
-                      disabled={phoneCode.length < 4 || phoneVerifying}
+                      disabled={phoneCode.length < 6 || phoneVerifying}
                       onClick={handlePhoneVerifyCode}
                     >
                       {phoneVerifying ? <LoadingSpinner /> : t('auth.login')}

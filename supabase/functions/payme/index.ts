@@ -342,7 +342,7 @@ async function handleCancelTransaction(id: unknown, params: Record<string, unkno
         .eq('status', 'active')
         .neq('id', rec.id)
         .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false })
+        .order('expires_at', { ascending: false })
         .maybeSingle()
       const downgradeTo = otherSub?.plan ?? 'free'
       await supabaseAdmin.from('users').update({ plan: downgradeTo }).eq('id', rec.user_id)
