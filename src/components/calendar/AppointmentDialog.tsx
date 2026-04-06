@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Search, Clock, X, Percent, User, UserPlus, CalendarCheck, ChevronLeft, ChevronRight, Copy, ArrowRightLeft, Plus, CreditCard, StickyNote, Repeat, Info, Printer, CheckCircle2 } from 'lucide-react'
 import dayjs from 'dayjs'
@@ -271,6 +271,8 @@ export function AppointmentDialog({
   const { data: clientStats } = useClientStats(selectedClient?.id ?? '', clientFullName || undefined)
 
   // ── Финансы ───────────────────────────────────────────────────────────────
+  // Ref: ключ услуг при открытии редактирования — чтобы пропустить только инит, а не реальные смены
+  const editInitSvcKeyRef = useRef('')
   const [priceInput, setPriceInput]         = useState('')
   const [discount, setDiscount]             = useState(0)
   const [customDiscount, setCustomDiscount] = useState('')
@@ -295,6 +297,7 @@ export function AppointmentDialog({
     if (!open) return
     setMobileStep(initialStep ?? 0)
     setIsConfirmedLocally(false)
+    editInitSvcKeyRef.current = '' // сбрасываем при каждом открытии
     if (editAppt) {
       // Восстанавливаем услуги: 1) из appointment_services (новый формат)
       //   2) из notes-префикса "[Услуга, ...]\n" (legacy)  3) из editAppt.service (fallback)
@@ -319,6 +322,7 @@ export function AppointmentDialog({
       // Убираем notes-префикс из заметок
       const cleanNotes = (editAppt.notes || '').replace(/^\[.+\]\n?/, '')
       setSelectedSvcs(restoredSvcs)
+      editInitSvcKeyRef.current = restoredSvcs.map(s => s.id).join(',') // запоминаем начальный набор
       setSelectedDate(editAppt.date)
       setSelectedTime(editAppt.start_time)
       setIsReschedule(false)
@@ -473,9 +477,13 @@ export function AppointmentDialog({
     setShowDraftBanner(false)
   }
 
-  // Авто-цена из услуг (обновляем при смене набора) — только для новых записей
+  // Авто-цена из услуг (обновляем при смене набора)
+  // При редактировании: пропускаем только инициализацию (начальный набор услуг),
+  // но пересчитываем при реальной смене услуги мастером
   useEffect(() => {
-    if (editAppt || duplicateFrom) return
+    if (duplicateFrom) return
+    const currentKey = selectedSvcs.map(s => s.id).join(',')
+    if (editAppt && currentKey === editInitSvcKeyRef.current) return
     setPriceInput(totalBasePrice > 0 ? String(totalBasePrice) : '')
   }, [selectedSvcs.map(s => s.id).join(',')])
 
