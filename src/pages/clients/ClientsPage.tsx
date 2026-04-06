@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
+import { BulkActionBar } from '@/components/shared/BulkActionBar'
 import { PlanLimitBanner } from '@/components/shared/PlanLimitBanner'
 import { toast } from '@/components/shared/Toaster'
 import { formatCurrency, normalizePhone } from '@/lib/utils'
@@ -659,55 +660,13 @@ export function ClientsPage() {
 
         {/* Bulk action bar */}
         {isSomeSelected && (
-          <div className="rounded-xl bg-primary/5 border border-primary/20 overflow-hidden">
-            {/* Заголовок */}
-            <div className="px-4 py-1.5 border-b border-primary/10 text-center">
-              <span className="text-xs font-medium text-primary">
-                {t('clients.selectedCount', { count: selectedIds.size })}
-              </span>
-            </div>
-            {/* Кнопки */}
-            <div className="grid grid-cols-4 divide-x divide-primary/10">
-              {/* Снять выделение */}
-              <button
-                type="button"
-                onClick={() => setSelectedIds(new Set())}
-                className="flex flex-col items-center gap-1 py-2.5 px-1 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
-              >
-                <Square className="h-4 w-4" />
-                <span className="text-[10px] font-medium leading-tight text-center">Снять</span>
-              </button>
-              {/* Выбрать все */}
-              <button
-                type="button"
-                onClick={toggleSelectAll}
-                className="flex flex-col items-center gap-1 py-2.5 px-1 text-primary hover:bg-primary/5 transition-colors"
-              >
-                <CheckSquare className="h-4 w-4" />
-                <span className="text-[10px] font-medium leading-tight text-center">
-                  {isAllSelected ? 'Снять все' : 'Выбрать все'}
-                </span>
-              </button>
-              {/* Отмена */}
-              <button
-                type="button"
-                onClick={() => setSelectedIds(new Set())}
-                className="flex flex-col items-center gap-1 py-2.5 px-1 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
-              >
-                <XCircle className="h-4 w-4" />
-                <span className="text-[10px] font-medium leading-tight text-center">Отмена</span>
-              </button>
-              {/* Удалить */}
-              <button
-                type="button"
-                onClick={() => setBulkDeleteOpen(true)}
-                className="flex flex-col items-center gap-1 py-2.5 px-1 text-destructive hover:bg-destructive/5 transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span className="text-[10px] font-medium leading-tight text-center">Удалить</span>
-              </button>
-            </div>
-          </div>
+          <BulkActionBar
+            count={selectedIds.size}
+            isAllSelected={isAllSelected}
+            onToggleAll={toggleSelectAll}
+            onCancel={() => setSelectedIds(new Set())}
+            onDelete={() => setBulkDeleteOpen(true)}
+          />
         )}
 
         {/* Row 2: search + button (desktop only) */}

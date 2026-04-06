@@ -101,7 +101,8 @@
     "copy": "Копировать",
     "open": "Открыть",
     "download": "Скачать",
-    "nothingFound": "Ничего не найдено"
+    "nothingFound": "Ничего не найдено",
+    "selectedCount": "{{count}} выбрано"
   },
   "dashboard": {
     "todayAppointments": "Записей сегодня",

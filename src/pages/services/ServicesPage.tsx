@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
+import { BulkActionBar } from '@/components/shared/BulkActionBar'
 import { toast } from '@/components/shared/Toaster'
 import { ServiceMaterialsTab } from '@/components/services/ServiceMaterialsTab'
 import { ImportServicesDialog } from '@/components/services/ImportServicesDialog'
@@ -448,28 +449,13 @@ export function ServicesPage() {
 
         {/* Bulk action bar */}
         {isSomeSelected && (
-          <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-primary/5 border border-primary/20">
-            <button
-              type="button"
-              onClick={toggleSelectAll}
-              className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-            >
-              {isAllSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-              {isAllSelected ? t('common.deselectAll') : t('common.selectAll')}
-            </button>
-            <span className="text-xs text-muted-foreground">
-              {t('services.selectedCount', { count: selectedIds.size })}
-            </span>
-            <div className="ml-auto flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
-                {t('common.cancel')}
-              </Button>
-              <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)}>
-                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                {t('common.delete')}
-              </Button>
-            </div>
-          </div>
+          <BulkActionBar
+            count={selectedIds.size}
+            isAllSelected={isAllSelected}
+            onToggleAll={toggleSelectAll}
+            onCancel={() => setSelectedIds(new Set())}
+            onDelete={() => setBulkDeleteOpen(true)}
+          />
         )}
 
         {/* Row 2: search + buttons */}

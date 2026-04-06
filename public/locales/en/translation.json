@@ -101,7 +101,8 @@
     "open": "Open",
     "download": "Download",
     "nothingFound": "Nothing found",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "selectedCount": "{{count}} selected"
   },
   "dashboard": {
     "todayAppointments": "Today's appointments",
