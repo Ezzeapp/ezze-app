@@ -183,6 +183,12 @@ export function ClientCabinetPage() {
         .rpc('get_tg_client_safe', { p_tg_chat_id: tgId })
         .maybeSingle() as { data: TgClientRow | null; error: unknown }
 
+      // Новый незарегистрированный пользователь → перенаправляем на Mini App регистрацию
+      if (!tgClient && isTelegramMiniApp()) {
+        navigate('/client-register')
+        return
+      }
+
       if (tgClient?.phone) setTelegramPhone(tgClient.phone)
       if (tgClient?.name)    setUserName(tgClient.name)
       if (tgClient?.tg_name) setTgProfileName(prev => prev || tgClient!.tg_name!)

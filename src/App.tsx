@@ -39,6 +39,7 @@ const PublicBookingPage = lazy(() => import('@/pages/booking/PublicBookingPage')
 const CancelBookingPage = lazy(() => import('@/pages/booking/CancelBookingPage').then(m => ({ default: m.CancelBookingPage })))
 const TeamBookingPage = lazy(() => import('@/pages/booking/TeamBookingPage').then(m => ({ default: m.TeamBookingPage })))
 const ClientCabinetPage = lazy(() => import('@/pages/booking/ClientCabinetPage').then(m => ({ default: m.ClientCabinetPage })))
+const ClientRegisterPage = lazy(() => import('@/pages/booking/ClientRegisterPage').then(m => ({ default: m.ClientRegisterPage })))
 const MasterSearchPage = lazy(() => import('@/pages/booking/MasterSearchPage').then(m => ({ default: m.MasterSearchPage })))
 const PublicProfilePage = lazy(() => import('@/pages/public/PublicProfilePage').then(m => ({ default: m.PublicProfilePage })))
 const MiniAppLayout = lazy(() => import('@/components/layout/MiniAppLayout').then(m => ({ default: m.MiniAppLayout })))
@@ -65,6 +66,7 @@ const router = createBrowserRouter([
       { index: true, element: <ClientCabinetPage /> },
     ],
   },
+  { path: '/client-register', element: <ClientRegisterPage /> },
 
   // Master search (public, for clients in Telegram)
   { path: '/search', element: <MasterSearchPage /> },
