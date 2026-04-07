@@ -344,14 +344,15 @@ async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
       }),
     });
   } else {
-    // Новый клиент — ставим кнопку меню на страницу регистрации
-    await bot.setUserMenuButton(chatId, "📝 Зарегистрироваться", `${APP_URL}/client-register`);
+    // Новый клиент — ставим кнопку меню на страницу регистрации (название из настроек)
+    const cfg = await loadTgConfig();
+    await bot.setUserMenuButton(chatId, cfg.client_label, `${APP_URL}/client-register`);
     await fetch(`${bot.TG_API}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `${greeting}\n\nДобро пожаловать в <b>Ezze</b>!\nНажмите кнопку <b>📝 Зарегистрироваться</b> рядом с полем ввода, чтобы зарегистрироваться 👇`,
+        text: `${greeting}\n\nДобро пожаловать в <b>Ezze</b>!\nНажмите кнопку <b>${escapeHtml(cfg.client_label)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`,
         parse_mode: "HTML",
       }),
     });
@@ -576,14 +577,15 @@ async function processUpdate(update) {
         return;
       }
 
-      // Клиента нет — ставим кнопку меню на страницу регистрации
-      await bot.setUserMenuButton(chatId, "📝 Зарегистрироваться", `${APP_URL}/client-register`);
+      // Клиента нет — ставим кнопку меню на страницу регистрации (название из настроек)
+      const cfg = await loadTgConfig();
+      await bot.setUserMenuButton(chatId, cfg.client_label, `${APP_URL}/client-register`);
       await fetch(`${bot.TG_API}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text: `👋 <b>Привет${firstName ? ", " + escapeHtml(firstName) : ""}!</b>\n\nНажмите кнопку <b>📝 Зарегистрироваться</b> рядом с полем ввода, чтобы зарегистрироваться 👇`,
+          text: `👋 <b>Привет${firstName ? ", " + escapeHtml(firstName) : ""}!</b>\n\nНажмите кнопку <b>${escapeHtml(cfg.client_label)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`,
           parse_mode: "HTML",
         }),
       });
