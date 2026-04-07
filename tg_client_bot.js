@@ -344,16 +344,23 @@ async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
       }),
     });
   } else {
-    // Новый клиент — сбрасываем кнопку меню, показываем выбор языка
-    await bot.setUserMenuButton(chatId); // убираем кнопку до окончания регистрации
-    pendingBookings.set(chatId, sessionEntry({
-      step: "waiting_language",
-      mode: "registration",
-      tgUsername,
-      messageIds: [],  // будем накапливать IDs сообщений регистрации
-    }));
-    savePendingBookings();
-    await sendClientLangSelection(chatId, firstName);
+    // Новый клиент — отправляем кнопку Mini App для регистрации
+    await bot.setUserMenuButton(chatId); // убираем кнопку меню до завершения регистрации
+    await fetch(`${bot.TG_API}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: `${greeting}\n\nДобро пожаловать в <b>Ezze</b>! 🎉\n\nДля регистрации нажмите кнопку ниже — это займёт меньше минуты:`,
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [[{
+            text: "📝 Зарегистрироваться",
+            web_app: { url: `${APP_URL}/client-register` },
+          }]],
+        },
+      }),
+    });
   }
 }
 
@@ -362,10 +369,21 @@ async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
 async function processUpdate(update) {
   const message = update.message;
 
-  // ── Контакт (шаг 1: номер телефона) ──────────────────────────────────────
+  // ── Контакт (шаг 1: номер телефона / Mini App fallback) ─────────────────
   if (message?.contact) {
     const chatId = message.chat.id;
     const pending = pendingBookings.get(chatId);
+    const phone = message.contact.phone_number;
+    // Mini App requestContact() fallback — сохраняем в tg_phone_cache для поллинга
+    if (pending?.step !== "waiting_phone") {
+      const { error: cacheErr } = await supabase.from('tg_phone_cache').upsert({
+        tg_chat_id: String(chatId),
+        phone,
+      }, { onConflict: 'tg_chat_id' });
+      if (cacheErr) console.error('tg_phone_cache upsert error:', cacheErr.message);
+      else console.log(`📱 [client] Phone cached for Mini App: chat=${chatId}`);
+      return;
+    }
     if (pending?.step === "waiting_phone") {
       const phone = message.contact.phone_number;
       const contactName = [message.contact.first_name, message.contact.last_name]
@@ -564,15 +582,22 @@ async function processUpdate(update) {
         return;
       }
 
-      // Клиента нет — запускаем регистрацию с выбора языка
-      pendingBookings.set(chatId, sessionEntry({
-        step: "waiting_language",
-        mode: "registration",
-        tgUsername,
-        messageIds: [],
-      }));
-      savePendingBookings();
-      await sendClientLangSelection(chatId, firstName);
+      // Клиента нет — открываем Mini App для регистрации
+      await fetch(`${bot.TG_API}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: `👋 <b>Привет${firstName ? ", " + escapeHtml(firstName) : ""}!</b>\n\nДля регистрации нажмите кнопку ниже:`,
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [[{
+              text: "📝 Зарегистрироваться",
+              web_app: { url: `${APP_URL}/client-register` },
+            }]],
+          },
+        }),
+      });
       return;
     }
 
