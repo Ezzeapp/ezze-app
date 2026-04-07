@@ -354,12 +354,11 @@ async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
         text: `${greeting}\n\nДобро пожаловать в <b>Ezze</b>! 🎉\n\nДля регистрации нажмите кнопку ниже — это займёт меньше минуты:`,
         parse_mode: "HTML",
         reply_markup: {
-          keyboard: [[{
+          inline_keyboard: [[{
             text: "📝 Зарегистрироваться",
+            style: "primary",
             web_app: { url: `${APP_URL}/client-register` },
           }]],
-          resize_keyboard: true,
-          one_time_keyboard: true,
         },
       }),
     });
@@ -593,12 +592,11 @@ async function processUpdate(update) {
           text: `👋 <b>Привет${firstName ? ", " + escapeHtml(firstName) : ""}!</b>\n\nДля регистрации нажмите кнопку ниже:`,
           parse_mode: "HTML",
           reply_markup: {
-            keyboard: [[{
+            inline_keyboard: [[{
               text: "📝 Зарегистрироваться",
+              style: "primary",
               web_app: { url: `${APP_URL}/client-register` },
             }]],
-            resize_keyboard: true,
-            one_time_keyboard: true,
           },
         }),
       });
