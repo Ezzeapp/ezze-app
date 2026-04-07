@@ -19,6 +19,14 @@ export interface SupportTicket {
   updated_at: string
 }
 
+export interface SupportTicketWithMaster extends SupportTicket {
+  master_name: string | null
+  master_profession: string | null
+  master_email: string | null
+}
+
+// ── Мастер видит только свои тикеты ──────────────────────────────────────────
+
 export function useSupportTickets() {
   const { user } = useAuth()
   return useQuery({
@@ -47,6 +55,94 @@ export function useCreateSupportTicket() {
         .single()
       if (error) throw error
       return data as SupportTicket
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SUPPORT_KEY] })
+    },
+  })
+}
+
+export function useDeleteSupportTicket() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('support_tickets')
+        .delete()
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SUPPORT_KEY] })
+    },
+  })
+}
+
+// ── Администратор видит все тикеты + данные мастера ───────────────────────────
+
+export function useAdminSupportTickets(statusFilter?: TicketStatus | 'all') {
+  return useQuery({
+    queryKey: [SUPPORT_KEY, 'admin', statusFilter],
+    queryFn: async () => {
+      let q = supabase
+        .from('support_tickets')
+        .select(`
+          *,
+          master:users!support_tickets_master_id_fkey(
+            id,
+            email,
+            master_profiles(display_name, profession)
+          )
+        `)
+        .order('created_at', { ascending: false })
+
+      if (statusFilter && statusFilter !== 'all') {
+        q = q.eq('status', statusFilter)
+      }
+
+      const { data, error } = await q
+      if (error) throw error
+
+      return (data ?? []).map((row: any) => ({
+        ...row,
+        master_name:       row.master?.master_profiles?.[0]?.display_name ?? null,
+        master_profession: row.master?.master_profiles?.[0]?.profession ?? null,
+        master_email:      row.master?.email ?? null,
+      })) as SupportTicketWithMaster[]
+    },
+  })
+}
+
+export function useAdminUpdateTicket() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string
+      status?: TicketStatus
+      admin_reply?: string | null
+    }) => {
+      const { id, ...rest } = payload
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({ ...rest, updated_at: new Date().toISOString() })
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SUPPORT_KEY] })
+    },
+  })
+}
+
+export function useAdminDeleteTicket() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('support_tickets')
+        .delete()
+        .eq('id', id)
+      if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [SUPPORT_KEY] })

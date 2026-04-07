@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LifeBuoy, Plus, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { LifeBuoy, Plus, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle, Loader2, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/shared/Toaster'
 import { cn } from '@/lib/utils'
-import { useSupportTickets, useCreateSupportTicket, type TicketType, type TicketStatus, type SupportTicket } from '@/hooks/useSupportTickets'
+import { useSupportTickets, useCreateSupportTicket, useDeleteSupportTicket, type TicketType, type TicketStatus, type SupportTicket } from '@/hooks/useSupportTickets'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import dayjs from 'dayjs'
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -40,41 +41,78 @@ function typeColor(type: TicketType) {
 
 function TicketCard({ ticket }: { ticket: SupportTicket }) {
   const { t, i18n } = useTranslation()
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded]     = useState(false)
+  const [confirmDel, setConfirmDel] = useState(false)
   const typeLabel = t(`support.type${ticket.type.charAt(0).toUpperCase() + ticket.type.slice(1)}` as any)
+  const deleteMut = useDeleteSupportTicket()
+
+  const canDelete = ticket.status === 'new' || ticket.status === 'closed'
+
+  const handleDelete = async () => {
+    try {
+      await deleteMut.mutateAsync(ticket.id)
+      toast.success('Обращение удалено')
+    } catch {
+      toast.error(t('common.error'))
+    }
+  }
 
   return (
-    <div className="rounded-xl border bg-card overflow-hidden">
-      <button
-        className="w-full text-left px-4 py-3 flex items-start gap-3"
-        onClick={() => setExpanded(v => !v)}
-      >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <Badge variant={typeColor(ticket.type)} className="text-xs">{typeLabel}</Badge>
-            <StatusBadge status={ticket.status} />
-          </div>
-          <p className="font-medium text-sm truncate">{ticket.title}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {dayjs(ticket.created_at).locale(i18n.language).format('D MMM YYYY, HH:mm')}
-          </p>
-        </div>
-        <div className="text-muted-foreground mt-1 shrink-0">
-          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </div>
-      </button>
-      {expanded && (
-        <div className="px-4 pb-4 space-y-3 border-t pt-3">
-          <p className="text-sm whitespace-pre-wrap text-muted-foreground">{ticket.message}</p>
-          {ticket.admin_reply && (
-            <div className="rounded-lg bg-muted p-3">
-              <p className="text-xs font-semibold text-muted-foreground mb-1">Ответ поддержки:</p>
-              <p className="text-sm whitespace-pre-wrap">{ticket.admin_reply}</p>
+    <>
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <button
+          className="w-full text-left px-4 py-3 flex items-start gap-3"
+          onClick={() => setExpanded(v => !v)}
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <Badge variant={typeColor(ticket.type)} className="text-xs">{typeLabel}</Badge>
+              <StatusBadge status={ticket.status} />
             </div>
-          )}
-        </div>
-      )}
-    </div>
+            <p className="font-medium text-sm truncate">{ticket.title}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {dayjs(ticket.created_at).locale(i18n.language).format('D MMM YYYY, HH:mm')}
+            </p>
+          </div>
+          <div className="text-muted-foreground mt-1 shrink-0">
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </div>
+        </button>
+        {expanded && (
+          <div className="px-4 pb-4 space-y-3 border-t pt-3">
+            <p className="text-sm whitespace-pre-wrap text-muted-foreground">{ticket.message}</p>
+            {ticket.admin_reply && (
+              <div className="rounded-lg bg-muted p-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Ответ поддержки:</p>
+                <p className="text-sm whitespace-pre-wrap">{ticket.admin_reply}</p>
+              </div>
+            )}
+            {canDelete && (
+              <div className="flex justify-end pt-1">
+                <Button
+                  size="sm" variant="ghost"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5 text-xs"
+                  onClick={e => { e.stopPropagation(); setConfirmDel(true) }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {t('common.delete')}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <ConfirmDialog
+        open={confirmDel}
+        onClose={() => setConfirmDel(false)}
+        onConfirm={handleDelete}
+        title="Удалить обращение?"
+        description="Обращение будет безвозвратно удалено."
+        confirmLabel="Удалить"
+        loading={deleteMut.isPending}
+      />
+    </>
   )
 }
 
