@@ -1,11 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { Phone, Globe, Loader2, CheckCircle2 } from 'lucide-react'
+import { Phone, Globe, Loader2, CheckCircle2, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
+import { useAppSettings } from '@/hooks/useAppSettings'
+import { TelegramSplash } from '@/components/shared/TelegramSplash'
 import {
   isTelegramMiniApp,
+  initMiniApp,
   getTelegramUserId,
   getTelegramUser,
   getTelegramDisplayName,
@@ -13,20 +15,25 @@ import {
 } from '@/lib/telegramWebApp'
 
 const SUPPORTED_LANGS = [
-  { code: 'ru', label: '🇷🇺 Русский' },
-  { code: 'uz', label: '🇺🇿 O\'zbek' },
-  { code: 'en', label: '🇬🇧 English' },
-  { code: 'kz', label: '🇰🇿 Қазақша' },
+  { code: 'ru', label: 'Русский' },
+  { code: 'uz', label: "O'zbekcha" },
+  { code: 'en', label: 'English' },
+  { code: 'tg', label: 'Тоҷикӣ' },
+  { code: 'kz', label: 'Қазақша' },
+  { code: 'ky', label: 'Кыргызча' },
 ]
 
 export function ClientRegisterPage() {
   const navigate  = useNavigate()
-  const { t }     = useTranslation()
   const pollRef   = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const isTg   = isTelegramMiniApp()
   const tgUser = isTg ? getTelegramUser() : null
   const tgId   = isTg ? getTelegramUserId() : null
+
+  const { data: appSettings } = useAppSettings()
+  const platformName = appSettings?.platform_name ?? 'Ezze'
+  const logoUrl      = appSettings?.logo_url
 
   const [lang,             setLang]             = useState(isTg ? getTelegramLanguageCode() : 'ru')
   const [name,             setName]             = useState(isTg ? getTelegramDisplayName() : '')
@@ -35,13 +42,42 @@ export function ClientRegisterPage() {
   const [submitting,       setSubmitting]       = useState(false)
   const [done,             setDone]             = useState(false)
   const [error,            setError]            = useState('')
+  const [checking,         setChecking]         = useState(isTg)
+
+  // Инициализация Mini App + проверка — вдруг уже зарегистрирован
+  useEffect(() => {
+    if (!isTg || !tgId) { setChecking(false); return }
+    initMiniApp()
+
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('tg_clients')
+          .select('phone, name')
+          .eq('tg_chat_id', String(tgId))
+          .maybeSingle()
+        if (data) {
+          // Уже зарегистрирован — переходим сразу в кабинет
+          const params = new URLSearchParams({ tg_id: String(tgId) })
+          if (data.phone) params.set('tg_phone', data.phone)
+          if (data.name)  params.set('tg_name', data.name)
+          navigate(`/my?${params.toString()}`, { replace: true })
+        } else {
+          setChecking(false)
+        }
+      } catch {
+        setChecking(false)
+      }
+    })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Очистка polling при unmount
   useEffect(() => {
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
   }, [])
 
-  // Polling tg_phone_cache (fallback когда requestContact идёт через бот, а не callback)
+  // Polling tg_phone_cache (fallback когда requestContact идёт через бот)
   const startPhonePolling = useCallback(() => {
     if (!tgId) return
     if (pollRef.current) clearInterval(pollRef.current)
@@ -104,9 +140,8 @@ export function ClientRegisterPage() {
       })
       if (fnError) throw new Error(fnError.message)
       setDone(true)
-      // Небольшая пауза, чтобы пользователь увидел успех
       setTimeout(() => {
-        navigate(`/my?tg_id=${tgId}&tg_name=${encodeURIComponent(name.trim())}`)
+        navigate(`/my?tg_id=${tgId}&tg_name=${encodeURIComponent(name.trim())}`, { replace: true })
       }, 1500)
     } catch (e: any) {
       setError(e.message || 'Ошибка регистрации')
@@ -115,14 +150,19 @@ export function ClientRegisterPage() {
     }
   }
 
-  // Если не в Telegram — показываем заглушку
+  // Проверка — показываем сплэш пока грузим
+  if (checking) return <TelegramSplash />
+
+  // Если не в Telegram — заглушка
   if (!isTg || !tgId) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center gap-4">
-        <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center">
-          <Phone className="h-8 w-8 text-muted-foreground" />
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary overflow-hidden">
+          {logoUrl
+            ? <img src={logoUrl} alt="" className="h-14 w-14 object-cover" />
+            : <Zap className="h-7 w-7 text-primary-foreground" />}
         </div>
-        <h1 className="text-lg font-bold">Откройте через Telegram</h1>
+        <h1 className="text-lg font-bold">{platformName}</h1>
         <p className="text-sm text-muted-foreground">
           Регистрация доступна только через Telegram Mini App.
         </p>
@@ -137,32 +177,41 @@ export function ClientRegisterPage() {
         <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
           <CheckCircle2 className="h-9 w-9 text-primary" />
         </div>
-        <h1 className="text-xl font-bold">Готово, {name}!</h1>
+        <h1 className="text-xl font-bold">Готово, {name}! 🎉</h1>
         <p className="text-sm text-muted-foreground">Переходим в личный кабинет...</p>
       </div>
     )
   }
 
-  const canSubmit = name.trim().length > 0 && phone.trim().length > 0 && !submitting
+  const canSubmit = name.trim().length >= 2
+    && phone.replace(/\D/g, '').length >= 7
+    && !submitting
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <div className="flex-1 flex flex-col max-w-md mx-auto w-full p-5 pt-6">
+      <div className="flex-1 flex flex-col max-w-md mx-auto w-full p-4">
 
-        {/* Заголовок + выбор языка */}
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">👋 Привет!</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Быстрая регистрация — 1 минута
-            </p>
+        {/* Заголовок с логотипом + выбор языка */}
+        <div className="mb-4 pt-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary overflow-hidden shrink-0">
+              {logoUrl
+                ? <img src={logoUrl} alt="" className="h-10 w-10 object-cover" />
+                : <Zap className="h-5 w-5 text-primary-foreground" />}
+            </div>
+            <div>
+              <h1 className="text-xl font-bold leading-tight">Регистрация</h1>
+              <p className="text-muted-foreground text-xs">{platformName}</p>
+            </div>
           </div>
-          <div className="relative mt-1">
+
+          {/* Выбор языка */}
+          <div className="relative">
             <Globe className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <select
               value={lang}
               onChange={e => setLang(e.target.value)}
-              className="h-8 pl-7 pr-2 rounded-lg border border-input bg-background text-xs appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+              className="h-8 pl-7 pr-2 rounded-md border border-input bg-background text-xs appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
             >
               {SUPPORTED_LANGS.map(l => (
                 <option key={l.code} value={l.code}>{l.label}</option>
@@ -172,45 +221,57 @@ export function ClientRegisterPage() {
         </div>
 
         {/* Имя */}
-        <label className="text-sm font-medium mb-1.5">Ваше имя</label>
+        <label className="text-sm font-medium mb-1">Ваше имя</label>
         <input
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="Как вас зовут?"
           autoComplete="name"
-          className="w-full h-11 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring mb-4"
+          className={[
+            'flex h-10 w-full rounded-md border border-input bg-background',
+            'px-3 py-2 text-sm ring-offset-background',
+            'placeholder:text-muted-foreground',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            'mb-3',
+          ].join(' ')}
         />
 
         {/* Телефон */}
-        <label className="text-sm font-medium mb-1.5">Номер телефона</label>
-        <div className="flex gap-2 mb-6">
+        <label className="text-sm font-medium mb-1">Номер телефона</label>
+        <div className="flex gap-2 mb-2">
           <input
             type="tel"
             value={phone}
             onChange={e => setPhone(e.target.value)}
             placeholder="+998 90 123 45 67"
             autoComplete="tel"
-            className="flex-1 h-11 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className={[
+              'flex h-10 flex-1 rounded-md border border-input bg-background',
+              'px-3 py-2 text-sm ring-offset-background',
+              'placeholder:text-muted-foreground',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            ].join(' ')}
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-11 w-11 shrink-0 rounded-xl"
-            disabled={contactRequested}
-            onClick={requestTgContact}
-            title="Поделиться номером из Telegram"
-          >
-            {contactRequested
-              ? <Loader2 className="h-4 w-4 animate-spin" />
-              : <Phone className="h-4 w-4" />}
-          </Button>
+          {(window as any).Telegram?.WebApp && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-10 w-10 shrink-0"
+              disabled={contactRequested}
+              onClick={requestTgContact}
+              title="Поделиться номером из Telegram"
+            >
+              {contactRequested
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <Phone className="h-4 w-4" />}
+            </Button>
+          )}
         </div>
 
-        {/* Подсказка */}
-        <p className="text-xs text-muted-foreground text-center mb-6">
-          Нажмите <Phone className="inline h-3 w-3" /> чтобы автоматически подставить номер из Telegram
+        <p className="text-xs text-muted-foreground mb-6">
+          Нажмите <Phone className="inline h-3 w-3 mx-0.5" /> чтобы автоматически подставить номер из Telegram
         </p>
 
         {/* Ошибка */}
@@ -219,15 +280,18 @@ export function ClientRegisterPage() {
         )}
 
         {/* Кнопка */}
-        <Button
-          className="w-full h-12 text-base rounded-xl"
-          disabled={!canSubmit}
-          onClick={handleSubmit}
-        >
-          {submitting
-            ? <Loader2 className="h-5 w-5 animate-spin" />
-            : 'Зарегистрироваться'}
-        </Button>
+        <div className="mt-auto pb-safe-bottom pb-4">
+          <Button
+            className="w-full"
+            size="lg"
+            disabled={!canSubmit}
+            onClick={handleSubmit}
+          >
+            {submitting
+              ? <Loader2 className="h-5 w-5 animate-spin" />
+              : 'Зарегистрироваться'}
+          </Button>
+        </div>
 
       </div>
     </div>
