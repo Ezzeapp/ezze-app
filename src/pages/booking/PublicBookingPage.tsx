@@ -584,7 +584,17 @@ export function PublicBookingPage() {
           await supabase.from('clients').update(updatePayload).eq('id', existingClient.id)
         }
       } else {
-        // Клиент не найден — создаём
+        // Клиент не найден — ищем tg_chat_id по телефону в tg_clients (если не пришёл из TG)
+        let resolvedTgChatId = tgUserId
+        if (!resolvedTgChatId) {
+          const { data: tgClient } = await supabase
+            .from('tg_clients')
+            .select('tg_chat_id')
+            .or(`phone.eq.${normalizedClientPhone},phone.eq.+${normalizedClientPhone}`)
+            .maybeSingle()
+          resolvedTgChatId = tgClient?.tg_chat_id ?? null
+        }
+        // Создаём клиента с авто-подстановкой tg_chat_id
         const { data: newClient } = await supabase
           .from('clients')
           .insert({
@@ -594,7 +604,7 @@ export function PublicBookingPage() {
             phone: normalizedClientPhone,
             source: 'online_booking',
             ...(tgNickname ? { telegram: tgNickname } : {}),
-            ...(tgUserId ? { tg_chat_id: tgUserId } : {}),
+            ...(resolvedTgChatId ? { tg_chat_id: resolvedTgChatId } : {}),
           })
           .select('id')
           .single()
