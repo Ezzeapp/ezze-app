@@ -41,6 +41,17 @@ serve(async (req) => {
     const APP_URL   = Deno.env.get('APP_URL') || 'https://pro.ezze.site'
 
     if (BOT_TOKEN) {
+      // Берём название кнопки из app_settings.tg_config (как в боте)
+      let clientLabel = 'Ezze client'
+      const { data: tgCfgRow } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'tg_config')
+        .maybeSingle()
+      if (tgCfgRow?.value?.client_label) {
+        clientLabel = tgCfgRow.value.client_label
+      }
+
       const menuUrl = `${APP_URL}/my?tg_id=${tg_chat_id}&tg_phone=${encodeURIComponent(phone)}&tg_name=${encodeURIComponent(name)}`
 
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setChatMenuButton`, {
@@ -50,7 +61,7 @@ serve(async (req) => {
           chat_id: tg_chat_id,
           menu_button: {
             type:    'web_app',
-            text:    '📱 Мой кабинет',
+            text:    clientLabel,
             web_app: { url: menuUrl },
           },
         }),
