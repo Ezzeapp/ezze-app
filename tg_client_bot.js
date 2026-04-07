@@ -344,22 +344,15 @@ async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
       }),
     });
   } else {
-    // Новый клиент — отправляем кнопку Mini App для регистрации
-    await bot.setUserMenuButton(chatId); // убираем кнопку меню до завершения регистрации
+    // Новый клиент — ставим кнопку меню на страницу регистрации
+    await bot.setUserMenuButton(chatId, "📝 Зарегистрироваться", `${APP_URL}/client-register`);
     await fetch(`${bot.TG_API}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `${greeting}\n\nДобро пожаловать в <b>Ezze</b>! 🎉\n\nДля регистрации нажмите кнопку ниже — это займёт меньше минуты:`,
+        text: `${greeting}\n\nДобро пожаловать в <b>Ezze</b>!\nНажмите кнопку <b>📝 Зарегистрироваться</b> рядом с полем ввода, чтобы зарегистрироваться 👇`,
         parse_mode: "HTML",
-        reply_markup: {
-          inline_keyboard: [[{
-            text: "📝 Зарегистрироваться",
-            style: "primary",
-            web_app: { url: `${APP_URL}/client-register` },
-          }]],
-        },
       }),
     });
   }
@@ -583,21 +576,15 @@ async function processUpdate(update) {
         return;
       }
 
-      // Клиента нет — открываем Mini App для регистрации
+      // Клиента нет — ставим кнопку меню на страницу регистрации
+      await bot.setUserMenuButton(chatId, "📝 Зарегистрироваться", `${APP_URL}/client-register`);
       await fetch(`${bot.TG_API}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text: `👋 <b>Привет${firstName ? ", " + escapeHtml(firstName) : ""}!</b>\n\nДля регистрации нажмите кнопку ниже:`,
+          text: `👋 <b>Привет${firstName ? ", " + escapeHtml(firstName) : ""}!</b>\n\nНажмите кнопку <b>📝 Зарегистрироваться</b> рядом с полем ввода, чтобы зарегистрироваться 👇`,
           parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [[{
-              text: "📝 Зарегистрироваться",
-              style: "primary",
-              web_app: { url: `${APP_URL}/client-register` },
-            }]],
-          },
         }),
       });
       return;
