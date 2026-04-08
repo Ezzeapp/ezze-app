@@ -1,0 +1,163 @@
+name: VPS Setup (9 products, one-time)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          printf 'Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  ConnectTimeout 30\n' > ~/.ssh/config
+
+      - name: Create directories
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            'for p in clinic workshop edu hotel food event farm transport build; do mkdir -p /var/www/ezze-$p /app/ezze-$p; done && echo "dirs OK"'
+
+      - name: Create nginx configs and reload
+        run: |
+          for p in clinic workshop edu hotel food event farm transport build; do
+            ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+          cat > /etc/nginx/sites-available/ezze-$p << 'NGINX'
+          server {
+              listen 80;
+              server_name $p.ezze.site;
+              root /var/www/ezze-$p;
+              index index.html;
+              location = /index.html { add_header Cache-Control \"no-store, no-cache\"; }
+              location ~* \.(js|css|png|jpg|svg|ico|woff2?)$ { expires 1y; add_header Cache-Control \"public, immutable\"; }
+              location / { try_files \$uri \$uri/ /index.html; }
+          }
+          NGINX
+          ln -sf /etc/nginx/sites-available/ezze-$p /etc/nginx/sites-enabled/ezze-$p
+          echo 'nginx config: $p'
+          "
+          done
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} 'nginx -t && nginx -s reload && echo "nginx reloaded"'
+
+      - name: Create systemd services (18 total)
+        run: |
+          for p in clinic workshop edu hotel food event farm transport build; do
+            ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+          cat > /etc/systemd/system/ezze-$p-master-bot.service << 'SVC'
+          [Unit]
+          Description=Ezze $p Master Bot
+          After=network.target
+          [Service]
+          Type=simple
+          WorkingDirectory=/app/ezze-$p
+          ExecStart=/usr/bin/node tg_master_bot.js
+          EnvironmentFile=/app/ezze-$p/.env
+          Restart=always
+          RestartSec=5
+          [Install]
+          WantedBy=multi-user.target
+          SVC
+          cat > /etc/systemd/system/ezze-$p-client-bot.service << 'SVC'
+          [Unit]
+          Description=Ezze $p Client Bot
+          After=network.target
+          [Service]
+          Type=simple
+          WorkingDirectory=/app/ezze-$p
+          ExecStart=/usr/bin/node tg_client_bot.js
+          EnvironmentFile=/app/ezze-$p/.env
+          Restart=always
+          RestartSec=5
+          [Install]
+          WantedBy=multi-user.target
+          SVC
+          echo 'services: $p'
+          "
+          done
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            'systemctl daemon-reload && for p in clinic workshop edu hotel food event farm transport build; do systemctl enable ezze-$p-master-bot ezze-$p-client-bot; done && echo "services enabled"'
+
+      - name: Create .env templates for bots
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} '
+            SERVICE_KEY=$(grep "^SUPABASE_SERVICE_KEY=" /app/ezze-app/.env 2>/dev/null | cut -d= -f2-)
+            [ -z "$SERVICE_KEY" ] && SERVICE_KEY="FILL_IN_SERVICE_KEY"
+            for p in clinic workshop edu hotel food event farm transport build; do
+              [ -f /app/ezze-$p/.env ] && echo "skip $p (exists)" && continue
+              printf "PRODUCT=%s\nAPP_URL=https://%s.ezze.site\nSUPABASE_URL=https://ezze.site\nSUPABASE_SERVICE_KEY=%s\nTG_BOT_TOKEN=FILL_AFTER_BOTFATHER\nTG_CLIENT_BOT_TOKEN=FILL_AFTER_BOTFATHER\n" "$p" "$p" "$SERVICE_KEY" > /app/ezze-$p/.env
+              echo "created .env for $p"
+            done
+          '
+
+      - name: Seed app_settings
+        run: |
+          cat > /tmp/seed.sql << 'SQLEOF'
+          INSERT INTO app_settings (product, key, value) VALUES
+          ('clinic','primary_color','"210 80% 50%"'),
+          ('clinic','platform_name','"Ezze Clinic"'),
+          ('clinic','plan_names','{"free":"Базовый","pro":"Клиника","enterprise":"Сеть"}'),
+          ('clinic','tg_config','{"client_label":"Пациент","master_label":"Врач","welcome_text":"Добро пожаловать в Ezze Clinic!"}'),
+          ('clinic','registration_open','true'),('clinic','web_registration_enabled','true'),('clinic','web_access_enabled','true'),
+          ('workshop','primary_color','"25 90% 50%"'),
+          ('workshop','platform_name','"Ezze Workshop"'),
+          ('workshop','plan_names','{"free":"Базовый","pro":"Мастерская","enterprise":"Сеть"}'),
+          ('workshop','tg_config','{"client_label":"Заказчик","master_label":"Мастер","welcome_text":"Добро пожаловать в Ezze Workshop!"}'),
+          ('workshop','registration_open','true'),('workshop','web_registration_enabled','true'),('workshop','web_access_enabled','true'),
+          ('edu','primary_color','"142 70% 45%"'),
+          ('edu','platform_name','"Ezze Edu"'),
+          ('edu','plan_names','{"free":"Базовый","pro":"Преподаватель","enterprise":"Школа"}'),
+          ('edu','tg_config','{"client_label":"Ученик","master_label":"Преподаватель","welcome_text":"Добро пожаловать в Ezze Edu!"}'),
+          ('edu','registration_open','true'),('edu','web_registration_enabled','true'),('edu','web_access_enabled','true'),
+          ('hotel','primary_color','"197 70% 50%"'),
+          ('hotel','platform_name','"Ezze Hotel"'),
+          ('hotel','plan_names','{"free":"Базовый","pro":"Отель","enterprise":"Сеть отелей"}'),
+          ('hotel','tg_config','{"client_label":"Гость","master_label":"Администратор","welcome_text":"Добро пожаловать в Ezze Hotel!"}'),
+          ('hotel','registration_open','true'),('hotel','web_registration_enabled','true'),('hotel','web_access_enabled','true'),
+          ('food','primary_color','"0 80% 50%"'),
+          ('food','platform_name','"Ezze Food"'),
+          ('food','plan_names','{"free":"Базовый","pro":"Ресторан","enterprise":"Сеть"}'),
+          ('food','tg_config','{"client_label":"Гость","master_label":"Официант","welcome_text":"Добро пожаловать в Ezze Food!"}'),
+          ('food','registration_open','true'),('food','web_registration_enabled','true'),('food','web_access_enabled','true'),
+          ('event','primary_color','"280 70% 55%"'),
+          ('event','platform_name','"Ezze Event"'),
+          ('event','plan_names','{"free":"Базовый","pro":"Организатор","enterprise":"Агентство"}'),
+          ('event','tg_config','{"client_label":"Гость","master_label":"Организатор","welcome_text":"Добро пожаловать в Ezze Event!"}'),
+          ('event','registration_open','true'),('event','web_registration_enabled','true'),('event','web_access_enabled','true'),
+          ('farm','primary_color','"100 60% 40%"'),
+          ('farm','platform_name','"Ezze Farm"'),
+          ('farm','plan_names','{"free":"Базовый","pro":"Ферма","enterprise":"Агрохолдинг"}'),
+          ('farm','tg_config','{"client_label":"Покупатель","master_label":"Менеджер","welcome_text":"Добро пожаловать в Ezze Farm!"}'),
+          ('farm','registration_open','true'),('farm','web_registration_enabled','true'),('farm','web_access_enabled','true'),
+          ('transport','primary_color','"220 90% 55%"'),
+          ('transport','platform_name','"Ezze Transport"'),
+          ('transport','plan_names','{"free":"Базовый","pro":"Перевозчик","enterprise":"Парк"}'),
+          ('transport','tg_config','{"client_label":"Пассажир","master_label":"Водитель","welcome_text":"Добро пожаловать в Ezze Transport!"}'),
+          ('transport','registration_open','true'),('transport','web_registration_enabled','true'),('transport','web_access_enabled','true'),
+          ('build','primary_color','"30 80% 45%"'),
+          ('build','platform_name','"Ezze Build"'),
+          ('build','plan_names','{"free":"Базовый","pro":"Прораб","enterprise":"Компания"}'),
+          ('build','tg_config','{"client_label":"Заказчик","master_label":"Прораб","welcome_text":"Добро пожаловать в Ezze Build!"}'),
+          ('build','registration_open','true'),('build','web_registration_enabled','true'),('build','web_access_enabled','true')
+          ON CONFLICT (product, key) DO UPDATE SET value = EXCLUDED.value;
+          SQLEOF
+          scp /tmp/seed.sql ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/seed.sql
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            'cd /app/supabase && docker compose exec -T db psql -U postgres -d postgres < /tmp/seed.sql && echo "seeded OK"'
+
+      - name: Generate new deploy key for 9 repos
+        run: |
+          ssh-keygen -t ed25519 -f /tmp/deploy_new -N "" -C "ezze-products-deploy"
+          PUB=$(cat /tmp/deploy_new.pub)
+          # Add to VPS authorized_keys
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "grep -qF '$PUB' ~/.ssh/authorized_keys 2>/dev/null || echo '$PUB' >> ~/.ssh/authorized_keys && echo 'pubkey added'"
+          echo ""
+          echo "=========================================="
+          echo "NEW DEPLOY_KEY for 9 repos (copy this):"
+          echo "=========================================="
+          cat /tmp/deploy_new
+          echo "=========================================="
+          echo "Set this as DEPLOY_KEY secret in each of the 9 new repos:"
+          echo "clinic, workshop, edu, hotel, food, event, farm, transport, build"
