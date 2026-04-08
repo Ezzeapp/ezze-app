@@ -107,6 +107,7 @@ export async function loadTgConfig() {
       .from("app_settings")
       .select("value")
       .eq("key", "tg_config")
+      .eq("product", PRODUCT)
       .maybeSingle();
     if (data?.value) {
       return JSON.parse(data.value);

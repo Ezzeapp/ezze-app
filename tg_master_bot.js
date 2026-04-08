@@ -723,6 +723,7 @@ bot.deleteWebhook()
           const { data: masters } = await supabase
             .from('master_profiles')
             .select('tg_chat_id')
+            .eq('product', PRODUCT)
             .not('tg_chat_id', 'is', null);
           if (!masters?.length) return;
           console.log(`🔄 Обновляем кнопку меню у ${masters.length} мастеров...`);
