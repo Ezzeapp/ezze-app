@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { PRODUCT } from '@/lib/config'
 
 /** List of all users — admin only */
 export function useUsers() {
@@ -26,6 +27,7 @@ export function useUsers() {
       const { data, error } = await supabase
         .from('users')
         .select('id, email, is_admin, plan, onboarded, disabled, created_at, master_profiles(avatar, display_name, profession, telegram)')
+        .eq('product', PRODUCT)
         .order('created_at', { ascending: false })
       if (error) throw error
       // Normalize: flatten master_profiles join and add name/avatar aliases
