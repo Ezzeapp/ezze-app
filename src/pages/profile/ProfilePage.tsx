@@ -776,8 +776,10 @@ export function ProfilePage() {
 
             <div className="space-y-2">
               <Label>{t('profile.bookingSlug')}</Label>
-              <Input placeholder="my-studio" {...register('booking_slug')} />
-              {errors.booking_slug && <p className="text-xs text-destructive">{errors.booking_slug.message}</p>}
+              <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted/40 px-3 text-sm text-muted-foreground font-mono select-all">
+                {bookingSlug}
+              </div>
+              <input type="hidden" {...register('booking_slug')} />
             </div>
             {/* QR-код для клиентов — сканируется в Mini App */}
             {isPublic && (
