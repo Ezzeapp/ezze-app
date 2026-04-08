@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Check, Zap, Crown, Building2, CreditCard, ExternalLink, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import dayjs from 'dayjs'
 import { useAuth } from '@/contexts/AuthContext'
-import { useAppSettings, usePlanPrices, DEFAULT_PLAN_PRICES, usePlanLimits, DEFAULT_PLAN_LIMITS, usePlanFeatures, DEFAULT_PLAN_FEATURES, type PlanFeaturesConfig } from '@/hooks/useAppSettings'
+import { useAppSettings, usePlanPrices, DEFAULT_PLAN_PRICES, usePlanLimits, DEFAULT_PLAN_LIMITS, usePlanFeatures, DEFAULT_PLAN_FEATURES, usePlanNames, DEFAULT_PLAN_NAMES, type PlanFeaturesConfig } from '@/hooks/useAppSettings'
 import { useMySubscription, useSubscriptionHistory } from '@/hooks/useSubscription'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -45,6 +45,7 @@ function PaymentDialog({ plan, onClose }: PaymentDialogProps) {
   const { user, refetchUser }  = useAuth()
   const { data: settings }     = useAppSettings()
   const { data: planPrices }   = usePlanPrices()
+  const { data: planNames }    = usePlanNames()
   const { data: profile }      = useProfile()
   const [clickLoading, setClickLoading]   = useState(false)
   const [waitingPayment, setWaitingPayment] = useState(false)
@@ -128,7 +129,7 @@ function PaymentDialog({ plan, onClose }: PaymentDialogProps) {
           <DialogTitle>{t('billing.payDialog.title')}</DialogTitle>
           <DialogDescription>
             {t('billing.payDialog.desc', {
-              plan: t(`billing.plan.${plan}`),
+              plan: (planNames ?? DEFAULT_PLAN_NAMES)[plan as keyof typeof DEFAULT_PLAN_NAMES] || t(`billing.plan.${plan}`),
               price: formatCurrency(priceUZS, 'UZS', i18n.language),
             })}
           </DialogDescription>
@@ -207,6 +208,7 @@ function CurrentPlanCard() {
   const { t, i18n } = useTranslation()
   const { user }              = useAuth()
   const { data: sub, isLoading } = useMySubscription()
+  const { data: planNames }   = usePlanNames()
 
   const currentPlan = (user?.plan ?? 'free') as PlanId
   const planConfig  = PLANS.find(p => p.id === currentPlan) ?? PLANS[0]
@@ -220,7 +222,7 @@ function CurrentPlanCard() {
         </div>
         <div>
           <p className="text-sm text-muted-foreground">{t('billing.currentPlan')}</p>
-          <p className="text-lg font-bold">{t(`billing.plan.${currentPlan}`)}</p>
+          <p className="text-lg font-bold">{(planNames ?? DEFAULT_PLAN_NAMES)[currentPlan] || t(`billing.plan.${currentPlan}`)}</p>
         </div>
 
         <Badge
@@ -282,6 +284,7 @@ function PlanCard({ plan, currentPlan, onUpgrade }: PlanCardProps) {
   const { data: planPrices }     = usePlanPrices()
   const { data: planLimits }     = usePlanLimits()
   const { data: planFeaturesData } = usePlanFeatures()
+  const { data: planNames }      = usePlanNames()
 
   const PlanIcon    = plan.icon
   const prices      = planPrices ?? DEFAULT_PLAN_PRICES
@@ -346,7 +349,7 @@ function PlanCard({ plan, currentPlan, onUpgrade }: PlanCardProps) {
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <p className="font-semibold">{t(`billing.plan.${plan.id}`)}</p>
+            <p className="font-semibold">{(planNames ?? DEFAULT_PLAN_NAMES)[plan.id] || t(`billing.plan.${plan.id}`)}</p>
             {isCurrent && (
               <Badge variant="default" className="text-[10px] px-1.5 py-0">
                 {t('billing.current')}
@@ -392,6 +395,7 @@ function SubscriptionHistory() {
   const { t, i18n }             = useTranslation()
   const [open, setOpen]          = useState(false)
   const { data: history = [], isLoading } = useSubscriptionHistory()
+  const { data: planNames }      = usePlanNames()
 
   if (!isLoading && history.length === 0) return null
 
@@ -413,7 +417,7 @@ function SubscriptionHistory() {
             : history.map(sub => (
               <div key={sub.id} className="flex items-center justify-between py-2 border-t first:border-t-0">
                 <div>
-                  <p className="text-sm font-medium">{t(`billing.plan.${sub.plan}`)}</p>
+                  <p className="text-sm font-medium">{(planNames ?? DEFAULT_PLAN_NAMES)[sub.plan as keyof typeof DEFAULT_PLAN_NAMES] || t(`billing.plan.${sub.plan}`)}</p>
                   <p className="text-xs text-muted-foreground">
                     {sub.provider.toUpperCase()} · {dayjs(sub.created_at).format('DD.MM.YYYY')}
                   </p>
