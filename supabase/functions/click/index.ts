@@ -66,13 +66,12 @@ function clickResp(errCode: number, errNote: string, extra: Record<string, unkno
 
 // ── DB helpers ────────────────────────────────────────────────────────────────
 
-async function getProductByServiceId(serviceId: string): Promise<string> {
-  if (!serviceId) return 'beauty'
+async function getProductByUserId(userId: string): Promise<string> {
+  if (!userId) return 'beauty'
   try {
     const { data } = await supabaseAdmin
-      .from('app_settings').select('product')
-      .eq('key', 'click_service_id')
-      .eq('value', serviceId)
+      .from('users').select('product')
+      .eq('id', userId)
       .maybeSingle()
     return data?.product ?? 'beauty'
   } catch (_) {
@@ -368,7 +367,12 @@ async function handlePrepare(params: Record<string, string>): Promise<Response> 
     })
   }
 
-  const product   = await getProductByServiceId(serviceId)
+  // merchant_trans_id = "userId:plan"
+  const parts  = merchantTransId.split(':')
+  const userId = parts[0] ?? ''
+  const plan   = parts[1] ?? ''
+
+  const product   = await getProductByUserId(userId)
   const secretKey = await getClickKey(product)
   if (!secretKey) {
     return clickResp(CLICK_ERR_INTERNAL, 'Click not configured')
@@ -387,11 +391,6 @@ async function handlePrepare(params: Record<string, string>): Promise<Response> 
   if (!signOk) {
     return clickResp(CLICK_ERR_SIGN, 'Invalid sign')
   }
-
-  // merchant_trans_id = "userId:plan"
-  const parts  = merchantTransId.split(':')
-  const userId = parts[0] ?? ''
-  const plan   = parts[1] ?? ''
 
   const { data: user } = await supabaseAdmin
     .from('users').select('id').eq('id', userId).maybeSingle()
@@ -480,7 +479,8 @@ async function handleComplete(params: Record<string, string>): Promise<Response>
     })
   }
 
-  const product   = await getProductByServiceId(serviceId)
+  const userId2   = (merchantTransId.split(':')[0]) ?? ''
+  const product   = await getProductByUserId(userId2)
   const secretKey = await getClickKey(product)
   if (!secretKey) {
     return clickResp(CLICK_ERR_INTERNAL, 'Click not configured')
