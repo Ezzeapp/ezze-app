@@ -7,6 +7,7 @@ import {
   Clock, ChevronRight, X, ShoppingBag, Star
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { PRODUCT } from '@/lib/config'
 import { buildTheme } from '@/lib/pageTheme'
 import { formatCurrency } from '@/lib/utils'
 import type { MasterProfile, MasterProduct } from '@/types'
@@ -29,6 +30,7 @@ function usePublicMasterProfile(slug: string) {
         .from('master_profiles')
         .select('*')
         .eq('booking_slug', slug)
+        .eq('product', PRODUCT)
         .maybeSingle()
       if (error) throw error
       return data as MasterProfile | null

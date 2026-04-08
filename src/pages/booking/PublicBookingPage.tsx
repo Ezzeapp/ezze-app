@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { Clock, MapPin, CheckCircle, ChevronLeft, ChevronRight, Zap, Send as SendIcon, Search, Check, X, ExternalLink, Tag, Star, BanIcon, CalendarDays, UserCircle, Phone, MessageCircle } from 'lucide-react'
 import dayjs from 'dayjs'
 import { supabase } from '@/lib/supabase'
+import { PRODUCT } from '@/lib/config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -198,6 +199,7 @@ export function PublicBookingPage() {
         .select('*, user:users(id, name, email)')
         .eq('booking_slug', masterId)
         .eq('is_public', true)
+        .eq('product', PRODUCT)
         .maybeSingle()
 
       if (profileError || !profile) {

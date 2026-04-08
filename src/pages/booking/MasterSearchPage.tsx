@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Search, X, ChevronRight, User, Users } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { PRODUCT } from '@/lib/config'
 import { getFileUrl } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -45,6 +46,7 @@ export function MasterSearchPage() {
         .select('booking_slug, profession, avatar, user:users(name)')
         .not('booking_slug', 'is', null)
         .eq('is_public', true)
+        .eq('product', PRODUCT)
         .order('created_at', { ascending: false })
         .limit(200)
       return (data ?? []) as unknown as MasterResult[]

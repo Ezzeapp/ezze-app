@@ -9,6 +9,7 @@ import {
   ChevronRight, X, QrCode,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { PRODUCT } from '@/lib/config'
 import { getFileUrl, cn } from '@/lib/utils'
 import {
   isTelegramMiniApp,
@@ -241,6 +242,7 @@ export function ClientCabinetPage() {
         .select('booking_slug, profession, avatar, phone, display_name')
         .not('booking_slug', 'is', null)
         .eq('is_public', true)
+        .eq('product', PRODUCT)
         .order('created_at', { ascending: false })
         .limit(200)
       return (data ?? []) as unknown as MasterResult[]
