@@ -97,7 +97,7 @@ jobs:
           timeout_minutes: 3
           max_attempts: 3
           retry_wait_seconds: 15
-          command: rsync -az tg_shared.js tg_master_bot.js tg_client_bot.js tg_polling.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_BOT_PATH }}
+          command: rsync -az tg_shared.js tg_master_bot.js tg_client_bot.js tg_polling.js package.json ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_BOT_PATH }}
 
       - name: Restart bot services
         run: |
