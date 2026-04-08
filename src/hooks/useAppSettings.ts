@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { uploadImage, getFileUrl } from "@/lib/storage"
 import { useAuth } from '@/contexts/AuthContext'
+import { PRODUCT } from '@/lib/config'
 
 export const APP_SETTINGS_KEY = 'app_settings'
 
@@ -29,6 +30,7 @@ export function usePlanLimits() {
         .from('app_settings')
         .select('*')
         .eq('key', 'plan_limits')
+        .eq('product', PRODUCT)
         .maybeSingle()
       if (!data) return DEFAULT_PLAN_LIMITS
       try {
@@ -48,7 +50,7 @@ export function useUpdatePlanLimits() {
       const value = JSON.stringify(rows)
       const { data, error } = await supabase
         .from('app_settings')
-        .upsert({ key: 'plan_limits', value }, { onConflict: 'key' })
+        .upsert({ product: PRODUCT, key: 'plan_limits', value }, { onConflict: 'product,key' })
         .select()
         .single()
       if (error) throw error
@@ -78,6 +80,7 @@ export function usePlanPrices() {
         .from('app_settings')
         .select('*')
         .eq('key', 'plan_prices')
+        .eq('product', PRODUCT)
         .maybeSingle()
       if (!data) return DEFAULT_PLAN_PRICES
       try {
@@ -97,7 +100,7 @@ export function useUpdatePlanPrices() {
       const value = JSON.stringify(prices)
       const { data, error } = await supabase
         .from('app_settings')
-        .upsert({ key: 'plan_prices', value }, { onConflict: 'key' })
+        .upsert({ product: PRODUCT, key: 'plan_prices', value }, { onConflict: 'product,key' })
         .select()
         .single()
       if (error) throw error
@@ -129,6 +132,7 @@ export function usePlanNames() {
         .from('app_settings')
         .select('*')
         .eq('key', 'plan_names')
+        .eq('product', PRODUCT)
         .maybeSingle()
       if (!data) return DEFAULT_PLAN_NAMES
       try {
@@ -148,7 +152,7 @@ export function useUpdatePlanNames() {
       const value = JSON.stringify(names)
       const { data, error } = await supabase
         .from('app_settings')
-        .upsert({ key: 'plan_names', value }, { onConflict: 'key' })
+        .upsert({ product: PRODUCT, key: 'plan_names', value }, { onConflict: 'product,key' })
         .select()
         .single()
       if (error) throw error
@@ -190,6 +194,7 @@ export function usePlanFeatures() {
         .from('app_settings')
         .select('*')
         .eq('key', 'plan_features')
+        .eq('product', PRODUCT)
         .maybeSingle()
       if (!data) return DEFAULT_PLAN_FEATURES
       try {
@@ -209,7 +214,7 @@ export function useUpdatePlanFeatures() {
       const value = JSON.stringify(features)
       const { data, error } = await supabase
         .from('app_settings')
-        .upsert({ key: 'plan_features', value }, { onConflict: 'key' })
+        .upsert({ product: PRODUCT, key: 'plan_features', value }, { onConflict: 'product,key' })
         .select()
         .single()
       if (error) throw error
@@ -283,7 +288,7 @@ export interface AppSettings {
 }
 
 async function fetchAppSettings(): Promise<AppSettings> {
-  const { data: records } = await supabase.from('app_settings').select('*')
+  const { data: records } = await supabase.from('app_settings').select('*').eq('product', PRODUCT)
   const map: Record<string, string> = {}
   ;(records ?? []).forEach((r: any) => { map[r.key] = r.value })
 
@@ -327,7 +332,7 @@ export function useUpdateAppSetting() {
     mutationFn: async ({ key, value }: { key: string; value: string }) => {
       const { data, error } = await supabase
         .from('app_settings')
-        .upsert({ key, value }, { onConflict: 'key' })
+        .upsert({ product: PRODUCT, key, value }, { onConflict: 'product,key' })
         .select()
         .single()
       if (error) throw error
@@ -367,6 +372,7 @@ export function useEmailConfig() {
         .from('app_settings')
         .select('*')
         .eq('key', 'email_config')
+        .eq('product', PRODUCT)
         .maybeSingle()
       if (!data) return DEFAULT_EMAIL_CONFIG
       try {
@@ -386,7 +392,7 @@ export function useUpdateEmailConfig() {
       const value = JSON.stringify(config)
       const { data, error } = await supabase
         .from('app_settings')
-        .upsert({ key: 'email_config', value }, { onConflict: 'key' })
+        .upsert({ product: PRODUCT, key: 'email_config', value }, { onConflict: 'product,key' })
         .select()
         .single()
       if (error) throw error
@@ -404,7 +410,7 @@ export function useUpdateAppLogo() {
       // Store a marker that logo exists
       const { data, error } = await supabase
         .from('app_settings')
-        .upsert({ key: 'platform_logo', value: 'app-logo' }, { onConflict: 'key' })
+        .upsert({ product: PRODUCT, key: 'platform_logo', value: 'app-logo' }, { onConflict: 'product,key' })
         .select()
         .single()
       if (error) throw error
@@ -422,6 +428,7 @@ export function useResetAppLogo() {
         .from('app_settings')
         .delete()
         .eq('key', 'platform_logo')
+        .eq('product', PRODUCT)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [APP_SETTINGS_KEY] }),
@@ -458,6 +465,7 @@ export function useAIConfig() {
         .from('app_settings')
         .select('value')
         .eq('key', 'ai_config')
+        .eq('product', PRODUCT)
         .maybeSingle()
       if (!data?.value) return DEFAULT_AI_CONFIG
       try {
@@ -492,7 +500,7 @@ export function useUpdateAIConfig() {
       const value = JSON.stringify(finalConfig)
       const { data, error } = await supabase
         .from('app_settings')
-        .upsert({ key: 'ai_config', value }, { onConflict: 'key' })
+        .upsert({ product: PRODUCT, key: 'ai_config', value }, { onConflict: 'product,key' })
         .select()
         .single()
       if (error) throw error
@@ -524,6 +532,7 @@ export function useTgConfig() {
         .from('app_settings')
         .select('value')
         .eq('key', 'tg_config')
+        .eq('product', PRODUCT)
         .maybeSingle()
       if (!data?.value) return DEFAULT_TG_CONFIG
       try {
@@ -543,7 +552,7 @@ export function useUpdateTgConfig() {
       const value = JSON.stringify(config)
       const { data, error } = await supabase
         .from('app_settings')
-        .upsert({ key: 'tg_config', value }, { onConflict: 'key' })
+        .upsert({ product: PRODUCT, key: 'tg_config', value }, { onConflict: 'product,key' })
         .select()
         .single()
       if (error) throw error

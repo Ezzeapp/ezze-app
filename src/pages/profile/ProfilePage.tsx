@@ -862,7 +862,7 @@ export function ProfilePage() {
                   </p>
                 </div>
                 <a
-                  href={`https://t.me/ezzepro_bot`}
+                  href={`https://t.me/${import.meta.env.VITE_MASTER_BOT || 'ezzepro_bot'}`}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-colors text-emerald-600"
@@ -881,7 +881,7 @@ export function ProfilePage() {
             )}
 
             <a
-              href={`https://t.me/ezzepro_bot?start=${bookingSlug}`}
+              href={`https://t.me/${import.meta.env.VITE_MASTER_BOT || 'ezzepro_bot'}?start=${bookingSlug}`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center justify-center gap-2 w-full rounded-lg px-4 py-2.5 text-sm font-medium bg-[#2AABEE] hover:bg-[#2AABEE]/90 text-white transition-colors"

@@ -130,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: { data: { name, product: import.meta.env.VITE_PRODUCT || 'beauty' } },
     })
     if (error) throw error
 
@@ -139,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: settings } = await supabase
         .from('app_settings')
         .select('key, value')
+        .eq('product', import.meta.env.VITE_PRODUCT || 'beauty')
       const settingsMap: Record<string, string> = {}
       settings?.forEach((r: any) => { settingsMap[r.key] = r.value })
       if (settingsMap.default_timezone && data.user) {

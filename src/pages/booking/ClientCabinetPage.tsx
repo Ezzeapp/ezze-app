@@ -39,7 +39,7 @@ function TelegramLoginWidget({ onAuth }: { onAuth: (user: Record<string, unknown
     ;(window as any).onTelegramAuth = (user: Record<string, unknown>) => { onAuthRef.current(user) }
     const script = document.createElement('script')
     script.src = 'https://telegram.org/js/telegram-widget.js?22'
-    script.setAttribute('data-telegram-login', 'ezzeprogo_bot')
+    script.setAttribute('data-telegram-login', import.meta.env.VITE_CLIENT_BOT || 'ezzeprogo_bot')
     script.setAttribute('data-size', 'large')
     script.setAttribute('data-radius', '8')
     script.setAttribute('data-onauth', 'onTelegramAuth(user)')
@@ -393,9 +393,9 @@ export function ClientCabinetPage() {
     const openBot = () => {
       const tg = (window as any).Telegram?.WebApp
       if (tg?.openTelegramLink) {
-        tg.openTelegramLink('https://t.me/ezzeprogo_bot')
+        tg.openTelegramLink(`https://t.me/${import.meta.env.VITE_CLIENT_BOT || 'ezzeprogo_bot'}`)
       } else {
-        window.open('https://t.me/ezzeprogo_bot', '_blank')
+        window.open(`https://t.me/${import.meta.env.VITE_CLIENT_BOT || 'ezzeprogo_bot'}`, '_blank')
       }
     }
     return (

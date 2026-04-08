@@ -27,6 +27,10 @@ jobs:
         env:
           VITE_SUPABASE_URL: https://ezze.site
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          VITE_APP_URL: ${{ secrets.VITE_APP_URL }}
+          VITE_PRODUCT: ${{ secrets.VITE_PRODUCT }}
+          VITE_MASTER_BOT: ${{ secrets.VITE_MASTER_BOT }}
+          VITE_CLIENT_BOT: ${{ secrets.VITE_CLIENT_BOT }}
 
       - name: Setup SSH key
         run: |
@@ -41,7 +45,7 @@ jobs:
           timeout_minutes: 5
           max_attempts: 3
           retry_wait_seconds: 15
-          command: rsync -az --delete dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/var/www/ezze-app/
+          command: rsync -az --delete dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_WEB_PATH }}
 
       - name: Copy migrations to VPS
         uses: nick-fields/retry@v3
@@ -93,14 +97,14 @@ jobs:
           timeout_minutes: 3
           max_attempts: 3
           retry_wait_seconds: 15
-          command: rsync -az tg_shared.js tg_master_bot.js tg_client_bot.js tg_polling.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/app/ezze-app/
+          command: rsync -az tg_shared.js tg_master_bot.js tg_client_bot.js tg_polling.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_BOT_PATH }}
 
       - name: Restart bot services
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} '
-            systemctl restart ezze-master-bot
-            systemctl restart ezze-client-bot
+            systemctl restart ${{ secrets.BOT_SERVICE_MASTER }}
+            systemctl restart ${{ secrets.BOT_SERVICE_CLIENT }}
           '
 
       - name: Notify success
-        run: echo "Deployed successfully to https://pro.ezze.site"
+        run: echo "Deployed successfully to ${{ secrets.VITE_APP_URL }}"

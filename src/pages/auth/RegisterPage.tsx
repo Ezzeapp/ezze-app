@@ -560,7 +560,7 @@ export function RegisterPage() {
           </p>
         </div>
 
-        <a href="https://t.me/ezzepro_bot" target="_blank" rel="noreferrer">
+        <a href={`https://t.me/${import.meta.env.VITE_MASTER_BOT || 'ezzepro_bot'}`} target="_blank" rel="noreferrer">
           <Button size="lg" className="w-full">
             {t('auth.openBot')}
           </Button>
