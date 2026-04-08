@@ -107,6 +107,57 @@ export function useUpdatePlanPrices() {
   })
 }
 
+// ── Plan Names ────────────────────────────────────────────────────────────────
+
+export interface PlanNamesConfig {
+  free: string
+  pro: string
+  enterprise: string
+}
+
+export const DEFAULT_PLAN_NAMES: PlanNamesConfig = {
+  free: 'Free',
+  pro: 'Pro',
+  enterprise: 'Enterprise',
+}
+
+export function usePlanNames() {
+  return useQuery({
+    queryKey: [APP_SETTINGS_KEY, 'plan_names'],
+    queryFn: async (): Promise<PlanNamesConfig> => {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('*')
+        .eq('key', 'plan_names')
+        .maybeSingle()
+      if (!data) return DEFAULT_PLAN_NAMES
+      try {
+        return { ...DEFAULT_PLAN_NAMES, ...JSON.parse(data.value) } as PlanNamesConfig
+      } catch {
+        return DEFAULT_PLAN_NAMES
+      }
+    },
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useUpdatePlanNames() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (names: PlanNamesConfig) => {
+      const value = JSON.stringify(names)
+      const { data, error } = await supabase
+        .from('app_settings')
+        .upsert({ key: 'plan_names', value }, { onConflict: 'key' })
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [APP_SETTINGS_KEY, 'plan_names'] }),
+  })
+}
+
 // ── Plan Features ─────────────────────────────────────────────────────────────
 
 export interface PlanFeaturesConfig {

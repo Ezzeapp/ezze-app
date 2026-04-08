@@ -7,6 +7,7 @@ import {
   useAppSettings, useUpdateAppSetting, APP_SETTINGS_KEY,
   usePlanLimits, useUpdatePlanLimits, DEFAULT_PLAN_LIMITS, type PlanLimitRow,
   usePlanPrices, useUpdatePlanPrices, DEFAULT_PLAN_PRICES,
+  usePlanNames, useUpdatePlanNames, DEFAULT_PLAN_NAMES,
   usePlanFeatures, useUpdatePlanFeatures, DEFAULT_PLAN_FEATURES, type PlanFeaturesConfig,
 } from '@/hooks/useAppSettings'
 import { useAllSubscriptions, SUBSCRIPTIONS_KEY } from '@/hooks/useSubscription'
@@ -42,6 +43,30 @@ function strToLimit(s: string): number | null {
 
 function PlanSettings() {
   const { t, i18n } = useTranslation()
+
+  // Names
+  const { data: planNames } = usePlanNames()
+  const updateNames = useUpdatePlanNames()
+  const [freeNameStr, setFreeNameStr] = useState(DEFAULT_PLAN_NAMES.free)
+  const [proNameStr,  setProNameStr]  = useState(DEFAULT_PLAN_NAMES.pro)
+  const [entNameStr,  setEntNameStr]  = useState(DEFAULT_PLAN_NAMES.enterprise)
+
+  useEffect(() => {
+    if (planNames) {
+      setFreeNameStr(planNames.free)
+      setProNameStr(planNames.pro)
+      setEntNameStr(planNames.enterprise)
+    }
+  }, [planNames])
+
+  const saveNames = async () => {
+    await updateNames.mutateAsync({
+      free:       freeNameStr.trim() || DEFAULT_PLAN_NAMES.free,
+      pro:        proNameStr.trim()  || DEFAULT_PLAN_NAMES.pro,
+      enterprise: entNameStr.trim()  || DEFAULT_PLAN_NAMES.enterprise,
+    })
+    toast.success(t('admin.billing.saved'))
+  }
 
   // Prices
   const { data: planPrices } = usePlanPrices()
@@ -91,6 +116,53 @@ function PlanSettings() {
         </div>
       </div>
 
+      {/* ── Названия тарифов ── */}
+      <div className="rounded-lg border p-4 space-y-4">
+        <div>
+          <p className="font-medium text-sm">{t('admin.billing.planNames')}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{t('admin.billing.planNamesHint')}</p>
+        </div>
+
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium w-28 shrink-0 text-muted-foreground">Free</span>
+            <Input
+              value={freeNameStr}
+              onChange={e => setFreeNameStr(e.target.value)}
+              placeholder="Free"
+              className="text-sm w-40"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium w-28 shrink-0">Pro</span>
+            <Input
+              value={proNameStr}
+              onChange={e => setProNameStr(e.target.value)}
+              placeholder="Pro"
+              className="text-sm w-40"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium w-28 shrink-0">Enterprise</span>
+            <Input
+              value={entNameStr}
+              onChange={e => setEntNameStr(e.target.value)}
+              placeholder="Enterprise"
+              className="text-sm w-40"
+            />
+          </div>
+        </div>
+
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={saveNames}
+          disabled={updateNames.isPending}
+        >
+          {t('common.save')}
+        </Button>
+      </div>
+
       {/* ── Цены ── */}
       <div className="rounded-lg border p-4 space-y-4">
         <div>
@@ -102,7 +174,7 @@ function PlanSettings() {
           {/* Free — всегда 0, readonly */}
           <div className="flex items-center gap-3">
             <span className="text-xs font-medium w-28 shrink-0 text-muted-foreground">
-              {t('billing.plan.free')}
+              {freeNameStr || t('billing.plan.free')}
             </span>
             <Input
               value="0"
@@ -114,7 +186,7 @@ function PlanSettings() {
 
           {/* Pro */}
           <div className="flex items-center gap-3">
-            <span className="text-xs font-medium w-28 shrink-0">{t('billing.plan.pro')}</span>
+            <span className="text-xs font-medium w-28 shrink-0">{proNameStr || t('billing.plan.pro')}</span>
             <Input
               type="number"
               min={0}
@@ -130,7 +202,7 @@ function PlanSettings() {
 
           {/* Enterprise */}
           <div className="flex items-center gap-3">
-            <span className="text-xs font-medium w-28 shrink-0">{t('billing.plan.enterprise')}</span>
+            <span className="text-xs font-medium w-28 shrink-0">{entNameStr || t('billing.plan.enterprise')}</span>
             <Input
               type="number"
               min={0}
