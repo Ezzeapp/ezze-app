@@ -66,20 +66,40 @@ function clickResp(errCode: number, errNote: string, extra: Record<string, unkno
 
 // ── DB helpers ────────────────────────────────────────────────────────────────
 
-async function getClickKey(): Promise<string> {
+async function getProductByServiceId(serviceId: string): Promise<string> {
+  if (!serviceId) return 'beauty'
   try {
     const { data } = await supabaseAdmin
-      .from('app_settings').select('value').eq('key', 'click_merchant_key').maybeSingle()
+      .from('app_settings').select('product')
+      .eq('key', 'click_service_id')
+      .eq('value', serviceId)
+      .maybeSingle()
+    return data?.product ?? 'beauty'
+  } catch (_) {
+    return 'beauty'
+  }
+}
+
+async function getClickKey(product: string): Promise<string> {
+  try {
+    const { data } = await supabaseAdmin
+      .from('app_settings').select('value')
+      .eq('key', 'click_merchant_key')
+      .eq('product', product)
+      .maybeSingle()
     return data?.value ?? ''
   } catch (_) {
     return ''
   }
 }
 
-async function getPlanPriceUzs(plan: string): Promise<number> {
+async function getPlanPriceUzs(plan: string, product: string): Promise<number> {
   try {
     const { data } = await supabaseAdmin
-      .from('app_settings').select('value').eq('key', 'plan_prices').maybeSingle()
+      .from('app_settings').select('value')
+      .eq('key', 'plan_prices')
+      .eq('product', product)
+      .maybeSingle()
     if (data?.value) {
       const prices = JSON.parse(data.value)
       return prices[plan] ?? 0
@@ -323,11 +343,6 @@ async function parseFormBody(req: Request): Promise<Record<string, string>> {
 // ── PREPARE handler (action=0) ────────────────────────────────────────────────
 
 async function handlePrepare(params: Record<string, string>): Promise<Response> {
-  const secretKey = await getClickKey()
-  if (!secretKey) {
-    return clickResp(CLICK_ERR_INTERNAL, 'Click not configured')
-  }
-
   const clickTransId    = params['click_trans_id']    ?? ''
   const serviceId       = params['service_id']        ?? ''
   const merchantTransId = params['merchant_trans_id'] ?? ''
@@ -351,6 +366,12 @@ async function handlePrepare(params: Record<string, string>): Promise<Response> 
       merchant_trans_id:   merchantTransId || '0',
       merchant_prepare_id: 0,
     })
+  }
+
+  const product   = await getProductByServiceId(serviceId)
+  const secretKey = await getClickKey(product)
+  if (!secretKey) {
+    return clickResp(CLICK_ERR_INTERNAL, 'Click not configured')
   }
 
   const signOk = verifyClickSign({
@@ -378,7 +399,7 @@ async function handlePrepare(params: Record<string, string>): Promise<Response> 
     return clickResp(CLICK_ERR_NOT_FOUND, 'User not found')
   }
 
-  const expectedAmount = await getPlanPriceUzs(plan)
+  const expectedAmount = await getPlanPriceUzs(plan, product)
   if (!expectedAmount) {
     return clickResp(CLICK_ERR_NOT_FOUND, 'Unknown plan')
   }
@@ -433,11 +454,6 @@ async function handlePrepare(params: Record<string, string>): Promise<Response> 
 // ── COMPLETE handler (action=1) ───────────────────────────────────────────────
 
 async function handleComplete(params: Record<string, string>): Promise<Response> {
-  const secretKey = await getClickKey()
-  if (!secretKey) {
-    return clickResp(CLICK_ERR_INTERNAL, 'Click not configured')
-  }
-
   const clickTransId      = params['click_trans_id']      ?? ''
   const serviceId         = params['service_id']          ?? ''
   const merchantTransId   = params['merchant_trans_id']   ?? ''
@@ -462,6 +478,12 @@ async function handleComplete(params: Record<string, string>): Promise<Response>
       merchant_trans_id:   merchantTransId || '0',
       merchant_confirm_id: 0,
     })
+  }
+
+  const product   = await getProductByServiceId(serviceId)
+  const secretKey = await getClickKey(product)
+  if (!secretKey) {
+    return clickResp(CLICK_ERR_INTERNAL, 'Click not configured')
   }
 
   const signOk = verifyClickSign({
