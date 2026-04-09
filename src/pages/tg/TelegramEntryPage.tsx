@@ -54,7 +54,11 @@ export function TelegramEntryPage() {
         supabase.auth.setSession({ access_token: at, refresh_token: rt })
           .then(({ error }) => {
             if (!error) {
-              navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard', { replace: true })
+              // Полная перезагрузка страницы — к этому моменту setSession уже записал
+              // сессию в localStorage, поэтому при новой загрузке getSession() вернёт
+              // сессию и AuthContext инициализируется корректно (нет race condition).
+              const target = window.innerWidth < 1024 ? '/calendar' : '/dashboard'
+              window.location.replace(target)
             } else {
               doTgAuth(navigate, setNotFound, true)
             }
