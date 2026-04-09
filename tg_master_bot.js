@@ -215,10 +215,9 @@ async function processUpdate(update) {
         return;
       }
       // Запускаем регистрацию через Mini App
-      const regUrl = `${APP_URL}/register`;
       const cfg = await loadTgConfig();
       const menuBtnLabel = cfg.master_label || LANG_STRINGS.ru.registerBtn;
-      await bot.setUserMenuButton(chatId, menuBtnLabel, regUrl);
+      await bot.setUserMenuButton(chatId, menuBtnLabel, `${APP_URL}/tg?start=master`);
       pendingMasters.set(chatId, sessionEntry({ step: "pending_web_registration" }));
       savePendingSessions();
 
@@ -576,15 +575,13 @@ async function processUpdate(update) {
           const s = LANG_STRINGS[lang];
           const cfg = await loadTgConfig();
           const menuBtnLabel = cfg.master_label || s.registerBtn;
-          const regUrl = `${APP_URL}/register?lang=${lang}&phone=${encodeURIComponent(existingSession.phone || "")}`;
-          await bot.setUserMenuButton(chatId, menuBtnLabel, regUrl);
+          await bot.setUserMenuButton(chatId, menuBtnLabel, `${APP_URL}/tg?start=master`);
           await bot.sendMessage(chatId, s.successReg(escapeHtml(firstName)));
         } else {
           // Совсем новый — сразу открываем Mini App для регистрации
-          const regUrl = `${APP_URL}/register`;
           const cfg = await loadTgConfig();
           const menuBtnLabel = cfg.master_label || LANG_STRINGS.ru.registerBtn;
-          await bot.setUserMenuButton(chatId, menuBtnLabel, regUrl);
+          await bot.setUserMenuButton(chatId, menuBtnLabel, `${APP_URL}/tg?start=master`);
           pendingMasters.set(chatId, sessionEntry({ step: "pending_web_registration" }));
           savePendingSessions();
 
@@ -645,18 +642,14 @@ async function processUpdate(update) {
         const name = text.trim() || pending.tgName || firstName;
         const lang = getLang(pending);
         const s = LANG_STRINGS[lang];
-        const regUrl = `${APP_URL}/register?lang=${lang}&phone=${encodeURIComponent(pending.phone || "")}&name=${encodeURIComponent(name)}`;
-
         // Переводим в состояние ожидания веб-регистрации.
-        // НЕ удаляем из pendingMasters — иначе повторное нажатие "Зарегистрироваться"
-        // перезапустит весь флоу, пока пользователь ещё не закончил регистрацию в веб-приложении.
         pendingMasters.set(chatId, sessionEntry({ step: "pending_web_registration", lang, phone: pending.phone || "" }));
         savePendingSessions();
 
-        // Кнопка меню → страница регистрации с предзаполненными данными
+        // Кнопка меню → всегда на /tg?start=master (TelegramEntryPage сам маршрутизирует)
         const cfg = await loadTgConfig();
         const menuBtnLabel = cfg.master_label || s.registerBtn;
-        await bot.setUserMenuButton(chatId, menuBtnLabel, regUrl);
+        await bot.setUserMenuButton(chatId, menuBtnLabel, `${APP_URL}/tg?start=master`);
 
         // Текстовое сообщение — без inline-кнопки, направляем к кнопке меню
         await bot.sendMessage(chatId, s.successReg(escapeHtml(name)));
