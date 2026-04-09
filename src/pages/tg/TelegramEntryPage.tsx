@@ -46,6 +46,22 @@ export function TelegramEntryPage() {
     // Если авторизация не удалась (аккаунт удалён, initData отсутствует,
     // любая ошибка) — показываем экран "аккаунт не найден", а НЕ клиентский кабинет.
     if (startParam === 'master') {
+      // После регистрации на другом домене токены передаются прямо в URL
+      const urlParams = new URLSearchParams(window.location.search)
+      const at = urlParams.get('at')
+      const rt = urlParams.get('rt')
+      if (at && rt) {
+        supabase.auth.setSession({ access_token: at, refresh_token: rt })
+          .then(({ error }) => {
+            if (!error) {
+              navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard', { replace: true })
+            } else {
+              doTgAuth(navigate, setNotFound, true)
+            }
+          })
+          .catch(() => doTgAuth(navigate, setNotFound, true))
+        return
+      }
       doTgAuth(navigate, setNotFound, /* masterOnly */ true)
       return
     }

@@ -207,7 +207,7 @@ export function RegisterPage() {
           user_id:      userId,
           tg_chat_id:   tgId,
           telegram:     tgUser?.username ? '@' + tgUser.username : '',
-          product:      import.meta.env.VITE_PRODUCT || 'beauty',
+          product:      selectedProduct || import.meta.env.VITE_PRODUCT || 'beauty',
           ...(displayName ? { display_name: displayName } : {}),
           ...(phone       ? { phone }                     : {}),
         })
@@ -347,8 +347,15 @@ export function RegisterPage() {
       const finalAppUrl  = PRODUCT_URL_MAP[finalProduct] || import.meta.env.VITE_APP_URL || 'https://pro.ezze.site'
       await completeOnboarding(userId, String(tgId), formName.trim(), formLang, finalProduct, finalAppUrl)
 
-      // Редирект на правильный продукт — перезагружаем страницу на нужном домене
-      window.location.replace(`${finalAppUrl}/tg?start=master`)
+      // Редирект на правильный продукт — передаём токены сессии напрямую,
+      // т.к. localStorage у каждого домена свой и tg-auth может не сработать
+      const { data: { session: currentSession } } = await supabase.auth.getSession()
+      const at = currentSession?.access_token
+      const rt = currentSession?.refresh_token
+      const sessionParams = at && rt
+        ? `&at=${encodeURIComponent(at)}&rt=${encodeURIComponent(rt)}`
+        : ''
+      window.location.replace(`${finalAppUrl}/tg?start=master${sessionParams}`)
     } catch (e: any) {
       const errMsg = (e as Error)?.message || ''
       const alreadyExists =
