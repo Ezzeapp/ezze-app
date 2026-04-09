@@ -114,8 +114,9 @@ export function RegisterPage() {
     const initData = window.Telegram?.WebApp?.initData
     if (!initData) { setTgChecking(false); return }
 
-    supabase.functions.invoke('tg-auth', { body: { initData, silent: true } })
-      .then(async ({ data, error }) => {
+    supabase.functions.invoke('tg-auth', {
+      body: { initData, silent: true, product: import.meta.env.VITE_PRODUCT || 'beauty' },
+    }).then(async ({ data, error }) => {
         if (!error && data?.access_token) {
           const { error: sessionErr } = await supabase.auth.setSession({
             access_token:  data.access_token,
@@ -335,7 +336,7 @@ export function RegisterPage() {
         if (initData) {
           try {
             const { data: authData, error: authErr } = await supabase.functions.invoke('tg-auth', {
-              body: { initData },
+              body: { initData, product: import.meta.env.VITE_PRODUCT || 'beauty' },
             })
             if (!authErr && authData?.access_token) {
               await supabase.auth.setSession({

@@ -97,11 +97,13 @@ Deno.serve(async (req: Request) => {
   // 1. Parse body
   let initData = ''
   let silent = false
+  let product = 'beauty'
   try {
     const body = await req.json()
     initData = String(body?.initData || '')
     // silent=true: skip TG notification on 404 (user is about to register)
-    silent = Boolean(body?.silent)
+    silent  = Boolean(body?.silent)
+    product = String(body?.product || 'beauty').trim()
   } catch (_) {
     return new Response(JSON.stringify({ message: 'initData required' }), {
       status: 400,
@@ -116,7 +118,10 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  const botToken = Deno.env.get('TG_BOT_TOKEN') || ''
+  // Use product-specific bot token if available, fallback to default
+  const botToken = Deno.env.get(`TG_BOT_TOKEN_${product.toUpperCase()}`)
+    || Deno.env.get('TG_BOT_TOKEN')
+    || ''
   const appUrl = Deno.env.get('APP_URL') || 'https://ezze.site'
 
   // 2. Verify HMAC signature

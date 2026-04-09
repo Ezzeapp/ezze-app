@@ -132,7 +132,7 @@ async function doTgAuth(
 
   try {
     const { data, error } = await supabase.functions.invoke('tg-auth', {
-      body: { initData },
+      body: { initData, product: import.meta.env.VITE_PRODUCT || 'beauty' },
     })
     const status = (error as any)?.status ?? 0
 
