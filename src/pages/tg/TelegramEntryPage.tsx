@@ -169,13 +169,13 @@ async function doTgAuth(
 
           // Проверяем наличие master_profiles (мог быть удалён админом)
           const tgId = getTelegramUserId()
-          const { data: profile } = await supabase
+          const { data: profile, error: profileErr } = await supabase
             .from('master_profiles')
             .select('id, tg_chat_id')
             .eq('user_id', sbUser.id)
             .maybeSingle()
-          if (!profile) {
-            // Профиль удалён — сбрасываем флаг онбординга, отправляем на регистрацию
+          if (!profile && !profileErr) {
+            // Профиль удалён (не просто ошибка запроса) — сбрасываем онбординг
             localStorage.removeItem(lsKey)
             await supabase.from('users').update({ onboarded: false }).eq('id', sbUser.id)
             navigate('/register', { replace: true })

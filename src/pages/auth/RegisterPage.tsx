@@ -129,14 +129,14 @@ export function RegisterPage() {
             const locallyDone = localStorage.getItem(lsKey) === '1'
 
             // Проверяем наличие master_profiles (мог быть удалён админом)
-            const { data: profile } = await supabase
+            const { data: profile, error: profileErr } = await supabase
               .from('master_profiles')
               .select('display_name, phone, profession')
               .eq('user_id', sbUser.id)
               .maybeSingle()
 
-            if (!profile) {
-              // Профиль удалён — сбрасываем онбординг, показываем форму заново
+            if (!profile && !profileErr) {
+              // Профиль удалён (не просто ошибка запроса) — сбрасываем онбординг
               localStorage.removeItem(lsKey)
               await supabase.from('users').update({ onboarded: false }).eq('id', sbUser.id)
               setExistingUserId(sbUser.id)
