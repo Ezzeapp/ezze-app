@@ -363,7 +363,13 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
         sessionStorage.removeItem('ezze_tg_notify_id')
         const lang = sessionStorage.getItem('ezze_prefill_lang') || language || 'ru'
         supabase.functions.invoke('tg-master-welcome', {
-          body: { tg_chat_id: tgNotifyId, name: displayName.trim(), lang },
+          body: {
+            tg_chat_id: tgNotifyId,
+            name: displayName.trim(),
+            lang,
+            product: import.meta.env.VITE_PRODUCT || 'beauty',
+            app_url: import.meta.env.VITE_APP_URL || 'https://pro.ezze.site',
+          },
         }).catch(() => {})
       }
       onComplete()

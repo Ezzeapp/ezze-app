@@ -77,7 +77,13 @@ export function AppLayout() {
       const name = wizardPrefill?.name || user?.name || ''
       const lang = wizardPrefill?.language || 'ru'
       supabase.functions.invoke('tg-master-welcome', {
-        body: { tg_chat_id: tgNotifyId, name, lang },
+        body: {
+          tg_chat_id: tgNotifyId,
+          name,
+          lang,
+          product: import.meta.env.VITE_PRODUCT || 'beauty',
+          app_url: import.meta.env.VITE_APP_URL || 'https://pro.ezze.site',
+        },
       }).catch(() => { /* non-critical */ })
     }
   }
