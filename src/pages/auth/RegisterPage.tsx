@@ -71,10 +71,10 @@ export function RegisterPage() {
   const [specialties, setSpecialties] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
-  // Шаг 0: выбор продукта (для универсальной регистрации через единый бот)
-  const [selectedProduct, setSelectedProduct] = useState(
-    import.meta.env.VITE_PRODUCT || ''   // если открыт с конкретного продукта — пропускаем шаг 0
-  )
+  // Шаг 0: выбор продукта — всегда показываем новым мастерам в боте.
+  // Намеренно НЕ используем VITE_PRODUCT как дефолт: иначе на pro.ezze.site (beauty)
+  // шаг 0 пропускается и карточки не видны.
+  const [selectedProduct, setSelectedProduct] = useState('')
 
   // Для уже зарегистрированных, но не онбордeнных
   const [existingUserId, setExistingUserId] = useState('')
