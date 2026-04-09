@@ -118,10 +118,8 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  // Use product-specific bot token if available, fallback to default
-  const botToken = Deno.env.get(`TG_BOT_TOKEN_${product.toUpperCase()}`)
-    || Deno.env.get('TG_BOT_TOKEN')
-    || ''
+  // Единый бот @ezzepro_bot для всех продуктов — один токен для HMAC
+  const botToken = Deno.env.get('TG_BOT_TOKEN') || ''
   const appUrl = Deno.env.get('APP_URL') || 'https://ezze.site'
 
   // 2. Verify HMAC signature

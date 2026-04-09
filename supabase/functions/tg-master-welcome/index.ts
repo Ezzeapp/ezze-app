@@ -46,11 +46,11 @@ const TEXTS: Record<string, { welcome: (name: string) => string }> = {
   },
 }
 
-// ── Per-product bot token ──────────────────────────────────────────────────────
+// ── Bot token (единый для всех продуктов) ─────────────────────────────────────
 
-function getBotToken(product: string): string {
-  const key = `TG_BOT_TOKEN_${product.toUpperCase()}`
-  return Deno.env.get(key) || Deno.env.get('TG_BOT_TOKEN') || ''
+function getBotToken(_product: string): string {
+  // Единый бот @ezzepro_bot обслуживает все продукты — один токен
+  return Deno.env.get('TG_BOT_TOKEN') || ''
 }
 
 // ── Получить название кнопки меню из app_settings (per product) ────────────────

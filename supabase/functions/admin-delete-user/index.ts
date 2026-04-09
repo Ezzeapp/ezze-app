@@ -171,10 +171,8 @@ Deno.serve(async (req: Request) => {
     } catch (_) { /* non-critical */ }
   }
 
-  // Per-product bot token: TG_BOT_TOKEN_{PRODUCT} → fallback TG_BOT_TOKEN
-  const botToken   = Deno.env.get(`TG_BOT_TOKEN_${masterProduct.toUpperCase()}`)
-    ?? Deno.env.get('TG_BOT_TOKEN')
-    ?? ''
+  // Единый бот @ezzepro_bot для всех продуктов
+  const botToken   = Deno.env.get('TG_BOT_TOKEN') ?? ''
   const appUrl     = Deno.env.get('APP_URL') ?? 'https://ezze.site'
 
   try {

@@ -128,13 +128,81 @@ function getLang(pending) {
   return LANG_STRINGS[pending?.lang] ? pending.lang : "ru";
 }
 
-// ── Мастерское меню ───────────────────────────────────────────────────────────
+// ── Маппинг продуктов → URL (единый бот для всех продуктов) ──────────────────
+
+const PRODUCT_MAP = {
+  beauty:    "https://pro.ezze.site",
+  clinic:    "https://clinic.ezze.site",
+  workshop:  "https://workshop.ezze.site",
+  edu:       "https://edu.ezze.site",
+  hotel:     "https://hotel.ezze.site",
+  food:      "https://food.ezze.site",
+  event:     "https://event.ezze.site",
+  farm:      "https://farm.ezze.site",
+  transport: "https://transport.ezze.site",
+  build:     "https://build.ezze.site",
+  trade:     "https://trade.ezze.site",
+};
+
+function getProductUrl(product) {
+  return PRODUCT_MAP[product] || PRODUCT_MAP.beauty;
+}
+
+// Загрузить tg_config для конкретного продукта (не зависит от PRODUCT в .env)
+async function loadTgConfigForProduct(product) {
+  try {
+    const { data } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "tg_config")
+      .eq("product", product || "beauty")
+      .maybeSingle();
+    if (data?.value) return JSON.parse(data.value);
+  } catch (e) {
+    console.error("loadTgConfigForProduct error:", e.message);
+  }
+  return { master_label: "Кабинет мастера" };
+}
+
+// Инлайн-клавиатура выбора продукта (только активные)
+const PRODUCT_SELECTOR_KEYBOARD = [
+  [
+    { text: "💄 Красота/Салон",     callback_data: "product_select_beauty" },
+    { text: "🏥 Медицина",           callback_data: "product_select_clinic" },
+  ],
+  [
+    { text: "🔧 Мастерская",         callback_data: "product_select_workshop" },
+    { text: "📚 Образование",         callback_data: "product_select_edu" },
+  ],
+  [
+    { text: "🏨 Отель",              callback_data: "product_select_hotel" },
+    { text: "🍕 Еда/Ресторан",       callback_data: "product_select_food" },
+  ],
+  [
+    { text: "🎉 Ивент",              callback_data: "product_select_event" },
+    { text: "🌾 Ферма",              callback_data: "product_select_farm" },
+  ],
+  [
+    { text: "🚗 Транспорт",          callback_data: "product_select_transport" },
+    { text: "🏗️ Строительство",      callback_data: "product_select_build" },
+  ],
+  [
+    { text: "📊 Торговля",           callback_data: "product_select_trade" },
+  ],
+];
+
+// ── Мастерское меню (для зарегистрированных) ──────────────────────────────────
 
 async function sendMasterMenu(chatId, firstName, masterProfile) {
   const masterName = escapeHtml(masterProfile.profession || firstName || "Мастер");
-  const cfg = await loadTgConfig();
-  const label = escapeHtml(cfg.master_label);
-  await bot.setUserMenuButton(chatId, cfg.master_label, `${APP_URL}/tg?start=master`);
+  // Получаем продукт пользователя из БД
+  const { data: userData } = await supabase
+    .from("users").select("product").eq("id", masterProfile.user_id).maybeSingle();
+  const userProduct = userData?.product || "beauty";
+  const productUrl  = getProductUrl(userProduct);
+  const cfg = await loadTgConfigForProduct(userProduct);
+  const label = escapeHtml(cfg.master_label || "Кабинет мастера");
+  await bot.setUserMenuButton(chatId, cfg.master_label || "Кабинет мастера", `${productUrl}/tg?start=master`);
   await bot.sendMessage(
     chatId,
     `👋 <b>Привет, ${masterName}!</b>\n\nРады видеть вас снова в <b>Ezze</b>.\n\nИспользуйте кнопку <b>${label}</b> рядом с полем ввода, чтобы открыть кабинет мастера.`,
@@ -214,17 +282,32 @@ async function processUpdate(update) {
         await sendMasterMenu(chatId, firstName, existingProfile);
         return;
       }
-      // Запускаем регистрацию через Mini App
-      const cfg = await loadTgConfig();
-      const menuBtnLabel = cfg.master_label || LANG_STRINGS.ru.registerBtn;
-      await bot.setUserMenuButton(chatId, menuBtnLabel, `${APP_URL}/tg?start=master`);
-      pendingMasters.set(chatId, sessionEntry({ step: "pending_web_registration" }));
+      // Запускаем выбор продукта заново
+      pendingMasters.set(chatId, sessionEntry({ step: "waiting_product" }));
+      savePendingSessions();
+      await bot.sendMessage(chatId,
+        `👋 <b>Привет${firstName ? ', ' + escapeHtml(firstName) : ''}!</b>\n\nВыберите направление вашего бизнеса, чтобы продолжить 👇`,
+        { inline_keyboard: PRODUCT_SELECTOR_KEYBOARD }
+      );
+      return;
+
+    } else if (data.startsWith("product_select_")) {
+      await answerCbQuery(cb.id, "✓");
+      const product = data.replace("product_select_", "");
+      const firstName = cb.from?.first_name || "";
+      if (!PRODUCT_MAP[product]) return;
+
+      const productUrl = getProductUrl(product);
+      const cfg = await loadTgConfigForProduct(product);
+      const menuBtnLabel = cfg.master_label || "Кабинет мастера";
+
+      await bot.setUserMenuButton(chatId, menuBtnLabel, `${productUrl}/tg?start=master`);
+      pendingMasters.set(chatId, sessionEntry({ step: "pending_web_registration", product }));
       savePendingSessions();
 
       const greetingText = firstName
-        ? `👋 <b>Привет, ${escapeHtml(firstName)}!</b>\n\nДобро пожаловать в <b>Ezze</b>!\nНажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`
-        : `👋 <b>Привет!</b>\n\nДобро пожаловать в <b>Ezze</b>!\nНажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`;
-
+        ? `✅ <b>Отлично, ${escapeHtml(firstName)}!</b>\n\nНажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`
+        : `✅ Нажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`;
       await bot.sendMessage(chatId, greetingText);
       return;
 
@@ -538,58 +621,34 @@ async function processUpdate(update) {
         }
         await sendMasterMenu(chatId, firstName, masterProfile);
       } else {
-        // Не найден — проверяем, вдруг мастер уже прошёл шаги но не завершил регистрацию
+        // Не найден — проверяем сессию
         const existingSession = pendingMasters.get(chatId);
-        const isInFlow = existingSession?.step === "waiting_phone"
-          || existingSession?.step === "waiting_language"
-          || existingSession?.step === "waiting_master_name";
 
-        if (isInFlow) {
-          // Мастер в процессе onboarding через бот (выбор языка/телефон/имя)
-          // Не сбрасываем, а напоминаем текущий шаг
-          const lang = getLang(existingSession);
-          const s = LANG_STRINGS[lang];
-          if (existingSession.step === "waiting_language") {
-            await sendLangSelection(chatId, firstName);
-          } else if (existingSession.step === "waiting_phone") {
-            await fetch(`${bot.TG_API}/sendMessage`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId, text: s.remindShare, parse_mode: "HTML",
-                reply_markup: {
-                  keyboard: [[{ text: s.shareBtn, request_contact: true }]],
-                  resize_keyboard: true, one_time_keyboard: true,
-                },
-              }),
-            });
-          } else if (existingSession.step === "waiting_master_name") {
-            const tgFullName = [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ");
-            const askText = `${s.askName}${tgFullName ? s.askNameHint(escapeHtml(tgFullName)) : ""}`;
-            await bot.sendMessage(chatId, askText, { remove_keyboard: true });
-          }
+        if (existingSession?.step === "waiting_product") {
+          // Уже видел выбор продукта, но не нажал — показываем снова
+          await bot.sendMessage(chatId,
+            `👇 Выберите направление вашего бизнеса:`,
+            { inline_keyboard: PRODUCT_SELECTOR_KEYBOARD }
+          );
         } else if (existingSession?.step === "pending_web_registration") {
-          // Мастер ввёл имя, получил кнопку, но мини-апп не открыл/закрыл до конца
-          // Восстанавливаем кнопку меню с URL регистрации (не сбрасываем сессию)
-          const lang = existingSession.lang || "ru";
-          const s = LANG_STRINGS[lang];
-          const cfg = await loadTgConfig();
-          const menuBtnLabel = cfg.master_label || s.registerBtn;
-          await bot.setUserMenuButton(chatId, menuBtnLabel, `${APP_URL}/tg?start=master`);
-          await bot.sendMessage(chatId, s.successReg(escapeHtml(firstName)));
+          // Продукт уже выбран, ждём регистрации в мини-апп
+          const product = existingSession.product || "beauty";
+          const productUrl = getProductUrl(product);
+          const cfg = await loadTgConfigForProduct(product);
+          const menuBtnLabel = cfg.master_label || "Кабинет мастера";
+          await bot.setUserMenuButton(chatId, menuBtnLabel, `${productUrl}/tg?start=master`);
+          await bot.sendMessage(chatId,
+            `✅ Нажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`,
+            { remove_keyboard: true }
+          );
         } else {
-          // Совсем новый — сразу открываем Mini App для регистрации
-          const cfg = await loadTgConfig();
-          const menuBtnLabel = cfg.master_label || LANG_STRINGS.ru.registerBtn;
-          await bot.setUserMenuButton(chatId, menuBtnLabel, `${APP_URL}/tg?start=master`);
-          pendingMasters.set(chatId, sessionEntry({ step: "pending_web_registration" }));
+          // Совсем новый — предлагаем выбрать продукт
+          pendingMasters.set(chatId, sessionEntry({ step: "waiting_product" }));
           savePendingSessions();
-
-          const greetingText = firstName
-            ? `👋 <b>Привет, ${escapeHtml(firstName)}!</b>\n\nДобро пожаловать в <b>Ezze</b>!\nНажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`
-            : `👋 <b>Привет!</b>\n\nДобро пожаловать в <b>Ezze</b>!\nНажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`;
-
-          await bot.sendMessage(chatId, greetingText);
+          await bot.sendMessage(chatId,
+            `👋 <b>Привет${firstName ? ', ' + escapeHtml(firstName) : ''}!</b>\n\nДобро пожаловать в <b>Ezze</b>!\n\nВыберите направление вашего бизнеса 👇`,
+            { inline_keyboard: PRODUCT_SELECTOR_KEYBOARD }
+          );
         }
       }
       return;

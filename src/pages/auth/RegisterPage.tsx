@@ -89,15 +89,24 @@ export function RegisterPage() {
     }
   }, [isAuthenticated, authLoading, navigate, inviteCode, isTg])
 
-  // Загружаем специальности из БД
+  // Загружаем специальности из БД, фильтруем по текущему продукту
   useEffect(() => {
+    const product = import.meta.env.VITE_PRODUCT || 'beauty'
     supabase
       .from('specialties')
-      .select('name')
+      .select('name, activity_types(products)')
+      .is('master_id', null)
       .order('name')
       .then(({ data }) => {
         if (data?.length) {
-          setSpecialties([...new Set(data.map((s: { name: string }) => s.name))])
+          const filtered = data
+            .filter((s: { name: string; activity_types: { products: string[] } | null }) => {
+              const prods = s.activity_types?.products ?? []
+              // Пустой массив products = доступно для всех продуктов
+              return prods.length === 0 || prods.includes(product)
+            })
+            .map((s: { name: string }) => s.name)
+          setSpecialties([...new Set(filtered)] as string[])
         } else {
           setSpecialties(FALLBACK_SPECIALTIES)
         }
