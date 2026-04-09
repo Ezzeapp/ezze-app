@@ -20,9 +20,9 @@ export function ProductSelectionStep({ onSelect }: Props) {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background px-4 py-6">
+    <div className="flex flex-col min-h-screen bg-background px-4 py-6 items-center">
       {/* Заголовок */}
-      <div className="mb-6 text-center">
+      <div className="mb-5 text-center">
         <div className="text-3xl mb-2">👋</div>
         <h1 className="text-xl font-bold text-foreground">Добро пожаловать в Ezze!</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -31,7 +31,7 @@ export function ProductSelectionStep({ onSelect }: Props) {
       </div>
 
       {/* Сетка продуктов */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 w-full max-w-xs">
         {PRODUCT_LIST.map((product) => {
           const isSelecting = selecting === product.key
           return (
@@ -61,7 +61,7 @@ export function ProductSelectionStep({ onSelect }: Props) {
       </div>
 
       {/* Подсказка внизу */}
-      <p className="text-xs text-center text-muted-foreground mt-4 pb-2">
+      <p className="text-xs text-center text-muted-foreground mt-4 pb-2 max-w-xs">
         Это определяет список специальностей и настройки платформы
       </p>
     </div>
