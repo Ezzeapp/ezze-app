@@ -2,10 +2,12 @@
  * Edge Function: tg-master-welcome
  *
  * POST /functions/v1/tg-master-welcome
- * Body: { tg_chat_id: string, name: string, lang: string }
+ * Body: { tg_chat_id: string, name: string, lang: string, product?: string, app_url?: string }
  *
  * Called by RegisterPage after a master auto-registers via Telegram Mini App.
  * Sets the chat menu button and sends a welcome message (no inline buttons).
+ * Per-product: uses TG_BOT_TOKEN_{PRODUCT} (falls back to TG_BOT_TOKEN) and
+ * filters app_settings.tg_config by product.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -14,9 +16,6 @@ const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 )
-
-const TG_API_URL = `https://api.telegram.org/bot${Deno.env.get('TG_BOT_TOKEN')}`
-const APP_URL = Deno.env.get('APP_URL') ?? 'https://ezze.site'
 
 // ── Локализованные тексты ──────────────────────────────────────────────────────
 
@@ -47,18 +46,27 @@ const TEXTS: Record<string, { welcome: (name: string) => string }> = {
   },
 }
 
-// ── Получить название кнопки меню из app_settings ──────────────────────────────
+// ── Per-product bot token ──────────────────────────────────────────────────────
 
-async function getMasterMenuLabel(): Promise<string> {
+function getBotToken(product: string): string {
+  const key = `TG_BOT_TOKEN_${product.toUpperCase()}`
+  return Deno.env.get(key) || Deno.env.get('TG_BOT_TOKEN') || ''
+}
+
+// ── Получить название кнопки меню из app_settings (per product) ────────────────
+
+async function getMasterMenuLabel(product: string): Promise<string> {
   try {
     const { data } = await supabaseAdmin
       .from('app_settings')
       .select('value')
+      .eq('product', product)
       .eq('key', 'tg_config')
       .maybeSingle()
     if (data?.value) {
-      const cfg = JSON.parse(data.value)
-      return cfg.master_label || 'Ezze'
+      const raw = data.value
+      const cfg = typeof raw === 'string' ? JSON.parse(raw) : raw
+      return cfg?.master_label || 'Ezze'
     }
   } catch { /* non-critical */ }
   return 'Ezze'
@@ -66,8 +74,13 @@ async function getMasterMenuLabel(): Promise<string> {
 
 // ── Вспомогательные TG API запросы ────────────────────────────────────────────
 
-async function setChatMenuButton(chatId: string, label: string) {
-  await fetch(`${TG_API_URL}/setChatMenuButton`, {
+async function setChatMenuButton(
+  botToken: string,
+  chatId: string,
+  label: string,
+  appUrl: string,
+) {
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/setChatMenuButton`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -75,15 +88,18 @@ async function setChatMenuButton(chatId: string, label: string) {
       menu_button: {
         type: 'web_app',
         text: label,
-        web_app: { url: `${APP_URL}/tg?start=master` },
+        web_app: { url: `${appUrl}/tg?start=master` },
       },
     }),
   })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    console.error(`[tg-master-welcome] setChatMenuButton failed: ${res.status} ${body}`)
+  }
 }
 
-async function sendWelcomeMessage(chatId: string, text: string) {
-  // Убираем reply-клавиатуру (если осталась) и отправляем приветствие без inline-кнопок
-  await fetch(`${TG_API_URL}/sendMessage`, {
+async function sendWelcomeMessage(botToken: string, chatId: string, text: string) {
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -93,6 +109,10 @@ async function sendWelcomeMessage(chatId: string, text: string) {
       reply_markup: { remove_keyboard: true },
     }),
   })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    console.error(`[tg-master-welcome] sendMessage failed: ${res.status} ${body}`)
+  }
 }
 
 // ── Main handler ───────────────────────────────────────────────────────────────
@@ -105,12 +125,14 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  let tg_chat_id = '', name = '', lang = 'ru'
+  let tg_chat_id = '', name = '', lang = 'ru', product = 'beauty', app_url = ''
   try {
     const body = await req.json()
     tg_chat_id = String(body?.tg_chat_id || '').trim()
     name       = String(body?.name || '').trim()
     lang       = String(body?.lang || 'ru').trim()
+    product    = String(body?.product || 'beauty').trim() || 'beauty'
+    app_url    = String(body?.app_url || '').trim()
   } catch {
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
       status: 400,
@@ -125,26 +147,26 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  const botToken = Deno.env.get('TG_BOT_TOKEN')
+  const botToken = getBotToken(product)
   if (!botToken) {
-    return new Response(JSON.stringify({ error: 'Bot not configured' }), {
+    return new Response(JSON.stringify({ error: `Bot not configured for product=${product}` }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })
   }
 
+  const appUrl = app_url || Deno.env.get('APP_URL') || 'https://pro.ezze.site'
   const t = TEXTS[lang] ?? TEXTS['ru']
-  const menuLabel = await getMasterMenuLabel()
+  const menuLabel = await getMasterMenuLabel(product)
 
   try {
-    // Устанавливаем кнопку меню и отправляем приветствие параллельно
     await Promise.allSettled([
-      setChatMenuButton(tg_chat_id, menuLabel),
-      sendWelcomeMessage(tg_chat_id, t.welcome(name)),
+      setChatMenuButton(botToken, tg_chat_id, menuLabel, appUrl),
+      sendWelcomeMessage(botToken, tg_chat_id, t.welcome(name)),
     ])
   } catch { /* non-fatal */ }
 
-  return new Response(JSON.stringify({ ok: true }), {
+  return new Response(JSON.stringify({ ok: true, product }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   })
