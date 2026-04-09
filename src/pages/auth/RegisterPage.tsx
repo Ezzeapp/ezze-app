@@ -347,7 +347,8 @@ export function RegisterPage() {
       const finalAppUrl  = PRODUCT_URL_MAP[finalProduct] || import.meta.env.VITE_APP_URL || 'https://pro.ezze.site'
       await completeOnboarding(userId, String(tgId), formName.trim(), formLang, finalProduct, finalAppUrl)
 
-      navigate('/calendar', { replace: true })
+      // Редирект на правильный продукт — перезагружаем страницу на нужном домене
+      window.location.replace(`${finalAppUrl}/tg?start=master`)
     } catch (e: any) {
       const errMsg = (e as Error)?.message || ''
       const alreadyExists =
@@ -374,8 +375,10 @@ export function RegisterPage() {
                 await saveTgProfile(sbUser.id, formName.trim(), formPhone)
                 await saveProfession(sbUser.id, formSpecialty, formName.trim())
                 await autoImportServices(sbUser.id, formSpecialty)
-                await completeOnboarding(sbUser.id, String(tgId), formName.trim(), formLang)
-                navigate('/calendar', { replace: true })
+                const fallbackProduct = selectedProduct || import.meta.env.VITE_PRODUCT || 'beauty'
+                const fallbackAppUrl  = PRODUCT_URL_MAP[fallbackProduct] || import.meta.env.VITE_APP_URL || 'https://pro.ezze.site'
+                await completeOnboarding(sbUser.id, String(tgId), formName.trim(), formLang, fallbackProduct, fallbackAppUrl)
+                window.location.replace(`${fallbackAppUrl}/tg?start=master`)
                 return
               }
             }

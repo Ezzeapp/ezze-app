@@ -31,7 +31,7 @@ export function ProductSelectionStep({ onSelect }: Props) {
       </div>
 
       {/* Сетка продуктов */}
-      <div className="grid grid-cols-2 gap-3 flex-1">
+      <div className="grid grid-cols-3 gap-2">
         {PRODUCT_LIST.map((product) => {
           const isSelecting = selecting === product.key
           return (
@@ -40,7 +40,7 @@ export function ProductSelectionStep({ onSelect }: Props) {
               onClick={() => handleSelect(product.key)}
               disabled={selecting !== null}
               className={[
-                'flex flex-col items-start p-3 rounded-xl border-2 text-left',
+                'flex flex-col items-start p-2.5 rounded-xl border-2 text-left',
                 'transition-all duration-150 active:scale-95',
                 'bg-card hover:bg-accent/50',
                 isSelecting
@@ -48,11 +48,11 @@ export function ProductSelectionStep({ onSelect }: Props) {
                   : 'border-border hover:border-primary/50',
               ].join(' ')}
             >
-              <span className="text-2xl mb-1.5">{product.emoji}</span>
-              <span className="font-semibold text-sm text-foreground leading-tight">
+              <span className="text-lg mb-1">{product.emoji}</span>
+              <span className="font-semibold text-xs text-foreground leading-tight">
                 {product.name}
               </span>
-              <span className="text-xs text-muted-foreground mt-0.5 leading-tight">
+              <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
                 {product.desc}
               </span>
             </button>
