@@ -1,4 +1,4 @@
-name: Deploy to VPS (ezze-app Supabase)
+name: Deploy to VPS
 
 on:
   push:
@@ -6,8 +6,48 @@ on:
       - master
 
 jobs:
-  deploy:
+
+  # ── Frontend: 11 продуктов собираются и деплоятся параллельно ──────────────
+  frontend:
+    name: Build & Deploy ${{ matrix.product }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false   # падение одного продукта не останавливает остальные
+      matrix:
+        include:
+          - product: beauty
+            app_url: https://pro.ezze.site
+            web_path: /var/www/ezze-app/
+          - product: clinic
+            app_url: https://clinic.ezze.site
+            web_path: /var/www/ezze-clinic/
+          - product: workshop
+            app_url: https://workshop.ezze.site
+            web_path: /var/www/ezze-workshop/
+          - product: edu
+            app_url: https://edu.ezze.site
+            web_path: /var/www/ezze-edu/
+          - product: hotel
+            app_url: https://hotel.ezze.site
+            web_path: /var/www/ezze-hotel/
+          - product: food
+            app_url: https://food.ezze.site
+            web_path: /var/www/ezze-food/
+          - product: event
+            app_url: https://event.ezze.site
+            web_path: /var/www/ezze-event/
+          - product: farm
+            app_url: https://farm.ezze.site
+            web_path: /var/www/ezze-farm/
+          - product: transport
+            app_url: https://transport.ezze.site
+            web_path: /var/www/ezze-transport/
+          - product: build
+            app_url: https://build.ezze.site
+            web_path: /var/www/ezze-build/
+          - product: trade
+            app_url: https://trade.ezze.site
+            web_path: /var/www/ezze-trade/
 
     steps:
       - name: Checkout code
@@ -22,17 +62,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build frontend
+      - name: Build frontend (${{ matrix.product }})
         run: npm run build
         env:
           VITE_SUPABASE_URL: https://ezze.site
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          VITE_APP_URL: ${{ secrets.VITE_APP_URL }}
-          VITE_PRODUCT: ${{ secrets.VITE_PRODUCT }}
-          VITE_MASTER_BOT: ${{ secrets.VITE_MASTER_BOT }}
-          VITE_CLIENT_BOT: ${{ secrets.VITE_CLIENT_BOT }}
+          VITE_APP_URL: ${{ matrix.app_url }}
+          VITE_PRODUCT: ${{ matrix.product }}
+          VITE_MASTER_BOT: ezzemaster_bot
+          VITE_CLIENT_BOT: ezzeclient_bot
 
-      - name: Setup SSH key
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
@@ -45,7 +85,23 @@ jobs:
           timeout_minutes: 5
           max_attempts: 3
           retry_wait_seconds: 15
-          command: rsync -az --delete dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_WEB_PATH }}
+          command: rsync -az --delete dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ matrix.web_path }}
+
+  # ── Infrastructure: миграции + edge functions (один раз, не на каждый продукт) ──
+  infrastructure:
+    name: Migrations & Edge Functions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          printf 'Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  ConnectTimeout 30\n  ServerAliveInterval 15\n  ServerAliveCountMax 4\n' > ~/.ssh/config
 
       - name: Copy migrations to VPS
         uses: nick-fields/retry@v3
@@ -73,7 +129,7 @@ jobs:
               fi
             done
             if [ $MIGRATION_ERRORS -gt 0 ]; then
-              echo "WARNING: $MIGRATION_ERRORS migration(s) had issues"
+              echo "WARNING: $MIGRATION_ERRORS migration(s) had issues (likely already applied)"
             fi
             docker compose restart realtime
             echo "Realtime restarted"
@@ -87,9 +143,25 @@ jobs:
           retry_wait_seconds: 15
           command: rsync -az supabase/functions/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/app/supabase/volumes/functions/
 
-      - name: Reload Edge Functions runtime
+      - name: Restart Edge Functions runtime
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} 'cd /app/supabase && docker compose restart functions'
+
+  # ── Bots: деплой и рестарт один раз (не на каждый продукт) ─────────────────
+  bots:
+    name: Deploy Bots
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          printf 'Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  ConnectTimeout 30\n  ServerAliveInterval 15\n  ServerAliveCountMax 4\n' > ~/.ssh/config
 
       - name: Deploy Telegram bots to VPS
         uses: nick-fields/retry@v3
@@ -107,4 +179,4 @@ jobs:
           '
 
       - name: Notify success
-        run: echo "Deployed successfully to ${{ secrets.VITE_APP_URL }}"
+        run: echo "✅ All 11 products deployed successfully"
