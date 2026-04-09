@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false   # падение одного продукта не останавливает остальные
+      max-parallel: 4    # не более 4 одновременных SSH на VPS
       matrix:
         include:
           - product: beauty
