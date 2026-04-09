@@ -24,6 +24,8 @@ import {
   completeOnboarding,
   saveProfession,
 } from '@/lib/onboarding-utils'
+import { PRODUCT_URL_MAP } from '@/lib/products'
+import { ProductSelectionStep } from '@/components/onboarding/ProductSelectionStep'
 
 // Поддерживаемые языки
 const SUPPORTED_LANGS = [
@@ -69,6 +71,11 @@ export function RegisterPage() {
   const [specialties, setSpecialties] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
+  // Шаг 0: выбор продукта (для универсальной регистрации через единый бот)
+  const [selectedProduct, setSelectedProduct] = useState(
+    import.meta.env.VITE_PRODUCT || ''   // если открыт с конкретного продукта — пропускаем шаг 0
+  )
+
   // Для уже зарегистрированных, но не онбордeнных
   const [existingUserId, setExistingUserId] = useState('')
   const alreadyRegistered = !!existingUserId
@@ -89,9 +96,10 @@ export function RegisterPage() {
     }
   }, [isAuthenticated, authLoading, navigate, inviteCode, isTg])
 
-  // Загружаем специальности из БД, фильтруем по текущему продукту
+  // Загружаем специальности из БД, фильтруем по выбранному продукту
   useEffect(() => {
-    const product = import.meta.env.VITE_PRODUCT || 'beauty'
+    if (!selectedProduct) return   // ждём выбора продукта на шаге 0
+    const product = selectedProduct
     supabase
       .from('specialties')
       .select('name, activity_types(products)')
@@ -111,7 +119,7 @@ export function RegisterPage() {
           setSpecialties(FALLBACK_SPECIALTIES)
         }
       }, () => setSpecialties(FALLBACK_SPECIALTIES))
-  }, [])
+  }, [selectedProduct])
 
   // ── Telegram: проверяем — вдруг уже зарегистрирован ──────────────────────
   const [tgChecking, setTgChecking] = useState(isTg)
@@ -317,20 +325,27 @@ export function RegisterPage() {
         if (!sbUser?.id) throw new Error('No user after signup')
         userId = sbUser.id
 
-        // 2. Сохраняем TG профиль
+        // 2. Сохраняем продукт (для универсальной регистрации через единый бот)
+        if (selectedProduct) {
+          await supabase.from('users').update({ product: selectedProduct }).eq('id', userId)
+        }
+
+        // 3. Сохраняем TG профиль
         await saveTgProfile(userId, formName.trim(), formPhone)
       }
 
       if (!userId) throw new Error('No userId')
 
-      // 3. Сохраняем профессию + slug
+      // 4. Сохраняем профессию + slug
       await saveProfession(userId, formSpecialty, formName.trim())
 
-      // 4. Авто-импорт услуг и товаров
+      // 5. Авто-импорт услуг и товаров
       await autoImportServices(userId, formSpecialty)
 
-      // 5. Завершаем онбординг + tg-master-welcome
-      await completeOnboarding(userId, String(tgId), formName.trim(), formLang)
+      // 6. Завершаем онбординг + tg-master-welcome (с product и app_url)
+      const finalProduct = selectedProduct || import.meta.env.VITE_PRODUCT || 'beauty'
+      const finalAppUrl  = PRODUCT_URL_MAP[finalProduct] || import.meta.env.VITE_APP_URL || 'https://pro.ezze.site'
+      await completeOnboarding(userId, String(tgId), formName.trim(), formLang, finalProduct, finalAppUrl)
 
       navigate('/calendar', { replace: true })
     } catch (e: any) {
@@ -394,6 +409,11 @@ export function RegisterPage() {
 
   // ── Проверка TG — брендовый сплэш ─────────────────────────────────────────
   if (tgChecking) return <TelegramSplash />
+
+  // ── Шаг 0: выбор продукта (только для универсальной регистрации через @ezzemaster_bot)
+  if (isTg && tgId && !selectedProduct) {
+    return <ProductSelectionStep onSelect={setSelectedProduct} />
+  }
 
   // ── TG: единая форма регистрации ──────────────────────────────────────────
   if (isTg && tgId) {

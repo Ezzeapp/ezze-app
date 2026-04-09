@@ -203,6 +203,8 @@ export async function completeOnboarding(
   tgChatId: string | null,
   name: string,
   lang: string,
+  product?: string,   // если передан — используется вместо VITE_PRODUCT (для универсальной регистрации)
+  appUrl?: string,    // если передан — используется вместо VITE_APP_URL
 ): Promise<void> {
   await supabase
     .from('users')
@@ -217,8 +219,8 @@ export async function completeOnboarding(
         tg_chat_id: tgChatId,
         name,
         lang,
-        product: import.meta.env.VITE_PRODUCT || 'beauty',
-        app_url:  import.meta.env.VITE_APP_URL  || 'https://pro.ezze.site',
+        product: product || import.meta.env.VITE_PRODUCT || 'beauty',
+        app_url:  appUrl  || import.meta.env.VITE_APP_URL  || 'https://pro.ezze.site',
       },
     })
   }

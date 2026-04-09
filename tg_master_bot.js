@@ -164,32 +164,11 @@ async function loadTgConfigForProduct(product) {
   return { master_label: "Кабинет мастера" };
 }
 
-// Инлайн-клавиатура выбора продукта (только активные)
-const PRODUCT_SELECTOR_KEYBOARD = [
-  [
-    { text: "💄 Красота/Салон",     callback_data: "product_select_beauty" },
-    { text: "🏥 Медицина",           callback_data: "product_select_clinic" },
-  ],
-  [
-    { text: "🔧 Мастерская",         callback_data: "product_select_workshop" },
-    { text: "📚 Образование",         callback_data: "product_select_edu" },
-  ],
-  [
-    { text: "🏨 Отель",              callback_data: "product_select_hotel" },
-    { text: "🍕 Еда/Ресторан",       callback_data: "product_select_food" },
-  ],
-  [
-    { text: "🎉 Ивент",              callback_data: "product_select_event" },
-    { text: "🌾 Ферма",              callback_data: "product_select_farm" },
-  ],
-  [
-    { text: "🚗 Транспорт",          callback_data: "product_select_transport" },
-    { text: "🏗️ Строительство",      callback_data: "product_select_build" },
-  ],
-  [
-    { text: "📊 Торговля",           callback_data: "product_select_trade" },
-  ],
-];
+// Кнопка запуска регистрации через мини-эпп (выбор продукта теперь внутри мини-эппа)
+const REGISTER_KEYBOARD = [[{
+  text: "🚀 Начать регистрацию",
+  web_app: { url: "https://pro.ezze.site/register" }
+}]];
 
 // ── Мастерское меню (для зарегистрированных) ──────────────────────────────────
 
@@ -282,33 +261,13 @@ async function processUpdate(update) {
         await sendMasterMenu(chatId, firstName, existingProfile);
         return;
       }
-      // Запускаем выбор продукта заново
-      pendingMasters.set(chatId, sessionEntry({ step: "waiting_product" }));
+      // Открываем мини-эпп для регистрации (выбор продукта — внутри мини-эппа)
+      pendingMasters.set(chatId, sessionEntry({ step: "pending_web_registration" }));
       savePendingSessions();
       await bot.sendMessage(chatId,
-        `👋 <b>Привет${firstName ? ', ' + escapeHtml(firstName) : ''}!</b>\n\nВыберите направление вашего бизнеса, чтобы продолжить 👇`,
-        { inline_keyboard: PRODUCT_SELECTOR_KEYBOARD }
+        `👋 <b>Привет${firstName ? ', ' + escapeHtml(firstName) : ''}!</b>\n\nДобро пожаловать в <b>Ezze</b>!\n\nНажмите кнопку ниже, чтобы начать регистрацию 👇`,
+        { inline_keyboard: REGISTER_KEYBOARD }
       );
-      return;
-
-    } else if (data.startsWith("product_select_")) {
-      await answerCbQuery(cb.id, "✓");
-      const product = data.replace("product_select_", "");
-      const firstName = cb.from?.first_name || "";
-      if (!PRODUCT_MAP[product]) return;
-
-      const productUrl = getProductUrl(product);
-      const cfg = await loadTgConfigForProduct(product);
-      const menuBtnLabel = cfg.master_label || "Кабинет мастера";
-
-      await bot.setUserMenuButton(chatId, menuBtnLabel, `${productUrl}/tg?start=master`);
-      pendingMasters.set(chatId, sessionEntry({ step: "pending_web_registration", product }));
-      savePendingSessions();
-
-      const greetingText = firstName
-        ? `✅ <b>Отлично, ${escapeHtml(firstName)}!</b>\n\nНажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`
-        : `✅ Нажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`;
-      await bot.sendMessage(chatId, greetingText);
       return;
 
     } else if (data.startsWith("lang_")) {
@@ -624,30 +583,19 @@ async function processUpdate(update) {
         // Не найден — проверяем сессию
         const existingSession = pendingMasters.get(chatId);
 
-        if (existingSession?.step === "waiting_product") {
-          // Уже видел выбор продукта, но не нажал — показываем снова
+        if (existingSession?.step === "pending_web_registration") {
+          // Уже показывали кнопку регистрации — показываем снова
           await bot.sendMessage(chatId,
-            `👇 Выберите направление вашего бизнеса:`,
-            { inline_keyboard: PRODUCT_SELECTOR_KEYBOARD }
-          );
-        } else if (existingSession?.step === "pending_web_registration") {
-          // Продукт уже выбран, ждём регистрации в мини-апп
-          const product = existingSession.product || "beauty";
-          const productUrl = getProductUrl(product);
-          const cfg = await loadTgConfigForProduct(product);
-          const menuBtnLabel = cfg.master_label || "Кабинет мастера";
-          await bot.setUserMenuButton(chatId, menuBtnLabel, `${productUrl}/tg?start=master`);
-          await bot.sendMessage(chatId,
-            `✅ Нажмите кнопку <b>${escapeHtml(menuBtnLabel)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`,
-            { remove_keyboard: true }
+            `👇 Нажмите кнопку ниже, чтобы зарегистрироваться:`,
+            { inline_keyboard: REGISTER_KEYBOARD }
           );
         } else {
-          // Совсем новый — предлагаем выбрать продукт
-          pendingMasters.set(chatId, sessionEntry({ step: "waiting_product" }));
+          // Совсем новый — показываем кнопку регистрации (выбор продукта внутри мини-эппа)
+          pendingMasters.set(chatId, sessionEntry({ step: "pending_web_registration" }));
           savePendingSessions();
           await bot.sendMessage(chatId,
-            `👋 <b>Привет${firstName ? ', ' + escapeHtml(firstName) : ''}!</b>\n\nДобро пожаловать в <b>Ezze</b>!\n\nВыберите направление вашего бизнеса 👇`,
-            { inline_keyboard: PRODUCT_SELECTOR_KEYBOARD }
+            `👋 <b>Привет${firstName ? ', ' + escapeHtml(firstName) : ''}!</b>\n\nДобро пожаловать в <b>Ezze</b>!\n\nНажмите кнопку ниже, чтобы начать регистрацию 👇`,
+            { inline_keyboard: REGISTER_KEYBOARD }
           );
         }
       }
