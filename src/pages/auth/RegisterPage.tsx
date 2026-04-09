@@ -190,6 +190,7 @@ export function RegisterPage() {
           user_id:      userId,
           tg_chat_id:   tgId,
           telegram:     tgUser?.username ? '@' + tgUser.username : '',
+          product:      import.meta.env.VITE_PRODUCT || 'beauty',
           ...(displayName ? { display_name: displayName } : {}),
           ...(phone       ? { phone }                     : {}),
         })
