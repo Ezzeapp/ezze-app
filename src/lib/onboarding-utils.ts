@@ -117,7 +117,13 @@ export async function completeOnboarding(
 
   if (tgChatId) {
     await supabase.functions.invoke('tg-master-welcome', {
-      body: { tg_chat_id: tgChatId, name, lang },
+      body: {
+        tg_chat_id: tgChatId,
+        name,
+        lang,
+        product: import.meta.env.VITE_PRODUCT || 'beauty',
+        app_url:  import.meta.env.VITE_APP_URL  || 'https://pro.ezze.site',
+      },
     })
   }
 }
