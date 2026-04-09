@@ -28,6 +28,7 @@ export function useUsers() {
         .from('users')
         .select('id, email, is_admin, plan, onboarded, disabled, created_at, master_profiles(avatar, display_name, profession, telegram)')
         .eq('product', PRODUCT)
+        .neq('is_admin', true)
         .order('created_at', { ascending: false })
       if (error) throw error
       // Normalize: flatten master_profiles join and add name/avatar aliases
