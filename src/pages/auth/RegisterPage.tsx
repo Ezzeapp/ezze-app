@@ -100,8 +100,8 @@ export function RegisterPage() {
       .then(({ data }) => {
         if (data?.length) {
           const filtered = data
-            .filter((s: { name: string; activity_types: { products: string[] } | null }) => {
-              const prods = s.activity_types?.products ?? []
+            .filter((s: { name: string; activity_types: { products: string[] }[] | null }) => {
+              const prods = s.activity_types?.[0]?.products ?? []
               // Пустой массив products = доступно для всех продуктов
               return prods.length === 0 || prods.includes(product)
             })
