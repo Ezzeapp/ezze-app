@@ -1,6 +1,6 @@
 /**
  * tg_client_bot.js — Telegram бот для КЛИЕНТОВ
- * Бот: @ezzeprogo_bot | Token: TG_CLIENT_BOT_TOKEN
+ * Бот: @ezzeclient_bot | Token: TG_CLIENT_BOT_TOKEN
  * Запуск: node tg_client_bot.js
  * Systemd: ezze-client-bot.service
  *
@@ -26,6 +26,41 @@ const bot = createBotHelpers(CLIENT_BOT_TOKEN);
 
 // Отдельный helper для отправки уведомлений мастерам через мастерский бот
 const masterBot = createBotHelpers(MASTER_BOT_TOKEN);
+
+// ── Маппинг продукт → URL (единый бот для всех продуктов) ────────────────────
+
+const PRODUCT_MAP = {
+  beauty:    "https://pro.ezze.site",
+  clinic:    "https://clinic.ezze.site",
+  workshop:  "https://workshop.ezze.site",
+  edu:       "https://edu.ezze.site",
+  hotel:     "https://hotel.ezze.site",
+  food:      "https://food.ezze.site",
+  event:     "https://event.ezze.site",
+  farm:      "https://farm.ezze.site",
+  transport: "https://transport.ezze.site",
+  build:     "https://build.ezze.site",
+  trade:     "https://trade.ezze.site",
+};
+
+function getProductUrl(product) {
+  return PRODUCT_MAP[product] || APP_URL;
+}
+
+/** Возвращает URL продукта мастера по его booking_slug */
+async function getMasterProductUrl(slug) {
+  try {
+    const { data } = await supabase
+      .from("master_profiles")
+      .select("user_id, users!inner(product)")
+      .eq("booking_slug", slug)
+      .maybeSingle();
+    const product = data?.users?.product || "beauty";
+    return getProductUrl(product);
+  } catch {
+    return APP_URL;
+  }
+}
 
 // ── Persistent sessions ───────────────────────────────────────────────────────
 
@@ -291,7 +326,8 @@ async function setClientMenuButton(chatId, phone = '', name = '') {
 async function showBookingButton(chatId, slug, phone, name, tgUsername = '') {
   const params = new URLSearchParams({ tg_phone: phone, tg_name: name, tg_id: String(chatId) });
   if (tgUsername) params.set('tg_username', tgUsername);
-  const bookUrl = `${APP_URL}/book/${slug}?${params.toString()}`;
+  const masterUrl = await getMasterProductUrl(slug);
+  const bookUrl = `${masterUrl}/book/${slug}?${params.toString()}`;
   await fetch(`${bot.TG_API}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -307,7 +343,8 @@ async function showBookingButton(chatId, slug, phone, name, tgUsername = '') {
 async function showTeamBookingButton(chatId, teamSlug, phone, name, tgUsername = '') {
   const params = new URLSearchParams({ tg_phone: phone, tg_name: name, tg_id: String(chatId) });
   if (tgUsername) params.set('tg_username', tgUsername);
-  const teamUrl = `${APP_URL}/book/team/${teamSlug}?${params.toString()}`;
+  const masterUrl = await getMasterProductUrl(teamSlug);
+  const teamUrl = `${masterUrl}/book/team/${teamSlug}?${params.toString()}`;
   await fetch(`${bot.TG_API}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
