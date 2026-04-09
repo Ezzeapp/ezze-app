@@ -4,10 +4,29 @@
  */
 
 import { useState } from 'react'
+import {
+  Scissors, Stethoscope, Wrench, GraduationCap,
+  BedDouble, UtensilsCrossed, PartyPopper, Wheat,
+  Car, HardHat, ShoppingCart, type LucideIcon,
+} from 'lucide-react'
 import { PRODUCT_LIST } from '@/lib/products'
 
 interface Props {
   onSelect: (product: string) => void
+}
+
+const PRODUCT_ICONS: Record<string, LucideIcon> = {
+  beauty:    Scissors,
+  clinic:    Stethoscope,
+  workshop:  Wrench,
+  edu:       GraduationCap,
+  hotel:     BedDouble,
+  food:      UtensilsCrossed,
+  event:     PartyPopper,
+  farm:      Wheat,
+  transport: Car,
+  build:     HardHat,
+  trade:     ShoppingCart,
 }
 
 export function ProductSelectionStep({ onSelect }: Props) {
@@ -34,6 +53,7 @@ export function ProductSelectionStep({ onSelect }: Props) {
       <div className="grid grid-cols-3 gap-2 w-full max-w-xs">
         {PRODUCT_LIST.map((product) => {
           const isSelecting = selecting === product.key
+          const Icon = PRODUCT_ICONS[product.key] ?? Wrench
           return (
             <button
               key={product.key}
@@ -48,8 +68,12 @@ export function ProductSelectionStep({ onSelect }: Props) {
                   : 'border-border hover:border-primary/50',
               ].join(' ')}
             >
-              <span className="text-lg mb-1">{product.emoji}</span>
-              <span className="font-semibold text-xs text-foreground leading-tight">
+              <Icon
+                size={18}
+                className={isSelecting ? 'text-primary' : 'text-muted-foreground'}
+                strokeWidth={1.75}
+              />
+              <span className="font-semibold text-xs text-foreground leading-tight mt-1.5">
                 {product.name}
               </span>
               <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
