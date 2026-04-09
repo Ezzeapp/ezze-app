@@ -143,14 +143,15 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  // ── Pre-step: Grab tg_chat_id + phone before deletion ───────────────────────
+  // ── Pre-step: Grab tg_chat_id + phone + product before deletion ─────────────
   const { data: masterProfileSnap } = await supabaseAdmin
     .from('master_profiles')
-    .select('tg_chat_id, phone')
+    .select('tg_chat_id, phone, product')
     .eq('user_id', userId)
     .maybeSingle()
   const tgChatId: string | null = masterProfileSnap?.tg_chat_id ?? null
   const masterPhone: string = masterProfileSnap?.phone ?? ''
+  const masterProduct: string = (masterProfileSnap?.product ?? 'beauty').trim() || 'beauty'
 
   // Pre-step B: find TG auth user ID (tg_{chatId}@ezze.site) BEFORE any deletions.
   // Step 11b must use this pre-captured ID — public.users is deleted in Step 10.
@@ -170,7 +171,10 @@ Deno.serve(async (req: Request) => {
     } catch (_) { /* non-critical */ }
   }
 
-  const botToken   = Deno.env.get('TG_BOT_TOKEN') ?? ''
+  // Per-product bot token: TG_BOT_TOKEN_{PRODUCT} → fallback TG_BOT_TOKEN
+  const botToken   = Deno.env.get(`TG_BOT_TOKEN_${masterProduct.toUpperCase()}`)
+    ?? Deno.env.get('TG_BOT_TOKEN')
+    ?? ''
   const appUrl     = Deno.env.get('APP_URL') ?? 'https://ezze.site'
 
   try {
