@@ -135,8 +135,13 @@ export function RegisterPage() {
               .eq('user_id', sbUser.id)
               .maybeSingle()
 
-            if (!profile && !profileErr) {
-              // Профиль удалён (не просто ошибка запроса) — сбрасываем онбординг
+            if (!profile) {
+              if (profileErr) {
+                // Ошибка запроса — не сбрасываем онбординг, отправляем в приложение
+                navigate('/calendar', { replace: true })
+                return
+              }
+              // Профиль точно отсутствует — сбрасываем онбординг
               localStorage.removeItem(lsKey)
               await supabase.from('users').update({ onboarded: false }).eq('id', sbUser.id)
               setExistingUserId(sbUser.id)

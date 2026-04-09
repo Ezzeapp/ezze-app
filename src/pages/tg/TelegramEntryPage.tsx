@@ -174,8 +174,13 @@ async function doTgAuth(
             .select('id, tg_chat_id')
             .eq('user_id', sbUser.id)
             .maybeSingle()
-          if (!profile && !profileErr) {
-            // Профиль удалён (не просто ошибка запроса) — сбрасываем онбординг
+          if (!profile) {
+            if (profileErr) {
+              // Ошибка запроса — не сбрасываем онбординг, пускаем в приложение
+              navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard', { replace: true })
+              return
+            }
+            // Профиль точно отсутствует — сбрасываем онбординг
             localStorage.removeItem(lsKey)
             await supabase.from('users').update({ onboarded: false }).eq('id', sbUser.id)
             navigate('/register', { replace: true })
