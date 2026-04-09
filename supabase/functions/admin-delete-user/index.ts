@@ -237,22 +237,21 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // ── Step 12: Telegram notification to deleted master ─────────────────────
-    if (tgChatId && botToken) {
+    // ── Step 12: Telegram notification (fire-and-forget, 5s timeout) ─────────
+    // Return 200 immediately — TG calls happen in background to avoid wall-clock timeout
+    const tgNotify = async () => {
+      if (!tgChatId || !botToken) return
       const tgApi = `https://api.telegram.org/bot${botToken}`
+      const signal = AbortSignal.timeout(5000)
 
-      // Сбрасываем кнопку меню на default (убираем web_app кабинета)
       await fetch(`${tgApi}/setChatMenuButton`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: tgChatId,
-          menu_button: { type: 'default' },
-        }),
+        body: JSON.stringify({ chat_id: tgChatId, menu_button: { type: 'default' } }),
+        signal,
       }).catch((e) => console.error('[admin-delete-user] setChatMenuButton error:', String(e)))
 
-      // Отправляем уведомление с inline-кнопкой «📝 Зарегистрироваться»
-      // По нажатию бот получает callback_data=register_after_delete и запускает flow (язык → телефон → имя)
+      const signal2 = AbortSignal.timeout(5000)
       const tgResp = await fetch(`${tgApi}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -265,15 +264,18 @@ Deno.serve(async (req: Request) => {
             `Если хотите зарегистрироваться снова — нажмите кнопку ниже 👇`,
           parse_mode: 'HTML',
           reply_markup: {
-            inline_keyboard: [[{ text: '📝 Зарегистрироваться', callback_data: 'register_after_delete', style: 'primary' }]],
+            inline_keyboard: [[{ text: '📝 Зарегистрироваться', callback_data: 'register_after_delete' }]],
           },
         }),
+        signal: signal2,
       }).catch((e) => { console.error('[admin-delete-user] sendMessage error:', String(e)); return null })
       if (tgResp && !tgResp.ok) {
         const body = await tgResp.text().catch(() => '')
         console.error(`[admin-delete-user] TG sendMessage failed: ${tgResp.status} ${body}`)
       }
     }
+    // Fire and forget — do not await, so response is returned instantly
+    tgNotify().catch(() => {})
 
     return new Response(JSON.stringify({ message: 'ok' }), {
       status: 200,
