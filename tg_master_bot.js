@@ -167,7 +167,7 @@ async function loadTgConfigForProduct(product) {
 // Кнопка запуска регистрации через мини-эпп (выбор продукта теперь внутри мини-эппа)
 const REGISTER_KEYBOARD = [[{
   text: "🚀 Начать регистрацию",
-  web_app: { url: "https://pro.ezze.site/register" }
+  web_app: { url: "https://app.ezze.site/register" }
 }]];
 
 // ── Мастерское меню (для зарегистрированных) ──────────────────────────────────
