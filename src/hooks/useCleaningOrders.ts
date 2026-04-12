@@ -68,7 +68,7 @@ export function useCleaningOrders(opts: {
         .from('cleaning_orders')
         .select(`
           *,
-          client:clients(id, name, phone, tg_chat_id),
+          client:clients(id, first_name, last_name, phone, tg_chat_id),
           accepted_by_profile:master_profiles!cleaning_orders_accepted_by_fkey(id, display_name),
           assigned_to_profile:master_profiles!cleaning_orders_assigned_to_fkey(id, display_name)
         `, { count: 'exact' })
@@ -87,7 +87,7 @@ export function useCleaningOrders(opts: {
         if (mp) q = q.eq('assigned_to', mp.id)
       }
       if (search) {
-        q = q.or(`number.ilike.%${search}%,client.name.ilike.%${search}%`)
+        q = q.or(`number.ilike.%${search}%,client.first_name.ilike.%${search}%,client.last_name.ilike.%${search}%`)
       }
 
       const { data, error, count } = await q
@@ -109,7 +109,7 @@ export function useCleaningOrder(id: string | undefined) {
         .from('cleaning_orders')
         .select(`
           *,
-          client:clients(id, name, phone, tg_chat_id),
+          client:clients(id, first_name, last_name, phone, tg_chat_id),
           accepted_by_profile:master_profiles!cleaning_orders_accepted_by_fkey(id, display_name),
           assigned_to_profile:master_profiles!cleaning_orders_assigned_to_fkey(id, display_name),
           items:cleaning_order_items(*)
