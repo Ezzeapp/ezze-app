@@ -1,9 +1,10 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
+import { PRODUCT } from '@/lib/config'
 
-/** Всегда → Календарь */
+/** Для cleaning → Заказы, для остальных → Календарь */
 function DefaultRedirect() {
-  return <Navigate to="/calendar" replace />
+  return <Navigate to={PRODUCT === 'cleaning' ? '/orders' : '/calendar'} replace />
 }
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/queryClient'
@@ -47,6 +48,9 @@ const TelegramEntryPage = lazy(() => import('@/pages/tg/TelegramEntryPage').then
 const PhoneSharePage = lazy(() => import('@/pages/tg/PhoneSharePage').then(m => ({ default: m.PhoneSharePage })))
 const SupportPage = lazy(() => import('@/pages/support/SupportPage'))
 const AIAssistantPage = lazy(() => import('@/pages/ai/AIAssistantPage').then(m => ({ default: m.AIAssistantPage })))
+const OrdersListPage = lazy(() => import('@/pages/orders/OrdersListPage').then(m => ({ default: m.OrdersListPage })))
+const OrderFormPage = lazy(() => import('@/pages/orders/OrderFormPage').then(m => ({ default: m.OrderFormPage })))
+const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage').then(m => ({ default: m.OrderDetailPage })))
 
 const router = createBrowserRouter([
   // Public routes
@@ -109,6 +113,9 @@ const router = createBrowserRouter([
       { path: 'support', element: <SupportPage /> },
       { path: 'loyalty', element: <Navigate to="/marketing?tab=loyalty" replace /> },
       { path: 'ai', element: <AIAssistantPage /> },
+      { path: 'orders', element: <OrdersListPage /> },
+      { path: 'orders/new', element: <OrderFormPage /> },
+      { path: 'orders/:id', element: <OrderDetailPage /> },
     ],
   },
 

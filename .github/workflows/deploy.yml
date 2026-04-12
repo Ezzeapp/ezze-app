@@ -49,6 +49,9 @@ jobs:
           - product: trade
             app_url: https://trade.ezze.site
             web_path: /var/www/ezze-trade/
+          - product: cleaning
+            app_url: https://cleaning.ezze.site
+            web_path: /var/www/ezze-cleaning/
 
     steps:
       - name: Checkout code

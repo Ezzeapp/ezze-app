@@ -3,12 +3,14 @@ import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard, CalendarDays, Users, MoreHorizontal, Bot, Megaphone,
   Package, User, Settings, ShieldCheck, X, UsersRound, ChevronRight, LogOut, CreditCard, LifeBuoy,
+  ClipboardList,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFeature } from '@/hooks/useFeatureFlags'
 import { useProfileIcon } from '@/hooks/useProfileIcon'
+import { PRODUCT } from '@/lib/config'
 
 function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: React.ComponentType<{ className?: string }> }) {
   const { t } = useTranslation()
@@ -158,19 +160,34 @@ export function BottomNav() {
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-background border-t pb-safe lg:hidden">
         <div className="flex items-stretch h-16 w-full">
 
-          {/* Календарь */}
-          <NavLink
-            to="/calendar"
-            className={({ isActive }) =>
-              cn(
-                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-              )
-            }
-          >
-            <CalendarDays className="h-5 w-5" />
-            <span>{t('nav.calendar')}</span>
-          </NavLink>
+          {/* Календарь / Квитанции */}
+          {PRODUCT === 'cleaning' ? (
+            <NavLink
+              to="/orders"
+              className={({ isActive }) =>
+                cn(
+                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                )
+              }
+            >
+              <ClipboardList className="h-5 w-5" />
+              <span>Заказы</span>
+            </NavLink>
+          ) : (
+            <NavLink
+              to="/calendar"
+              className={({ isActive }) =>
+                cn(
+                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                )
+              }
+            >
+              <CalendarDays className="h-5 w-5" />
+              <span>{t('nav.calendar')}</span>
+            </NavLink>
+          )}
 
           {/* Клиенты */}
           <NavLink

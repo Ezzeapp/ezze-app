@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard, User, Users, Package, CalendarDays,
   Settings, Zap, X, ShieldCheck, UsersRound, Megaphone, CreditCard, LifeBuoy,
+  ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -13,6 +14,7 @@ import { useFeature } from '@/hooks/useFeatureFlags'
 import { useMyTeam } from '@/hooks/useTeam'
 import { useAppSettings } from '@/hooks/useAppSettings'
 import { useProfileIcon } from '@/hooks/useProfileIcon'
+import { PRODUCT } from '@/lib/config'
 
 /** Пункт меню, который сам проверяет feature flag и не рендерится если нет доступа */
 const NavItemGated = memo(function NavItemGated({
@@ -80,7 +82,10 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
         {/* ── Основное ── */}
         <SidebarGroupLabel label={t('nav.groupMain')} />
         <NavItemGated icon={LayoutDashboard} iconColor="dark:text-blue-400"   label={t('nav.dashboard')} to="/dashboard" feature={null}       onClick={onClose} />
-        <NavItemGated icon={CalendarDays}    iconColor="dark:text-indigo-400"  label={t('nav.calendar')}  to="/calendar"  feature="calendar"  onClick={onClose} />
+        {PRODUCT === 'cleaning'
+          ? <SidebarNavItem icon={ClipboardList} iconColor="dark:text-indigo-400" label="Квитанции" to="/orders" onClick={onClose} />
+          : <NavItemGated icon={CalendarDays}    iconColor="dark:text-indigo-400"  label={t('nav.calendar')}  to="/calendar"  feature="calendar"  onClick={onClose} />
+        }
         <NavItemGated icon={Users}           iconColor="dark:text-emerald-400" label={t('nav.clients')}   to="/clients"   feature="clients"   onClick={onClose} />
         {/* ── Каталог ── */}
         <SidebarGroupLabel label={t('nav.groupCatalog')} />

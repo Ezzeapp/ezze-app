@@ -23,6 +23,7 @@ export const PRODUCT_LIST: ProductInfo[] = [
   { key: 'transport', emoji: '🚗', name: 'Транспорт',      desc: 'Такси, логистика, перевозки',         url: 'https://transport.ezze.site' },
   { key: 'build',     emoji: '🏗️', name: 'Строительство',  desc: 'Стройка, проектирование, ремонт',     url: 'https://build.ezze.site' },
   { key: 'trade',     emoji: '🛒', name: 'Торговля',       desc: 'Магазины, интернет-торговля',         url: 'https://trade.ezze.site' },
+  { key: 'cleaning',  emoji: '👕', name: 'Химчистка',      desc: 'Химчистки, прачечные, чистка ковров', url: 'https://cleaning.ezze.site' },
 ]
 
 /** key → URL: 'clinic' → 'https://clinic.ezze.site' */

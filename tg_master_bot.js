@@ -142,6 +142,7 @@ const PRODUCT_MAP = {
   transport: "https://transport.ezze.site",
   build:     "https://build.ezze.site",
   trade:     "https://trade.ezze.site",
+  cleaning:  "https://cleaning.ezze.site",
 };
 
 function getProductUrl(product) {
