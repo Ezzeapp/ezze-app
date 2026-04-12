@@ -115,7 +115,7 @@ export function OrderFormPage() {
           ready_date: i.ready_date || null,
         })),
       })
-      toast.success('Квитанция создана')
+      toast.success('Заказ создан')
       navigate(`/orders/${order.id}`)
     } catch (e: any) {
       toast.error(e.message || 'Ошибка создания')
@@ -129,7 +129,7 @@ export function OrderFormPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate('/orders')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-lg font-semibold">Новая квитанция</h1>
+        <h1 className="text-lg font-semibold">Новый заказ</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-32 space-y-4 pt-4">
@@ -335,7 +335,7 @@ export function OrderFormPage() {
         </Button>
         <Button className="flex-1" onClick={handleSubmit} disabled={isPending}>
           {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          Создать квитанцию
+          Создать заказ
         </Button>
       </div>
     </div>

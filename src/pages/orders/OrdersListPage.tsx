@@ -46,12 +46,12 @@ export function OrdersListPage() {
   return (
     <div className="flex flex-col h-full">
       <PageHeader
-        title="Квитанции"
+        title="Заказы"
         description={total > 0 ? `${total} заказов` : undefined}
       >
         <Button onClick={() => navigate('/orders/new')} size="sm">
           <Plus className="h-4 w-4 mr-1" />
-          Новая квитанция
+          Новый заказ
         </Button>
       </PageHeader>
 
@@ -105,9 +105,9 @@ export function OrdersListPage() {
         ) : orders.length === 0 ? (
           <EmptyState
             icon={ClipboardList}
-            title="Квитанций нет"
-            description="Создайте первую квитанцию при приёме заказа"
-            action={{ label: 'Новая квитанция', onClick: () => navigate('/orders/new') }}
+            title="Заказов нет"
+            description="Создайте первый заказ при приёме вещей"
+            action={{ label: 'Новый заказ', onClick: () => navigate('/orders/new') }}
           />
         ) : (
           <div className="space-y-2">

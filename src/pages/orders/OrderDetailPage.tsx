@@ -60,7 +60,7 @@ export function OrderDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3">
         <AlertCircle className="h-8 w-8 text-muted-foreground" />
-        <p className="text-muted-foreground">Квитанция не найдена</p>
+        <p className="text-muted-foreground">Заказ не найден</p>
         <Button variant="outline" onClick={() => navigate('/orders')}>Назад</Button>
       </div>
     )
