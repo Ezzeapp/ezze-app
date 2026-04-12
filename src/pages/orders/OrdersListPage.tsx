@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { useCleaningOrders } from '@/hooks/useCleaningOrders'
+import { useCleaningOrders, ORDER_TYPE_EMOJI } from '@/hooks/useCleaningOrders'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/orders/OrderStatusBadge'
-import type { OrderStatus } from '@/hooks/useCleaningOrders'
+import type { OrderStatus, OrderType } from '@/hooks/useCleaningOrders'
 import { formatCurrency } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import dayjs from 'dayjs'
@@ -27,12 +27,14 @@ export function OrdersListPage() {
   const symbol = useCurrencySymbol()
 
   const [status, setStatus] = useState<OrderStatus | 'all'>('all')
+  const [orderType, setOrderType] = useState<OrderType | 'all'>('all')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [myOnly, setMyOnly] = useState(false)
 
   const { data, isLoading } = useCleaningOrders({
     status,
+    orderType,
     search,
     assignedToMe: myOnly,
     page,
@@ -79,6 +81,24 @@ export function OrdersListPage() {
           </Button>
         </div>
 
+        {/* Фильтр по типу */}
+        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
+          {(['all', 'clothing', 'carpet', 'furniture'] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => { setOrderType(t); setPage(1) }}
+              className={cn(
+                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                orderType === t
+                  ? 'bg-secondary text-secondary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              {t === 'all' ? 'Все типы' : `${ORDER_TYPE_EMOJI[t as OrderType]} ${t === 'clothing' ? 'Одежда' : t === 'carpet' ? 'Ковры' : 'Мебель'}`}
+            </button>
+          ))}
+        </div>
+
         {/* Табы статусов */}
         <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
           {STATUS_TABS.map(tab => (
@@ -120,6 +140,7 @@ export function OrdersListPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-base">{ORDER_TYPE_EMOJI[order.order_type ?? 'clothing']}</span>
                       <span className="font-semibold text-sm">{order.number}</span>
                       <OrderStatusBadge status={order.status} />
                       <PaymentStatusBadge status={order.payment_status} />

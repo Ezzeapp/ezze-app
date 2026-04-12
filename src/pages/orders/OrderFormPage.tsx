@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { toast } from '@/components/shared/Toaster'
-import { useCreateOrder } from '@/hooks/useCleaningOrders'
+import { useCreateOrder, type OrderType, ORDER_TYPE_LABELS, ORDER_TYPE_EMOJI } from '@/hooks/useCleaningOrders'
 import { useCleaningItemTypes } from '@/hooks/useCleaningItemTypes'
 import { useClientsPaged } from '@/hooks/useClients'
 import { useQuery } from '@tanstack/react-query'
@@ -28,13 +28,24 @@ interface ItemRow {
   defects: string
   price: string
   ready_date: string
+  // ковры
+  width_m: string
+  length_m: string
 }
 
 let keySeq = 0
 function newRow(name = '', price = 0, days = 3): ItemRow {
   const readyDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
-  return { key: ++keySeq, item_type_id: '', item_type_name: name, color: '', brand: '', defects: '', price: String(price), ready_date: readyDate }
+  return {
+    key: ++keySeq,
+    item_type_id: '', item_type_name: name,
+    color: '', brand: '', defects: '',
+    price: String(price), ready_date: readyDate,
+    width_m: '', length_m: '',
+  }
 }
+
+const ORDER_TYPES: OrderType[] = ['clothing', 'carpet', 'furniture']
 
 export function OrderFormPage() {
   const navigate = useNavigate()
@@ -44,7 +55,6 @@ export function OrderFormPage() {
   const { data: clientsData } = useClientsPaged('', 1, 100)
   const clients = clientsData?.items ?? []
 
-  // Список сотрудников из master_profiles для текущего продукта
   const { data: members = [] } = useQuery({
     queryKey: ['master_profiles_list', PRODUCT],
     queryFn: async () => {
@@ -59,23 +69,44 @@ export function OrderFormPage() {
 
   const { mutateAsync: createOrder, isPending } = useCreateOrder()
 
+  // Общие поля
+  const [orderType, setOrderType] = useState<OrderType>('clothing')
   const [clientId, setClientId] = useState<string>('none')
   const [assignedTo, setAssignedTo] = useState<string>('none')
   const [prepaid, setPrepaid] = useState<string>('')
   const [readyDate, setReadyDate] = useState<string>(dayjs().add(3, 'day').format('YYYY-MM-DD'))
   const [notes, setNotes] = useState<string>('')
+  // Ковры
+  const [pickupDate, setPickupDate] = useState<string>('')
+  const [deliveryDate, setDeliveryDate] = useState<string>('')
+  // Мебель
+  const [visitAddress, setVisitAddress] = useState<string>('')
+  const [visitDate, setVisitDate] = useState<string>('')
+
   const [items, setItems] = useState<ItemRow[]>([newRow()])
 
-  const total = items.reduce((s, i) => s + (parseFloat(i.price) || 0), 0)
-
-  function addItem() {
-    setItems(prev => [...prev, newRow()])
+  // Авторасчёт площади и цены для ковров
+  function calcArea(w: string, l: string) {
+    const wn = parseFloat(w) || 0
+    const ln = parseFloat(l) || 0
+    return wn * ln
   }
 
-  function removeItem(key: number) {
-    setItems(prev => prev.filter(i => i.key !== key))
+  // Цена = площадь × тариф (берём из выбранного типа)
+  function carpetPrice(item: ItemRow): number {
+    const area = calcArea(item.width_m, item.length_m)
+    if (area === 0) return parseFloat(item.price) || 0
+    const type = itemTypes.find(t => t.id === item.item_type_id)
+    if (!type) return parseFloat(item.price) || 0
+    return area * type.default_price
   }
 
+  const total = orderType === 'carpet'
+    ? items.reduce((s, i) => s + carpetPrice(i), 0)
+    : items.reduce((s, i) => s + (parseFloat(i.price) || 0), 0)
+
+  function addItem() { setItems(prev => [...prev, newRow()]) }
+  function removeItem(key: number) { setItems(prev => prev.filter(i => i.key !== key)) }
   function updateItem(key: number, field: keyof ItemRow, value: string) {
     setItems(prev => prev.map(i => i.key === key ? { ...i, [field]: value } : i))
   }
@@ -83,12 +114,20 @@ export function OrderFormPage() {
   function selectType(key: number, typeId: string) {
     const type = itemTypes.find(t => t.id === typeId)
     if (!type) return
-    const readyDate = dayjs().add(type.default_days, 'day').format('YYYY-MM-DD')
+    const rd = dayjs().add(type.default_days, 'day').format('YYYY-MM-DD')
     setItems(prev => prev.map(i => i.key === key
-      ? { ...i, item_type_id: typeId, item_type_name: type.name, price: String(type.default_price), ready_date: readyDate }
+      ? { ...i, item_type_id: typeId, item_type_name: type.name, price: String(type.default_price), ready_date: rd }
       : i
     ))
   }
+
+  // Фильтрация типов по категории
+  const filteredTypes = itemTypes.filter(t => {
+    if (orderType === 'carpet') return t.name.toLowerCase().includes('кв.м') || t.name.toLowerCase().includes('ковёр') || t.name.toLowerCase().includes('ковр')
+    if (orderType === 'furniture') return ['диван','кресло','матрас','пуф'].some(k => t.name.toLowerCase().includes(k))
+    // clothing: всё что не ковры и не мебель
+    return !t.name.toLowerCase().includes('кв.м') && !['диван','кресло','матрас','пуф'].some(k => t.name.toLowerCase().includes(k))
+  })
 
   async function handleSubmit() {
     const validItems = items.filter(i => i.item_type_name.trim())
@@ -99,21 +138,32 @@ export function OrderFormPage() {
 
     try {
       const order = await createOrder({
-        client_id: clientId === 'none' ? null : clientId || null,
-        assigned_to: assignedTo === 'none' ? null : assignedTo || null,
+        order_type:     orderType,
+        client_id:      clientId === 'none' ? null : clientId || null,
+        assigned_to:    assignedTo === 'none' ? null : assignedTo || null,
         prepaid_amount: parseFloat(prepaid) || 0,
-        total_amount: total,
-        ready_date: readyDate || null,
-        notes: notes || null,
-        items: validItems.map(i => ({
-          item_type_id: i.item_type_id || null,
-          item_type_name: i.item_type_name,
-          color: i.color || null,
-          brand: i.brand || null,
-          defects: i.defects || null,
-          price: parseFloat(i.price) || 0,
-          ready_date: i.ready_date || null,
-        })),
+        total_amount:   total,
+        ready_date:     readyDate || null,
+        notes:          notes || null,
+        pickup_date:    orderType === 'carpet' ? pickupDate || null : null,
+        delivery_date:  orderType === 'carpet' ? deliveryDate || null : null,
+        visit_address:  orderType === 'furniture' ? visitAddress || null : null,
+        visit_date:     orderType === 'furniture' ? visitDate || null : null,
+        items: validItems.map(i => {
+          const area = orderType === 'carpet' ? calcArea(i.width_m, i.length_m) : null
+          return {
+            item_type_id:   i.item_type_id || null,
+            item_type_name: i.item_type_name,
+            color:          i.color || null,
+            brand:          i.brand || null,
+            defects:        i.defects || null,
+            price:          orderType === 'carpet' ? carpetPrice(i) : parseFloat(i.price) || 0,
+            ready_date:     i.ready_date || null,
+            width_m:        orderType === 'carpet' ? parseFloat(i.width_m) || null : null,
+            length_m:       orderType === 'carpet' ? parseFloat(i.length_m) || null : null,
+            area_m2:        area && area > 0 ? area : null,
+          }
+        }),
       })
       toast.success('Заказ создан')
       navigate(`/orders/${order.id}`)
@@ -121,6 +171,8 @@ export function OrderFormPage() {
       toast.error(e.message || 'Ошибка создания')
     }
   }
+
+  const itemLabel = orderType === 'carpet' ? 'Ковёр' : orderType === 'furniture' ? 'Предмет' : 'Изделие'
 
   return (
     <div className="flex flex-col h-full">
@@ -134,7 +186,32 @@ export function OrderFormPage() {
 
       <div className="flex-1 overflow-y-auto px-4 pb-32 space-y-4 pt-4">
 
-        {/* Клиент */}
+        {/* Тип заказа */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Тип заказа</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-2">
+              {ORDER_TYPES.map(t => (
+                <button
+                  key={t}
+                  onClick={() => { setOrderType(t); setItems([newRow()]) }}
+                  className={`flex flex-col items-center gap-1 py-3 px-2 rounded-lg border-2 transition-colors text-sm font-medium ${
+                    orderType === t
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border text-muted-foreground hover:border-primary/40'
+                  }`}
+                >
+                  <span className="text-xl">{ORDER_TYPE_EMOJI[t]}</span>
+                  {ORDER_TYPE_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Клиент и исполнитель */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Клиент</CardTitle>
@@ -165,13 +242,59 @@ export function OrderFormPage() {
                 <SelectContent>
                   <SelectItem value="none">— Не назначен —</SelectItem>
                   {members.map((m: any) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.display_name}
-                    </SelectItem>
+                    <SelectItem key={m.id} value={m.id}>{m.display_name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Поля для мягкой мебели — адрес и дата выезда */}
+            {orderType === 'furniture' && (
+              <>
+                <div>
+                  <Label>Адрес выезда</Label>
+                  <Input
+                    placeholder="ул. Пушкина, д. 10, кв. 5"
+                    value={visitAddress}
+                    onChange={e => setVisitAddress(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Дата и время выезда</Label>
+                  <Input
+                    type="datetime-local"
+                    value={visitDate}
+                    onChange={e => setVisitDate(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Поля для ковров — забор и доставка */}
+            {orderType === 'carpet' && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label>Дата забора</Label>
+                  <Input
+                    type="date"
+                    value={pickupDate}
+                    onChange={e => setPickupDate(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Дата доставки</Label>
+                  <Input
+                    type="date"
+                    value={deliveryDate}
+                    onChange={e => setDeliveryDate(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -179,7 +302,7 @@ export function OrderFormPage() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Изделия</CardTitle>
+              <CardTitle className="text-base">{itemLabel}ия</CardTitle>
               <Button variant="ghost" size="sm" onClick={addItem}>
                 <Plus className="h-4 w-4 mr-1" />
                 Добавить
@@ -190,7 +313,7 @@ export function OrderFormPage() {
             {items.map((item, idx) => (
               <div key={item.key} className="rounded-lg border p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Изделие {idx + 1}</span>
+                  <span className="text-sm font-medium text-muted-foreground">{itemLabel} {idx + 1}</span>
                   {items.length > 1 && (
                     <button onClick={() => removeItem(item.key)} className="text-destructive hover:opacity-70">
                       <Trash2 className="h-4 w-4" />
@@ -199,54 +322,89 @@ export function OrderFormPage() {
                 </div>
 
                 {/* Тип */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="col-span-2">
-                    <Label>Тип изделия</Label>
-                    <Select value={item.item_type_id} onValueChange={v => selectType(item.key, v)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Выберите тип..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {itemTypes.map(t => (
-                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {!item.item_type_id && (
-                      <Input
-                        placeholder="Или введите вручную..."
-                        value={item.item_type_name}
-                        onChange={e => updateItem(item.key, 'item_type_name', e.target.value)}
-                        className="mt-2"
-                      />
-                    )}
-                  </div>
-
-                  <div>
-                    <Label>Цвет</Label>
+                <div className="col-span-2">
+                  <Label>Тип</Label>
+                  <Select value={item.item_type_id} onValueChange={v => selectType(item.key, v)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Выберите тип..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredTypes.map(t => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!item.item_type_id && (
                     <Input
-                      placeholder="Синий..."
-                      value={item.color}
-                      onChange={e => updateItem(item.key, 'color', e.target.value)}
-                      className="mt-1"
+                      placeholder="Или введите вручную..."
+                      value={item.item_type_name}
+                      onChange={e => updateItem(item.key, 'item_type_name', e.target.value)}
+                      className="mt-2"
                     />
-                  </div>
-                  <div>
-                    <Label>Бренд</Label>
-                    <Input
-                      placeholder="Zara..."
-                      value={item.brand}
-                      onChange={e => updateItem(item.key, 'brand', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
+                  )}
                 </div>
+
+                {/* Размеры — только для ковров */}
+                {orderType === 'carpet' && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Label>Ширина (м)</Label>
+                      <Input
+                        type="number" min={0} step={0.1}
+                        placeholder="2.0"
+                        value={item.width_m}
+                        onChange={e => updateItem(item.key, 'width_m', e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label>Длина (м)</Label>
+                      <Input
+                        type="number" min={0} step={0.1}
+                        placeholder="3.0"
+                        value={item.length_m}
+                        onChange={e => updateItem(item.key, 'length_m', e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label>Площадь</Label>
+                      <div className="mt-1 h-9 px-3 flex items-center rounded-md border bg-muted text-sm font-medium">
+                        {calcArea(item.width_m, item.length_m).toFixed(1)} м²
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Цвет и бренд — для одежды и мебели */}
+                {orderType !== 'carpet' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label>Цвет</Label>
+                      <Input
+                        placeholder="Синий..."
+                        value={item.color}
+                        onChange={e => updateItem(item.key, 'color', e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label>Бренд</Label>
+                      <Input
+                        placeholder={orderType === 'furniture' ? 'IKEA...' : 'Zara...'}
+                        value={item.brand}
+                        onChange={e => updateItem(item.key, 'brand', e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Дефекты */}
                 <div>
                   <Label>Дефекты при приёме</Label>
                   <Textarea
-                    placeholder="Пятно на рукаве, потёртость..."
+                    placeholder={orderType === 'carpet' ? 'Пятна, потёртости, запах...' : 'Пятно на рукаве, потёртость...'}
                     value={item.defects}
                     onChange={e => updateItem(item.key, 'defects', e.target.value)}
                     className="mt-1 resize-none"
@@ -257,14 +415,22 @@ export function OrderFormPage() {
                 {/* Цена и срок */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label>Цена ({symbol})</Label>
+                    <Label>
+                      {orderType === 'carpet'
+                        ? `Цена (${symbol}/м²)`
+                        : `Цена (${symbol})`}
+                    </Label>
                     <Input
-                      type="number"
-                      min={0}
+                      type="number" min={0}
                       value={item.price}
                       onChange={e => updateItem(item.key, 'price', e.target.value)}
                       className="mt-1"
                     />
+                    {orderType === 'carpet' && calcArea(item.width_m, item.length_m) > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Итого: {formatCurrency(carpetPrice(item))} {symbol}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>Срок готовности</Label>
@@ -296,23 +462,24 @@ export function OrderFormPage() {
             <div>
               <Label>Предоплата ({symbol})</Label>
               <Input
-                type="number"
-                min={0}
+                type="number" min={0}
                 placeholder="0"
                 value={prepaid}
                 onChange={e => setPrepaid(e.target.value)}
                 className="mt-1"
               />
             </div>
-            <div>
-              <Label>Общий срок готовности</Label>
-              <Input
-                type="date"
-                value={readyDate}
-                onChange={e => setReadyDate(e.target.value)}
-                className="mt-1"
-              />
-            </div>
+            {orderType !== 'carpet' && (
+              <div>
+                <Label>Общий срок готовности</Label>
+                <Input
+                  type="date"
+                  value={readyDate}
+                  onChange={e => setReadyDate(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+            )}
             <div>
               <Label>Примечания</Label>
               <Textarea

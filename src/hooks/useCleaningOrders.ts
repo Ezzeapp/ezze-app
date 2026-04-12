@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { PRODUCT } from '@/lib/config'
 
+export type OrderType = 'clothing' | 'carpet' | 'furniture'
 export type OrderStatus = 'received' | 'in_progress' | 'ready' | 'issued' | 'paid' | 'cancelled'
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid'
 export type ItemStatus = 'pending' | 'ready' | 'issued'
@@ -18,6 +19,10 @@ export interface CleaningOrderItem {
   price: number
   ready_date: string | null
   status: ItemStatus
+  // ковры
+  width_m: number | null
+  length_m: number | null
+  area_m2: number | null
   created_at: string
 }
 
@@ -25,6 +30,7 @@ export interface CleaningOrder {
   id: string
   product: string
   number: string
+  order_type: OrderType
   client_id: string | null
   accepted_by: string | null
   assigned_to: string | null
@@ -35,6 +41,12 @@ export interface CleaningOrder {
   paid_amount: number
   ready_date: string | null
   notes: string | null
+  // ковры
+  pickup_date: string | null
+  delivery_date: string | null
+  // мебель
+  visit_address: string | null
+  visit_date: string | null
   created_at: string
   updated_at: string
   // joined
@@ -46,20 +58,33 @@ export interface CleaningOrder {
 
 export const ORDERS_KEY = 'cleaning_orders'
 
-// ── Список квитанций (с пагинацией и фильтрами) ──────────────────────────────
+export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
+  clothing:  'Одежда',
+  carpet:    'Ковёр',
+  furniture: 'Мебель',
+}
+
+export const ORDER_TYPE_EMOJI: Record<OrderType, string> = {
+  clothing:  '👔',
+  carpet:    '🏠',
+  furniture: '🛋️',
+}
+
+// ── Список заказов (с пагинацией и фильтрами) ─────────────────────────────────
 
 export function useCleaningOrders(opts: {
   status?: OrderStatus | 'all'
+  orderType?: OrderType | 'all'
   search?: string
   assignedToMe?: boolean
   page?: number
   perPage?: number
 } = {}) {
   const { user } = useAuth()
-  const { status = 'all', search = '', assignedToMe = false, page = 1, perPage = 20 } = opts
+  const { status = 'all', orderType = 'all', search = '', assignedToMe = false, page = 1, perPage = 20 } = opts
 
   return useQuery({
-    queryKey: [ORDERS_KEY, 'list', user?.id, status, search, assignedToMe, page],
+    queryKey: [ORDERS_KEY, 'list', user?.id, status, orderType, search, assignedToMe, page],
     queryFn: async () => {
       const from = (page - 1) * perPage
       const to = page * perPage - 1
@@ -77,6 +102,7 @@ export function useCleaningOrders(opts: {
         .range(from, to)
 
       if (status !== 'all') q = q.eq('status', status)
+      if (orderType !== 'all') q = q.eq('order_type', orderType)
       if (assignedToMe && user) {
         const { data: mp } = await supabase
           .from('master_profiles')
@@ -87,7 +113,7 @@ export function useCleaningOrders(opts: {
         if (mp) q = q.eq('assigned_to', mp.id)
       }
       if (search) {
-        q = q.or(`number.ilike.%${search}%,client.first_name.ilike.%${search}%,client.last_name.ilike.%${search}%`)
+        q = q.or(`number.ilike.%${search}%`)
       }
 
       const { data, error, count } = await q
@@ -99,7 +125,7 @@ export function useCleaningOrders(opts: {
   })
 }
 
-// ── Одна квитанция с изделиями и историей ────────────────────────────────────
+// ── Один заказ с изделиями ────────────────────────────────────────────────────
 
 export function useCleaningOrder(id: string | undefined) {
   return useQuery({
@@ -124,9 +150,10 @@ export function useCleaningOrder(id: string | undefined) {
   })
 }
 
-// ── Создать квитанцию ─────────────────────────────────────────────────────────
+// ── Создать заказ ─────────────────────────────────────────────────────────────
 
 export interface CreateOrderPayload {
+  order_type?: OrderType
   client_id?: string | null
   accepted_by?: string | null
   assigned_to?: string | null
@@ -134,6 +161,12 @@ export interface CreateOrderPayload {
   total_amount?: number
   ready_date?: string | null
   notes?: string | null
+  // ковры
+  pickup_date?: string | null
+  delivery_date?: string | null
+  // мебель
+  visit_address?: string | null
+  visit_date?: string | null
   items: {
     item_type_id?: string | null
     item_type_name: string
@@ -142,6 +175,10 @@ export interface CreateOrderPayload {
     defects?: string | null
     price: number
     ready_date?: string | null
+    // ковры
+    width_m?: number | null
+    length_m?: number | null
+    area_m2?: number | null
   }[]
 }
 
@@ -150,7 +187,6 @@ export function useCreateOrder() {
 
   return useMutation({
     mutationFn: async (payload: CreateOrderPayload) => {
-      // Генерируем номер
       const { data: numData, error: numErr } = await supabase
         .rpc('generate_cleaning_order_number', { p_product: PRODUCT })
       if (numErr) throw numErr
@@ -158,15 +194,20 @@ export function useCreateOrder() {
       const { data: order, error: orderErr } = await supabase
         .from('cleaning_orders')
         .insert({
-          product: PRODUCT,
-          number: numData,
-          client_id: payload.client_id ?? null,
-          accepted_by: payload.accepted_by ?? null,
-          assigned_to: payload.assigned_to ?? null,
+          product:        PRODUCT,
+          number:         numData,
+          order_type:     payload.order_type ?? 'clothing',
+          client_id:      payload.client_id ?? null,
+          accepted_by:    payload.accepted_by ?? null,
+          assigned_to:    payload.assigned_to ?? null,
           prepaid_amount: payload.prepaid_amount ?? 0,
-          total_amount: payload.total_amount ?? 0,
-          ready_date: payload.ready_date ?? null,
-          notes: payload.notes ?? null,
+          total_amount:   payload.total_amount ?? 0,
+          ready_date:     payload.ready_date ?? null,
+          notes:          payload.notes ?? null,
+          pickup_date:    payload.pickup_date ?? null,
+          delivery_date:  payload.delivery_date ?? null,
+          visit_address:  payload.visit_address ?? null,
+          visit_date:     payload.visit_date ?? null,
         })
         .select()
         .single()
@@ -185,7 +226,7 @@ export function useCreateOrder() {
   })
 }
 
-// ── Обновить статус квитанции ─────────────────────────────────────────────────
+// ── Обновить статус заказа ────────────────────────────────────────────────────
 
 export function useUpdateOrderStatus() {
   const qc = useQueryClient()
@@ -204,12 +245,11 @@ export function useUpdateOrderStatus() {
         .eq('id', id)
       if (error) throw error
 
-      // История
       await supabase.from('cleaning_order_history').insert({
-        order_id: id,
+        order_id:   id,
         old_status: current?.status,
         new_status: status,
-        note: note ?? null,
+        note:       note ?? null,
       })
     },
     onSuccess: (_, { id }) => {
@@ -230,14 +270,12 @@ export function useIssueItems() {
       itemIds: string[]
       payAmount: number
     }) => {
-      // Помечаем выданные изделия
       const { error: itemsErr } = await supabase
         .from('cleaning_order_items')
         .update({ status: 'issued' })
         .in('id', itemIds)
       if (itemsErr) throw itemsErr
 
-      // Получаем актуальное состояние заказа
       const { data: order } = await supabase
         .from('cleaning_orders')
         .select('paid_amount, total_amount, items:cleaning_order_items(status)')
@@ -267,7 +305,7 @@ export function useIssueItems() {
   })
 }
 
-// ── Обновить поля квитанции ───────────────────────────────────────────────────
+// ── Обновить поля заказа ──────────────────────────────────────────────────────
 
 export function useUpdateOrder() {
   const qc = useQueryClient()
