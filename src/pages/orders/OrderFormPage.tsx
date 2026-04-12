@@ -59,8 +59,8 @@ export function OrderFormPage() {
 
   const { mutateAsync: createOrder, isPending } = useCreateOrder()
 
-  const [clientId, setClientId] = useState<string>('')
-  const [assignedTo, setAssignedTo] = useState<string>('')
+  const [clientId, setClientId] = useState<string>('none')
+  const [assignedTo, setAssignedTo] = useState<string>('none')
   const [prepaid, setPrepaid] = useState<string>('')
   const [readyDate, setReadyDate] = useState<string>(dayjs().add(3, 'day').format('YYYY-MM-DD'))
   const [notes, setNotes] = useState<string>('')
@@ -99,8 +99,8 @@ export function OrderFormPage() {
 
     try {
       const order = await createOrder({
-        client_id: clientId || null,
-        assigned_to: assignedTo || null,
+        client_id: clientId === 'none' ? null : clientId || null,
+        assigned_to: assignedTo === 'none' ? null : assignedTo || null,
         prepaid_amount: parseFloat(prepaid) || 0,
         total_amount: total,
         ready_date: readyDate || null,
@@ -147,7 +147,7 @@ export function OrderFormPage() {
                   <SelectValue placeholder="Выберите клиента..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">— Без клиента —</SelectItem>
+                  <SelectItem value="none">— Без клиента —</SelectItem>
                   {clients.map(c => (
                     <SelectItem key={c.id} value={c.id}>
                       {[c.first_name, c.last_name].filter(Boolean).join(' ')}{c.phone ? ` · ${c.phone}` : ''}
@@ -163,7 +163,7 @@ export function OrderFormPage() {
                   <SelectValue placeholder="Назначить исполнителя..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">— Не назначен —</SelectItem>
+                  <SelectItem value="none">— Не назначен —</SelectItem>
                   {members.map((m: any) => (
                     <SelectItem key={m.id} value={m.id}>
                       {m.display_name}
