@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, Minus, Search, ShoppingBag, ArrowLeft, Loader2, Phone } from 'lucide-react'
+import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { toast } from '@/components/shared/Toaster'
-import { useCreateOrder, type OrderType, ORDER_TYPE_LABELS, ORDER_TYPE_EMOJI } from '@/hooks/useCleaningOrders'
+import { useCreateOrder, type OrderType, ORDER_TYPE_LABELS, ORDER_TYPE_ICONS } from '@/hooks/useCleaningOrders'
 import { useCleaningItemTypes } from '@/hooks/useCleaningItemTypes'
 import { useClientsPaged } from '@/hooks/useClients'
 import { formatCurrency } from '@/lib/utils'
@@ -269,7 +269,8 @@ export function POSPage() {
                   : 'bg-muted text-muted-foreground border-transparent hover:border-border'
               )}
             >
-              {ORDER_TYPE_EMOJI[t]} {ORDER_TYPE_LABELS[t]}
+              {(() => { const Icon = ORDER_TYPE_ICONS[t]; return <Icon className="h-3.5 w-3.5 inline-block mr-1" /> })()}
+              {ORDER_TYPE_LABELS[t]}
             </button>
           ))}
         </div>
@@ -319,8 +320,9 @@ export function POSPage() {
         {/* ── Левая панель: каталог ── */}
         <div className="w-[55%] border-r flex flex-col overflow-hidden bg-muted/20">
           <div className="p-3 pb-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              {ORDER_TYPE_EMOJI[orderType]} {ORDER_TYPE_LABELS[orderType]}
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+              {(() => { const Icon = ORDER_TYPE_ICONS[orderType]; return <Icon className="h-3.5 w-3.5" /> })()}
+              {ORDER_TYPE_LABELS[orderType]}
               {orderType === 'carpet' && ' — нажмите для ввода размеров'}
             </p>
           </div>
@@ -410,7 +412,7 @@ export function POSPage() {
                           className="text-muted-foreground hover:text-foreground p-1"
                           title="Детали"
                         >
-                          <span className="text-xs">✏️</span>
+                          <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => removeItem(item.key)}

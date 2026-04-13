@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { toast } from '@/components/shared/Toaster'
-import { useCreateOrder, type OrderType, ORDER_TYPE_LABELS, ORDER_TYPE_EMOJI } from '@/hooks/useCleaningOrders'
+import { useCreateOrder, type OrderType, ORDER_TYPE_LABELS, ORDER_TYPE_ICONS } from '@/hooks/useCleaningOrders'
 import { useCleaningItemTypes } from '@/hooks/useCleaningItemTypes'
 import { useClientsPaged } from '@/hooks/useClients'
 import { useQuery } from '@tanstack/react-query'
@@ -203,7 +203,7 @@ export function OrderFormPage() {
                       : 'border-border text-muted-foreground hover:border-primary/40'
                   }`}
                 >
-                  <span className="text-xl">{ORDER_TYPE_EMOJI[t]}</span>
+                  {(() => { const Icon = ORDER_TYPE_ICONS[t]; return <Icon className="h-5 w-5" /> })()}
                   {ORDER_TYPE_LABELS[t]}
                 </button>
               ))}
