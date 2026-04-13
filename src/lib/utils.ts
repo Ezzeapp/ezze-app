@@ -22,15 +22,15 @@ export function normalizePhone(phone: string): string {
   return phone.trim().replace(/[\s\-().]/g, '').replace(/^\+/, '')
 }
 
-export function formatCurrency(amount: number, currency = 'RUB', locale = 'ru'): string {
+export function formatCurrency(amount: number, _currency = 'RUB', locale = 'ru'): string {
   try {
     return new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency,
+      style: 'decimal',
       minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount)
   } catch {
-    return `${amount} ${currency}`
+    return String(Math.round(amount))
   }
 }
 

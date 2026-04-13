@@ -351,10 +351,19 @@ export function OrdersListPage() {
 
         {/* Статистика */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[100px]">
+
+          {/* Сегодня */}
+          <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[105px]">
             <span className="text-xs text-muted-foreground">Сегодня</span>
             <span className="text-sm font-semibold">{stats ? stats.total_today : '—'} зак.</span>
+            {stats && stats.revenue_today > 0 && (
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 leading-none">
+                {formatCurrency(stats.revenue_today)} {symbol}
+              </span>
+            )}
           </div>
+
+          {/* Не оплачено — кликабельно */}
           <button
             onClick={toggleUnpaidFilter}
             className={cn(
@@ -376,10 +385,53 @@ export function OrdersListPage() {
               </span>
             )}
           </button>
-          <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[100px]">
+
+          {/* За месяц */}
+          <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[120px]">
             <span className="text-xs text-muted-foreground">За месяц</span>
             <span className="text-sm font-semibold">{stats ? stats.total_month : '—'} зак.</span>
+            {stats && stats.revenue_month > 0 && (
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 leading-none">
+                {formatCurrency(stats.revenue_month)} {symbol}
+              </span>
+            )}
           </div>
+
+          {/* Средний чек */}
+          <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[110px]">
+            <span className="text-xs text-muted-foreground">Средний чек</span>
+            <span className="text-sm font-semibold">
+              {stats ? `${formatCurrency(stats.avg_check)} ${symbol}` : '—'}
+            </span>
+          </div>
+
+          {/* К выдаче */}
+          {stats && stats.ready_count > 0 && (
+            <button
+              onClick={() => { setStatus('ready'); setPage(1) }}
+              className={cn(
+                'shrink-0 flex flex-col gap-0.5 rounded-xl border px-3 py-2 min-w-[100px] text-left transition-all',
+                status === 'ready'
+                  ? 'ring-2 ring-indigo-400 bg-indigo-50 dark:bg-indigo-950/20 border-indigo-300'
+                  : 'bg-indigo-50/50 dark:bg-indigo-950/10 border-indigo-200 dark:border-indigo-800 hover:ring-1 hover:ring-indigo-300'
+              )}
+            >
+              <span className="text-xs text-muted-foreground">К выдаче</span>
+              <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                {stats.ready_count} зак.
+              </span>
+            </button>
+          )}
+
+          {/* Просроченных */}
+          {stats && stats.overdue_count > 0 && (
+            <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800 px-3 py-2 min-w-[110px]">
+              <span className="text-xs text-muted-foreground">Просрочено</span>
+              <span className="text-sm font-semibold text-red-600 dark:text-red-400">
+                {stats.overdue_count} зак.
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Фильтр по периоду (раскрывается) */}

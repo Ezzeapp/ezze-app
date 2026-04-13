@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, Pencil, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Tag } from 'lucide-react'
+import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +19,27 @@ import { PRODUCT } from '@/lib/config'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 
 // ── Типы ─────────────────────────────────────────────────────────────────────
+
+
+const COLORS_LIST = [
+  { label: "Белый",       bg: "bg-white border border-gray-300 dark:border-gray-600" },
+  { label: "Чёрный",      bg: "bg-gray-900" },
+  { label: "Серый",       bg: "bg-gray-400" },
+  { label: "Синий",       bg: "bg-blue-500" },
+  { label: "Красный",     bg: "bg-red-500" },
+  { label: "Зелёный",     bg: "bg-green-500" },
+  { label: "Жёлтый",      bg: "bg-yellow-400" },
+  { label: "Коричневый",  bg: "bg-amber-700" },
+  { label: "Бежевый",     bg: "bg-amber-100 border border-gray-300 dark:border-gray-600" },
+  { label: "Розовый",     bg: "bg-pink-400" },
+  { label: "Оранжевый",   bg: "bg-orange-400" },
+  { label: "Фиолетовый",  bg: "bg-purple-500" },
+]
+
+const DEFECTS_LIST = [
+  "Пятно", "Потёртость", "Дыра", "Разрыв", "Зацепка",
+  "Выцветший", "Засаленный", "Молния", "Пуговица", "Подкладка",
+]
 
 interface CartItem {
   key: number
@@ -502,7 +523,7 @@ export function POSPage() {
                 className="pl-8 h-8 text-sm"
               />
               {showClientList && clientSearch && (
-                <div className="absolute top-full mt-1 w-full bg-popover border rounded-lg shadow-lg z-50 overflow-hidden">
+                <div className="absolute top-full mt-1 w-full bg-background dark:bg-card border shadow-xl rounded-lg z-50 overflow-hidden">
                   {clients.slice(0, 8).map(c => (
                     <button
                       key={c.id}
@@ -674,7 +695,10 @@ export function POSPage() {
               <div className="divide-y">
                 {cart.map((item, idx) => (
                   <div key={item.key} className="px-4 py-2">
-                    <div className="flex items-center gap-2">
+                    <div
+                      className="flex items-center gap-2 cursor-pointer hover:bg-muted/30 rounded-lg -mx-1 px-1 transition-colors"
+                      onClick={() => setExpandedKey(expandedKey === item.key ? null : item.key)}
+                    >
                       <span className="text-xs text-muted-foreground w-5 shrink-0">{idx + 1}</span>
                       <div className="flex-1 min-w-0">
                         {item.item_type_name ? (
@@ -701,14 +725,7 @@ export function POSPage() {
                       <div className="flex items-center gap-1 shrink-0">
                         <span className="text-sm font-medium tabular-nums">{formatCurrency(item.price)}</span>
                         <button
-                          onClick={() => setExpandedKey(expandedKey === item.key ? null : item.key)}
-                          className="text-muted-foreground hover:text-foreground p-1"
-                          title="Детали"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => removeItem(item.key)}
+                          onClick={e => { e.stopPropagation(); removeItem(item.key) }}
                           className="text-muted-foreground hover:text-destructive p-1 transition-colors"
                         >
                           <X className="h-3.5 w-3.5" />
@@ -720,13 +737,34 @@ export function POSPage() {
                       <div className="mt-2 ml-7 grid grid-cols-2 gap-2">
                         {orderType !== 'carpet' && (
                           <>
-                            <div>
-                              <Label className="text-xs">Цвет</Label>
-                              <Input placeholder="Синий..." value={item.color}
-                                onChange={e => updateItem(item.key, 'color', e.target.value)}
-                                className="h-7 text-xs mt-0.5" />
+                            <div className="col-span-2">
+                              <Label className="text-xs mb-1 block">Цвет</Label>
+                              <div className="flex flex-wrap gap-1.5">
+                                {COLORS_LIST.map(c => (
+                                  <button
+                                    key={c.label}
+                                    type="button"
+                                    title={c.label}
+                                    onClick={() => updateItem(item.key, 'color', item.color === c.label ? '' : c.label)}
+                                    className={cn(
+                                      'h-5 w-5 rounded-full transition-all shrink-0',
+                                      c.bg,
+                                      item.color === c.label ? 'ring-2 ring-offset-1 ring-primary scale-110' : 'hover:scale-110'
+                                    )}
+                                  />
+                                ))}
+                                <Input
+                                  placeholder="Другой..."
+                                  value={COLORS_LIST.some(c => c.label === item.color) ? '' : item.color}
+                                  onChange={e => updateItem(item.key, 'color', e.target.value)}
+                                  className="h-6 text-xs flex-1 min-w-[70px]"
+                                />
+                              </div>
+                              {item.color && (
+                                <p className="text-xs text-muted-foreground mt-0.5">Выбран: <span className="font-medium">{item.color}</span></p>
+                              )}
                             </div>
-                            <div>
+                            <div className="col-span-2">
                               <Label className="text-xs">Бренд</Label>
                               <Input placeholder="Zara..." value={item.brand}
                                 onChange={e => updateItem(item.key, 'brand', e.target.value)}
@@ -735,10 +773,50 @@ export function POSPage() {
                           </>
                         )}
                         <div className="col-span-2">
-                          <Label className="text-xs">Дефекты при приёме</Label>
-                          <Input placeholder="Пятно, потёртость..." value={item.defects}
-                            onChange={e => updateItem(item.key, 'defects', e.target.value)}
-                            className="h-7 text-xs mt-0.5" />
+                          <Label className="text-xs mb-1 block">Дефекты при приёме</Label>
+                          <div className="flex flex-wrap gap-1">
+                            {DEFECTS_LIST.map(d => {
+                              const selected = item.defects.split(',').map(s => s.trim()).filter(Boolean).includes(d)
+                              return (
+                                <button
+                                  key={d}
+                                  type="button"
+                                  onClick={() => {
+                                    const current = item.defects.split(',').map(s => s.trim()).filter(Boolean)
+                                    const next = selected ? current.filter(x => x !== d) : [...current, d]
+                                    updateItem(item.key, 'defects', next.join(', '))
+                                  }}
+                                  className={cn(
+                                    'px-2 py-0.5 rounded-full text-xs font-medium border transition-colors',
+                                    selected
+                                      ? 'bg-destructive/15 border-destructive/40 text-destructive dark:text-red-400'
+                                      : 'bg-muted border-transparent text-muted-foreground hover:border-border hover:text-foreground'
+                                  )}
+                                >
+                                  {d}
+                                </button>
+                              )
+                            })}
+                          </div>
+                          <Input
+                            placeholder="Другой дефект..."
+                            className="h-7 text-xs mt-1.5"
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                const current = item.defects.split(',').map(s => s.trim()).filter(Boolean)
+                                if (!current.includes(e.currentTarget.value.trim())) {
+                                  updateItem(item.key, 'defects', [...current, e.currentTarget.value.trim()].join(', '))
+                                }
+                                e.currentTarget.value = ''
+                                e.preventDefault()
+                              }
+                            }}
+                          />
+                          {item.defects && (
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                              {item.defects}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <Label className="text-xs">Цена ({symbol})</Label>

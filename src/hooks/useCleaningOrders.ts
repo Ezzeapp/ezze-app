@@ -499,11 +499,16 @@ export function useAcceptPayment() {
 // ── Статистика заказов (за текущий месяц) ─────────────────────────────────────
 
 export interface OrdersStats {
-  total_today: number
-  total_month: number
-  unpaid_count: number
-  unpaid_amount: number
-  total_revenue: number
+  total_today:    number
+  revenue_today:  number
+  total_month:    number
+  revenue_month:  number
+  avg_check:      number
+  unpaid_count:   number
+  unpaid_amount:  number
+  ready_count:    number
+  overdue_count:  number
+  total_revenue:  number
 }
 
 export function useOrdersStats() {
@@ -513,20 +518,32 @@ export function useOrdersStats() {
     queryFn: async (): Promise<OrdersStats> => {
       const { data } = await supabase
         .from('cleaning_orders')
-        .select('status, payment_status, total_amount, paid_amount, created_at')
+        .select('status, payment_status, total_amount, paid_amount, created_at, ready_date')
         .eq('product', PRODUCT)
         .gte('created_at', dayjs().startOf('month').toISOString())
         .not('status', 'eq', 'cancelled')
       const orders = data ?? []
-      const todayStart = dayjs().startOf('day').toISOString()
-      const total_today = orders.filter(o => o.created_at >= todayStart).length
-      const unpaid = orders.filter(o => (o.payment_status ?? 'unpaid') !== 'paid')
+      const todayStart    = dayjs().startOf('day').toISOString()
+      const todayOrders   = orders.filter(o => o.created_at >= todayStart)
+      const unpaid        = orders.filter(o => (o.payment_status ?? 'unpaid') !== 'paid')
+      const total_month   = orders.length
+      const revenue_month = orders.reduce((s, o) => s + (o.total_amount ?? 0), 0)
+      const now           = dayjs()
       return {
-        total_today,
-        total_month: orders.length,
-        unpaid_count: unpaid.length,
-        unpaid_amount: unpaid.reduce((s, o) => s + Math.max(0, o.total_amount - (o.paid_amount ?? 0)), 0),
-        total_revenue: orders.reduce((s, o) => s + o.total_amount, 0),
+        total_today:   todayOrders.length,
+        revenue_today: todayOrders.reduce((s, o) => s + (o.total_amount ?? 0), 0),
+        total_month,
+        revenue_month,
+        avg_check:     total_month > 0 ? Math.round(revenue_month / total_month) : 0,
+        unpaid_count:  unpaid.length,
+        unpaid_amount: unpaid.reduce((s, o) => s + Math.max(0, (o.total_amount ?? 0) - (o.paid_amount ?? 0)), 0),
+        ready_count:   orders.filter(o => o.status === 'ready').length,
+        overdue_count: orders.filter(o =>
+          o.ready_date &&
+          dayjs(o.ready_date).isBefore(now, 'day') &&
+          !['issued', 'paid'].includes(o.status)
+        ).length,
+        total_revenue: revenue_month,
       }
     },
     enabled: !!user,
