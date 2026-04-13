@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard, User, Users, Package, CalendarDays,
   Settings, Zap, X, ShieldCheck, UsersRound, Megaphone, CreditCard, LifeBuoy,
-  ClipboardList, BarChart3, FileText,
+  ClipboardList, BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -89,9 +89,6 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
           ? <SidebarNavItem icon={ClipboardList} iconColor="dark:text-indigo-400" label="Заказы"     to="/orders"  onClick={onClose} />
           : <NavItemGated   icon={CalendarDays}  iconColor="dark:text-indigo-400" label={t('nav.calendar')} to="/calendar" feature="calendar" onClick={onClose} />
         }
-        {PRODUCT === 'cleaning' && (
-          <SidebarNavItem icon={FileText} iconColor="dark:text-slate-400" label="Отчёты" to="/reports" onClick={onClose} />
-        )}
         <NavItemGated icon={Users} iconColor="dark:text-emerald-400" label={t('nav.clients')} to="/clients" feature="clients" onClick={onClose} />
         {/* ── Каталог ── */}
         <SidebarGroupLabel label={t('nav.groupCatalog')} />

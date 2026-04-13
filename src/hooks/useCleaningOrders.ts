@@ -84,6 +84,8 @@ export function useCleaningOrders(opts: {
   page?: number
   perPage?: number
   sortBy?: SortBy
+  dateFrom?: string  // YYYY-MM-DD
+  dateTo?: string    // YYYY-MM-DD
 } = {}) {
   const { user } = useAuth()
   const {
@@ -95,10 +97,12 @@ export function useCleaningOrders(opts: {
     page = 1,
     perPage = 20,
     sortBy = 'newest',
+    dateFrom = '',
+    dateTo = '',
   } = opts
 
   return useQuery({
-    queryKey: [ORDERS_KEY, 'list', user?.id, status, orderType, paymentStatus, search, assignedToMe, page, sortBy],
+    queryKey: [ORDERS_KEY, 'list', user?.id, status, orderType, paymentStatus, search, assignedToMe, page, sortBy, dateFrom, dateTo],
     queryFn: async () => {
       const from = (page - 1) * perPage
       const to = page * perPage - 1
@@ -128,6 +132,8 @@ export function useCleaningOrders(opts: {
       if (status !== 'all') q = q.eq('status', status)
       if (orderType !== 'all') q = q.eq('order_type', orderType)
       if (paymentStatus !== 'all') q = q.eq('payment_status', paymentStatus)
+      if (dateFrom) q = q.gte('created_at', dateFrom + 'T00:00:00')
+      if (dateTo)   q = q.lte('created_at', dateTo   + 'T23:59:59')
       if (assignedToMe && user) {
         const { data: mp } = await supabase
           .from('master_profiles')

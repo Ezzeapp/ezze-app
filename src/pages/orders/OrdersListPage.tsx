@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus, Search, ClipboardList, Loader2, Filter,
-  AlertTriangle, Trash2, LayoutList, Table2, Download,
+  AlertTriangle, Trash2, LayoutList, Table2, Download, CalendarRange, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -34,6 +35,7 @@ const STATUS_TABS: { value: OrderStatus | 'all'; label: string }[] = [
   { value: 'ready',       label: 'Готов' },
   { value: 'issued',      label: 'Выдан' },
   { value: 'paid',        label: 'Оплачен' },
+  { value: 'cancelled',   label: 'Отменён' },
 ]
 
 const NON_URGENT_STATUSES = ['issued', 'paid', 'cancelled']
@@ -62,10 +64,7 @@ function exportCSV(orders: CleaningOrder[], symbol: string) {
 
 // ── Диалог подтверждения удаления ─────────────────────────────────────────────
 function DeleteConfirmDialog({ label, onConfirm, onClose, danger = false }: {
-  label: string
-  onConfirm: () => void
-  onClose: () => void
-  danger?: boolean
+  label: string; onConfirm: () => void; onClose: () => void; danger?: boolean
 }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -78,9 +77,7 @@ function DeleteConfirmDialog({ label, onConfirm, onClose, danger = false }: {
         <div className="text-center space-y-1">
           <p className="font-semibold">{danger ? '⚠️ Удалить все заказы?' : 'Удалить заказ?'}</p>
           <p className="text-sm text-muted-foreground">{label}</p>
-          {danger && (
-            <p className="text-xs text-red-500 font-medium">Это действие нельзя отменить!</p>
-          )}
+          {danger && <p className="text-xs text-red-500 font-medium">Это действие нельзя отменить!</p>}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" size="sm" onClick={onClose}>Отмена</Button>
@@ -100,6 +97,9 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
   isOverdueMap: Record<string, boolean>
   isDueTodayMap: Record<string, boolean>
 }) {
+  const totalAmount = orders.reduce((s, o) => s + (o.total_amount ?? 0), 0)
+  const totalPaid   = orders.reduce((s, o) => s + (o.paid_amount  ?? 0), 0)
+
   return (
     <div className="border rounded-xl overflow-hidden">
       <div className="overflow-x-auto">
@@ -112,13 +112,14 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
               <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Статус</th>
               <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Оплата</th>
               <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Сумма</th>
+              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Оплачено</th>
               <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Дата / Срок</th>
               <th className="px-2 py-2.5 w-8" />
             </tr>
           </thead>
           <tbody>
             {orders.map(order => {
-              const TypeIcon = ORDER_TYPE_ICONS[order.order_type as OrderType]
+              const TypeIcon  = ORDER_TYPE_ICONS[order.order_type as OrderType]
               const overdue   = isOverdueMap[order.id]
               const dueToday  = isDueTodayMap[order.id]
               const clientName = order.client
@@ -143,8 +144,8 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
                   <td className="px-3 py-2.5">
                     {TypeIcon && <TypeIcon className="h-4 w-4 text-muted-foreground" />}
                   </td>
-                  <td className="px-3 py-2.5 max-w-[160px] truncate text-sm">
-                    <span className={!order.client ? 'italic text-muted-foreground' : ''}>{clientName}</span>
+                  <td className="px-3 py-2.5 max-w-[160px] truncate">
+                    <span className={!order.client ? 'italic text-muted-foreground text-xs' : ''}>{clientName}</span>
                   </td>
                   <td className="px-3 py-2.5 whitespace-nowrap">
                     <OrderStatusBadge status={order.status as OrderStatus} />
@@ -154,11 +155,14 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
                   </td>
                   <td className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">
                     {formatCurrency(order.total_amount)} {symbol}
-                    {order.paid_amount > 0 && order.paid_amount < order.total_amount && (
-                      <div className="text-xs text-muted-foreground font-normal">
-                        Опл.: {formatCurrency(order.paid_amount)}
-                      </div>
-                    )}
+                  </td>
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap text-muted-foreground">
+                    {order.paid_amount > 0
+                      ? <span className={order.paid_amount >= order.total_amount ? 'text-green-600 dark:text-green-400 font-medium' : 'text-orange-500'}>
+                          {formatCurrency(order.paid_amount)}
+                        </span>
+                      : <span className="text-muted-foreground/50">—</span>
+                    }
                   </td>
                   <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
                     <div>{dayjs(order.created_at).format('DD.MM.YY')}</div>
@@ -183,6 +187,24 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
               )
             })}
           </tbody>
+          {/* Итоги */}
+          {orders.length > 0 && (
+            <tfoot>
+              <tr className="bg-muted/50 border-t font-medium text-sm">
+                <td colSpan={4} className="px-3 py-2.5 text-muted-foreground">
+                  Итого: {orders.length} заказов
+                </td>
+                <td />
+                <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                  {formatCurrency(totalAmount)} {symbol}
+                </td>
+                <td className="px-3 py-2.5 text-right whitespace-nowrap text-green-600 dark:text-green-400">
+                  {formatCurrency(totalPaid)} {symbol}
+                </td>
+                <td colSpan={2} />
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
     </div>
@@ -194,18 +216,23 @@ export function OrdersListPage() {
   const navigate = useNavigate()
   const symbol = useCurrencySymbol()
 
-  const [status,        setStatus]        = useState<OrderStatus | 'all'>('all')
-  const [orderType,     setOrderType]     = useState<OrderType | 'all'>('all')
-  const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | 'all'>('all')
-  const [search,        setSearch]        = useState('')
-  const [page,          setPage]          = useState(1)
-  const [myOnly,        setMyOnly]        = useState(false)
-  const [sortBy,        setSortBy]        = useState<SortBy>('newest')
-  const [viewMode,      setViewMode]      = useState<'cards' | 'table'>('cards')
+  const [status,         setStatus]         = useState<OrderStatus | 'all'>('all')
+  const [orderType,      setOrderType]      = useState<OrderType | 'all'>('all')
+  const [paymentFilter,  setPaymentFilter]  = useState<PaymentStatus | 'all'>('all')
+  const [search,         setSearch]         = useState('')
+  const [page,           setPage]           = useState(1)
+  const [myOnly,         setMyOnly]         = useState(false)
+  const [sortBy,         setSortBy]         = useState<SortBy>('newest')
+  const [viewMode,       setViewMode]       = useState<'cards' | 'table'>('cards')
+  const [showDateFilter, setShowDateFilter] = useState(false)
+  const [dateFrom,       setDateFrom]       = useState('')
+  const [dateTo,         setDateTo]         = useState('')
 
-  const [deleteId,      setDeleteId]      = useState<string | null>(null)
-  const [deleteAllOpen, setDeleteAllOpen] = useState(false)
+  const [deleteId,       setDeleteId]       = useState<string | null>(null)
+  const [deleteAllOpen,  setDeleteAllOpen]  = useState(false)
   const { mutateAsync: deleteOrder } = useDeleteOrder()
+
+  const hasDateFilter = !!dateFrom || !!dateTo
 
   const { data, isLoading } = useCleaningOrders({
     status,
@@ -216,6 +243,8 @@ export function OrdersListPage() {
     page,
     perPage: 20,
     sortBy,
+    dateFrom,
+    dateTo,
   })
 
   const { data: stats } = useOrdersStats()
@@ -224,8 +253,8 @@ export function OrdersListPage() {
   const total      = data?.total ?? 0
   const totalPages = Math.ceil(total / 20)
 
-  // Вычисляем флаги срочности один раз
-  const isOverdueMap: Record<string, boolean> = {}
+  // Флаги срочности
+  const isOverdueMap:  Record<string, boolean> = {}
   const isDueTodayMap: Record<string, boolean> = {}
   for (const order of orders) {
     const overdue =
@@ -266,6 +295,13 @@ export function OrdersListPage() {
     setPage(1)
   }
 
+  function clearDateFilter() {
+    setDateFrom('')
+    setDateTo('')
+    setShowDateFilter(false)
+    setPage(1)
+  }
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -273,6 +309,15 @@ export function OrdersListPage() {
         description={total > 0 ? `${total} заказов` : undefined}
       >
         <div className="flex items-center gap-1.5">
+          {/* Период */}
+          <Button
+            variant="ghost" size="icon"
+            className={cn('h-8 w-8', (showDateFilter || hasDateFilter) ? 'text-primary' : 'text-muted-foreground')}
+            title="Фильтр по периоду"
+            onClick={() => setShowDateFilter(v => !v)}
+          >
+            <CalendarRange className="h-4 w-4" />
+          </Button>
           {/* CSV */}
           {orders.length > 0 && (
             <Button
@@ -284,7 +329,7 @@ export function OrdersListPage() {
               <Download className="h-4 w-4" />
             </Button>
           )}
-          {/* Вид: карточки / таблица */}
+          {/* Вид */}
           <Button
             variant="ghost" size="icon"
             className={cn('h-8 w-8', viewMode === 'table' ? 'text-primary' : 'text-muted-foreground')}
@@ -322,7 +367,6 @@ export function OrdersListPage() {
             <span className="text-xs text-muted-foreground">Сегодня</span>
             <span className="text-sm font-semibold">{stats ? stats.total_today : '—'} зак.</span>
           </div>
-
           <button
             onClick={toggleUnpaidFilter}
             className={cn(
@@ -344,16 +388,42 @@ export function OrdersListPage() {
               </span>
             )}
           </button>
-
           <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[100px]">
             <span className="text-xs text-muted-foreground">За месяц</span>
             <span className="text-sm font-semibold">{stats ? stats.total_month : '—'} зак.</span>
           </div>
         </div>
 
-        {/* ── Фильтры: одна строка ────────────────────────────────────────────── */}
+        {/* Фильтр по периоду (раскрывается) */}
+        {showDateFilter && (
+          <div className="flex items-end gap-3 flex-wrap rounded-xl border bg-muted/30 p-3">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">С</Label>
+              <Input
+                type="date" value={dateFrom}
+                onChange={e => { setDateFrom(e.target.value); setPage(1) }}
+                className="w-36 h-8 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">По</Label>
+              <Input
+                type="date" value={dateTo}
+                onChange={e => { setDateTo(e.target.value); setPage(1) }}
+                className="w-36 h-8 text-sm"
+              />
+            </div>
+            {hasDateFilter && (
+              <Button variant="ghost" size="sm" className="h-8 text-muted-foreground" onClick={clearDateFilter}>
+                <X className="h-3.5 w-3.5 mr-1" />
+                Сбросить
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Основные фильтры */}
         <div className="flex gap-2 flex-wrap sm:flex-nowrap">
-          {/* Поиск */}
           <div className="relative flex-1 min-w-[160px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -363,8 +433,6 @@ export function OrdersListPage() {
               className="pl-9"
             />
           </div>
-
-          {/* Сортировка */}
           <Select value={sortBy} onValueChange={v => { setSortBy(v as SortBy); setPage(1) }}>
             <SelectTrigger className="w-[130px] shrink-0">
               <SelectValue />
@@ -376,8 +444,6 @@ export function OrdersListPage() {
               <SelectItem value="deadline_asc">Срок ↑</SelectItem>
             </SelectContent>
           </Select>
-
-          {/* Тип заказа */}
           <Select value={orderType} onValueChange={v => { setOrderType(v as OrderType | 'all'); setPage(1) }}>
             <SelectTrigger className="w-[130px] shrink-0">
               <SelectValue />
@@ -389,8 +455,6 @@ export function OrdersListPage() {
               <SelectItem value="furniture">Мебель</SelectItem>
             </SelectContent>
           </Select>
-
-          {/* Мои */}
           <Button
             variant={myOnly ? 'default' : 'outline'}
             size="sm"
@@ -420,7 +484,7 @@ export function OrdersListPage() {
           ))}
         </div>
 
-        {/* ── Список / Таблица ────────────────────────────────────────────────── */}
+        {/* Список / Таблица */}
         {isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -447,7 +511,6 @@ export function OrdersListPage() {
               const isOverdue  = isOverdueMap[order.id]
               const isDueToday = isDueTodayMap[order.id]
               const itemsCount = order.items?.length ?? null
-
               return (
                 <div
                   key={order.id}
@@ -465,7 +528,6 @@ export function OrdersListPage() {
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
-
                   <button
                     onClick={() => navigate(`/orders/${order.id}`)}
                     className="w-full text-left p-4 hover:bg-accent/50 transition-colors rounded-xl pr-10"
@@ -482,7 +544,6 @@ export function OrdersListPage() {
                           <PaymentStatusBadge status={order.payment_status} />
                           {isOverdue && <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />}
                         </div>
-
                         {order.client ? (
                           <p className="text-sm text-muted-foreground mt-0.5 truncate">
                             {[order.client.first_name, order.client.last_name].filter(Boolean).join(' ')}
@@ -491,7 +552,6 @@ export function OrdersListPage() {
                         ) : (
                           <span className="text-xs text-muted-foreground italic mt-0.5 block">Без клиента</span>
                         )}
-
                         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                           <span>{dayjs(order.created_at).format('DD.MM.YYYY')}</span>
                           {order.ready_date && (
@@ -508,7 +568,6 @@ export function OrdersListPage() {
                           {itemsCount !== null && <span>· {itemsCount} изд.</span>}
                         </div>
                       </div>
-
                       <div className="text-right shrink-0">
                         <p className="font-semibold text-sm">{formatCurrency(order.total_amount)} {symbol}</p>
                         {order.paid_amount > 0 && order.paid_amount < order.total_amount && (
@@ -528,15 +587,9 @@ export function OrdersListPage() {
         {/* Пагинация */}
         {totalPages > 1 && (
           <div className="flex justify-center gap-2 pt-2">
-            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-              Назад
-            </Button>
-            <span className="flex items-center px-3 text-sm text-muted-foreground">
-              {page} / {totalPages}
-            </span>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-              Далее
-            </Button>
+            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Назад</Button>
+            <span className="flex items-center px-3 text-sm text-muted-foreground">{page} / {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Далее</Button>
           </div>
         )}
 
