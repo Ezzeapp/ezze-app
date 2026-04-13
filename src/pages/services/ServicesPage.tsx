@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, MoreVertical, Trash2, Edit, Clock, DollarSign, Tags, X, Pencil, Download, Search, Square, CheckSquare, Check, ChevronsUpDown, ArrowUpDown, Percent, Loader2 } from 'lucide-react'
+import { Plus, MoreVertical, Trash2, Edit, Clock, DollarSign, Tags, X, Pencil, Download, Search, Square, CheckSquare, Check, ChevronsUpDown, ArrowUpDown, Percent, Loader2, BookOpen } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -26,9 +26,10 @@ import { toast } from '@/components/shared/Toaster'
 import { ServiceMaterialsTab } from '@/components/services/ServiceMaterialsTab'
 import { ImportServicesDialog } from '@/components/services/ImportServicesDialog'
 import { PlanLimitBanner } from '@/components/shared/PlanLimitBanner'
-import { formatCurrency, formatDuration } from '@/lib/utils'
+import { formatCurrency, formatDuration, cn } from '@/lib/utils'
 import { PRODUCT } from '@/lib/config'
 import { useCleaningItemTypes, useUpsertItemType } from '@/hooks/useCleaningItemTypes'
+import { CleaningCatalogTab } from './CleaningCatalogTab'
 import { useCurrency } from '@/hooks/useCurrency'
 import { useProfileIcon } from '@/hooks/useProfileIcon'
 import { usePlanLimitCheck } from '@/hooks/useAppSettings'
@@ -256,6 +257,7 @@ type SortKey = 'name' | 'price' | 'duration' | 'category'
 // ── Main page ──────────────────────────────────────────────────────────────
 export function ServicesPage() {
   const { t, i18n } = useTranslation()
+  const [servicesView, setServicesView] = useState<'services' | 'catalog'>('services')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editService, setEditService] = useState<Service | null>(null)
   const [activeTab, setActiveTab] = useState('main')
@@ -473,8 +475,29 @@ export function ServicesPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2 sticky top-0 z-10 bg-background -mx-3 px-3 lg:-mx-6 lg:px-6 -mt-4 pt-4 lg:-mt-6 lg:pt-6 pb-3 shadow-sm">
-        {/* Row 1: title */}
-        <h1 className="text-2xl font-semibold text-foreground">{t('nav.services')}</h1>
+        {/* Row 1: title + segmented control */}
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-2xl font-semibold text-foreground">{t('nav.services')}</h1>
+          {PRODUCT === 'cleaning' && (
+            <div className="flex rounded-lg border overflow-hidden w-fit">
+              <button
+                onClick={() => setServicesView('services')}
+                className={cn('px-4 py-1.5 text-sm font-medium transition-colors',
+                  servicesView === 'services' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
+              >
+                Услуги
+              </button>
+              <button
+                onClick={() => setServicesView('catalog')}
+                className={cn('px-4 py-1.5 text-sm font-medium transition-colors flex items-center gap-1.5',
+                  servicesView === 'catalog' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                Каталог
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Bulk action bar */}
         {isSomeSelected && (
@@ -542,6 +565,8 @@ export function ServicesPage() {
           </div>
         </div>
       </div>
+
+      {servicesView === 'services' ? (<>
 
       {/* Plan limit banner */}
       <PlanLimitBanner limitKey="services" count={serviceCount} entityKey="services" />
@@ -749,6 +774,10 @@ export function ServicesPage() {
         </div>
         <PaginationBar page={page} totalPages={totalPages} totalItems={totalItems} perPage={25} onChange={setPage} />
         </>
+      )}
+
+      </>) : (
+        <CleaningCatalogTab />
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
