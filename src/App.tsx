@@ -51,6 +51,7 @@ const AIAssistantPage = lazy(() => import('@/pages/ai/AIAssistantPage').then(m =
 const OrdersListPage = lazy(() => import('@/pages/orders/OrdersListPage').then(m => ({ default: m.OrdersListPage })))
 const OrderFormPage = lazy(() => import('@/pages/orders/OrderFormPage').then(m => ({ default: m.OrderFormPage })))
 const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage').then(m => ({ default: m.OrderDetailPage })))
+const POSPage = lazy(() => import('@/pages/orders/POSPage').then(m => ({ default: m.POSPage })))
 
 const router = createBrowserRouter([
   // Public routes
@@ -115,6 +116,7 @@ const router = createBrowserRouter([
       { path: 'ai', element: <AIAssistantPage /> },
       { path: 'orders', element: <OrdersListPage /> },
       { path: 'orders/new', element: <OrderFormPage /> },
+      { path: 'orders/pos', element: <POSPage /> },
       { path: 'orders/:id', element: <OrderDetailPage /> },
     ],
   },

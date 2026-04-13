@@ -51,7 +51,15 @@ export function OrdersListPage() {
         title="Заказы"
         description={total > 0 ? `${total} заказов` : undefined}
       >
-        <Button onClick={() => navigate('/orders/new')} size="sm">
+        <Button onClick={() => navigate('/orders/new')} size="sm" variant="outline" className="hidden lg:flex">
+          <Plus className="h-4 w-4 mr-1" />
+          Мобильная форма
+        </Button>
+        <Button onClick={() => navigate('/orders/pos')} size="sm" className="hidden lg:flex">
+          <Plus className="h-4 w-4 mr-1" />
+          POS — Принять заказ
+        </Button>
+        <Button onClick={() => navigate('/orders/new')} size="sm" className="lg:hidden">
           <Plus className="h-4 w-4 mr-1" />
           Новый заказ
         </Button>
