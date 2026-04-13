@@ -18,6 +18,8 @@ import { formatCurrency } from '@/lib/utils'
 import { FeatureGate } from '@/components/shared/FeatureGate'
 import { ReportsTab } from '@/components/dashboard/ReportsTab'
 import { cn } from '@/lib/utils'
+import { PRODUCT } from '@/lib/config'
+import { useClinicVisitStats } from '@/hooks/useClinicVisits'
 import dayjs from 'dayjs'
 
 type Period = 'today' | '3days' | 'week' | 'month' | 'quarter' | 'year' | 'custom'
@@ -120,6 +122,9 @@ export function DashboardPage() {
   const { data: services } = useServices()
   const { data: inventory } = useInventory()
   const { data: allMaterials } = useAllServiceMaterials()
+
+  // Clinic-specific stats
+  const { data: clinicStats } = useClinicVisitStats()
 
   // Данные команды (только для владельцев)
   const { data: myTeam } = useMyTeam()
@@ -460,6 +465,30 @@ export function DashboardPage() {
         </Card>
 
       </div>
+
+      {/* Clinic-specific cards */}
+      {PRODUCT === 'clinic' && clinicStats && (
+        <div className="grid gap-3 grid-cols-3">
+          <Card>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <p className="text-2xl font-bold text-primary">{clinicStats.patientsToday}</p>
+              <p className="text-xs text-muted-foreground">{t('clinic.stats.patientsToday')}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <p className="text-2xl font-bold text-emerald-600">{clinicStats.visitsCompleted}</p>
+              <p className="text-xs text-muted-foreground">{t('clinic.stats.visitsCompleted')}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <p className="text-2xl font-bold text-amber-600">{clinicStats.followUpsThisWeek}</p>
+              <p className="text-xs text-muted-foreground">{t('clinic.stats.followUpsThisWeek')}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Прибыль + Маржа */}
       <FeatureGate feature="analytics_revenue">

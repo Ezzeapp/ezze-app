@@ -20,6 +20,7 @@ import { ScheduleTab } from '@/pages/schedule/ScheduleTab'
 import { PublicPageTab } from './PublicPageTab'
 import { ReceiptSettingsTab } from './ReceiptSettingsTab'
 import { OrderTypesSettingsTab } from './OrderTypesSettingsTab'
+import { VisitTemplatesSettingsTab } from './VisitTemplatesSettingsTab'
 import { PRODUCT } from '@/lib/config'
 
 const LANGUAGES = [
@@ -64,7 +65,7 @@ const TIMEZONES = [
   { value: 'UTC', label: 'UTC (UTC+0)' },
 ]
 
-type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types'
+type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates'
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -164,6 +165,9 @@ export function SettingsPage() {
       { id: 'receipt' as Tab,     label: 'Квитанция',   icon: FileText },
       { id: 'order_types' as Tab, label: 'Типы',        icon: Layers   },
     ] : []),
+    ...(PRODUCT === 'clinic' ? [
+      { id: 'visit_templates' as Tab, label: t('clinic.settings.visitTemplates'), icon: FileText },
+    ] : []),
   ]
 
   return (
@@ -251,6 +255,9 @@ export function SettingsPage() {
 
       {/* ── Типы заказов (только cleaning) ── */}
       {tab === 'order_types' && <OrderTypesSettingsTab />}
+
+      {/* ── Шаблоны приёмов (только clinic) ── */}
+      {tab === 'visit_templates' && <VisitTemplatesSettingsTab />}
 
       {/* ── Интерфейс ── */}
       {tab === 'interface' && (

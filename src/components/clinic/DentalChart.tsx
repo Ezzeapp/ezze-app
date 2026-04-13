@@ -4,7 +4,7 @@ import { useClinicDentalChart, useUpdateTooth, useResetDentalChart } from '@/hoo
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { RotateCcw } from 'lucide-react'
 import { toast } from '@/components/shared/Toaster'
 import type { ToothStatus } from '@/types'
@@ -55,8 +55,8 @@ function ToothButton({
   const [open, setOpen] = useState(false)
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
         <button
           className={`w-9 h-10 rounded-md border-2 text-xs font-bold flex flex-col items-center justify-center gap-0.5 transition-colors hover:ring-2 hover:ring-primary/30 ${STATUS_COLORS[status]}`}
         >
@@ -65,8 +65,8 @@ function ToothButton({
             <span className={`w-2 h-2 rounded-full ${STATUS_DOT_COLORS[status]}`} />
           )}
         </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-48 p-2" align="center">
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-48 p-2" align="center">
         <p className="text-xs font-semibold mb-1.5">{t('clinic.dental.selectStatus')}</p>
         <div className="grid grid-cols-2 gap-1">
           {STATUSES.map(s => (
@@ -98,8 +98,8 @@ function ToothButton({
             }}
           />
         </div>
-      </PopoverContent>
-    </Popover>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

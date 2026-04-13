@@ -56,7 +56,7 @@ export function useClinicVisitsByPatient(clientId: string | undefined) {
           attachments: v.attachments as { url: string; name: string; type: string }[],
           appointment_date: appt?.date,
           appointment_time: appt?.start_time,
-          service_name: (appt?.service as { name: string } | null)?.name,
+          service_name: (appt?.service as unknown as { name: string } | null)?.name,
         }
       }).sort((a, b) => (b.appointment_date ?? '').localeCompare(a.appointment_date ?? ''))
     },

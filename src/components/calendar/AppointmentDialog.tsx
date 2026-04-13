@@ -26,6 +26,8 @@ import { useDraft } from '@/hooks/useDraft'
 import { useConfirmAppointment } from '@/hooks/useAppointments'
 import { toast } from '@/components/shared/Toaster'
 import { printReceipt } from '@/lib/printReceipt'
+import { PRODUCT } from '@/lib/config'
+import { ClinicVisitPanel } from '@/components/clinic/ClinicVisitPanel'
 import type { Appointment, Service, Client, Schedule, ScheduleBreak } from '@/types'
 
 // Тип данных черновика новой записи
@@ -1661,6 +1663,11 @@ export function AppointmentDialog({
                       </div>
                     )}
 
+                    {/* Clinic visit record (mobile) */}
+                    {PRODUCT === 'clinic' && editAppt && (editAppt.status === 'done' || status === 'done') && (
+                      <ClinicVisitPanel appointmentId={editAppt.id} />
+                    )}
+
                   </div>
 
                   {/* Навигация: Далее / Сохранить */}
@@ -1980,6 +1987,13 @@ export function AppointmentDialog({
                   </div>
 
                 </div>{/* end 3 columns */}
+
+                {/* ── Clinic visit record (clinic only) ── */}
+                {PRODUCT === 'clinic' && editAppt && (editAppt.status === 'done' || status === 'done') && (
+                  <div className="px-4 pb-2">
+                    <ClinicVisitPanel appointmentId={editAppt.id} />
+                  </div>
+                )}
 
                 {/* ── ФУТЕР ДЕСКТОПА ── */}
                 <div className="shrink-0 border-t px-4 py-3 flex items-center justify-between bg-background">
