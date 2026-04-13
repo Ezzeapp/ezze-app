@@ -22,7 +22,9 @@
     "groupMarketing": "Marketing",
     "groupTeam": "Jamoa",
     "support": "Yordam",
-    "loyalty": "Sodiqlik"
+    "loyalty": "Sodiqlik",
+    "orders": "Buyurtmalar",
+    "stats": "Statistika"
   },
   "feature": {
     "lockedDesc": "{{plan}} rejasida va undan yuqorida mavjud",

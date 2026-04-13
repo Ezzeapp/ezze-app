@@ -23,7 +23,9 @@
     "billing": "Subscription",
     "support": "Support",
     "loyalty": "Loyalty",
-    "marketing": "Marketing"
+    "marketing": "Marketing",
+    "orders": "Orders",
+    "stats": "Statistics"
   },
   "feature": {
     "lockedDesc": "Available on {{plan}} plan and above",

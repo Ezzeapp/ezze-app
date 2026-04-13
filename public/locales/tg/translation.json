@@ -22,7 +22,9 @@
     "promoCodes": "Промокодҳо",
     "reviews": "Шарҳҳо",
     "support": "Дастгирӣ",
-    "loyalty": "Содиқӣ"
+    "loyalty": "Содиқӣ",
+    "orders": "Фармоишҳо",
+    "stats": "Омор"
   },
   "feature": {
     "lockedDesc": "Дар нақшаи {{plan}} ва боло дастрас аст",

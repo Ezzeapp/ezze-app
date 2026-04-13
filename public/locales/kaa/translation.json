@@ -22,7 +22,9 @@
     "groupMarketing": "Маркетинг",
     "groupTeam": "Команда",
     "support": "Қоллав",
-    "loyalty": "Садықлық"
+    "loyalty": "Садықлық",
+    "orders": "Buyurtmalar",
+    "stats": "Statistika"
   },
   "feature": {
     "lockedDesc": "{{plan}} тарифинде ҳәм жоқарыда жетекли",

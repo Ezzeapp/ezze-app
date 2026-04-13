@@ -23,7 +23,9 @@
     "billing": "Подписка",
     "support": "Поддержка",
     "loyalty": "Лояльность",
-    "marketing": "Маркетинг"
+    "marketing": "Маркетинг",
+    "orders": "Заказы",
+    "stats": "Статистика"
   },
   "feature": {
     "lockedDesc": "Доступно на плане {{plan}} и выше",

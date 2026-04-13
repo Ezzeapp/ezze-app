@@ -22,7 +22,9 @@
     "promoCodes": "Промокоди",
     "reviews": "Відгуки",
     "support": "Підтримка",
-    "loyalty": "Лояльність"
+    "loyalty": "Лояльність",
+    "orders": "Замовлення",
+    "stats": "Статистика"
   },
   "feature": {
     "lockedDesc": "Доступно на плані {{plan}} і вище",

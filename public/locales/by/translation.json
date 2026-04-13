@@ -22,7 +22,9 @@
     "promoCodes": "Прамакоды",
     "reviews": "Водгукі",
     "support": "Падтрымка",
-    "loyalty": "Лаяльнасць"
+    "loyalty": "Лаяльнасць",
+    "orders": "Замовы",
+    "stats": "Статыстыка"
   },
   "feature": {
     "lockedDesc": "Даступна на плане {{plan}} і вышэй",

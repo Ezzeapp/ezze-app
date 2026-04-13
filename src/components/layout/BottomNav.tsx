@@ -88,8 +88,8 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
       <div className="shrink-0 border-t bg-background pb-safe">
         <div className="flex items-stretch h-16 w-full">
           {([
-            { icon: CalendarDays,    label: 'nav.calendar',  to: '/calendar'  },
-            { icon: Users,           label: 'nav.clients',   to: '/clients'   },
+            { icon: CalendarDays,    label: PRODUCT === 'clinic' ? 'clinic.nav.appointments' : 'nav.calendar',  to: '/calendar'  },
+            { icon: Users,           label: PRODUCT === 'clinic' ? 'clinic.nav.patients' : 'nav.clients',   to: '/clients'   },
           ] as { icon: React.ComponentType<{ className?: string }>; label: string; to: string }[]).map((tab) => (
             <NavLink
               key={tab.to}
@@ -172,7 +172,7 @@ export function BottomNav() {
               }
             >
               <ClipboardList className="h-5 w-5" />
-              <span>Заказы</span>
+              <span>{t('nav.orders')}</span>
             </NavLink>
           ) : (
             <NavLink
@@ -185,11 +185,11 @@ export function BottomNav() {
               }
             >
               <CalendarDays className="h-5 w-5" />
-              <span>{t('nav.calendar')}</span>
+              <span>{PRODUCT === 'clinic' ? t('clinic.nav.appointments') : t('nav.calendar')}</span>
             </NavLink>
           )}
 
-          {/* Клиенты */}
+          {/* Клиенты / Пациенты */}
           <NavLink
             to="/clients"
             className={({ isActive }) =>
@@ -200,7 +200,7 @@ export function BottomNav() {
             }
           >
             <Users className="h-5 w-5" />
-            <span>{t('nav.clients')}</span>
+            <span>{PRODUCT === 'clinic' ? t('clinic.nav.patients') : t('nav.clients')}</span>
           </NavLink>
 
           {/* Статистика */}
