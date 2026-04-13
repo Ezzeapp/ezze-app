@@ -93,20 +93,20 @@ function filterByOrderType(types: any[], orderType: OrderType) {
 
 // ── Подкатегории для одежды ───────────────────────────────────────────────────
 
-interface CatalogCategory { id: string; label: string; keywords: string[] }
+interface CatalogCategory { id: string; label: string; emoji: string; bg: string; keywords: string[] }
 
 const CLOTHING_SUBCATS: CatalogCategory[] = [
-  { id: 'outer',   label: 'Верхняя',   keywords: ['пальто','куртк','пуховик','плащ','пончо','шуба','дублён','ветровк','кожан','замшев'] },
-  { id: 'suits',   label: 'Костюмы',   keywords: ['пиджак','жилет','костюм','смокинг','фрак','мундир','форма'] },
-  { id: 'dresses', label: 'Платья',    keywords: ['платье','юбка'] },
-  { id: 'bottoms', label: 'Брюки',     keywords: ['брюк','джинс','шорт'] },
-  { id: 'knit',    label: 'Трикотаж',  keywords: ['свитер','кардиган','джемпер','водолазк','толстовк','худи'] },
-  { id: 'shirts',  label: 'Рубашки',   keywords: ['рубашк','футболк','поло','майк'] },
-  { id: 'sports',  label: 'Спорт',     keywords: ['спортив','комбинезон взрос','рабоч'] },
-  { id: 'kids',    label: 'Детская',   keywords: ['детск','детское','детская','комбинезон детск'] },
-  { id: 'formal',  label: 'Официальная',keywords: ['вечерн','свадебн','смокинг','фрак','мундир','медицин','халат','пижам'] },
-  { id: 'access',  label: 'Аксессуары',keywords: ['шарф','палантин','галстук','перчатк','шапк','берет'] },
-  { id: 'other',   label: 'Прочее',    keywords: ['одеял','подушк','постел'] },
+  { id: 'outer',   label: 'Верхняя одежда', emoji: '🧥', bg: 'bg-blue-100   dark:bg-blue-900/40',   keywords: ['пальто','куртк','пуховик','плащ','пончо','шуба','дублён','ветровк','кожан','замшев'] },
+  { id: 'suits',   label: 'Костюмы',        emoji: '👔', bg: 'bg-slate-100  dark:bg-slate-800/60',  keywords: ['пиджак','жилет','костюм','смокинг','фрак','мундир','форма'] },
+  { id: 'dresses', label: 'Платья и юбки',  emoji: '👗', bg: 'bg-pink-100   dark:bg-pink-900/40',   keywords: ['платье','юбка'] },
+  { id: 'bottoms', label: 'Брюки и джинсы', emoji: '👖', bg: 'bg-indigo-100 dark:bg-indigo-900/40', keywords: ['брюк','джинс','шорт'] },
+  { id: 'knit',    label: 'Трикотаж',       emoji: '🧶', bg: 'bg-orange-100 dark:bg-orange-900/40', keywords: ['свитер','кардиган','джемпер','водолазк','толстовк','худи'] },
+  { id: 'shirts',  label: 'Рубашки и топы', emoji: '👕', bg: 'bg-green-100  dark:bg-green-900/40',  keywords: ['рубашк','футболк','поло','майк'] },
+  { id: 'sports',  label: 'Спортивная',     emoji: '🏃', bg: 'bg-lime-100   dark:bg-lime-900/40',   keywords: ['спортив','комбинезон взрос','рабоч'] },
+  { id: 'kids',    label: 'Детская',        emoji: '🧒', bg: 'bg-yellow-100 dark:bg-yellow-900/40', keywords: ['детск','детское','детская','комбинезон детск'] },
+  { id: 'formal',  label: 'Официальная',    emoji: '🎩', bg: 'bg-purple-100 dark:bg-purple-900/40', keywords: ['вечерн','свадебн','смокинг','фрак','мундир','медицин','халат','пижам'] },
+  { id: 'access',  label: 'Аксессуары',     emoji: '🎀', bg: 'bg-rose-100   dark:bg-rose-900/40',   keywords: ['шарф','палантин','галстук','перчатк','шапк','берет'] },
+  { id: 'other',   label: 'Прочее',         emoji: '📦', bg: 'bg-gray-100   dark:bg-gray-800/60',   keywords: ['одеял','подушк','постел'] },
 ]
 
 function matchSubcat(name: string, cat: CatalogCategory): boolean {
@@ -335,7 +335,7 @@ export function POSPage() {
   const visibleTypes = (() => {
     let items = filteredTypes
     if (catalogSearch) return items.filter(t => t.name.toLowerCase().includes(catalogSearch.toLowerCase()))
-    if (orderType === 'clothing' && catalogSubcat !== 'all') {
+    if (orderType === 'clothing' && catalogSubcat !== 'all' && catalogSubcat !== '_all_items') {
       const cat = CLOTHING_SUBCATS.find(c => c.id === catalogSubcat)
       if (cat) items = items.filter(t => matchSubcat(t.name, cat))
     }
@@ -642,36 +642,22 @@ export function POSPage() {
             </div>
           </div>
 
-          {/* Подкатегории одежды (чипы) */}
-          {orderType === 'clothing' && activeSubcats.length > 0 && !catalogSearch && (
-            <div className="px-3 pb-2 shrink-0 overflow-x-auto">
-              <div className="flex gap-1.5 min-w-max">
-                <button
-                  onClick={() => setCatalogSubcat('all')}
-                  className={cn(
-                    'px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap border',
-                    catalogSubcat === 'all'
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-background text-muted-foreground border-border hover:border-primary/50'
-                  )}
-                >
-                  Все ({filteredTypes.length})
-                </button>
-                {activeSubcats.map(cat => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setCatalogSubcat(cat.id)}
-                    className={cn(
-                      'px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap border',
-                      catalogSubcat === cat.id
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background text-muted-foreground border-border hover:border-primary/50'
-                    )}
-                  >
-                    {cat.label} ({subcatCounts[cat.id]})
-                  </button>
-                ))}
-              </div>
+          {/* Хлебная крошка при выбранной категории */}
+          {orderType === 'clothing' && catalogSubcat !== 'all' && !catalogSearch && (
+            <div className="px-3 pb-2 shrink-0">
+              <button
+                onClick={() => setCatalogSubcat('all')}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                {catalogSubcat === '_all_items' ? (
+                  <><span>🔍</span><span className="font-medium">Все товары</span></>
+                ) : (
+                  <><span>{CLOTHING_SUBCATS.find(c => c.id === catalogSubcat)?.emoji}</span>
+                  <span className="font-medium">{CLOTHING_SUBCATS.find(c => c.id === catalogSubcat)?.label}</span></>
+                )}
+                <span className="text-muted-foreground/60">· {visibleTypes.length} поз.</span>
+              </button>
             </div>
           )}
 
@@ -686,7 +672,38 @@ export function POSPage() {
             </div>
           )}
 
-          {/* Список/плитки */}
+          {/* Плитки категорий одежды (первый экран) */}
+          {orderType === 'clothing' && catalogSubcat === 'all' && !catalogSearch && activeSubcats.length > 1 ? (
+            <div className="flex-1 overflow-y-auto px-3 pb-3 min-h-0">
+              <div className="grid grid-cols-3 gap-2">
+                {activeSubcats.map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setCatalogSubcat(cat.id)}
+                    className={cn(
+                      'flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl border border-transparent',
+                      'hover:border-primary/30 hover:shadow-sm transition-all active:scale-95 text-center',
+                      cat.bg
+                    )}
+                  >
+                    <span className="text-3xl leading-none">{cat.emoji}</span>
+                    <span className="text-xs font-semibold leading-tight">{cat.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{subcatCounts[cat.id]} поз.</span>
+                  </button>
+                ))}
+                {/* Показать всё */}
+                <button
+                  onClick={() => { setCatalogSubcat('_all_items') }}
+                  className="flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl border border-dashed border-border hover:border-primary/40 transition-all active:scale-95 text-center"
+                >
+                  <span className="text-3xl leading-none">🔍</span>
+                  <span className="text-xs font-semibold leading-tight">Все товары</span>
+                  <span className="text-[10px] text-muted-foreground">{filteredTypes.length} поз.</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+          /* Список/плитки */
           <div className="flex-1 overflow-y-auto px-3 pb-3 min-h-0">
             {catalogView === 'grid' ? (
               <div className="grid grid-cols-3 gap-2">
@@ -768,6 +785,7 @@ export function POSPage() {
               </p>
             )}
           </div>
+          )}
         </div>
 
         {/* ── Правая панель: чек ── */}
