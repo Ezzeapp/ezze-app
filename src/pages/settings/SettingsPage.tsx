@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout, FileText,
+  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout, FileText, Layers,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '@/contexts/AuthContext'
@@ -19,6 +19,7 @@ import { useProfile, useUpsertProfile } from '@/hooks/useProfile'
 import { ScheduleTab } from '@/pages/schedule/ScheduleTab'
 import { PublicPageTab } from './PublicPageTab'
 import { ReceiptSettingsTab } from './ReceiptSettingsTab'
+import { OrderTypesSettingsTab } from './OrderTypesSettingsTab'
 import { PRODUCT } from '@/lib/config'
 
 const LANGUAGES = [
@@ -63,7 +64,7 @@ const TIMEZONES = [
   { value: 'UTC', label: 'UTC (UTC+0)' },
 ]
 
-type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt'
+type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types'
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -159,7 +160,10 @@ export function SettingsPage() {
     { id: 'interface', label: t('settings.tabInterface'),                      icon: Sun      },
     { id: 'schedule',  label: t('nav.schedule'),                               icon: Clock    },
     { id: 'public',    label: t('settings.tabPublicPage', 'Моя страница'),     icon: Layout   },
-    ...(PRODUCT === 'cleaning' ? [{ id: 'receipt' as Tab, label: 'Квитанция', icon: FileText }] : []),
+    ...(PRODUCT === 'cleaning' ? [
+      { id: 'receipt' as Tab,     label: 'Квитанция',   icon: FileText },
+      { id: 'order_types' as Tab, label: 'Типы',        icon: Layers   },
+    ] : []),
   ]
 
   return (
@@ -167,7 +171,7 @@ export function SettingsPage() {
       <PageHeader title={t('nav.settings')} />
 
       {/* Tabs */}
-      <div className={`grid gap-1 mb-6 ${tabs.length === 5 ? 'grid-cols-5' : 'grid-cols-4'}`}>
+      <div className={cn('grid gap-1 mb-6', tabs.length >= 6 ? 'grid-cols-6' : tabs.length === 5 ? 'grid-cols-5' : 'grid-cols-4')}>
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -244,6 +248,9 @@ export function SettingsPage() {
 
       {/* ── Квитанция ── */}
       {tab === 'receipt' && <ReceiptSettingsTab />}
+
+      {/* ── Типы заказов (только cleaning) ── */}
+      {tab === 'order_types' && <OrderTypesSettingsTab />}
 
       {/* ── Интерфейс ── */}
       {tab === 'interface' && (

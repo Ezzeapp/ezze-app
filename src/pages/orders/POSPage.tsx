@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { toast } from '@/components/shared/Toaster'
-import { useCreateOrder, type OrderType, ORDER_TYPE_LABELS, ORDER_TYPE_ICONS } from '@/hooks/useCleaningOrders'
+import { useCreateOrder, type OrderType, ORDER_TYPE_LABELS, ORDER_TYPE_ICONS, useCleaningEnabledOrderTypes } from '@/hooks/useCleaningOrders'
 import { useCleaningItemTypes } from '@/hooks/useCleaningItemTypes'
 import { useClientsPaged, useCreateClient } from '@/hooks/useClients'
 import { formatCurrency } from '@/lib/utils'
@@ -68,16 +68,26 @@ function makeCartItem(name: string, price: number, days: number, typeId: string 
   }
 }
 
-const ORDER_TYPES: OrderType[] = ['clothing', 'carpet', 'furniture']
+const CARPET_KW   = ['кв.м', 'ковёр', 'ковр']
+const FURNITURE_KW = ['диван', 'кресло', 'матрас', 'пуф', 'угловой']
+const SHOES_KW     = ['сапог', 'ботин', 'кроссов', 'туфл', 'сандал', 'обувь']
+const CURTAINS_KW  = ['штор', 'тюл', 'занавес', 'ламбрек']
+const BEDDING_KW   = ['одеял', 'подушк', 'постел', 'простын', 'наволочк', 'пеленк']
 
 function filterByOrderType(types: any[], orderType: OrderType) {
-  const carpetKw = ['кв.м', 'ковёр', 'ковр']
-  const furnitureKw = ['диван', 'кресло', 'матрас', 'пуф', 'угловой']
   return types.filter(t => {
     const n = t.name.toLowerCase()
-    if (orderType === 'carpet')    return carpetKw.some(k => n.includes(k))
-    if (orderType === 'furniture') return furnitureKw.some(k => n.includes(k))
-    return !carpetKw.some(k => n.includes(k)) && !furnitureKw.some(k => n.includes(k))
+    if (orderType === 'carpet')    return CARPET_KW.some(k => n.includes(k))
+    if (orderType === 'furniture') return FURNITURE_KW.some(k => n.includes(k))
+    if (orderType === 'shoes')     return SHOES_KW.some(k => n.includes(k))
+    if (orderType === 'curtains')  return CURTAINS_KW.some(k => n.includes(k))
+    if (orderType === 'bedding')   return BEDDING_KW.some(k => n.includes(k))
+    // clothing: всё что не относится к другим категориям
+    return !CARPET_KW.some(k => n.includes(k)) &&
+           !FURNITURE_KW.some(k => n.includes(k)) &&
+           !SHOES_KW.some(k => n.includes(k)) &&
+           !CURTAINS_KW.some(k => n.includes(k)) &&
+           !BEDDING_KW.some(k => n.includes(k))
   })
 }
 
@@ -255,6 +265,7 @@ export function POSPage() {
   const { mutateAsync: createOrder, isPending } = useCreateOrder()
 
   // Тип заказа
+  const { data: enabledOrderTypes = ['clothing', 'carpet', 'furniture'] as OrderType[] } = useCleaningEnabledOrderTypes()
   const [orderType, setOrderType] = useState<OrderType>('clothing')
 
   // Клиент
@@ -451,9 +462,12 @@ export function POSPage() {
 
 
   const CATALOG_BG: Record<OrderType, string> = {
-    clothing: 'bg-blue-50/40 dark:bg-blue-950/10',
-    carpet: 'bg-green-50/40 dark:bg-green-950/10',
+    clothing:  'bg-blue-50/40 dark:bg-blue-950/10',
+    carpet:    'bg-green-50/40 dark:bg-green-950/10',
     furniture: 'bg-amber-50/40 dark:bg-amber-950/10',
+    shoes:     'bg-rose-50/40 dark:bg-rose-950/10',
+    curtains:  'bg-violet-50/40 dark:bg-violet-950/10',
+    bedding:   'bg-sky-50/40 dark:bg-sky-950/10',
   }
 
   return (
@@ -468,7 +482,7 @@ export function POSPage() {
 
         {/* Тип заказа */}
         <div className="flex gap-1 ml-3">
-          {ORDER_TYPES.map(t => {
+          {enabledOrderTypes.map(t => {
             const Icon = ORDER_TYPE_ICONS[t]
             return (
               <button

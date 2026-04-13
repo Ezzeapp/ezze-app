@@ -2,10 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { PRODUCT } from '@/lib/config'
-import { Shirt, LayoutGrid, Sofa, type LucideIcon } from 'lucide-react'
+import { Shirt, LayoutGrid, Sofa, Footprints, Wind, BedDouble, type LucideIcon } from 'lucide-react'
 import dayjs from 'dayjs'
 
-export type OrderType = 'clothing' | 'carpet' | 'furniture'
+export type OrderType = 'clothing' | 'carpet' | 'furniture' | 'shoes' | 'curtains' | 'bedding'
+export const ALL_ORDER_TYPES: OrderType[] = ['clothing', 'carpet', 'furniture', 'shoes', 'curtains', 'bedding']
 export type OrderStatus = 'received' | 'in_progress' | 'ready' | 'issued' | 'paid' | 'cancelled'
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid'
 export type ItemStatus = 'pending' | 'ready' | 'issued'
@@ -65,12 +66,66 @@ export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   clothing:  'Одежда',
   carpet:    'Ковёр',
   furniture: 'Мебель',
+  shoes:     'Обувь',
+  curtains:  'Шторы',
+  bedding:   'Постельное',
+}
+
+export const ORDER_TYPE_DESCRIPTIONS: Record<OrderType, string> = {
+  clothing:  'Одежда, пальто, куртки, костюмы',
+  carpet:    'Ковры, дорожки (цена за кв.м)',
+  furniture: 'Диваны, кресла, матрасы',
+  shoes:     'Обувь, сапоги, ботинки',
+  curtains:  'Шторы, тюль, занавески',
+  bedding:   'Одеяла, подушки, постельное',
 }
 
 export const ORDER_TYPE_ICONS: Record<OrderType, LucideIcon> = {
   clothing:  Shirt,
   carpet:    LayoutGrid,
   furniture: Sofa,
+  shoes:     Footprints,
+  curtains:  Wind,
+  bedding:   BedDouble,
+}
+
+// ── Конфигурация типов заказов ─────────────────────────────────────────────
+
+const ENABLED_TYPES_KEY = 'cleaning_order_types_enabled'
+
+export function useCleaningEnabledOrderTypes() {
+  return useQuery({
+    queryKey: [ENABLED_TYPES_KEY, PRODUCT],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('product', PRODUCT)
+        .eq('key', ENABLED_TYPES_KEY)
+        .maybeSingle()
+      if (!data?.value) return ['clothing', 'carpet', 'furniture'] as OrderType[]
+      try {
+        const parsed = JSON.parse(data.value) as OrderType[]
+        return parsed.length > 0 ? parsed : ['clothing', 'carpet', 'furniture'] as OrderType[]
+      } catch {
+        return ['clothing', 'carpet', 'furniture'] as OrderType[]
+      }
+    },
+    staleTime: 60_000,
+  })
+}
+
+export function useUpdateCleaningOrderTypes() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (types: OrderType[]) => {
+      const { error } = await supabase
+        .from('app_settings')
+        .upsert({ product: PRODUCT, key: ENABLED_TYPES_KEY, value: JSON.stringify(types) }, { onConflict: 'product,key' })
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [ENABLED_TYPES_KEY, PRODUCT] }),
+  })
 }
 
 // ── Список заказов (с пагинацией и фильтрами) ─────────────────────────────────
