@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Loader2, Package, User, Calendar, AlertCircle, Send } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Loader2, Package, User, Calendar, AlertCircle, Send, Printer } from 'lucide-react'
+import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -37,6 +38,19 @@ export function OrderDetailPage() {
   const { mutateAsync: updateStatus, isPending: updatingStatus } = useUpdateOrderStatus()
 
   const [issueOpen, setIssueOpen] = useState(false)
+  const [showReceipt, setShowReceipt] = useState(false)
+
+  const receiptData: ReceiptData | null = order ? {
+    id: order.id,
+    number: order.number,
+    created_at: order.created_at,
+    order_type: order.order_type,
+    client: order.client,
+    items: order.items ?? [],
+    total_amount: order.total_amount,
+    prepaid_amount: order.prepaid_amount,
+    notes: order.notes,
+  } : null
 
   async function handleStatusChange(newStatus: OrderStatus) {
     if (!order) return
@@ -89,6 +103,10 @@ export function OrderDetailPage() {
             {dayjs(order.created_at).format('DD.MM.YYYY HH:mm')}
           </p>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setShowReceipt(true)}>
+          <Printer className="h-4 w-4 mr-1.5" />
+          Квитанция
+        </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-32 space-y-4 pt-4">
@@ -240,6 +258,11 @@ export function OrderDetailPage() {
           open={issueOpen}
           onClose={() => setIssueOpen(false)}
         />
+      )}
+
+      {/* Квитанция */}
+      {showReceipt && receiptData && (
+        <ReceiptModal data={receiptData} onClose={() => setShowReceipt(false)} />
       )}
     </div>
   )

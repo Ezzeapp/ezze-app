@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout,
+  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout, FileText,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '@/contexts/AuthContext'
@@ -18,6 +18,8 @@ import { cn, CURRENCIES, LANG_TO_CURRENCY } from '@/lib/utils'
 import { useProfile, useUpsertProfile } from '@/hooks/useProfile'
 import { ScheduleTab } from '@/pages/schedule/ScheduleTab'
 import { PublicPageTab } from './PublicPageTab'
+import { ReceiptSettingsTab } from './ReceiptSettingsTab'
+import { PRODUCT } from '@/lib/config'
 
 const LANGUAGES = [
   { code: 'ru', label: 'Русский', flag: '🇷🇺' },
@@ -61,7 +63,7 @@ const TIMEZONES = [
   { value: 'UTC', label: 'UTC (UTC+0)' },
 ]
 
-type Tab = 'profile' | 'interface' | 'schedule' | 'public'
+type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt'
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -153,10 +155,11 @@ export function SettingsPage() {
   }
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
-    { id: 'profile',   label: t('settings.tabProfile'),                        icon: User   },
-    { id: 'interface', label: t('settings.tabInterface'),                      icon: Sun    },
-    { id: 'schedule',  label: t('nav.schedule'),                               icon: Clock  },
-    { id: 'public',    label: t('settings.tabPublicPage', 'Моя страница'),     icon: Layout },
+    { id: 'profile',   label: t('settings.tabProfile'),                        icon: User     },
+    { id: 'interface', label: t('settings.tabInterface'),                      icon: Sun      },
+    { id: 'schedule',  label: t('nav.schedule'),                               icon: Clock    },
+    { id: 'public',    label: t('settings.tabPublicPage', 'Моя страница'),     icon: Layout   },
+    ...(PRODUCT === 'cleaning' ? [{ id: 'receipt' as Tab, label: 'Квитанция', icon: FileText }] : []),
   ]
 
   return (
@@ -164,7 +167,7 @@ export function SettingsPage() {
       <PageHeader title={t('nav.settings')} />
 
       {/* Tabs */}
-      <div className="grid grid-cols-4 gap-1 mb-6">
+      <div className={`grid gap-1 mb-6 ${tabs.length === 5 ? 'grid-cols-5' : 'grid-cols-4'}`}>
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -238,6 +241,9 @@ export function SettingsPage() {
 
       {/* ── Моя страница ── */}
       {tab === 'public' && <PublicPageTab />}
+
+      {/* ── Квитанция ── */}
+      {tab === 'receipt' && <ReceiptSettingsTab />}
 
       {/* ── Интерфейс ── */}
       {tab === 'interface' && (

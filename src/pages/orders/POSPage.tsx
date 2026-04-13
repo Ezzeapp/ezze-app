@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, Pencil } from 'lucide-react'
+import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, Pencil, LayoutGrid, List, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,6 +16,7 @@ import dayjs from 'dayjs'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { PRODUCT } from '@/lib/config'
+import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 
 // ── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -25,11 +26,9 @@ interface CartItem {
   item_type_name: string
   price: number
   ready_date: string
-  // доп поля
   color: string
   brand: string
   defects: string
-  // ковры
   width_m: string
   length_m: string
   area_m2: number | null
@@ -50,7 +49,6 @@ function makeCartItem(name: string, price: number, days: number, typeId: string 
 
 const ORDER_TYPES: OrderType[] = ['clothing', 'carpet', 'furniture']
 
-// Фильтрация типов изделий по категории заказа
 function filterByOrderType(types: any[], orderType: OrderType) {
   const carpetKw = ['кв.м', 'ковёр', 'ковр']
   const furnitureKw = ['диван', 'кресло', 'матрас', 'пуф', 'угловой']
@@ -62,7 +60,7 @@ function filterByOrderType(types: any[], orderType: OrderType) {
   })
 }
 
-// ── Компонент диалога размеров ковра ─────────────────────────────────────────
+// ── Диалог размеров ковра ─────────────────────────────────────────────────────
 
 function CarpetSizeDialog({ typeName, pricePerSqm, onConfirm, onClose }: {
   typeName: string
@@ -127,6 +125,42 @@ function CarpetSizeDialog({ typeName, pricePerSqm, onConfirm, onClose }: {
   )
 }
 
+// ── Диалог успешного создания заказа ─────────────────────────────────────────
+
+function OrderCreatedDialog({ orderNumber, onPrint, onGoToOrder, onNewOrder }: {
+  orderNumber: string
+  onPrint: () => void
+  onGoToOrder: () => void
+  onNewOrder: () => void
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-background rounded-2xl shadow-2xl p-6 w-80 space-y-4 text-center">
+        <div className="flex justify-center">
+          <div className="h-14 w-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+            <CheckCircle2 className="h-8 w-8 text-green-600" />
+          </div>
+        </div>
+        <div>
+          <h3 className="font-bold text-lg">Заказ принят!</h3>
+          <p className="text-muted-foreground text-sm mt-1">№ {orderNumber}</p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Button className="w-full" onClick={onPrint}>
+            Печать квитанции
+          </Button>
+          <Button variant="outline" className="w-full" onClick={onGoToOrder}>
+            Открыть заказ
+          </Button>
+          <Button variant="ghost" className="w-full" onClick={onNewOrder}>
+            Новый заказ
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Главный компонент ─────────────────────────────────────────────────────────
 
 export function POSPage() {
@@ -159,6 +193,11 @@ export function POSPage() {
   // Каталог
   const { data: allTypes = [] } = useCleaningItemTypes()
   const filteredTypes = filterByOrderType(allTypes, orderType)
+  const [catalogSearch, setCatalogSearch] = useState('')
+  const [catalogView, setCatalogView] = useState<'grid' | 'list'>('grid')
+  const visibleTypes = catalogSearch
+    ? filteredTypes.filter(t => t.name.toLowerCase().includes(catalogSearch.toLowerCase()))
+    : filteredTypes
 
   // Корзина
   const [cart, setCart] = useState<CartItem[]>([])
@@ -167,11 +206,26 @@ export function POSPage() {
   // Диалог размеров ковра
   const [carpetDialog, setCarpetDialog] = useState<{ typeName: string; pricePerSqm: number; typeId: string } | null>(null)
 
+  // После создания заказа
+  const [createdOrder, setCreatedOrder] = useState<{ id: string; number: string; clientInfo: typeof clientId } | null>(null)
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
+  const [showReceipt, setShowReceipt] = useState(false)
+
   // Оплата
   const [prepaid, setPrepaid] = useState('')
   const [notes, setNotes] = useState('')
 
   const total = cart.reduce((s, i) => s + i.price, 0)
+
+  // ── Закрытие выпадающего списка клиентов по клику снаружи ────────────────
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      const target = e.target as Element
+      if (!target.closest('[data-client-search]')) setShowClientList(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   // ── Действия ──────────────────────────────────────────────────────────────
 
@@ -184,7 +238,7 @@ export function POSPage() {
     setCart(prev => [...prev, item])
   }
 
-  function addCarpetItem(typeId: string, typeName: string, pricePerSqm: number, w: number, l: number, area: number, price: number) {
+  function addCarpetItem(typeId: string, typeName: string, _pricePerSqm: number, w: number, l: number, area: number, price: number) {
     const item = makeCartItem(typeName, price, 5, typeId)
     item.width_m = String(w)
     item.length_m = String(l)
@@ -214,6 +268,19 @@ export function POSPage() {
     setClientSearch('')
   }
 
+  function resetForm() {
+    setCart([])
+    setClientId(null)
+    setClientName('')
+    setClientSearch('')
+    setAssignedTo(null)
+    setPrepaid('')
+    setNotes('')
+    setExpandedKey(null)
+    setCreatedOrder(null)
+    setReceiptData(null)
+  }
+
   async function handleSubmit() {
     if (cart.length === 0) { toast.error('Добавьте хотя бы одно изделие'); return }
     try {
@@ -237,8 +304,37 @@ export function POSPage() {
           area_m2: i.area_m2,
         })),
       })
+
+      // Собираем данные для квитанции (пока у нас есть корзина)
+      const rData: ReceiptData = {
+        id: order.id,
+        number: order.number,
+        created_at: order.created_at,
+        order_type: orderType,
+        client: clientId ? {
+          first_name: clientName.split(' · ')[0]?.split(' ')[0] ?? '',
+          last_name: clientName.split(' · ')[0]?.split(' ').slice(1).join(' ') ?? null,
+          phone: clientName.includes(' · ') ? clientName.split(' · ')[1] : null,
+        } : null,
+        items: cart.map(i => ({
+          item_type_name: i.item_type_name,
+          price: i.price,
+          ready_date: i.ready_date || null,
+          color: i.color || null,
+          brand: i.brand || null,
+          defects: i.defects || null,
+          area_m2: i.area_m2,
+          width_m: i.width_m || null,
+          length_m: i.length_m || null,
+        })),
+        total_amount: total,
+        prepaid_amount: parseFloat(prepaid) || 0,
+        notes: notes || null,
+      }
+
+      setReceiptData(rData)
+      setCreatedOrder({ id: order.id, number: order.number, clientInfo: clientId })
       toast.success(`Заказ ${order.number} принят`)
-      navigate(`/orders/${order.id}`)
     } catch (e: any) {
       toast.error(e.message || 'Ошибка создания')
     }
@@ -247,36 +343,39 @@ export function POSPage() {
   // ── Рендер ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
+    <div className="h-full flex flex-col bg-background overflow-hidden">
 
       {/* ── Шапка ── */}
-      <div className="flex items-center gap-4 px-4 h-14 border-b shrink-0 bg-background">
+      <div className="flex items-center gap-3 px-4 h-14 border-b shrink-0 bg-background">
         <Button variant="ghost" size="icon" onClick={() => navigate('/orders')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <span className="font-semibold text-base">Приём заказа</span>
 
         {/* Тип заказа */}
-        <div className="flex gap-1 ml-4">
-          {ORDER_TYPES.map(t => (
-            <button
-              key={t}
-              onClick={() => { setOrderType(t); setCart([]) }}
-              className={cn(
-                'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border',
-                orderType === t
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-muted text-muted-foreground border-transparent hover:border-border'
-              )}
-            >
-              {(() => { const Icon = ORDER_TYPE_ICONS[t]; return <Icon className="h-3.5 w-3.5 inline-block mr-1" /> })()}
-              {ORDER_TYPE_LABELS[t]}
-            </button>
-          ))}
+        <div className="flex gap-1 ml-3">
+          {ORDER_TYPES.map(t => {
+            const Icon = ORDER_TYPE_ICONS[t]
+            return (
+              <button
+                key={t}
+                onClick={() => { setOrderType(t); setCart([]); setCatalogSearch('') }}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border',
+                  orderType === t
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-muted text-muted-foreground border-transparent hover:border-border'
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {ORDER_TYPE_LABELS[t]}
+              </button>
+            )
+          })}
         </div>
 
         {/* Поиск клиента */}
-        <div className="relative ml-auto w-72">
+        <div className="relative ml-auto w-72" data-client-search>
           {clientId ? (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-primary/5 border-primary/30 text-sm">
               <Phone className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -315,60 +414,132 @@ export function POSPage() {
       </div>
 
       {/* ── Основная область ── */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
 
         {/* ── Левая панель: каталог ── */}
         <div className="w-[55%] border-r flex flex-col overflow-hidden bg-muted/20">
-          <div className="p-3 pb-2">
+
+          {/* Поиск + вид */}
+          <div className="px-3 pt-3 pb-2 flex items-center gap-2 shrink-0">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по каталогу..."
+                value={catalogSearch}
+                onChange={e => setCatalogSearch(e.target.value)}
+                className="pl-8 h-8 text-sm"
+              />
+            </div>
+            <div className="flex rounded-lg border overflow-hidden shrink-0">
+              <button
+                onClick={() => setCatalogView('grid')}
+                className={cn('p-1.5 transition-colors', catalogView === 'grid' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
+                title="Плитки"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setCatalogView('list')}
+                className={cn('p-1.5 transition-colors', catalogView === 'list' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
+                title="Список"
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Подпись типа */}
+          <div className="px-3 pb-1 shrink-0">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
               {(() => { const Icon = ORDER_TYPE_ICONS[orderType]; return <Icon className="h-3.5 w-3.5" /> })()}
               {ORDER_TYPE_LABELS[orderType]}
               {orderType === 'carpet' && ' — нажмите для ввода размеров'}
             </p>
           </div>
-          <div className="flex-1 overflow-y-auto p-3 pt-0">
-            <div className="grid grid-cols-3 gap-2">
-              {filteredTypes.map(type => (
-                <button
-                  key={type.id}
-                  onClick={() => addFromCatalog(type)}
-                  className="flex flex-col items-start gap-1 p-3 rounded-xl border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95"
-                >
-                  <span className="text-sm font-medium leading-tight group-hover:text-primary transition-colors">
-                    {type.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {orderType === 'carpet'
-                      ? `${formatCurrency(type.default_price)} ${symbol}/м²`
-                      : `${formatCurrency(type.default_price)} ${symbol}`}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {type.default_days} дн.
-                  </span>
-                </button>
-              ))}
 
-              {/* Добавить своё */}
-              <button
-                onClick={() => {
-                  const item = makeCartItem('', 0, 3)
-                  setCart(prev => [...prev, item])
-                  setExpandedKey(item.key)
-                }}
-                className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-all"
-              >
-                <Plus className="h-5 w-5" />
-                <span className="text-xs">Своё</span>
-              </button>
-            </div>
+          {/* Список/плитки */}
+          <div className="flex-1 overflow-y-auto px-3 pb-3 min-h-0">
+            {catalogView === 'grid' ? (
+              <div className="grid grid-cols-3 gap-2">
+                {visibleTypes.map(type => (
+                  <button
+                    key={type.id}
+                    onClick={() => addFromCatalog(type)}
+                    className="flex flex-col items-start gap-1 p-3 rounded-xl border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95"
+                  >
+                    <span className="text-sm font-medium leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                      {type.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {orderType === 'carpet'
+                        ? `${formatCurrency(type.default_price)} ${symbol}/м²`
+                        : `${formatCurrency(type.default_price)} ${symbol}`}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{type.default_days} дн.</span>
+                  </button>
+                ))}
+                {/* Добавить своё */}
+                <button
+                  onClick={() => {
+                    const item = makeCartItem('', 0, 3)
+                    setCart(prev => [...prev, item])
+                    setExpandedKey(item.key)
+                  }}
+                  className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-all"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span className="text-xs">Своё</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {visibleTypes.map(type => (
+                  <button
+                    key={type.id}
+                    onClick={() => addFromCatalog(type)}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95"
+                  >
+                    <span className="text-sm font-medium group-hover:text-primary transition-colors truncate flex-1 mr-3">
+                      {type.name}
+                    </span>
+                    <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
+                      <span>
+                        {orderType === 'carpet'
+                          ? `${formatCurrency(type.default_price)} ${symbol}/м²`
+                          : `${formatCurrency(type.default_price)} ${symbol}`}
+                      </span>
+                      <span>{type.default_days} дн.</span>
+                    </div>
+                  </button>
+                ))}
+                {/* Своё в виде строки */}
+                <button
+                  onClick={() => {
+                    const item = makeCartItem('', 0, 3)
+                    setCart(prev => [...prev, item])
+                    setExpandedKey(item.key)
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-all"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="text-sm">Своё изделие</span>
+                </button>
+              </div>
+            )}
+
+            {visibleTypes.length === 0 && catalogSearch && (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Ничего не найдено по «{catalogSearch}»
+              </p>
+            )}
           </div>
         </div>
 
         {/* ── Правая панель: чек ── */}
-        <div className="w-[45%] flex flex-col overflow-hidden">
+        <div className="w-[45%] flex flex-col overflow-hidden min-h-0">
 
           {/* Список позиций */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             {cart.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
                 <ShoppingBag className="h-12 w-12 opacity-20" />
@@ -378,7 +549,6 @@ export function POSPage() {
               <div className="divide-y">
                 {cart.map((item, idx) => (
                   <div key={item.key} className="px-4 py-2">
-                    {/* Строка изделия */}
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground w-5 shrink-0">{idx + 1}</span>
                       <div className="flex-1 min-w-0">
@@ -404,9 +574,7 @@ export function POSPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <span className="text-sm font-medium tabular-nums">
-                          {formatCurrency(item.price)}
-                        </span>
+                        <span className="text-sm font-medium tabular-nums">{formatCurrency(item.price)}</span>
                         <button
                           onClick={() => setExpandedKey(expandedKey === item.key ? null : item.key)}
                           className="text-muted-foreground hover:text-foreground p-1"
@@ -423,7 +591,6 @@ export function POSPage() {
                       </div>
                     </div>
 
-                    {/* Раскрытая форма деталей */}
                     {expandedKey === item.key && (
                       <div className="mt-2 ml-7 grid grid-cols-2 gap-2">
                         {orderType !== 'carpet' && (
@@ -469,12 +636,12 @@ export function POSPage() {
           </div>
 
           {/* Нижняя панель: итоги + кнопка */}
-          <div className="border-t bg-background shrink-0 p-4 space-y-3">
+          <div className="border-t bg-background shrink-0 p-3 space-y-2">
 
             {/* Исполнитель */}
             {members.length > 0 && (
               <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground w-24 shrink-0">Исполнитель</Label>
+                <Label className="text-xs text-muted-foreground w-20 shrink-0">Исполнитель</Label>
                 <select
                   value={assignedTo ?? ''}
                   onChange={e => setAssignedTo(e.target.value || null)}
@@ -490,7 +657,7 @@ export function POSPage() {
 
             {/* Примечание */}
             <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground w-24 shrink-0">Примечание</Label>
+              <Label className="text-xs text-muted-foreground w-20 shrink-0">Примечание</Label>
               <Input
                 placeholder="Дополнительно..."
                 value={notes}
@@ -501,32 +668,26 @@ export function POSPage() {
 
             <Separator />
 
-            {/* Итого и предоплата */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Позиций</span>
-                <span>{cart.length}</span>
-              </div>
-              <div className="flex justify-between text-base font-bold">
-                <span>Итого</span>
-                <span>{formatCurrency(total)} {symbol}</span>
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs text-muted-foreground flex-1">Предоплата</span>
-                <Input
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  value={prepaid}
-                  onChange={e => setPrepaid(e.target.value)}
-                  className="w-32 h-7 text-sm text-right"
-                />
-                <span className="text-xs text-muted-foreground">{symbol}</span>
-              </div>
+            {/* Итого */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Позиций: {cart.length}</span>
+              <span className="font-bold text-base">{formatCurrency(total)} {symbol}</span>
+            </div>
+
+            {/* Предоплата */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground flex-1">Предоплата</span>
+              <Input
+                type="number" min={0} placeholder="0"
+                value={prepaid}
+                onChange={e => setPrepaid(e.target.value)}
+                className="w-28 h-7 text-sm text-right"
+              />
+              <span className="text-xs text-muted-foreground">{symbol}</span>
             </div>
 
             <Button
-              className="w-full h-11 text-base font-semibold"
+              className="w-full h-10 text-sm font-semibold"
               onClick={handleSubmit}
               disabled={isPending || cart.length === 0}
             >
@@ -548,6 +709,24 @@ export function POSPage() {
             addCarpetItem(carpetDialog.typeId, carpetDialog.typeName, carpetDialog.pricePerSqm, w, l, area, price)
           }
           onClose={() => setCarpetDialog(null)}
+        />
+      )}
+
+      {/* Диалог успешного создания */}
+      {createdOrder && !showReceipt && (
+        <OrderCreatedDialog
+          orderNumber={createdOrder.number}
+          onPrint={() => setShowReceipt(true)}
+          onGoToOrder={() => navigate(`/orders/${createdOrder.id}`)}
+          onNewOrder={() => { resetForm(); setOrderType('clothing') }}
+        />
+      )}
+
+      {/* Модальное окно квитанции */}
+      {showReceipt && receiptData && (
+        <ReceiptModal
+          data={receiptData}
+          onClose={() => { setShowReceipt(false); resetForm(); setOrderType('clothing') }}
         />
       )}
     </div>
