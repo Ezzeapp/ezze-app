@@ -181,6 +181,7 @@ export function POSPage() {
 
   // Исполнитель
   const [assignedTo, setAssignedTo] = useState<string | null>(null)
+  const [flashTypeId, setFlashTypeId] = useState<string|null>(null)
   const { data: members = [] } = useQuery({
     queryKey: ['master_profiles_list', PRODUCT],
     queryFn: async () => {
@@ -230,6 +231,7 @@ export function POSPage() {
   // ── Действия ──────────────────────────────────────────────────────────────
 
   function addFromCatalog(type: any) {
+    setFlashTypeId(type.id); setTimeout(() => setFlashTypeId(null), 500)
     if (orderType === 'carpet') {
       setCarpetDialog({ typeName: type.name, pricePerSqm: type.default_price, typeId: type.id })
       return
@@ -342,6 +344,13 @@ export function POSPage() {
 
   // ── Рендер ────────────────────────────────────────────────────────────────
 
+
+  const CATALOG_BG: Record<OrderType, string> = {
+    clothing: 'bg-blue-50/40 dark:bg-blue-950/10',
+    carpet: 'bg-green-50/40 dark:bg-green-950/10',
+    furniture: 'bg-amber-50/40 dark:bg-amber-950/10',
+  }
+
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden">
 
@@ -373,6 +382,20 @@ export function POSPage() {
             )
           })}
         </div>
+
+        {/* Исполнитель — compact select in header */}
+        {members.length > 0 && (
+          <select
+            value={assignedTo ?? ""}
+            onChange={e => setAssignedTo(e.target.value || null)}
+            className="h-8 text-xs rounded-lg border bg-background px-2 ml-2"
+          >
+            <option value="">Исполнитель...</option>
+            {members.map((m: any) => (
+              <option key={m.id} value={m.id}>{m.display_name}</option>
+            ))}
+          </select>
+        )}
 
         {/* Поиск клиента */}
         <div className="relative ml-auto w-72" data-client-search>
@@ -417,7 +440,7 @@ export function POSPage() {
       <div className="flex-1 flex overflow-hidden min-h-0">
 
         {/* ── Левая панель: каталог ── */}
-        <div className="w-[55%] border-r flex flex-col overflow-hidden bg-muted/20">
+        <div className={cn("w-[55%] border-r flex flex-col overflow-hidden", CATALOG_BG[orderType])}>
 
           {/* Поиск + вид */}
           <div className="px-3 pt-3 pb-2 flex items-center gap-2 shrink-0">
@@ -465,7 +488,10 @@ export function POSPage() {
                   <button
                     key={type.id}
                     onClick={() => addFromCatalog(type)}
-                    className="flex flex-col items-start gap-1 p-3 rounded-xl border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95"
+                    className={cn(
+                      "flex flex-col items-start gap-1 p-3 rounded-xl border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95",
+                      flashTypeId === type.id && "ring-2 ring-primary scale-95"
+                    )}
                   >
                     <span className="text-sm font-medium leading-tight group-hover:text-primary transition-colors line-clamp-2">
                       {type.name}
@@ -497,7 +523,10 @@ export function POSPage() {
                   <button
                     key={type.id}
                     onClick={() => addFromCatalog(type)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95"
+                    className={cn(
+                      "w-full flex items-center justify-between px-3 py-2 rounded-lg border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95",
+                      flashTypeId === type.id && "ring-2 ring-primary scale-95"
+                    )}
                   >
                     <span className="text-sm font-medium group-hover:text-primary transition-colors truncate flex-1 mr-3">
                       {type.name}
@@ -541,9 +570,14 @@ export function POSPage() {
           {/* Список позиций */}
           <div className="flex-1 overflow-y-auto min-h-0">
             {cart.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-                <ShoppingBag className="h-12 w-12 opacity-20" />
-                <p className="text-sm">Нажмите на изделие из каталога</p>
+              <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground select-none">
+                <div className="h-20 w-20 rounded-2xl bg-muted/50 flex items-center justify-center">
+                  <ShoppingBag className="h-10 w-10 opacity-30" />
+                </div>
+                <div className="text-center space-y-1">
+                  <p className="text-sm font-medium">Корзина пуста</p>
+                  <p className="text-xs opacity-60">← Выберите изделие из каталога</p>
+                </div>
               </div>
             ) : (
               <div className="divide-y">
@@ -638,23 +672,6 @@ export function POSPage() {
           {/* Нижняя панель: итоги + кнопка */}
           <div className="border-t bg-background shrink-0 p-3 space-y-2">
 
-            {/* Исполнитель */}
-            {members.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground w-20 shrink-0">Исполнитель</Label>
-                <select
-                  value={assignedTo ?? ''}
-                  onChange={e => setAssignedTo(e.target.value || null)}
-                  className="flex-1 h-7 text-xs rounded-md border bg-background px-2"
-                >
-                  <option value="">— Не назначен —</option>
-                  {members.map((m: any) => (
-                    <option key={m.id} value={m.id}>{m.display_name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             {/* Примечание */}
             <div className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground w-20 shrink-0">Примечание</Label>
@@ -669,10 +686,18 @@ export function POSPage() {
             <Separator />
 
             {/* Итого */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between py-1">
               <span className="text-sm text-muted-foreground">Позиций: {cart.length}</span>
-              <span className="font-bold text-base">{formatCurrency(total)} {symbol}</span>
+              <span className="font-bold text-xl tabular-nums">{formatCurrency(total)} {symbol}</span>
             </div>
+
+            {/* К оплате */}
+            {parseFloat(prepaid) > 0 && (
+              <div className="flex justify-between text-sm font-medium text-orange-600 dark:text-orange-400">
+                <span>К оплате:</span>
+                <span>{formatCurrency(Math.max(0, total - (parseFloat(prepaid) || 0)))} {symbol}</span>
+              </div>
+            )}
 
             {/* Предоплата */}
             <div className="flex items-center gap-2">
