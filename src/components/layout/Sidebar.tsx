@@ -81,18 +81,18 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
 
         {/* ── Основное ── */}
         <SidebarGroupLabel label={t('nav.groupMain')} />
-        <NavItemGated icon={LayoutDashboard} iconColor="dark:text-blue-400"   label={t('nav.dashboard')} to="/dashboard" feature={null}       onClick={onClose} />
         {PRODUCT === 'cleaning'
-          ? <SidebarNavItem icon={ClipboardList} iconColor="dark:text-indigo-400" label="Заказы" to="/orders" onClick={onClose} />
-          : <NavItemGated icon={CalendarDays}    iconColor="dark:text-indigo-400"  label={t('nav.calendar')}  to="/calendar"  feature="calendar"  onClick={onClose} />
+          ? <SidebarNavItem icon={BarChart3}     iconColor="dark:text-blue-400"    label="Статистика" to="/stats"   onClick={onClose} />
+          : <NavItemGated   icon={LayoutDashboard} iconColor="dark:text-blue-400"  label={t('nav.dashboard')} to="/dashboard" feature={null} onClick={onClose} />
+        }
+        {PRODUCT === 'cleaning'
+          ? <SidebarNavItem icon={ClipboardList} iconColor="dark:text-indigo-400" label="Заказы"     to="/orders"  onClick={onClose} />
+          : <NavItemGated   icon={CalendarDays}  iconColor="dark:text-indigo-400" label={t('nav.calendar')} to="/calendar" feature="calendar" onClick={onClose} />
         }
         {PRODUCT === 'cleaning' && (
-          <>
-            <SidebarNavItem icon={BarChart3} iconColor="dark:text-blue-400"  label="Статистика" to="/stats"   onClick={onClose} />
-            <SidebarNavItem icon={FileText}  iconColor="dark:text-slate-400" label="Отчёты"     to="/reports" onClick={onClose} />
-          </>
+          <SidebarNavItem icon={FileText} iconColor="dark:text-slate-400" label="Отчёты" to="/reports" onClick={onClose} />
         )}
-        <NavItemGated icon={Users}           iconColor="dark:text-emerald-400" label={t('nav.clients')}   to="/clients"   feature="clients"   onClick={onClose} />
+        <NavItemGated icon={Users} iconColor="dark:text-emerald-400" label={t('nav.clients')} to="/clients" feature="clients" onClick={onClose} />
         {/* ── Каталог ── */}
         <SidebarGroupLabel label={t('nav.groupCatalog')} />
         <NavItemGated icon={ServiceIcon} iconColor="dark:text-purple-400"  label={t('nav.services')}  to="/services"  feature={null}       onClick={onClose} />

@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus, Search, ClipboardList, Loader2, Filter,
-  AlertTriangle, Trash2, ArrowUpDown, ArrowDownUp,
-  TrendingDown, CalendarClock,
+  AlertTriangle, Trash2, LayoutList, Table2, Download,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { toast } from '@/components/shared/Toaster'
@@ -19,7 +21,7 @@ import {
   type SortBy,
 } from '@/hooks/useCleaningOrders'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/orders/OrderStatusBadge'
-import type { OrderStatus, OrderType, PaymentStatus } from '@/hooks/useCleaningOrders'
+import type { OrderStatus, OrderType, PaymentStatus, CleaningOrder } from '@/hooks/useCleaningOrders'
 import { formatCurrency } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import dayjs from 'dayjs'
@@ -34,14 +36,29 @@ const STATUS_TABS: { value: OrderStatus | 'all'; label: string }[] = [
   { value: 'paid',        label: 'Оплачен' },
 ]
 
-const SORT_OPTIONS: { value: SortBy; label: string; Icon: React.ElementType }[] = [
-  { value: 'newest',       label: 'Новые',  Icon: ArrowDownUp },
-  { value: 'oldest',       label: 'Старые', Icon: ArrowUpDown },
-  { value: 'amount_desc',  label: 'Сумма ↓', Icon: TrendingDown },
-  { value: 'deadline_asc', label: 'Срок ↑',  Icon: CalendarClock },
-]
-
 const NON_URGENT_STATUSES = ['issued', 'paid', 'cancelled']
+
+// ── CSV-экспорт ────────────────────────────────────────────────────────────────
+function exportCSV(orders: CleaningOrder[], symbol: string) {
+  const headers = ['Номер', 'Тип', 'Клиент', 'Статус', `Сумма (${symbol})`, `Оплачено (${symbol})`, 'Дата']
+  const rows = orders.map(o => [
+    o.number,
+    ORDER_TYPE_LABELS[o.order_type as OrderType] ?? o.order_type,
+    o.client ? `${o.client.first_name} ${o.client.last_name || ''}`.trim() : 'Без клиента',
+    o.status,
+    o.total_amount,
+    o.paid_amount,
+    dayjs(o.created_at).format('DD.MM.YYYY'),
+  ])
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `orders-${dayjs().format('YYYY-MM-DD')}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 // ── Диалог подтверждения удаления ─────────────────────────────────────────────
 function DeleteConfirmDialog({ label, onConfirm, onClose, danger = false }: {
@@ -67,15 +84,112 @@ function DeleteConfirmDialog({ label, onConfirm, onClose, danger = false }: {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" size="sm" onClick={onClose}>Отмена</Button>
-          <Button variant="destructive" className="flex-1" size="sm" onClick={onConfirm}>
-            Удалить
-          </Button>
+          <Button variant="destructive" className="flex-1" size="sm" onClick={onConfirm}>Удалить</Button>
         </div>
       </div>
     </div>
   )
 }
 
+// ── Таблица-вид ────────────────────────────────────────────────────────────────
+function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDueTodayMap }: {
+  orders: CleaningOrder[]
+  symbol: string
+  onNavigate: (id: string) => void
+  onDelete: (id: string) => void
+  isOverdueMap: Record<string, boolean>
+  isDueTodayMap: Record<string, boolean>
+}) {
+  return (
+    <div className="border rounded-xl overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/50">
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">№</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Тип</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Клиент</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Статус</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Оплата</th>
+              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Сумма</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Дата / Срок</th>
+              <th className="px-2 py-2.5 w-8" />
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map(order => {
+              const TypeIcon = ORDER_TYPE_ICONS[order.order_type as OrderType]
+              const overdue   = isOverdueMap[order.id]
+              const dueToday  = isDueTodayMap[order.id]
+              const clientName = order.client
+                ? `${order.client.first_name} ${order.client.last_name || ''}`.trim()
+                : 'Без клиента'
+              return (
+                <tr
+                  key={order.id}
+                  className={cn(
+                    'border-b last:border-0 hover:bg-accent/40 cursor-pointer transition-colors group',
+                    overdue  && 'border-l-2 border-l-red-500',
+                    dueToday && !overdue && 'border-l-2 border-l-orange-400',
+                  )}
+                  onClick={() => onNavigate(order.id)}
+                >
+                  <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                    <span className="flex items-center gap-1">
+                      {overdue && <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />}
+                      {order.number}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {TypeIcon && <TypeIcon className="h-4 w-4 text-muted-foreground" />}
+                  </td>
+                  <td className="px-3 py-2.5 max-w-[160px] truncate text-sm">
+                    <span className={!order.client ? 'italic text-muted-foreground' : ''}>{clientName}</span>
+                  </td>
+                  <td className="px-3 py-2.5 whitespace-nowrap">
+                    <OrderStatusBadge status={order.status as OrderStatus} />
+                  </td>
+                  <td className="px-3 py-2.5 whitespace-nowrap">
+                    <PaymentStatusBadge status={order.payment_status} />
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">
+                    {formatCurrency(order.total_amount)} {symbol}
+                    {order.paid_amount > 0 && order.paid_amount < order.total_amount && (
+                      <div className="text-xs text-muted-foreground font-normal">
+                        Опл.: {formatCurrency(order.paid_amount)}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
+                    <div>{dayjs(order.created_at).format('DD.MM.YY')}</div>
+                    {order.ready_date && (
+                      <div className={cn(
+                        overdue  ? 'text-red-500 font-medium'    : '',
+                        dueToday ? 'text-orange-500 font-medium' : '',
+                      )}>
+                        Срок: {dayjs(order.ready_date).format('DD.MM')}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-2 py-2.5">
+                    <button
+                      onClick={e => { e.stopPropagation(); onDelete(order.id) }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ── Главный компонент ──────────────────────────────────────────────────────────
 export function OrdersListPage() {
   const navigate = useNavigate()
   const symbol = useCurrencySymbol()
@@ -87,11 +201,11 @@ export function OrdersListPage() {
   const [page,          setPage]          = useState(1)
   const [myOnly,        setMyOnly]        = useState(false)
   const [sortBy,        setSortBy]        = useState<SortBy>('newest')
+  const [viewMode,      setViewMode]      = useState<'cards' | 'table'>('cards')
 
-  // Удаление
   const [deleteId,      setDeleteId]      = useState<string | null>(null)
   const [deleteAllOpen, setDeleteAllOpen] = useState(false)
-  const { mutateAsync: deleteOrder, isPending: deleting } = useDeleteOrder()
+  const { mutateAsync: deleteOrder } = useDeleteOrder()
 
   const { data, isLoading } = useCleaningOrders({
     status,
@@ -109,6 +223,23 @@ export function OrdersListPage() {
   const orders     = data?.orders ?? []
   const total      = data?.total ?? 0
   const totalPages = Math.ceil(total / 20)
+
+  // Вычисляем флаги срочности один раз
+  const isOverdueMap: Record<string, boolean> = {}
+  const isDueTodayMap: Record<string, boolean> = {}
+  for (const order of orders) {
+    const overdue =
+      !!order.ready_date &&
+      dayjs(order.ready_date).isBefore(dayjs(), 'day') &&
+      !NON_URGENT_STATUSES.includes(order.status)
+    const dueToday =
+      !overdue &&
+      !!order.ready_date &&
+      dayjs(order.ready_date).isSame(dayjs(), 'day') &&
+      !NON_URGENT_STATUSES.includes(order.status)
+    isOverdueMap[order.id]  = overdue
+    isDueTodayMap[order.id] = dueToday
+  }
 
   async function handleDeleteOne(id: string) {
     try {
@@ -130,7 +261,6 @@ export function OrdersListPage() {
     }
   }
 
-  // Переключить фильтр по неоплаченным
   function toggleUnpaidFilter() {
     setPaymentFilter(v => v === 'unpaid' ? 'all' : 'unpaid')
     setPage(1)
@@ -142,11 +272,31 @@ export function OrdersListPage() {
         title="Заказы"
         description={total > 0 ? `${total} заказов` : undefined}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          {/* CSV */}
           {orders.length > 0 && (
             <Button
-              variant="ghost"
-              size="icon"
+              variant="ghost" size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              title="Экспорт CSV"
+              onClick={() => exportCSV(orders, symbol)}
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          )}
+          {/* Вид: карточки / таблица */}
+          <Button
+            variant="ghost" size="icon"
+            className={cn('h-8 w-8', viewMode === 'table' ? 'text-primary' : 'text-muted-foreground')}
+            title={viewMode === 'cards' ? 'Таблица' : 'Карточки'}
+            onClick={() => setViewMode(v => v === 'cards' ? 'table' : 'cards')}
+          >
+            {viewMode === 'cards' ? <Table2 className="h-4 w-4" /> : <LayoutList className="h-4 w-4" />}
+          </Button>
+          {/* Удалить все */}
+          {orders.length > 0 && (
+            <Button
+              variant="ghost" size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-destructive"
               title="Удалить всё на странице"
               onClick={() => setDeleteAllOpen(true)}
@@ -164,19 +314,15 @@ export function OrdersListPage() {
         </div>
       </PageHeader>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-20 lg:pb-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 pb-20 lg:pb-4 space-y-3">
 
         {/* Статистика */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {/* Сегодня */}
           <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[100px]">
             <span className="text-xs text-muted-foreground">Сегодня</span>
-            <span className="text-sm font-semibold">
-              {stats ? stats.total_today : '—'} зак.
-            </span>
+            <span className="text-sm font-semibold">{stats ? stats.total_today : '—'} зак.</span>
           </div>
 
-          {/* Не оплачено — кликабельно */}
           <button
             onClick={toggleUnpaidFilter}
             className={cn(
@@ -189,12 +335,7 @@ export function OrdersListPage() {
             )}
           >
             <span className="text-xs text-muted-foreground">Не оплачено</span>
-            <span
-              className={cn(
-                'text-sm font-semibold',
-                stats && stats.unpaid_count > 0 ? 'text-orange-600 dark:text-orange-400' : ''
-              )}
-            >
+            <span className={cn('text-sm font-semibold', stats && stats.unpaid_count > 0 ? 'text-orange-600 dark:text-orange-400' : '')}>
               {stats ? stats.unpaid_count : '—'} зак.
             </span>
             {stats && stats.unpaid_amount > 0 && (
@@ -204,18 +345,16 @@ export function OrdersListPage() {
             )}
           </button>
 
-          {/* За месяц */}
           <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[100px]">
             <span className="text-xs text-muted-foreground">За месяц</span>
-            <span className="text-sm font-semibold">
-              {stats ? stats.total_month : '—'} зак.
-            </span>
+            <span className="text-sm font-semibold">{stats ? stats.total_month : '—'} зак.</span>
           </div>
         </div>
 
-        {/* Поиск + фильтры */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
+        {/* ── Фильтры: одна строка ────────────────────────────────────────────── */}
+        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+          {/* Поиск */}
+          <div className="relative flex-1 min-w-[160px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Поиск по номеру или клиенту..."
@@ -224,66 +363,46 @@ export function OrdersListPage() {
               className="pl-9"
             />
           </div>
+
+          {/* Сортировка */}
+          <Select value={sortBy} onValueChange={v => { setSortBy(v as SortBy); setPage(1) }}>
+            <SelectTrigger className="w-[130px] shrink-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">↓ Новые</SelectItem>
+              <SelectItem value="oldest">↑ Старые</SelectItem>
+              <SelectItem value="amount_desc">Сумма ↓</SelectItem>
+              <SelectItem value="deadline_asc">Срок ↑</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Тип заказа */}
+          <Select value={orderType} onValueChange={v => { setOrderType(v as OrderType | 'all'); setPage(1) }}>
+            <SelectTrigger className="w-[130px] shrink-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все типы</SelectItem>
+              <SelectItem value="clothing">Одежда</SelectItem>
+              <SelectItem value="carpet">Ковёр</SelectItem>
+              <SelectItem value="furniture">Мебель</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Мои */}
           <Button
             variant={myOnly ? 'default' : 'outline'}
             size="sm"
             onClick={() => { setMyOnly(v => !v); setPage(1) }}
-            className="shrink-0"
+            className="shrink-0 h-10"
           >
             <Filter className="h-4 w-4 mr-1" />
             Мои
           </Button>
         </div>
 
-        {/* Сортировка */}
-        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
-          {SORT_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => { setSortBy(opt.value); setPage(1) }}
-              className={cn(
-                'shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
-                sortBy === opt.value
-                  ? 'bg-primary/10 text-primary border border-primary/30'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              )}
-            >
-              <opt.Icon className="h-3 w-3" />
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Фильтр по типу */}
-        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
-          {(['all', 'clothing', 'carpet', 'furniture'] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => { setOrderType(t); setPage(1) }}
-              className={cn(
-                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                orderType === t
-                  ? 'bg-secondary text-secondary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              )}
-            >
-              {t === 'all'
-                ? 'Все типы'
-                : (() => {
-                    const Icon = ORDER_TYPE_ICONS[t as OrderType]
-                    return (
-                      <span className="flex items-center gap-1">
-                        <Icon className="h-3.5 w-3.5" />
-                        {ORDER_TYPE_LABELS[t as OrderType]}
-                      </span>
-                    )
-                  })()
-              }
-            </button>
-          ))}
-        </div>
-
-        {/* Табы статусов */}
+        {/* Статусы */}
         <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
           {STATUS_TABS.map(tab => (
             <button
@@ -301,7 +420,7 @@ export function OrdersListPage() {
           ))}
         </div>
 
-        {/* Список */}
+        {/* ── Список / Таблица ────────────────────────────────────────────────── */}
         {isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -313,20 +432,20 @@ export function OrdersListPage() {
             description="Создайте первый заказ при приёме вещей"
             action={{ label: 'Новый заказ', onClick: () => navigate('/orders/new') }}
           />
+        ) : viewMode === 'table' ? (
+          <OrdersTable
+            orders={orders}
+            symbol={symbol}
+            onNavigate={id => navigate(`/orders/${id}`)}
+            onDelete={id => setDeleteId(id)}
+            isOverdueMap={isOverdueMap}
+            isDueTodayMap={isDueTodayMap}
+          />
         ) : (
           <div className="space-y-2">
             {orders.map(order => {
-              const isOverdue =
-                !!order.ready_date &&
-                dayjs(order.ready_date).isBefore(dayjs(), 'day') &&
-                !NON_URGENT_STATUSES.includes(order.status)
-
-              const isDueToday =
-                !isOverdue &&
-                !!order.ready_date &&
-                dayjs(order.ready_date).isSame(dayjs(), 'day') &&
-                !NON_URGENT_STATUSES.includes(order.status)
-
+              const isOverdue  = isOverdueMap[order.id]
+              const isDueToday = isDueTodayMap[order.id]
               const itemsCount = order.items?.length ?? null
 
               return (
@@ -334,14 +453,11 @@ export function OrdersListPage() {
                   key={order.id}
                   className={cn(
                     'relative group rounded-xl border bg-card transition-colors',
-                    isOverdue
-                      ? 'border-l-4 border-l-red-500'
-                      : isDueToday
-                      ? 'border-l-4 border-l-orange-400'
-                      : 'border-l-4 border-l-transparent'
+                    isOverdue   ? 'border-l-4 border-l-red-500'
+                    : isDueToday ? 'border-l-4 border-l-orange-400'
+                    : 'border-l-4 border-l-transparent'
                   )}
                 >
-                  {/* Кнопка удаления */}
                   <button
                     onClick={e => { e.stopPropagation(); setDeleteId(order.id) }}
                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 z-10"
@@ -356,7 +472,6 @@ export function OrdersListPage() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        {/* Номер + статусы */}
                         <div className="flex items-center gap-2 flex-wrap">
                           {(() => {
                             const Icon = ORDER_TYPE_ICONS[order.order_type ?? 'clothing']
@@ -365,55 +480,37 @@ export function OrdersListPage() {
                           <span className="font-semibold text-sm">{order.number}</span>
                           <OrderStatusBadge status={order.status} />
                           <PaymentStatusBadge status={order.payment_status} />
-                          {isOverdue && (
-                            <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                          )}
+                          {isOverdue && <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />}
                         </div>
 
-                        {/* Клиент */}
                         {order.client ? (
                           <p className="text-sm text-muted-foreground mt-0.5 truncate">
-                            {[order.client.first_name, order.client.last_name]
-                              .filter(Boolean)
-                              .join(' ')}
+                            {[order.client.first_name, order.client.last_name].filter(Boolean).join(' ')}
                             {order.client.phone && ` · ${order.client.phone}`}
                           </p>
                         ) : (
-                          <span className="text-xs text-muted-foreground italic mt-0.5 block">
-                            Без клиента
-                          </span>
+                          <span className="text-xs text-muted-foreground italic mt-0.5 block">Без клиента</span>
                         )}
 
-                        {/* Дата + срок + исполнитель + изделия */}
                         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                           <span>{dayjs(order.created_at).format('DD.MM.YYYY')}</span>
                           {order.ready_date && (
-                            <span
-                              className={cn(
-                                isOverdue
-                                  ? 'text-red-500 font-medium'
-                                  : isDueToday
-                                  ? 'text-orange-500 font-medium'
-                                  : ''
-                              )}
-                            >
+                            <span className={cn(
+                              isOverdue  ? 'text-red-500 font-medium'    : '',
+                              isDueToday ? 'text-orange-500 font-medium' : '',
+                            )}>
                               Срок: {dayjs(order.ready_date).format('DD.MM')}
                             </span>
                           )}
                           {order.assigned_to_profile && (
                             <span>Исп.: {order.assigned_to_profile.display_name}</span>
                           )}
-                          {itemsCount !== null && (
-                            <span>· {itemsCount} изд.</span>
-                          )}
+                          {itemsCount !== null && <span>· {itemsCount} изд.</span>}
                         </div>
                       </div>
 
-                      {/* Сумма */}
                       <div className="text-right shrink-0">
-                        <p className="font-semibold text-sm">
-                          {formatCurrency(order.total_amount)} {symbol}
-                        </p>
+                        <p className="font-semibold text-sm">{formatCurrency(order.total_amount)} {symbol}</p>
                         {order.paid_amount > 0 && order.paid_amount < order.total_amount && (
                           <p className="text-xs text-muted-foreground">
                             Опл.: {formatCurrency(order.paid_amount)}
@@ -431,23 +528,13 @@ export function OrdersListPage() {
         {/* Пагинация */}
         {totalPages > 1 && (
           <div className="flex justify-center gap-2 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === 1}
-              onClick={() => setPage(p => p - 1)}
-            >
+            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
               Назад
             </Button>
             <span className="flex items-center px-3 text-sm text-muted-foreground">
               {page} / {totalPages}
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage(p => p + 1)}
-            >
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
               Далее
             </Button>
           </div>
@@ -455,7 +542,6 @@ export function OrdersListPage() {
 
       </div>
 
-      {/* Диалог удаления одного заказа */}
       {deleteId && (
         <DeleteConfirmDialog
           label={`Заказ ${orders.find(o => o.id === deleteId)?.number ?? ''} будет удалён безвозвратно`}
@@ -463,8 +549,6 @@ export function OrdersListPage() {
           onClose={() => setDeleteId(null)}
         />
       )}
-
-      {/* Диалог удаления всех заказов на странице */}
       {deleteAllOpen && (
         <DeleteConfirmDialog
           label={`${orders.length} заказов на этой странице будут удалены`}
