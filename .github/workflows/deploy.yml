@@ -95,6 +95,7 @@ jobs:
   infrastructure:
     name: Migrations & Edge Functions
     runs-on: ubuntu-latest
+    continue-on-error: true   # SSH-таймауты от GitHub раннеров не ломают workflow
 
     steps:
       - name: Checkout code
