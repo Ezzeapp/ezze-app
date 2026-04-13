@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { useCleaningOrders, ORDER_TYPE_EMOJI } from '@/hooks/useCleaningOrders'
+import { useCleaningOrders, ORDER_TYPE_ICONS, ORDER_TYPE_LABELS } from '@/hooks/useCleaningOrders'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/orders/OrderStatusBadge'
 import type { OrderStatus, OrderType } from '@/hooks/useCleaningOrders'
 import { formatCurrency } from '@/lib/utils'
@@ -102,7 +102,7 @@ export function OrdersListPage() {
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               )}
             >
-              {t === 'all' ? 'Все типы' : `${ORDER_TYPE_EMOJI[t as OrderType]} ${t === 'clothing' ? 'Одежда' : t === 'carpet' ? 'Ковры' : 'Мебель'}`}
+              {t === 'all' ? 'Все типы' : (() => { const Icon = ORDER_TYPE_ICONS[t as OrderType]; return <span className="flex items-center gap-1"><Icon className="h-3.5 w-3.5" />{ORDER_TYPE_LABELS[t as OrderType]}</span> })()}
             </button>
           ))}
         </div>
@@ -148,7 +148,7 @@ export function OrdersListPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-base">{ORDER_TYPE_EMOJI[order.order_type ?? 'clothing']}</span>
+                      {(() => { const Icon = ORDER_TYPE_ICONS[order.order_type ?? 'clothing']; return <Icon className="h-4 w-4 text-muted-foreground shrink-0" /> })()}
                       <span className="font-semibold text-sm">{order.number}</span>
                       <OrderStatusBadge status={order.status} />
                       <PaymentStatusBadge status={order.payment_status} />

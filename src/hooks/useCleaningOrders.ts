@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { PRODUCT } from '@/lib/config'
+import { Shirt, LayoutGrid, Sofa, type LucideIcon } from 'lucide-react'
 
 export type OrderType = 'clothing' | 'carpet' | 'furniture'
 export type OrderStatus = 'received' | 'in_progress' | 'ready' | 'issued' | 'paid' | 'cancelled'
@@ -64,10 +65,10 @@ export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   furniture: 'Мебель',
 }
 
-export const ORDER_TYPE_EMOJI: Record<OrderType, string> = {
-  clothing:  '👔',
-  carpet:    '🏠',
-  furniture: '🛋️',
+export const ORDER_TYPE_ICONS: Record<OrderType, LucideIcon> = {
+  clothing:  Shirt,
+  carpet:    LayoutGrid,
+  furniture: Sofa,
 }
 
 // ── Список заказов (с пагинацией и фильтрами) ─────────────────────────────────
