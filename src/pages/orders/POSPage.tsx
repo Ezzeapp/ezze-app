@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, Pencil, LayoutGrid, List, CheckCircle2 } from 'lucide-react'
+import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, Pencil, LayoutGrid, List, CheckCircle2, Trash2, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import { toast } from '@/components/shared/Toaster'
 import { useCreateOrder, type OrderType, ORDER_TYPE_LABELS, ORDER_TYPE_ICONS } from '@/hooks/useCleaningOrders'
 import { useCleaningItemTypes } from '@/hooks/useCleaningItemTypes'
-import { useClientsPaged } from '@/hooks/useClients'
+import { useClientsPaged, useCreateClient } from '@/hooks/useClients'
 import { formatCurrency } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { cn } from '@/lib/utils'
@@ -161,6 +161,71 @@ function OrderCreatedDialog({ orderNumber, onPrint, onGoToOrder, onNewOrder }: {
   )
 }
 
+// ── Диалог быстрого создания клиента ──────────────────────────────────────────
+
+function QuickAddClientDialog({ initialName, onCreated, onClose }: {
+  initialName: string
+  onCreated: (client: { id: string; first_name: string; last_name?: string | null; phone?: string | null }) => void
+  onClose: () => void
+}) {
+  const [firstName, setFirstName] = useState(initialName.split(' ')[0] ?? '')
+  const [lastName,  setLastName]  = useState(initialName.split(' ').slice(1).join(' ') ?? '')
+  const [phone,     setPhone]     = useState('')
+  const { mutateAsync: createClient, isPending } = useCreateClient()
+
+  async function handleCreate() {
+    if (!firstName.trim()) { toast.error('Введите имя'); return }
+    try {
+      const created = await createClient({
+        first_name: firstName.trim(),
+        last_name:  lastName.trim() || undefined,
+        phone:      phone.trim() || undefined,
+      } as any)
+      toast.success('Клиент создан')
+      onCreated(created)
+    } catch {
+      toast.error('Ошибка создания клиента')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-background rounded-2xl shadow-2xl p-6 w-80 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold flex items-center gap-2">
+            <UserPlus className="h-4 w-4 text-primary" />
+            Новый клиент
+          </h3>
+          <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground" /></button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs">Имя *</Label>
+            <Input autoFocus placeholder="Иван" value={firstName}
+              onChange={e => setFirstName(e.target.value)} className="mt-1 h-8 text-sm" />
+          </div>
+          <div>
+            <Label className="text-xs">Фамилия</Label>
+            <Input placeholder="Иванов" value={lastName}
+              onChange={e => setLastName(e.target.value)} className="mt-1 h-8 text-sm" />
+          </div>
+          <div>
+            <Label className="text-xs">Телефон</Label>
+            <Input type="tel" placeholder="+998 90 123-45-67" value={phone}
+              onChange={e => setPhone(e.target.value)} className="mt-1 h-8 text-sm" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1" size="sm" onClick={onClose}>Отмена</Button>
+          <Button className="flex-1" size="sm" disabled={isPending} onClick={handleCreate}>
+            {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Создать'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Главный компонент ─────────────────────────────────────────────────────────
 
 export function POSPage() {
@@ -206,6 +271,9 @@ export function POSPage() {
 
   // Диалог размеров ковра
   const [carpetDialog, setCarpetDialog] = useState<{ typeName: string; pricePerSqm: number; typeId: string } | null>(null)
+
+  // Быстрое добавление клиента
+  const [quickAddClient, setQuickAddClient] = useState(false)
 
   // После создания заказа
   const [createdOrder, setCreatedOrder] = useState<{ id: string; number: string; clientInfo: typeof clientId } | null>(null)
@@ -417,7 +485,7 @@ export function POSPage() {
                 onFocus={() => setShowClientList(true)}
                 className="pl-8 h-8 text-sm"
               />
-              {showClientList && clientSearch && clients.length > 0 && (
+              {showClientList && clientSearch && (
                 <div className="absolute top-full mt-1 w-full bg-popover border rounded-lg shadow-lg z-50 overflow-hidden">
                   {clients.slice(0, 8).map(c => (
                     <button
@@ -429,6 +497,13 @@ export function POSPage() {
                       {c.phone && <span className="text-muted-foreground ml-2">{c.phone}</span>}
                     </button>
                   ))}
+                  <button
+                    onClick={() => { setShowClientList(false); setQuickAddClient(true) }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center gap-2 text-primary border-t"
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Создать «{clientSearch}»
+                  </button>
                 </div>
               )}
             </>
@@ -711,16 +786,29 @@ export function POSPage() {
               <span className="text-xs text-muted-foreground">{symbol}</span>
             </div>
 
-            <Button
-              className="w-full h-10 text-sm font-semibold"
-              onClick={handleSubmit}
-              disabled={isPending || cart.length === 0}
-            >
-              {isPending
-                ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                : <ShoppingBag className="h-4 w-4 mr-2" />}
-              Принять заказ
-            </Button>
+            <div className="flex gap-2">
+              {cart.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 text-muted-foreground hover:text-destructive hover:border-destructive"
+                  onClick={() => { setCart([]); setExpandedKey(null) }}
+                  title="Очистить корзину"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                className="flex-1 h-10 text-sm font-semibold"
+                onClick={handleSubmit}
+                disabled={isPending || cart.length === 0}
+              >
+                {isPending
+                  ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  : <ShoppingBag className="h-4 w-4 mr-2" />}
+                Принять заказ
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -752,6 +840,20 @@ export function POSPage() {
         <ReceiptModal
           data={receiptData}
           onClose={() => { setShowReceipt(false); resetForm(); setOrderType('clothing') }}
+        />
+      )}
+
+      {/* Быстрое создание клиента */}
+      {quickAddClient && (
+        <QuickAddClientDialog
+          initialName={clientSearch}
+          onCreated={c => {
+            setClientId(c.id)
+            setClientName([c.first_name, c.last_name].filter(Boolean).join(' ') + (c.phone ? ` · ${c.phone}` : ''))
+            setClientSearch('')
+            setQuickAddClient(false)
+          }}
+          onClose={() => setQuickAddClient(false)}
         />
       )}
     </div>

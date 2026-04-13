@@ -3,24 +3,32 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, CheckCircle2, Loader2, Package, User, Calendar,
   AlertCircle, Printer, Phone, MessageCircle, AlertTriangle,
-  Clock, Banknote, X,
+  Clock, Banknote, X, Trash2, Pencil, Plus, Check, Search,
 } from 'lucide-react'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { toast } from '@/components/shared/Toaster'
-import { useCleaningOrder, useUpdateOrderStatus, useAcceptPayment } from '@/hooks/useCleaningOrders'
+import {
+  useCleaningOrder,
+  useUpdateOrderStatus,
+  useAcceptPayment,
+  useDeleteOrder,
+  useAssignClientToOrder,
+  useAddItemToOrder,
+  useRemoveItemFromOrder,
+  useUpdateOrderItem,
+} from '@/hooks/useCleaningOrders'
 import { OrderStatusBadge, PaymentStatusBadge, STATUS_CONFIG } from '@/components/orders/OrderStatusBadge'
 import { IssueItemsDialog } from '@/components/orders/IssueItemsDialog'
+import { useClientsPaged } from '@/hooks/useClients'
 import { formatCurrency } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
-import type { OrderStatus } from '@/hooks/useCleaningOrders'
+import type { OrderStatus, CleaningOrderItem } from '@/hooks/useCleaningOrders'
 import dayjs from 'dayjs'
-import isToday from 'dayjs/plugin/isToday'
-
-dayjs.extend(isToday)
 
 const ITEM_STATUS_LABELS: Record<string, string> = {
   pending: 'В работе',
@@ -37,19 +45,183 @@ const NEXT_STATUSES: Partial<Record<OrderStatus, OrderStatus[]>> = {
 
 const POSITIVE_STATUSES: OrderStatus[] = ['in_progress', 'ready', 'issued', 'paid']
 
+// ── Поиск клиента для привязки ────────────────────────────────────────────────
+function ClientPickerDropdown({ onSelect, onClose }: {
+  onSelect: (c: { id: string; first_name: string; last_name?: string | null; phone?: string | null }) => void
+  onClose: () => void
+}) {
+  const [q, setQ] = useState('')
+  const { data } = useClientsPaged(q, 1, 10)
+  const clients = data?.items ?? []
+
+  return (
+    <div className="mt-2 rounded-xl border bg-background shadow-lg overflow-hidden">
+      <div className="relative p-2">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          autoFocus
+          placeholder="Имя или телефон..."
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          className="pl-8 h-8 text-sm"
+        />
+      </div>
+      <div className="max-h-48 overflow-y-auto">
+        {clients.map(c => (
+          <button
+            key={c.id}
+            onClick={() => { onSelect(c); onClose() }}
+            className="w-full text-left px-4 py-2.5 text-sm hover:bg-accent transition-colors flex items-center justify-between"
+          >
+            <span className="font-medium">{[c.first_name, c.last_name].filter(Boolean).join(' ')}</span>
+            {c.phone && <span className="text-xs text-muted-foreground">{c.phone}</span>}
+          </button>
+        ))}
+        {q && clients.length === 0 && (
+          <p className="px-4 py-3 text-sm text-muted-foreground text-center">Не найдено</p>
+        )}
+      </div>
+      <div className="border-t p-2">
+        <button onClick={onClose} className="w-full text-xs text-muted-foreground py-1 hover:text-foreground transition-colors">
+          Отмена
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Строка редактирования изделия ─────────────────────────────────────────────
+function EditItemRow({ item, orderId, onClose }: {
+  item: CleaningOrderItem
+  orderId: string
+  onClose: () => void
+}) {
+  const symbol = useCurrencySymbol()
+  const [name,  setName]  = useState(item.item_type_name)
+  const [price, setPrice] = useState(String(item.price))
+  const [date,  setDate]  = useState(item.ready_date ?? '')
+  const { mutateAsync: updateItem, isPending } = useUpdateOrderItem()
+
+  async function handleSave() {
+    try {
+      await updateItem({
+        orderId,
+        itemId: item.id,
+        data: {
+          item_type_name: name.trim() || item.item_type_name,
+          price: parseFloat(price) || item.price,
+          ready_date: date || null,
+        },
+      })
+      toast.success('Изделие обновлено')
+      onClose()
+    } catch {
+      toast.error('Ошибка сохранения')
+    }
+  }
+
+  return (
+    <div className="mt-2 p-3 rounded-lg bg-muted/50 space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="col-span-2">
+          <Label className="text-xs">Название</Label>
+          <Input value={name} onChange={e => setName(e.target.value)} className="h-7 text-xs mt-0.5" />
+        </div>
+        <div>
+          <Label className="text-xs">Цена ({symbol})</Label>
+          <Input type="number" value={price} onChange={e => setPrice(e.target.value)} className="h-7 text-xs mt-0.5" />
+        </div>
+        <div>
+          <Label className="text-xs">Срок</Label>
+          <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-7 text-xs mt-0.5" />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" className="h-7 text-xs flex-1" disabled={isPending} onClick={handleSave}>
+          {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Check className="h-3 w-3 mr-1" />Сохранить</>}
+        </Button>
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onClose}>Отмена</Button>
+      </div>
+    </div>
+  )
+}
+
+// ── Форма добавления нового изделия ───────────────────────────────────────────
+function AddItemForm({ orderId, onClose }: { orderId: string; onClose: () => void }) {
+  const symbol = useCurrencySymbol()
+  const [name,  setName]  = useState('')
+  const [price, setPrice] = useState('')
+  const [date,  setDate]  = useState('')
+  const { mutateAsync: addItem, isPending } = useAddItemToOrder()
+
+  async function handleAdd() {
+    if (!name.trim()) { toast.error('Введите название'); return }
+    if (!price || parseFloat(price) <= 0) { toast.error('Введите цену'); return }
+    try {
+      await addItem({
+        orderId,
+        item: {
+          item_type_name: name.trim(),
+          price: parseFloat(price),
+          ready_date: date || null,
+        },
+      })
+      toast.success('Изделие добавлено')
+      onClose()
+    } catch {
+      toast.error('Ошибка добавления')
+    }
+  }
+
+  return (
+    <div className="mt-2 p-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 space-y-2">
+      <p className="text-xs font-medium text-primary">Новое изделие</p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="col-span-2">
+          <Label className="text-xs">Название *</Label>
+          <Input autoFocus placeholder="Куртка..." value={name} onChange={e => setName(e.target.value)} className="h-7 text-xs mt-0.5" />
+        </div>
+        <div>
+          <Label className="text-xs">Цена ({symbol}) *</Label>
+          <Input type="number" placeholder="0" value={price} onChange={e => setPrice(e.target.value)} className="h-7 text-xs mt-0.5" />
+        </div>
+        <div>
+          <Label className="text-xs">Срок готовности</Label>
+          <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-7 text-xs mt-0.5" />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" className="h-7 text-xs flex-1" disabled={isPending} onClick={handleAdd}>
+          {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Plus className="h-3 w-3 mr-1" />Добавить</>}
+        </Button>
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onClose}>Отмена</Button>
+      </div>
+    </div>
+  )
+}
+
+// ── Главный компонент ─────────────────────────────────────────────────────────
+
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const symbol = useCurrencySymbol()
 
   const { data: order, isLoading } = useCleaningOrder(id)
-  const { mutateAsync: updateStatus, isPending: updatingStatus } = useUpdateOrderStatus()
-  const { mutateAsync: acceptPayment, isPending: payingInProgress } = useAcceptPayment()
+  const { mutateAsync: updateStatus,       isPending: updatingStatus  } = useUpdateOrderStatus()
+  const { mutateAsync: acceptPayment,      isPending: payingInProgress } = useAcceptPayment()
+  const { mutateAsync: deleteOrder,        isPending: deletingOrder    } = useDeleteOrder()
+  const { mutateAsync: assignClient,       isPending: assigningClient  } = useAssignClientToOrder()
+  const { mutateAsync: removeItem                                      } = useRemoveItemFromOrder()
 
-  const [issueOpen, setIssueOpen]         = useState(false)
-  const [showReceipt, setShowReceipt]     = useState(false)
-  const [payDialogOpen, setPayDialogOpen] = useState(false)
-  const [payAmount, setPayAmount]         = useState('')
+  const [issueOpen,      setIssueOpen]      = useState(false)
+  const [showReceipt,    setShowReceipt]    = useState(false)
+  const [payDialogOpen,  setPayDialogOpen]  = useState(false)
+  const [payAmount,      setPayAmount]      = useState('')
+  const [deleteConfirm,  setDeleteConfirm]  = useState(false)
+  const [showClientPick, setShowClientPick] = useState(false)
+  const [editingItemId,  setEditingItemId]  = useState<string | null>(null)
+  const [addingItem,     setAddingItem]     = useState(false)
 
   const receiptData: ReceiptData | null = order ? {
     id:             order.id,
@@ -96,6 +268,37 @@ export function OrderDetailPage() {
     }
   }
 
+  async function handleDeleteOrder() {
+    if (!order) return
+    try {
+      await deleteOrder(order.id)
+      toast.success('Заказ удалён')
+      navigate('/orders')
+    } catch {
+      toast.error('Ошибка удаления')
+    }
+  }
+
+  async function handleAssignClient(c: { id: string; first_name: string; last_name?: string | null; phone?: string | null }) {
+    if (!order) return
+    try {
+      await assignClient({ id: order.id, client_id: c.id })
+      toast.success(`Клиент ${c.first_name} привязан`)
+    } catch {
+      toast.error('Ошибка привязки клиента')
+    }
+  }
+
+  async function handleRemoveItem(itemId: string) {
+    if (!order) return
+    try {
+      await removeItem({ orderId: order.id, itemId })
+      toast.success('Изделие удалено')
+    } catch {
+      toast.error('Ошибка удаления изделия')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -114,20 +317,19 @@ export function OrderDetailPage() {
     )
   }
 
-  const nextStatuses    = NEXT_STATUSES[order.status] ?? []
-  const canIssue        = order.status === 'ready' || order.status === 'in_progress'
-  const items           = order.items ?? []
-  const remaining       = order.total_amount - order.paid_amount
-  const showPayBtn      = remaining > 0 && order.status !== 'cancelled'
+  const nextStatuses = NEXT_STATUSES[order.status] ?? []
+  const canIssue     = order.status === 'ready' || order.status === 'in_progress'
+  const items        = order.items ?? []
+  const remaining    = order.total_amount - order.paid_amount
+  const showPayBtn   = remaining > 0 && order.status !== 'cancelled'
 
   // Urgency
   const nonFinalStatuses: OrderStatus[] = ['received', 'in_progress', 'ready']
   const isUrgentStatus = nonFinalStatuses.includes(order.status as OrderStatus)
   const readyDateDue   = order.ready_date ? dayjs(order.ready_date) : null
   const isOverdue      = isUrgentStatus && readyDateDue != null && readyDateDue.isBefore(dayjs(), 'day')
-  const isDueToday     = isUrgentStatus && readyDateDue != null && readyDateDue.isToday()
+  const isDueToday     = isUrgentStatus && readyDateDue != null && readyDateDue.isSame(dayjs(), 'day')
 
-  // Client name helper
   const clientName = order.client
     ? [order.client.first_name, order.client.last_name].filter(Boolean).join(' ')
     : null
@@ -148,12 +350,31 @@ export function OrderDetailPage() {
           </div>
           <p className="text-xs text-muted-foreground">
             {dayjs(order.created_at).format('DD.MM.YYYY HH:mm')}
+            {order.ready_date && (
+              <span className={cn(
+                'ml-2',
+                isOverdue ? 'text-red-500 font-medium' : isDueToday ? 'text-orange-500 font-medium' : ''
+              )}>
+                · Срок: {dayjs(order.ready_date).format('DD.MM.YYYY')}
+              </span>
+            )}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setShowReceipt(true)}>
-          <Printer className="h-4 w-4 mr-1.5" />
-          Квитанция
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="sm" onClick={() => setShowReceipt(true)}>
+            <Printer className="h-4 w-4 mr-1.5" />
+            Квитанция
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive"
+            onClick={() => setDeleteConfirm(true)}
+            title="Удалить заказ"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Scrollable content */}
@@ -202,27 +423,37 @@ export function OrderDetailPage() {
                     </div>
                   )}
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                <button className="text-sm text-primary hover:underline">
-                  + Без клиента
+                <button
+                  onClick={() => setShowClientPick(v => !v)}
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                  title="Сменить клиента"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
                 </button>
               </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <button
+                  onClick={() => setShowClientPick(v => !v)}
+                  className="flex items-center gap-2 text-sm text-primary hover:underline w-fit"
+                >
+                  <User className="h-4 w-4" />
+                  + Привязать клиента
+                </button>
+              </div>
+            )}
+
+            {showClientPick && (
+              <ClientPickerDropdown
+                onSelect={handleAssignClient}
+                onClose={() => setShowClientPick(false)}
+              />
             )}
 
             {order.assigned_to_profile && (
               <div className="flex items-center gap-3">
                 <Package className="h-4 w-4 text-muted-foreground shrink-0" />
                 <p className="text-sm">Исп.: {order.assigned_to_profile.display_name}</p>
-              </div>
-            )}
-
-            {order.ready_date && (
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                <p className="text-sm">Срок: {dayjs(order.ready_date).format('DD.MM.YYYY')}</p>
               </div>
             )}
 
@@ -237,48 +468,87 @@ export function OrderDetailPage() {
         {/* Items */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Изделия ({items.length})</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Изделия ({items.length})</CardTitle>
+              <button
+                onClick={() => { setAddingItem(v => !v); setEditingItemId(null) }}
+                className="flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Добавить
+              </button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-2">
+
+            {addingItem && (
+              <AddItemForm orderId={order.id} onClose={() => setAddingItem(false)} />
+            )}
+
             {items.map(item => (
-              <div
-                key={item.id}
-                className={`flex items-start gap-3 rounded-lg border p-3 ${
-                  item.defects
-                    ? 'border-orange-300 bg-orange-50/50 dark:border-orange-700 dark:bg-orange-950/20'
-                    : ''
-                }`}
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-sm">{item.item_type_name}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      item.status === 'issued'
-                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-                        : item.status === 'ready'
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                        : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
-                    }`}>
-                      {ITEM_STATUS_LABELS[item.status] ?? item.status}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-muted-foreground">
-                    {item.color      && <span>Цвет: {item.color}</span>}
-                    {item.brand      && <span>Бренд: {item.brand}</span>}
-                    {(item as any).area_m2 != null && (
-                      <span>Площадь: {Number((item as any).area_m2).toFixed(2)} м²</span>
+              <div key={item.id}>
+                <div
+                  className={`flex items-start gap-3 rounded-lg border p-3 group ${
+                    item.defects
+                      ? 'border-orange-300 bg-orange-50/50 dark:border-orange-700 dark:bg-orange-950/20'
+                      : ''
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-sm">{item.item_type_name}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        item.status === 'issued'
+                          ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                          : item.status === 'ready'
+                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                          : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                      }`}>
+                        {ITEM_STATUS_LABELS[item.status] ?? item.status}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-muted-foreground">
+                      {item.color      && <span>Цвет: {item.color}</span>}
+                      {item.brand      && <span>Бренд: {item.brand}</span>}
+                      {(item as any).area_m2 != null && (
+                        <span>Площадь: {Number((item as any).area_m2).toFixed(2)} м²</span>
+                      )}
+                      {item.ready_date && <span>Срок: {dayjs(item.ready_date).format('DD.MM')}</span>}
+                    </div>
+                    {item.defects && (
+                      <p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
+                        ⚠ {item.defects}
+                      </p>
                     )}
-                    {item.ready_date && <span>Срок: {dayjs(item.ready_date).format('DD.MM')}</span>}
                   </div>
-                  {item.defects && (
-                    <p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
-                      ⚠ {item.defects}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-sm font-semibold">
+                      {formatCurrency(item.price)} {symbol}
+                    </span>
+                    <button
+                      onClick={() => setEditingItemId(v => v === item.id ? null : item.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-primary"
+                      title="Редактировать"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleRemoveItem(item.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-destructive"
+                      title="Удалить изделие"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <span className="text-sm font-semibold shrink-0">
-                  {formatCurrency(item.price)} {symbol}
-                </span>
+
+                {editingItemId === item.id && (
+                  <EditItemRow
+                    item={item}
+                    orderId={order.id}
+                    onClose={() => setEditingItemId(null)}
+                  />
+                )}
               </div>
             ))}
 
@@ -399,6 +669,31 @@ export function OrderDetailPage() {
 
       </div>
 
+      {/* Диалог подтверждения удаления заказа */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-2xl shadow-2xl p-6 w-72 space-y-4">
+            <div className="flex justify-center">
+              <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <Trash2 className="h-6 w-6 text-red-600" />
+              </div>
+            </div>
+            <div className="text-center space-y-1">
+              <p className="font-semibold">Удалить заказ {order.number}?</p>
+              <p className="text-sm text-muted-foreground">Все изделия и история будут удалены безвозвратно.</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" size="sm" onClick={() => setDeleteConfirm(false)}>
+                Отмена
+              </Button>
+              <Button variant="destructive" className="flex-1" size="sm" disabled={deletingOrder} onClick={handleDeleteOrder}>
+                {deletingOrder ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Удалить'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* IssueItemsDialog */}
       {issueOpen && order && (
         <IssueItemsDialog
@@ -414,4 +709,9 @@ export function OrderDetailPage() {
       )}
     </div>
   )
+}
+
+// ── Вспомогательный хелпер cn ─────────────────────────────────────────────────
+function cn(...classes: (string | boolean | undefined | null)[]): string {
+  return classes.filter(Boolean).join(' ')
 }
