@@ -1406,5 +1406,88 @@
       "statusFailed": "Ошибка",
       "estimatedRecipients": "Получателей"
     }
+  },
+  "clinic": {
+    "nav": {
+      "patients": "Пациенты",
+      "appointments": "Приёмы"
+    },
+    "medcard": {
+      "title": "Медкарта",
+      "gender": "Пол",
+      "male": "Мужской",
+      "female": "Женский",
+      "bloodType": "Группа крови",
+      "allergies": "Аллергии",
+      "allergiesPlaceholder": "Пенициллин, лидокаин...",
+      "contraindications": "Противопоказания",
+      "contraindicationsPlaceholder": "Беременность, лактация...",
+      "chronicDiseases": "Хронические заболевания",
+      "chronicDiseasesPlaceholder": "Диабет, гипертония...",
+      "insuranceNumber": "Номер полиса",
+      "emergencyContact": "Контакт для экстренной связи",
+      "emergencyName": "Имя контактного лица",
+      "emergencyPhone": "Телефон контактного лица",
+      "noCard": "Медкарта не заполнена",
+      "noCardDesc": "Заполните медицинские данные пациента"
+    },
+    "visit": {
+      "title": "Запись приёма",
+      "complaints": "Жалобы",
+      "complaintsPlaceholder": "Боль в области...",
+      "examination": "Осмотр",
+      "examinationPlaceholder": "Результаты осмотра...",
+      "diagnosis": "Диагноз",
+      "diagnosisPlaceholder": "Основной диагноз...",
+      "diagnosisCode": "Код МКБ-10",
+      "treatment": "Назначения",
+      "treatmentPlaceholder": "План лечения...",
+      "prescriptions": "Рецепты",
+      "prescriptionName": "Препарат",
+      "prescriptionDosage": "Дозировка",
+      "prescriptionFrequency": "Частота",
+      "prescriptionDuration": "Длительность",
+      "addPrescription": "Добавить препарат",
+      "recommendations": "Рекомендации",
+      "recommendationsPlaceholder": "Рекомендации пациенту...",
+      "nextVisitDate": "Дата повторного приёма",
+      "attachments": "Вложения",
+      "fromTemplate": "Из шаблона",
+      "saveVisit": "Сохранить приём",
+      "visitSaved": "Приём сохранён",
+      "noVisits": "Нет записей приёмов",
+      "visitHistory": "История приёмов"
+    },
+    "dental": {
+      "title": "Зубная формула",
+      "healthy": "Здоров",
+      "caries": "Кариес",
+      "filling": "Пломба",
+      "crown": "Коронка",
+      "missing": "Отсутствует",
+      "implant": "Имплант",
+      "bridge": "Мост",
+      "rootCanal": "Депульпирован",
+      "upperJaw": "Верхняя челюсть",
+      "lowerJaw": "Нижняя челюсть",
+      "toothNotes": "Заметки",
+      "resetChart": "Сбросить формулу",
+      "selectStatus": "Выберите статус"
+    },
+    "settings": {
+      "visitTemplates": "Шаблоны приёмов",
+      "addTemplate": "Добавить шаблон",
+      "editTemplate": "Редактировать шаблон",
+      "templateName": "Название шаблона",
+      "templateSpecialty": "Специальность",
+      "noTemplates": "Нет шаблонов",
+      "noTemplatesDesc": "Создайте шаблон для быстрого заполнения приёма"
+    },
+    "stats": {
+      "patientsToday": "Пациентов сегодня",
+      "visitsCompleted": "Приёмов завершено",
+      "upcomingFollowUps": "Повторные приёмы",
+      "followUpsThisWeek": "На этой неделе"
+    }
   }
 }

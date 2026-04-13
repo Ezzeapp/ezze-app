@@ -73,6 +73,53 @@ export const SPECIALTY_CATEGORY_MAP: SpecialtyCategoryMap[] = [
     productCategories: ['Косметология', 'Медицина и здоровье', 'Расходники'],
   },
 
+  // ── Медицина и клиника ─────────────────────────────────────────────────────
+  {
+    keywords: ['врач', 'доктор', 'терапевт', 'педиатр', 'хирург', 'doctor', 'physician'],
+    serviceCategories: ['Медицинские услуги'],
+    productCategories: ['Медицина и здоровье', 'Расходники'],
+  },
+  {
+    keywords: ['стоматолог', 'дантист', 'ортодонт', 'dentist', 'dental'],
+    serviceCategories: ['Стоматология', 'Медицинские услуги'],
+    productCategories: ['Медицина и здоровье', 'Расходники'],
+  },
+  {
+    keywords: ['гинеколог', 'акушер', 'gynecol'],
+    serviceCategories: ['Медицинские услуги'],
+    productCategories: ['Медицина и здоровье', 'Расходники'],
+  },
+  {
+    keywords: ['невролог', 'нейро', 'neurol'],
+    serviceCategories: ['Медицинские услуги'],
+    productCategories: ['Медицина и здоровье', 'Расходники'],
+  },
+  {
+    keywords: ['офтальмолог', 'окулист', 'глазн', 'ophthalm'],
+    serviceCategories: ['Медицинские услуги'],
+    productCategories: ['Медицина и здоровье', 'Расходники'],
+  },
+  {
+    keywords: ['дерматолог', 'кожн', 'dermatol'],
+    serviceCategories: ['Медицинские услуги', 'Косметология'],
+    productCategories: ['Медицина и здоровье', 'Расходники'],
+  },
+  {
+    keywords: ['узи', 'ультразвук', 'ultrasound', 'узист'],
+    serviceCategories: ['Диагностика', 'Медицинские услуги'],
+    productCategories: ['Медицина и здоровье', 'Расходники'],
+  },
+  {
+    keywords: ['физиотерап', 'лфк', 'реабилит', 'physiother'],
+    serviceCategories: ['Физиотерапия', 'Медицинские услуги'],
+    productCategories: ['Медицина и здоровье', 'Расходники'],
+  },
+  {
+    keywords: ['медсестр', 'фельдшер', 'nurse'],
+    serviceCategories: ['Медицинские услуги'],
+    productCategories: ['Медицина и здоровье', 'Расходники'],
+  },
+
   // ── Здоровье и фитнес ─────────────────────────────────────────────────────
   {
     keywords: ['нутрицио', 'диетолог'],

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { PRODUCT } from '@/lib/config'
 import type { GlobalService, GlobalProduct } from '@/types'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -15,6 +16,7 @@ export function useGlobalServices(search = '') {
       let query = supabase
         .from('global_services')
         .select('*')
+        .eq('product', PRODUCT)
         .order('category')
         .order('name')
       if (search) {
@@ -34,7 +36,7 @@ export function useCreateGlobalService() {
     mutationFn: async (data: Partial<GlobalService>) => {
       const { data: result, error } = await supabase
         .from('global_services')
-        .insert(data)
+        .insert({ ...data, product: PRODUCT })
         .select()
         .single()
       if (error) throw error
@@ -85,6 +87,7 @@ export function useGlobalProducts(search = '') {
       let query = supabase
         .from('global_products')
         .select('*')
+        .eq('product', PRODUCT)
         .order('category')
         .order('name')
       if (search) {
@@ -104,7 +107,7 @@ export function useCreateGlobalProduct() {
     mutationFn: async (data: Partial<GlobalProduct>) => {
       const { data: result, error } = await supabase
         .from('global_products')
-        .insert(data)
+        .insert({ ...data, product: PRODUCT })
         .select()
         .single()
       if (error) throw error
@@ -150,7 +153,7 @@ export function useBulkImportGlobalServices() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (items: Array<{ category: string; name: string; duration_min?: number; price?: number }>) => {
-      const { data: existing } = await supabase.from('global_services').select('*')
+      const { data: existing } = await supabase.from('global_services').select('*').eq('product', PRODUCT)
       const existingSet = new Set(
         (existing ?? []).map((s: any) => `${(s.category ?? '').toLowerCase()}::${s.name.toLowerCase()}`)
       )
@@ -158,7 +161,7 @@ export function useBulkImportGlobalServices() {
       for (const item of items) {
         const key = `${(item.category || '').toLowerCase()}::${item.name.toLowerCase()}`
         if (!existingSet.has(key)) {
-          await supabase.from('global_services').insert(item)
+          await supabase.from('global_services').insert({ ...item, product: PRODUCT })
           created++
         }
       }
@@ -172,7 +175,7 @@ export function useBulkImportGlobalProducts() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (items: Array<{ category: string; name: string; unit?: string; price?: number }>) => {
-      const { data: existing } = await supabase.from('global_products').select('*')
+      const { data: existing } = await supabase.from('global_products').select('*').eq('product', PRODUCT)
       const existingSet = new Set(
         (existing ?? []).map((p: any) => `${(p.category ?? '').toLowerCase()}::${p.name.toLowerCase()}`)
       )
@@ -180,12 +183,44 @@ export function useBulkImportGlobalProducts() {
       for (const item of items) {
         const key = `${(item.category || '').toLowerCase()}::${item.name.toLowerCase()}`
         if (!existingSet.has(key)) {
-          await supabase.from('global_products').insert(item)
+          await supabase.from('global_products').insert({ ...item, product: PRODUCT })
           created++
         }
       }
       return created
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [GLOBAL_PRODUCTS_KEY] }),
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ADMIN HOOKS (no product filter — superadmin sees all)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export function useAdminGlobalServices(search = '') {
+  return useQuery({
+    queryKey: [GLOBAL_SERVICES_KEY, 'admin', search],
+    queryFn: async () => {
+      let query = supabase.from('global_services').select('*').order('product').order('category').order('name')
+      if (search) query = query.or(`name.ilike.%${search}%,category.ilike.%${search}%`)
+      const { data, error } = await query
+      if (error) throw error
+      return (data ?? []) as GlobalService[]
+    },
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useAdminGlobalProducts(search = '') {
+  return useQuery({
+    queryKey: [GLOBAL_PRODUCTS_KEY, 'admin', search],
+    queryFn: async () => {
+      let query = supabase.from('global_products').select('*').order('product').order('category').order('name')
+      if (search) query = query.or(`name.ilike.%${search}%,category.ilike.%${search}%`)
+      const { data, error } = await query
+      if (error) throw error
+      return (data ?? []) as GlobalProduct[]
+    },
+    staleTime: 5 * 60_000,
   })
 }

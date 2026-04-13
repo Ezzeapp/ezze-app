@@ -463,3 +463,74 @@ export interface Subscription {
   state?:                  number
   raw_payload?:            unknown
 }
+
+// ── Clinic (Медицина) ──────────────────────────────────────────
+
+export type Gender = 'male' | 'female'
+export type BloodType = 'I+' | 'I-' | 'II+' | 'II-' | 'III+' | 'III-' | 'IV+' | 'IV-'
+export type ToothStatus = 'healthy' | 'caries' | 'filling' | 'crown' | 'missing' | 'implant' | 'bridge' | 'root_canal'
+
+export interface Prescription {
+  name: string
+  dosage: string
+  frequency: string
+  duration: string
+}
+
+export interface ClinicPatientCard {
+  id: string
+  client_id: string
+  master_id: string
+  gender?: Gender | null
+  blood_type?: BloodType | null
+  allergies?: string | null
+  contraindications?: string | null
+  chronic_diseases?: string | null
+  insurance_number?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ClinicVisit {
+  id: string
+  appointment_id: string
+  master_id: string
+  complaints?: string | null
+  examination?: string | null
+  diagnosis?: string | null
+  diagnosis_code?: string | null
+  treatment?: string | null
+  prescriptions: Prescription[]
+  recommendations?: string | null
+  next_visit_date?: string | null
+  attachments: { url: string; name: string; type: string }[]
+  template_id?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ClinicDentalChart {
+  id: string
+  client_id: string
+  master_id: string
+  teeth: Record<number, { status: ToothStatus; notes?: string }>
+  created_at: string
+  updated_at: string
+}
+
+export interface ClinicVisitTemplate {
+  id: string
+  master_id: string
+  name: string
+  specialty?: string | null
+  complaints?: string | null
+  examination?: string | null
+  diagnosis?: string | null
+  treatment?: string | null
+  prescriptions: Prescription[]
+  recommendations?: string | null
+  sort_order: number
+  created_at: string
+}

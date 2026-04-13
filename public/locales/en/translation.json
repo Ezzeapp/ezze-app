@@ -1406,5 +1406,88 @@
       "statusFailed": "Failed",
       "estimatedRecipients": "Recipients"
     }
+  },
+  "clinic": {
+    "nav": {
+      "patients": "Patients",
+      "appointments": "Appointments"
+    },
+    "medcard": {
+      "title": "Medical Card",
+      "gender": "Gender",
+      "male": "Male",
+      "female": "Female",
+      "bloodType": "Blood Type",
+      "allergies": "Allergies",
+      "allergiesPlaceholder": "Penicillin, lidocaine...",
+      "contraindications": "Contraindications",
+      "contraindicationsPlaceholder": "Pregnancy, lactation...",
+      "chronicDiseases": "Chronic Diseases",
+      "chronicDiseasesPlaceholder": "Diabetes, hypertension...",
+      "insuranceNumber": "Insurance Number",
+      "emergencyContact": "Emergency Contact",
+      "emergencyName": "Contact Name",
+      "emergencyPhone": "Contact Phone",
+      "noCard": "Medical card not filled",
+      "noCardDesc": "Fill in patient medical data"
+    },
+    "visit": {
+      "title": "Visit Record",
+      "complaints": "Complaints",
+      "complaintsPlaceholder": "Pain in area of...",
+      "examination": "Examination",
+      "examinationPlaceholder": "Examination results...",
+      "diagnosis": "Diagnosis",
+      "diagnosisPlaceholder": "Primary diagnosis...",
+      "diagnosisCode": "ICD-10 Code",
+      "treatment": "Treatment",
+      "treatmentPlaceholder": "Treatment plan...",
+      "prescriptions": "Prescriptions",
+      "prescriptionName": "Medication",
+      "prescriptionDosage": "Dosage",
+      "prescriptionFrequency": "Frequency",
+      "prescriptionDuration": "Duration",
+      "addPrescription": "Add Medication",
+      "recommendations": "Recommendations",
+      "recommendationsPlaceholder": "Patient recommendations...",
+      "nextVisitDate": "Next Visit Date",
+      "attachments": "Attachments",
+      "fromTemplate": "From Template",
+      "saveVisit": "Save Visit",
+      "visitSaved": "Visit saved",
+      "noVisits": "No visit records",
+      "visitHistory": "Visit History"
+    },
+    "dental": {
+      "title": "Dental Chart",
+      "healthy": "Healthy",
+      "caries": "Caries",
+      "filling": "Filling",
+      "crown": "Crown",
+      "missing": "Missing",
+      "implant": "Implant",
+      "bridge": "Bridge",
+      "rootCanal": "Root Canal",
+      "upperJaw": "Upper Jaw",
+      "lowerJaw": "Lower Jaw",
+      "toothNotes": "Notes",
+      "resetChart": "Reset Chart",
+      "selectStatus": "Select Status"
+    },
+    "settings": {
+      "visitTemplates": "Visit Templates",
+      "addTemplate": "Add Template",
+      "editTemplate": "Edit Template",
+      "templateName": "Template Name",
+      "templateSpecialty": "Specialty",
+      "noTemplates": "No templates",
+      "noTemplatesDesc": "Create a template for quick visit filling"
+    },
+    "stats": {
+      "patientsToday": "Patients Today",
+      "visitsCompleted": "Visits Completed",
+      "upcomingFollowUps": "Upcoming Follow-ups",
+      "followUpsThisWeek": "This Week"
+    }
   }
 }

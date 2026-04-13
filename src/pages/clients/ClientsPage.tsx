@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, KeyboardEvent, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2, Gift, TrendingUp, TrendingDown, Award, Crown, Gem, Star, Send, ShoppingBag } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2, Gift, TrendingUp, TrendingDown, Award, Crown, Gem, Star, Send, ShoppingBag, Stethoscope } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
@@ -34,6 +34,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { getFileUrl } from '@/lib/utils'
 import type { Client } from '@/types'
+import { ClinicMedicalCard } from '@/components/clinic/ClinicMedicalCard'
+import { DentalChart } from '@/components/clinic/DentalChart'
 import {
   useLoyaltySettings,
   useAllClientsLoyaltyBalances,
@@ -177,7 +179,7 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
     enabled: PRODUCT === 'cleaning',
   })
 
-  const [tab, setTab] = useState<'stats' | 'loyalty'>('stats')
+  const [tab, setTab] = useState<'stats' | 'loyalty' | 'medcard' | 'dental'>('stats')
   const [manualAmount, setManualAmount] = useState('')
   const [manualNote, setManualNote] = useState('')
   const [manualMode, setManualMode] = useState<'earn' | 'redeem' | null>(null)
@@ -258,6 +260,23 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
             >
               <Gift className="h-3.5 w-3.5 inline mr-1.5" />
               {t('loyalty.title')}
+            </button>
+          )}
+          {PRODUCT === 'clinic' && (
+            <button
+              onClick={() => setTab('medcard')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'medcard' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <Stethoscope className="h-3.5 w-3.5 inline mr-1.5" />
+              {t('clinic.medcard.title')}
+            </button>
+          )}
+          {PRODUCT === 'clinic' && (
+            <button
+              onClick={() => setTab('dental')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'dental' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {t('clinic.dental.title')}
             </button>
           )}
         </div>
@@ -455,6 +474,16 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
               )}
             </div>
           </div>
+        )}
+
+        {/* ── Tab: Medical Card (clinic only) ── */}
+        {PRODUCT === 'clinic' && tab === 'medcard' && (
+          <ClinicMedicalCard clientId={client.id} />
+        )}
+
+        {/* ── Tab: Dental Chart (clinic only) ── */}
+        {PRODUCT === 'clinic' && tab === 'dental' && (
+          <DentalChart clientId={client.id} />
         )}
 
         <DialogFooter>

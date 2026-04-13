@@ -5,7 +5,7 @@ import {
   Upload, Download, AlertCircle, ChevronDown, ChevronRight,
 } from 'lucide-react'
 import {
-  useGlobalProducts,
+  useAdminGlobalProducts,
   useCreateGlobalProduct,
   useUpdateGlobalProduct,
   useDeleteGlobalProduct,
@@ -33,7 +33,7 @@ const EMPTY_PROD_FORM = { name: '', unit: '', price: '' }
 export function AdminGlobalProductsDialog({ open, onClose }: Props) {
   const { t } = useTranslation()
   const [tab, setTab] = useState<Tab>('browse')
-  const { data: allProducts } = useGlobalProducts()
+  const { data: allProducts } = useAdminGlobalProducts()
 
   const totalCategories = useMemo(() => {
     if (!allProducts) return 0
@@ -92,7 +92,7 @@ function BrowseProductsTab() {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
 
-  const { data: products, isLoading } = useGlobalProducts()
+  const { data: products, isLoading } = useAdminGlobalProducts()
   const createProduct = useCreateGlobalProduct()
   const updateProduct = useUpdateGlobalProduct()
   const deleteProduct = useDeleteGlobalProduct()

@@ -5,7 +5,7 @@ import {
   Upload, Download, AlertCircle, ChevronDown, ChevronRight,
 } from 'lucide-react'
 import {
-  useGlobalServices,
+  useAdminGlobalServices,
   useCreateGlobalService,
   useUpdateGlobalService,
   useDeleteGlobalService,
@@ -33,7 +33,7 @@ const EMPTY_SVC_FORM = { name: '', duration_min: '', price: '' }
 export function AdminGlobalServicesDialog({ open, onClose }: Props) {
   const { t } = useTranslation()
   const [tab, setTab] = useState<Tab>('browse')
-  const { data: allServices } = useGlobalServices()
+  const { data: allServices } = useAdminGlobalServices()
 
   const totalCategories = useMemo(() => {
     if (!allServices) return 0
@@ -92,7 +92,7 @@ function BrowseServicesTab() {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
 
-  const { data: services, isLoading } = useGlobalServices()
+  const { data: services, isLoading } = useAdminGlobalServices()
   const createService = useCreateGlobalService()
   const updateService = useUpdateGlobalService()
   const deleteService = useDeleteGlobalService()
