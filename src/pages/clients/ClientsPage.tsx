@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useMemo, KeyboardEvent, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2, Gift, TrendingUp, TrendingDown, Award, Crown, Gem, Star, Send } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Users, MoreVertical, Trash2, Edit, BarChart2, Calendar, XCircle, AlertCircle, X as XIcon, Tag, Square, CheckSquare, Camera, UserCircle2, Sparkles, Loader2, Gift, TrendingUp, TrendingDown, Award, Crown, Gem, Star, Send, ShoppingBag } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
+import dayjs from 'dayjs'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -24,6 +27,7 @@ import { BulkActionBar } from '@/components/shared/BulkActionBar'
 import { PlanLimitBanner } from '@/components/shared/PlanLimitBanner'
 import { toast } from '@/components/shared/Toaster'
 import { formatCurrency, normalizePhone } from '@/lib/utils'
+import { PRODUCT } from '@/lib/config'
 import { useCurrency } from '@/hooks/useCurrency'
 import { usePlanLimitCheck, useAIConfig } from '@/hooks/useAppSettings'
 import { useAuth } from '@/contexts/AuthContext'
@@ -150,12 +154,28 @@ function LevelIcon({ level, className = 'h-4 w-4' }: { level: import('@/hooks/us
 function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () => void }) {
   const { t, i18n } = useTranslation()
   const currency = useCurrency()
+  const navigate = useNavigate()
   const clientFullName = `${client.first_name} ${client.last_name || ''}`.trim()
   const { data: stats, isLoading } = useClientStats(client.id, clientFullName)
   const { data: loyaltySettings } = useLoyaltySettings()
   const { data: loyaltyBalance = 0 } = useClientLoyaltyBalance(client.id)
   const { data: loyaltyPoints = [], isLoading: loyaltyLoading } = useClientLoyaltyPoints(client.id)
   const addPoints = useAddLoyaltyPoints()
+
+  const { data: clientOrders = [] } = useQuery({
+    queryKey: ['cleaning_orders', 'by_client', client.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('cleaning_orders')
+        .select('id, number, status, payment_status, total_amount, created_at, order_type')
+        .eq('client_id', client.id)
+        .eq('product', PRODUCT)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      return data ?? []
+    },
+    enabled: PRODUCT === 'cleaning',
+  })
 
   const [tab, setTab] = useState<'stats' | 'loyalty'>('stats')
   const [manualAmount, setManualAmount] = useState('')
@@ -301,6 +321,28 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-4">{t('clients.statsNoVisits')}</p>
+              )}
+
+              {PRODUCT === 'cleaning' && clientOrders.length > 0 && (
+                <div className="mt-3 border-t pt-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide flex items-center gap-1.5">
+                    <ShoppingBag className="h-3.5 w-3.5" />
+                    История заказов
+                  </p>
+                  <div className="space-y-1.5">
+                    {clientOrders.map((order: { id: string; number: string; status: string; payment_status: string; total_amount: number; created_at: string; order_type: string }) => (
+                      <button
+                        key={order.id}
+                        onClick={(e) => { e.stopPropagation(); onClose(); navigate(`/orders/${order.id}`) }}
+                        className="w-full text-left flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-accent transition-colors text-sm"
+                      >
+                        <span className="font-medium">{order.number}</span>
+                        <span className="text-muted-foreground text-xs">{dayjs(order.created_at).format('DD.MM.YY')}</span>
+                        <span className="font-semibold text-xs">{formatCurrency(order.total_amount, currency, i18n.language)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           ) : null

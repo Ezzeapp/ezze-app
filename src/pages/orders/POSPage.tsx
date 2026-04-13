@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, Pencil, LayoutGrid, List, CheckCircle2, Trash2, UserPlus } from 'lucide-react'
+import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, Pencil, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -283,8 +283,19 @@ export function POSPage() {
   // Оплата
   const [prepaid, setPrepaid] = useState('')
   const [notes, setNotes] = useState('')
+  const [globalReadyDate, setGlobalReadyDate] = useState('')
+  const [discount, setDiscount] = useState('')
 
   const total = cart.reduce((s, i) => s + i.price, 0)
+  const discountAmt = total * (parseFloat(discount) || 0) / 100
+  const finalTotal = total - discountAmt
+
+  // When globalReadyDate changes, update all cart items
+  useEffect(() => {
+    if (globalReadyDate) {
+      setCart(prev => prev.map(i => ({ ...i, ready_date: globalReadyDate })))
+    }
+  }, [globalReadyDate])
 
   // ── Закрытие выпадающего списка клиентов по клику снаружи ────────────────
   useEffect(() => {
@@ -305,6 +316,7 @@ export function POSPage() {
       return
     }
     const item = makeCartItem(type.name, type.default_price, type.default_days, type.id)
+    if (globalReadyDate) item.ready_date = globalReadyDate
     setCart(prev => [...prev, item])
   }
 
@@ -313,6 +325,7 @@ export function POSPage() {
     item.width_m = String(w)
     item.length_m = String(l)
     item.area_m2 = area
+    if (globalReadyDate) item.ready_date = globalReadyDate
     setCart(prev => [...prev, item])
   }
 
@@ -346,6 +359,8 @@ export function POSPage() {
     setAssignedTo(null)
     setPrepaid('')
     setNotes('')
+    setGlobalReadyDate('')
+    setDiscount('')
     setExpandedKey(null)
     setCreatedOrder(null)
     setReceiptData(null)
@@ -359,8 +374,9 @@ export function POSPage() {
         client_id: clientId,
         assigned_to: assignedTo,
         prepaid_amount: parseFloat(prepaid) || 0,
-        total_amount: total,
+        total_amount: finalTotal,
         notes: notes || null,
+        ready_date: globalReadyDate || null,
         items: cart.map(i => ({
           item_type_id: i.item_type_id,
           item_type_name: i.item_type_name,
@@ -397,7 +413,7 @@ export function POSPage() {
           width_m: i.width_m || null,
           length_m: i.length_m || null,
         })),
-        total_amount: total,
+        total_amount: finalTotal,
         prepaid_amount: parseFloat(prepaid) || 0,
         notes: notes || null,
       }
@@ -758,19 +774,39 @@ export function POSPage() {
               />
             </div>
 
+            {/* Срок готовности для всех */}
+            <div className="flex items-center gap-2">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <Label className="text-xs text-muted-foreground w-[4.5rem] shrink-0">Срок для всех</Label>
+              <Input
+                type="date"
+                value={globalReadyDate}
+                onChange={e => setGlobalReadyDate(e.target.value)}
+                className="flex-1 h-7 text-xs"
+              />
+            </div>
+
             <Separator />
 
             {/* Итого */}
             <div className="flex items-center justify-between py-1">
               <span className="text-sm text-muted-foreground">Позиций: {cart.length}</span>
-              <span className="font-bold text-xl tabular-nums">{formatCurrency(total)} {symbol}</span>
+              <span className="font-bold text-xl tabular-nums">{formatCurrency(finalTotal)} {symbol}</span>
             </div>
+
+            {/* Скидка строка */}
+            {discountAmt > 0 && (
+              <div className="flex justify-between text-sm font-medium text-green-600 dark:text-green-400">
+                <span>Скидка:</span>
+                <span>-{formatCurrency(discountAmt)} {symbol}</span>
+              </div>
+            )}
 
             {/* К оплате */}
             {parseFloat(prepaid) > 0 && (
               <div className="flex justify-between text-sm font-medium text-orange-600 dark:text-orange-400">
                 <span>К оплате:</span>
-                <span>{formatCurrency(Math.max(0, total - (parseFloat(prepaid) || 0)))} {symbol}</span>
+                <span>{formatCurrency(Math.max(0, finalTotal - (parseFloat(prepaid) || 0)))} {symbol}</span>
               </div>
             )}
 
@@ -784,6 +820,19 @@ export function POSPage() {
                 className="w-28 h-7 text-sm text-right"
               />
               <span className="text-xs text-muted-foreground">{symbol}</span>
+            </div>
+
+            {/* Скидка % */}
+            <div className="flex items-center gap-2">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-xs text-muted-foreground flex-1">Скидка</span>
+              <Input
+                type="number" min={0} max={100} placeholder="0"
+                value={discount}
+                onChange={e => setDiscount(e.target.value)}
+                className="w-20 h-7 text-sm text-right"
+              />
+              <span className="text-xs text-muted-foreground">%</span>
             </div>
 
             <div className="flex gap-2">

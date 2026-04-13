@@ -4,6 +4,7 @@ import {
   ArrowLeft, CheckCircle2, Loader2, Package, User, Calendar,
   AlertCircle, Printer, Phone, MessageCircle, AlertTriangle,
   Clock, Banknote, X, Trash2, Pencil, Plus, Check, Search,
+  Bell, MapPin,
 } from 'lucide-react'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 import { Button } from '@/components/ui/button'
@@ -223,6 +224,13 @@ export function OrderDetailPage() {
   const [editingItemId,  setEditingItemId]  = useState<string | null>(null)
   const [addingItem,     setAddingItem]     = useState(false)
 
+  // Feature 1: Cancel reason modal
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [cancelReason,     setCancelReason]     = useState('')
+
+  // Feature 2: TG notify button
+  const [notifyOpen, setNotifyOpen] = useState(false)
+
   const receiptData: ReceiptData | null = order ? {
     id:             order.id,
     number:         order.number,
@@ -235,10 +243,10 @@ export function OrderDetailPage() {
     notes:          order.notes,
   } : null
 
-  async function handleStatusChange(newStatus: OrderStatus) {
+  async function handleStatusChange(newStatus: OrderStatus, note?: string) {
     if (!order) return
     try {
-      await updateStatus({ id: order.id, status: newStatus })
+      await updateStatus({ id: order.id, status: newStatus, note })
       toast.success(`Статус изменён: ${STATUS_CONFIG[newStatus].label}`)
     } catch {
       toast.error('Ошибка изменения статуса')
@@ -334,6 +342,19 @@ export function OrderDetailPage() {
     ? [order.client.first_name, order.client.last_name].filter(Boolean).join(' ')
     : null
 
+  // Feature 4: Payment progress bar
+  const paidPercent = order.total_amount > 0
+    ? Math.min(100, Math.round((order.paid_amount / order.total_amount) * 100))
+    : 0
+
+  // Feature 2: TG notify message + link helpers
+  const notifyText = `Ваш заказ ${order.number} готов к выдаче! Химчистка.`
+  const tgChatId = (order.client as any)?.tg_chat_id
+  const clientPhone = order.client?.phone ?? ''
+  const tgLink = tgChatId
+    ? `https://t.me/${tgChatId}`
+    : `tg://resolve?phone=${clientPhone.replace(/[^0-9]/g, '')}`
+
   return (
     <div className="flex flex-col h-full">
 
@@ -420,6 +441,21 @@ export function OrderDetailPage() {
                       >
                         <MessageCircle className="h-3 w-3" />
                       </a>
+                      {/* Feature 2: Notify button when order is ready */}
+                      {order.status === 'ready' && (
+                        <button
+                          onClick={() => setNotifyOpen(v => !v)}
+                          className={cn(
+                            'inline-flex items-center justify-center h-6 w-6 rounded-full transition-colors',
+                            notifyOpen
+                              ? 'bg-violet-200 text-violet-700 dark:bg-violet-800/50 dark:text-violet-300'
+                              : 'bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-400'
+                          )}
+                          title="Уведомить клиента"
+                        >
+                          <Bell className="h-3 w-3" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -443,6 +479,37 @@ export function OrderDetailPage() {
               </div>
             )}
 
+            {/* Feature 2: Notify panel */}
+            {notifyOpen && order.status === 'ready' && order.client && (
+              <div className="rounded-lg border border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/20 p-3 space-y-2">
+                <p className="text-xs font-medium text-violet-700 dark:text-violet-300">Уведомить клиента</p>
+                <div className="rounded-md bg-white dark:bg-background/60 border px-3 py-2 text-sm text-foreground">
+                  {notifyText}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 h-8 text-xs"
+                    onClick={() => {
+                      navigator.clipboard.writeText(notifyText)
+                      toast.success('Скопировано')
+                    }}
+                  >
+                    Скопировать
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 h-8 text-xs"
+                    onClick={() => window.open(tgLink, '_blank')}
+                  >
+                    Открыть Telegram
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {showClientPick && (
               <ClientPickerDropdown
                 onSelect={handleAssignClient}
@@ -454,6 +521,32 @@ export function OrderDetailPage() {
               <div className="flex items-center gap-3">
                 <Package className="h-4 w-4 text-muted-foreground shrink-0" />
                 <p className="text-sm">Исп.: {order.assigned_to_profile.display_name}</p>
+              </div>
+            )}
+
+            {/* Feature 3: Visit address/date display */}
+            {order.order_type === 'carpet' && ((order as any).pickup_date || (order as any).delivery_date) && (
+              <div className="flex items-start gap-3">
+                <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                <div className="text-sm space-y-0.5">
+                  {(order as any).pickup_date && (
+                    <p>Забор: {dayjs((order as any).pickup_date).format('DD.MM.YYYY')}</p>
+                  )}
+                  {(order as any).delivery_date && (
+                    <p>Доставка: {dayjs((order as any).delivery_date).format('DD.MM.YYYY')}</p>
+                  )}
+                </div>
+              </div>
+            )}
+            {order.order_type === 'furniture' && ((order as any).visit_address || (order as any).visit_date) && (
+              <div className="flex items-start gap-3">
+                <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                <div className="text-sm space-y-0.5">
+                  {(order as any).visit_address && <p>{(order as any).visit_address}</p>}
+                  {(order as any).visit_date && (
+                    <p>Дата выезда: {dayjs((order as any).visit_date).format('DD.MM.YYYY')}</p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -578,6 +671,28 @@ export function OrderDetailPage() {
                   <span>{formatCurrency(remaining)} {symbol}</span>
                 </div>
               )}
+
+              {/* Feature 4: Payment progress bar */}
+              {order.total_amount > 0 && (
+                <div className="mt-2">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                    <span>Оплачено {paidPercent}%</span>
+                    <span>{formatCurrency(order.paid_amount)} / {formatCurrency(order.total_amount)} {symbol}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        paidPercent >= 100
+                          ? 'bg-green-500'
+                          : paidPercent > 0
+                          ? 'bg-orange-400'
+                          : 'bg-muted-foreground/30'
+                      }`}
+                      style={{ width: `${paidPercent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -602,7 +717,7 @@ export function OrderDetailPage() {
                       ? 'bg-green-600 hover:bg-green-700 text-white dark:bg-green-700 dark:hover:bg-green-600'
                       : ''
                   }
-                  onClick={() => handleStatusChange(s)}
+                  onClick={s === 'cancelled' ? () => setCancelDialogOpen(true) : () => handleStatusChange(s)}
                 >
                   {STATUS_CONFIG[s].label}
                 </Button>
@@ -688,6 +803,47 @@ export function OrderDetailPage() {
               </Button>
               <Button variant="destructive" className="flex-1" size="sm" disabled={deletingOrder} onClick={handleDeleteOrder}>
                 {deletingOrder ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Удалить'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Feature 1: Cancel reason modal */}
+      {cancelDialogOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-2xl shadow-2xl p-6 w-80 space-y-4">
+            <h3 className="font-semibold text-base">Отменить заказ?</h3>
+            <div>
+              <Label className="text-sm">Причина (необязательно)</Label>
+              <textarea
+                className="w-full mt-1 p-2 rounded-lg border text-sm resize-none h-20 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Клиент передумал, брак и т.д."
+                value={cancelReason}
+                onChange={e => setCancelReason(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                size="sm"
+                onClick={() => { setCancelDialogOpen(false); setCancelReason('') }}
+              >
+                Назад
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                size="sm"
+                disabled={updatingStatus}
+                onClick={async () => {
+                  await handleStatusChange('cancelled', cancelReason)
+                  setCancelDialogOpen(false)
+                  setCancelReason('')
+                }}
+              >
+                {updatingStatus ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Подтвердить'}
               </Button>
             </div>
           </div>

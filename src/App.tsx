@@ -52,6 +52,8 @@ const OrdersListPage = lazy(() => import('@/pages/orders/OrdersListPage').then(m
 const OrderFormPage = lazy(() => import('@/pages/orders/OrderFormPage').then(m => ({ default: m.OrderFormPage })))
 const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage').then(m => ({ default: m.OrderDetailPage })))
 const POSPage = lazy(() => import('@/pages/orders/POSPage').then(m => ({ default: m.POSPage })))
+const CleaningStatsPage = lazy(() => import('@/pages/cleaning/CleaningStatsPage').then(m => ({ default: m.CleaningStatsPage })))
+const CleaningReportsPage = lazy(() => import('@/pages/cleaning/CleaningReportsPage').then(m => ({ default: m.CleaningReportsPage })))
 
 const router = createBrowserRouter([
   // Public routes
@@ -118,6 +120,10 @@ const router = createBrowserRouter([
       { path: 'orders/new', element: <OrderFormPage /> },
       { path: 'orders/pos', element: <POSPage /> },
       { path: 'orders/:id', element: <OrderDetailPage /> },
+      ...(PRODUCT === 'cleaning' ? [
+        { path: 'stats', element: <CleaningStatsPage /> },
+        { path: 'reports', element: <CleaningReportsPage /> },
+      ] : []),
     ],
   },
 
