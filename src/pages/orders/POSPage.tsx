@@ -91,6 +91,37 @@ function filterByOrderType(types: any[], orderType: OrderType) {
   })
 }
 
+// ── Подкатегории для одежды ───────────────────────────────────────────────────
+
+interface CatalogCategory { id: string; label: string; keywords: string[] }
+
+const CLOTHING_SUBCATS: CatalogCategory[] = [
+  { id: 'outer',   label: 'Верхняя',   keywords: ['пальто','куртк','пуховик','плащ','пончо','шуба','дублён','ветровк','кожан','замшев'] },
+  { id: 'suits',   label: 'Костюмы',   keywords: ['пиджак','жилет','костюм','смокинг','фрак','мундир','форма'] },
+  { id: 'dresses', label: 'Платья',    keywords: ['платье','юбка'] },
+  { id: 'bottoms', label: 'Брюки',     keywords: ['брюк','джинс','шорт'] },
+  { id: 'knit',    label: 'Трикотаж',  keywords: ['свитер','кардиган','джемпер','водолазк','толстовк','худи'] },
+  { id: 'shirts',  label: 'Рубашки',   keywords: ['рубашк','футболк','поло','майк'] },
+  { id: 'sports',  label: 'Спорт',     keywords: ['спортив','комбинезон взрос','рабоч'] },
+  { id: 'kids',    label: 'Детская',   keywords: ['детск','детское','детская','комбинезон детск'] },
+  { id: 'formal',  label: 'Официальная',keywords: ['вечерн','свадебн','смокинг','фрак','мундир','медицин','халат','пижам'] },
+  { id: 'access',  label: 'Аксессуары',keywords: ['шарф','палантин','галстук','перчатк','шапк','берет'] },
+  { id: 'other',   label: 'Прочее',    keywords: ['одеял','подушк','постел'] },
+]
+
+function matchSubcat(name: string, cat: CatalogCategory): boolean {
+  const n = name.toLowerCase()
+  return cat.keywords.some(k => n.includes(k))
+}
+
+function getSubcatCounts(items: any[]): Record<string, number> {
+  const counts: Record<string, number> = {}
+  CLOTHING_SUBCATS.forEach(cat => {
+    counts[cat.id] = items.filter(i => matchSubcat(i.name, cat)).length
+  })
+  return counts
+}
+
 // ── Диалог размеров ковра ─────────────────────────────────────────────────────
 
 function CarpetSizeDialog({ typeName, pricePerSqm, onConfirm, onClose }: {
@@ -293,9 +324,23 @@ export function POSPage() {
   const filteredTypes = filterByOrderType(allTypes, orderType)
   const [catalogSearch, setCatalogSearch] = useState('')
   const [catalogView, setCatalogView] = useState<'grid' | 'list'>('grid')
-  const visibleTypes = catalogSearch
-    ? filteredTypes.filter(t => t.name.toLowerCase().includes(catalogSearch.toLowerCase()))
-    : filteredTypes
+  const [catalogSubcat, setCatalogSubcat] = useState<string>('all')
+
+  // Сброс подкатегории при смене типа заказа
+  const handleSetOrderType = (t: OrderType) => { setOrderType(t); setCart([]); setCatalogSearch(''); setCatalogSubcat('all') }
+
+  const subcatCounts = orderType === 'clothing' ? getSubcatCounts(filteredTypes) : {}
+  const activeSubcats = CLOTHING_SUBCATS.filter(c => (subcatCounts[c.id] ?? 0) > 0)
+
+  const visibleTypes = (() => {
+    let items = filteredTypes
+    if (catalogSearch) return items.filter(t => t.name.toLowerCase().includes(catalogSearch.toLowerCase()))
+    if (orderType === 'clothing' && catalogSubcat !== 'all') {
+      const cat = CLOTHING_SUBCATS.find(c => c.id === catalogSubcat)
+      if (cat) items = items.filter(t => matchSubcat(t.name, cat))
+    }
+    return items
+  })()
 
   // Корзина
   const [cart, setCart] = useState<CartItem[]>([])
@@ -487,7 +532,7 @@ export function POSPage() {
             return (
               <button
                 key={t}
-                onClick={() => { setOrderType(t); setCart([]); setCatalogSearch('') }}
+                onClick={() => handleSetOrderType(t)}
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border',
                   orderType === t
@@ -597,14 +642,49 @@ export function POSPage() {
             </div>
           </div>
 
-          {/* Подпись типа */}
-          <div className="px-3 pb-1 shrink-0">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-              {(() => { const Icon = ORDER_TYPE_ICONS[orderType]; return <Icon className="h-3.5 w-3.5" /> })()}
-              {ORDER_TYPE_LABELS[orderType]}
-              {orderType === 'carpet' && ' — нажмите для ввода размеров'}
-            </p>
-          </div>
+          {/* Подкатегории одежды (чипы) */}
+          {orderType === 'clothing' && activeSubcats.length > 0 && !catalogSearch && (
+            <div className="px-3 pb-2 shrink-0 overflow-x-auto">
+              <div className="flex gap-1.5 min-w-max">
+                <button
+                  onClick={() => setCatalogSubcat('all')}
+                  className={cn(
+                    'px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap border',
+                    catalogSubcat === 'all'
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-muted-foreground border-border hover:border-primary/50'
+                  )}
+                >
+                  Все ({filteredTypes.length})
+                </button>
+                {activeSubcats.map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setCatalogSubcat(cat.id)}
+                    className={cn(
+                      'px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap border',
+                      catalogSubcat === cat.id
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-muted-foreground border-border hover:border-primary/50'
+                    )}
+                  >
+                    {cat.label} ({subcatCounts[cat.id]})
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Подпись типа (для нон-одежда) */}
+          {orderType !== 'clothing' && (
+            <div className="px-3 pb-1 shrink-0">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                {(() => { const Icon = ORDER_TYPE_ICONS[orderType]; return <Icon className="h-3.5 w-3.5" /> })()}
+                {ORDER_TYPE_LABELS[orderType]}
+                {orderType === 'carpet' && ' — нажмите для ввода размеров'}
+              </p>
+            </div>
+          )}
 
           {/* Список/плитки */}
           <div className="flex-1 overflow-y-auto px-3 pb-3 min-h-0">
