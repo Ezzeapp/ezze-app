@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { PRODUCT } from '@/lib/config'
 import { Shirt, LayoutGrid, Sofa, type LucideIcon } from 'lucide-react'
+import dayjs from 'dayjs'
 
 export type OrderType = 'clothing' | 'carpet' | 'furniture'
 export type OrderStatus = 'received' | 'in_progress' | 'ready' | 'issued' | 'paid' | 'cancelled'
@@ -303,6 +304,72 @@ export function useIssueItems() {
       qc.invalidateQueries({ queryKey: [ORDERS_KEY, 'detail', orderId] })
       qc.invalidateQueries({ queryKey: [ORDERS_KEY, 'list'] })
     },
+  })
+}
+
+// ── Принять оплату ────────────────────────────────────────────────────────────
+
+export function useAcceptPayment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, amount }: { id: string; amount: number }) => {
+      const { data: curr } = await supabase
+        .from('cleaning_orders')
+        .select('paid_amount, total_amount')
+        .eq('id', id)
+        .single()
+      const newPaid = (curr?.paid_amount ?? 0) + amount
+      const newPayStatus: PaymentStatus =
+        newPaid >= (curr?.total_amount ?? 0) ? 'paid' : 'partial'
+      const { error } = await supabase
+        .from('cleaning_orders')
+        .update({ paid_amount: newPaid, payment_status: newPayStatus })
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: [ORDERS_KEY, 'detail', id] })
+      qc.invalidateQueries({ queryKey: [ORDERS_KEY, 'list'] })
+      qc.invalidateQueries({ queryKey: [ORDERS_KEY, 'stats'] })
+    },
+  })
+}
+
+// ── Статистика заказов (за текущий месяц) ─────────────────────────────────────
+
+export interface OrdersStats {
+  total_today: number
+  total_month: number
+  unpaid_count: number
+  unpaid_amount: number
+  total_revenue: number
+}
+
+export function useOrdersStats() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: [ORDERS_KEY, 'stats', PRODUCT],
+    queryFn: async (): Promise<OrdersStats> => {
+      const { data } = await supabase
+        .from('cleaning_orders')
+        .select('status, payment_status, total_amount, paid_amount, created_at')
+        .eq('product', PRODUCT)
+        .gte('created_at', dayjs().startOf('month').toISOString())
+        .not('status', 'eq', 'cancelled')
+      const orders = data ?? []
+      const todayStart = dayjs().startOf('day').toISOString()
+      const total_today = orders.filter(o => o.created_at >= todayStart).length
+      const unpaid = orders.filter(o => (o.payment_status ?? 'unpaid') !== 'paid')
+      return {
+        total_today,
+        total_month: orders.length,
+        unpaid_count: unpaid.length,
+        unpaid_amount: unpaid.reduce((s, o) => s + Math.max(0, o.total_amount - (o.paid_amount ?? 0)), 0),
+        total_revenue: orders.reduce((s, o) => s + o.total_amount, 0),
+      }
+    },
+    enabled: !!user,
+    staleTime: 60_000,
   })
 }
 

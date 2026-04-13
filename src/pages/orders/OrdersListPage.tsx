@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, ClipboardList, Loader2, Filter } from 'lucide-react'
+import { Plus, Search, ClipboardList, Loader2, Filter, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { useCleaningOrders, ORDER_TYPE_ICONS, ORDER_TYPE_LABELS } from '@/hooks/useCleaningOrders'
+import {
+  useCleaningOrders,
+  useOrdersStats,
+  ORDER_TYPE_ICONS,
+  ORDER_TYPE_LABELS,
+} from '@/hooks/useCleaningOrders'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/orders/OrderStatusBadge'
 import type { OrderStatus, OrderType } from '@/hooks/useCleaningOrders'
 import { formatCurrency } from '@/lib/utils'
@@ -21,6 +26,8 @@ const STATUS_TABS: { value: OrderStatus | 'all'; label: string }[] = [
   { value: 'issued',      label: 'Выдан' },
   { value: 'paid',        label: 'Оплачен' },
 ]
+
+const NON_URGENT_STATUSES = ['issued', 'paid', 'cancelled']
 
 export function OrdersListPage() {
   const navigate = useNavigate()
@@ -40,6 +47,8 @@ export function OrdersListPage() {
     page,
     perPage: 20,
   })
+
+  const { data: stats } = useOrdersStats()
 
   const orders = data?.orders ?? []
   const total = data?.total ?? 0
@@ -62,7 +71,51 @@ export function OrdersListPage() {
 
       <div className="flex-1 overflow-y-auto px-4 pb-20 lg:pb-4 space-y-4">
 
-        {/* Поиск + фильтр "мои" */}
+        {/* Статистика */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {/* Сегодня */}
+          <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[100px]">
+            <span className="text-xs text-muted-foreground">Сегодня</span>
+            <span className="text-sm font-semibold">
+              {stats ? stats.total_today : '—'} зак.
+            </span>
+          </div>
+
+          {/* Не оплачено */}
+          <div
+            className={cn(
+              'shrink-0 flex flex-col gap-0.5 rounded-xl border px-3 py-2 min-w-[120px]',
+              stats && stats.unpaid_count > 0
+                ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800'
+                : 'bg-muted/50'
+            )}
+          >
+            <span className="text-xs text-muted-foreground">Не оплачено</span>
+            <span
+              className={cn(
+                'text-sm font-semibold',
+                stats && stats.unpaid_count > 0 ? 'text-orange-600 dark:text-orange-400' : ''
+              )}
+            >
+              {stats ? stats.unpaid_count : '—'} зак.
+            </span>
+            {stats && stats.unpaid_amount > 0 && (
+              <span className="text-xs text-orange-500 dark:text-orange-400 leading-none">
+                {formatCurrency(stats.unpaid_amount)} {symbol}
+              </span>
+            )}
+          </div>
+
+          {/* За месяц */}
+          <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[100px]">
+            <span className="text-xs text-muted-foreground">За месяц</span>
+            <span className="text-sm font-semibold">
+              {stats ? stats.total_month : '—'} зак.
+            </span>
+          </div>
+        </div>
+
+        {/* Поиск + фильтр */}
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -97,7 +150,18 @@ export function OrdersListPage() {
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               )}
             >
-              {t === 'all' ? 'Все типы' : (() => { const Icon = ORDER_TYPE_ICONS[t as OrderType]; return <span className="flex items-center gap-1"><Icon className="h-3.5 w-3.5" />{ORDER_TYPE_LABELS[t as OrderType]}</span> })()}
+              {t === 'all'
+                ? 'Все типы'
+                : (() => {
+                    const Icon = ORDER_TYPE_ICONS[t as OrderType]
+                    return (
+                      <span className="flex items-center gap-1">
+                        <Icon className="h-3.5 w-3.5" />
+                        {ORDER_TYPE_LABELS[t as OrderType]}
+                      </span>
+                    )
+                  })()
+              }
             </button>
           ))}
         </div>
@@ -134,62 +198,126 @@ export function OrdersListPage() {
           />
         ) : (
           <div className="space-y-2">
-            {orders.map(order => (
-              <button
-                key={order.id}
-                onClick={() => navigate(`/orders/${order.id}`)}
-                className="w-full text-left rounded-xl border bg-card hover:bg-accent/50 transition-colors p-4"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {(() => { const Icon = ORDER_TYPE_ICONS[order.order_type ?? 'clothing']; return <Icon className="h-4 w-4 text-muted-foreground shrink-0" /> })()}
-                      <span className="font-semibold text-sm">{order.number}</span>
-                      <OrderStatusBadge status={order.status} />
-                      <PaymentStatusBadge status={order.payment_status} />
-                    </div>
-                    {order.client && (
-                      <p className="text-sm text-muted-foreground mt-0.5 truncate">
-                        {[order.client.first_name, order.client.last_name].filter(Boolean).join(' ')}
-                        {order.client.phone && ` · ${order.client.phone}`}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                      <span>{dayjs(order.created_at).format('DD.MM.YYYY')}</span>
-                      {order.ready_date && (
-                        <span>Срок: {dayjs(order.ready_date).format('DD.MM')}</span>
+            {orders.map(order => {
+              const isOverdue =
+                !!order.ready_date &&
+                dayjs(order.ready_date).isBefore(dayjs(), 'day') &&
+                !NON_URGENT_STATUSES.includes(order.status)
+
+              const isDueToday =
+                !isOverdue &&
+                !!order.ready_date &&
+                dayjs(order.ready_date).isSame(dayjs(), 'day') &&
+                !NON_URGENT_STATUSES.includes(order.status)
+
+              const itemsCount = order.items?.length ?? null
+
+              return (
+                <button
+                  key={order.id}
+                  onClick={() => navigate(`/orders/${order.id}`)}
+                  className={cn(
+                    'w-full text-left rounded-xl border bg-card hover:bg-accent/50 transition-colors p-4',
+                    isOverdue
+                      ? 'border-l-4 border-l-red-500'
+                      : isDueToday
+                      ? 'border-l-4 border-l-orange-400'
+                      : 'border-l-4 border-l-transparent'
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      {/* Номер + статусы */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {(() => {
+                          const Icon = ORDER_TYPE_ICONS[order.order_type ?? 'clothing']
+                          return <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                        })()}
+                        <span className="font-semibold text-sm">{order.number}</span>
+                        <OrderStatusBadge status={order.status} />
+                        <PaymentStatusBadge status={order.payment_status} />
+                        {isOverdue && (
+                          <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                        )}
+                      </div>
+
+                      {/* Клиент */}
+                      {order.client ? (
+                        <p className="text-sm text-muted-foreground mt-0.5 truncate">
+                          {[order.client.first_name, order.client.last_name]
+                            .filter(Boolean)
+                            .join(' ')}
+                          {order.client.phone && ` · ${order.client.phone}`}
+                        </p>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic mt-0.5 block">
+                          Без клиента
+                        </span>
                       )}
-                      {order.assigned_to_profile && (
-                        <span>Исп.: {order.assigned_to_profile.display_name}</span>
+
+                      {/* Дата + срок + исполнитель + изделия */}
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                        <span>{dayjs(order.created_at).format('DD.MM.YYYY')}</span>
+                        {order.ready_date && (
+                          <span
+                            className={cn(
+                              isOverdue
+                                ? 'text-red-500 font-medium'
+                                : isDueToday
+                                ? 'text-orange-500 font-medium'
+                                : ''
+                            )}
+                          >
+                            Срок: {dayjs(order.ready_date).format('DD.MM')}
+                          </span>
+                        )}
+                        {order.assigned_to_profile && (
+                          <span>Исп.: {order.assigned_to_profile.display_name}</span>
+                        )}
+                        {itemsCount !== null && (
+                          <span>· {itemsCount} изд.</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Сумма */}
+                    <div className="text-right shrink-0">
+                      <p className="font-semibold text-sm">
+                        {formatCurrency(order.total_amount)} {symbol}
+                      </p>
+                      {order.paid_amount > 0 && order.paid_amount < order.total_amount && (
+                        <p className="text-xs text-muted-foreground">
+                          Опл.: {formatCurrency(order.paid_amount)}
+                        </p>
                       )}
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="font-semibold text-sm">
-                      {formatCurrency(order.total_amount)} {symbol}
-                    </p>
-                    {order.paid_amount > 0 && order.paid_amount < order.total_amount && (
-                      <p className="text-xs text-muted-foreground">
-                        Опл.: {formatCurrency(order.paid_amount)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
         )}
 
         {/* Пагинация */}
         {totalPages > 1 && (
           <div className="flex justify-center gap-2 pt-2">
-            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 1}
+              onClick={() => setPage(p => p - 1)}
+            >
               Назад
             </Button>
             <span className="flex items-center px-3 text-sm text-muted-foreground">
               {page} / {totalPages}
             </span>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage(p => p + 1)}
+            >
               Далее
             </Button>
           </div>
