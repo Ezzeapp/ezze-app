@@ -10,7 +10,9 @@ import { formatCurrency } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Loader2, CalendarRange } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import dayjs from 'dayjs'
 
@@ -33,9 +35,9 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const PERIOD_OPTIONS = [
-  { label: '7 дней',  days: 7 },
-  { label: '30 дней', days: 30 },
-  { label: '90 дней', days: 90 },
+  { label: '7 дн',  days: 7 },
+  { label: '30 дн', days: 30 },
+  { label: '90 дн', days: 90 },
 ]
 
 const TOOLTIP_STYLE = {
@@ -88,21 +90,41 @@ function StatusTooltip({ active, payload }: any) {
 }
 
 export function CleaningStatsPage() {
-  const [days, setDays] = useState(30)
+  const [days,        setDays]        = useState(30)
+  const [customMode,  setCustomMode]  = useState(false)
+  const [dateFrom,    setDateFrom]    = useState('')
+  const [dateTo,      setDateTo]      = useState('')
   const symbol = useCurrencySymbol()
 
-  const since = dayjs().subtract(days, 'day').startOf('day').toISOString()
+  // Вычисляем since/until в зависимости от режима
+  const since = customMode && dateFrom
+    ? dayjs(dateFrom).startOf('day').toISOString()
+    : dayjs().subtract(days, 'day').startOf('day').toISOString()
+  const until = customMode && dateTo
+    ? dayjs(dateTo).endOf('day').toISOString()
+    : dayjs().endOf('day').toISOString()
+
+  // Кол-во дней для построения оси X
+  const chartDays = customMode && dateFrom && dateTo
+    ? Math.max(1, dayjs(dateTo).diff(dayjs(dateFrom), 'day') + 1)
+    : customMode && dateFrom
+    ? dayjs().diff(dayjs(dateFrom), 'day') + 1
+    : days
+
+  const qKey = customMode ? `custom-${dateFrom}-${dateTo}` : String(days)
 
   // ── Summary + daily revenue ───────────────────────────────────────────────
   const { data: ordersData, isLoading: loadingOrders } = useQuery({
-    queryKey: ['cleaning_stats', 'orders', days, PRODUCT],
+    queryKey: ['cleaning_stats', 'orders', qKey, PRODUCT],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from('cleaning_orders')
         .select('status, payment_status, total_amount, paid_amount, created_at')
         .eq('product', PRODUCT)
         .gte('created_at', since)
+        .lte('created_at', until)
 
+      const { data, error } = await q
       if (error) throw error
       return (data ?? []) as {
         status: string
@@ -117,13 +139,14 @@ export function CleaningStatsPage() {
 
   // ── Top services ──────────────────────────────────────────────────────────
   const { data: itemsData, isLoading: loadingItems } = useQuery({
-    queryKey: ['cleaning_stats', 'items', days, PRODUCT],
+    queryKey: ['cleaning_stats', 'items', qKey, PRODUCT],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('cleaning_order_items')
         .select('item_type_name, order:cleaning_orders!inner(product, created_at)')
         .eq('order.product', PRODUCT)
         .gte('order.created_at', since)
+        .lte('order.created_at', until)
 
       if (error) throw error
       return (data ?? []) as { item_type_name: string }[]
@@ -142,10 +165,11 @@ export function CleaningStatsPage() {
     .filter(o => o.payment_status !== 'paid')
     .reduce((s, o) => s + Math.max(0, (o.total_amount ?? 0) - (o.paid_amount ?? 0)), 0)
 
-  // Daily revenue chart data — inject symbol for custom tooltip
+  // Daily revenue chart — строим по реальному диапазону дат
+  const startDate = customMode && dateFrom ? dayjs(dateFrom) : dayjs().subtract(days - 1, 'day')
   const dailyMap: Record<string, number> = {}
-  for (let i = days - 1; i >= 0; i--) {
-    const key = dayjs().subtract(i, 'day').format('DD.MM')
+  for (let i = 0; i < chartDays; i++) {
+    const key = startDate.add(i, 'day').format('DD.MM')
     dailyMap[key] = 0
   }
   nonCancelled.forEach(o => {
@@ -185,10 +209,10 @@ export function CleaningStatsPage() {
           {PERIOD_OPTIONS.map(opt => (
             <button
               key={opt.days}
-              onClick={() => setDays(opt.days)}
+              onClick={() => { setDays(opt.days); setCustomMode(false) }}
               className={cn(
                 'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
-                days === opt.days
+                !customMode && days === opt.days
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               )}
@@ -196,8 +220,50 @@ export function CleaningStatsPage() {
               {opt.label}
             </button>
           ))}
+          <button
+            onClick={() => setCustomMode(v => !v)}
+            className={cn(
+              'px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1',
+              customMode
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <CalendarRange className="h-3.5 w-3.5" />
+            Период
+          </button>
         </div>
       </PageHeader>
+
+      {/* Custom date range */}
+      {customMode && (
+        <div className="flex items-end gap-3 flex-wrap rounded-xl border bg-muted/30 px-4 py-3">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">С</Label>
+            <Input
+              type="date" value={dateFrom}
+              onChange={e => setDateFrom(e.target.value)}
+              className="w-36 h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">По</Label>
+            <Input
+              type="date" value={dateTo}
+              onChange={e => setDateTo(e.target.value)}
+              className="w-36 h-8 text-sm"
+            />
+          </div>
+          {(dateFrom || dateTo) && (
+            <p className="text-xs text-muted-foreground pb-1">
+              {dateFrom && dateTo
+                ? `${dayjs(dateFrom).format('DD.MM.YYYY')} — ${dayjs(dateTo).format('DD.MM.YYYY')}`
+                : dateFrom ? `с ${dayjs(dateFrom).format('DD.MM.YYYY')}`
+                : `по ${dayjs(dateTo).format('DD.MM.YYYY')}`}
+            </p>
+          )}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center h-48">
@@ -245,7 +311,7 @@ export function CleaningStatsPage() {
                     tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     tickLine={false}
                     axisLine={false}
-                    interval={days <= 7 ? 0 : days <= 30 ? 4 : 9}
+                    interval={chartDays <= 7 ? 0 : chartDays <= 30 ? 4 : 9}
                   />
                   <YAxis
                     tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}

@@ -2,14 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus, Search, ClipboardList, Loader2, Filter,
-  AlertTriangle, Trash2, LayoutList, Table2, Download, CalendarRange, X,
+  AlertTriangle, Trash2, Download, CalendarRange, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { toast } from '@/components/shared/Toaster'
@@ -223,7 +221,6 @@ export function OrdersListPage() {
   const [page,           setPage]           = useState(1)
   const [myOnly,         setMyOnly]         = useState(false)
   const [sortBy,         setSortBy]         = useState<SortBy>('newest')
-  const [viewMode,       setViewMode]       = useState<'cards' | 'table'>('cards')
   const [showDateFilter, setShowDateFilter] = useState(false)
   const [dateFrom,       setDateFrom]       = useState('')
   const [dateTo,         setDateTo]         = useState('')
@@ -329,15 +326,6 @@ export function OrdersListPage() {
               <Download className="h-4 w-4" />
             </Button>
           )}
-          {/* Вид */}
-          <Button
-            variant="ghost" size="icon"
-            className={cn('h-8 w-8', viewMode === 'table' ? 'text-primary' : 'text-muted-foreground')}
-            title={viewMode === 'cards' ? 'Таблица' : 'Карточки'}
-            onClick={() => setViewMode(v => v === 'cards' ? 'table' : 'cards')}
-          >
-            {viewMode === 'cards' ? <Table2 className="h-4 w-4" /> : <LayoutList className="h-4 w-4" />}
-          </Button>
           {/* Удалить все */}
           {orders.length > 0 && (
             <Button
@@ -496,17 +484,21 @@ export function OrdersListPage() {
             description="Создайте первый заказ при приёме вещей"
             action={{ label: 'Новый заказ', onClick: () => navigate('/orders/new') }}
           />
-        ) : viewMode === 'table' ? (
-          <OrdersTable
-            orders={orders}
-            symbol={symbol}
-            onNavigate={id => navigate(`/orders/${id}`)}
-            onDelete={id => setDeleteId(id)}
-            isOverdueMap={isOverdueMap}
-            isDueTodayMap={isDueTodayMap}
-          />
         ) : (
-          <div className="space-y-2">
+          <>
+            {/* Десктоп — таблица */}
+            <div className="hidden lg:block">
+              <OrdersTable
+                orders={orders}
+                symbol={symbol}
+                onNavigate={id => navigate(`/orders/${id}`)}
+                onDelete={id => setDeleteId(id)}
+                isOverdueMap={isOverdueMap}
+                isDueTodayMap={isDueTodayMap}
+              />
+            </div>
+            {/* Мобиль — карточки */}
+            <div className="lg:hidden space-y-2">
             {orders.map(order => {
               const isOverdue  = isOverdueMap[order.id]
               const isDueToday = isDueTodayMap[order.id]
@@ -581,7 +573,8 @@ export function OrdersListPage() {
                 </div>
               )
             })}
-          </div>
+            </div>  {/* lg:hidden */}
+          </>
         )}
 
         {/* Пагинация */}
