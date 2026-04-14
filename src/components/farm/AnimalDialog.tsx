@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useUpsertAnimal, useAnimalGroups } from '@/hooks/farm/useFarmData'
 import type { Animal, AnimalSpecies, AnimalSex, AnimalStatus, AnimalPurpose } from '@/types/farm'
 import { ANIMAL_SPECIES_LIST } from '@/types/farm'
+import { PhotoPicker } from '@/components/farm/PhotoPicker'
 
 interface Props {
   open: boolean
@@ -50,6 +51,7 @@ export function AnimalDialog({ open, onOpenChange, farmId, initial }: Props) {
       acquisition_date: form.acquisition_date ?? null,
       acquisition_cost: form.acquisition_cost ?? null,
       current_weight_kg: form.current_weight_kg ?? null,
+      photo_url: form.photo_url ?? null,
       notes: form.notes ?? null,
     })
     onOpenChange(false)
@@ -57,10 +59,17 @@ export function AnimalDialog({ open, onOpenChange, farmId, initial }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{initial?.id ? t('farm.animals.edit') : t('farm.animals.add')}</DialogTitle>
         </DialogHeader>
+        <div className="mb-2">
+          <PhotoPicker
+            value={form.photo_url}
+            onChange={(p) => set('photo_url', p)}
+            subPath={`farm/animals/${form.id ?? form.tag ?? 'new'}`}
+          />
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <Field label={t('farm.animals.fields.tag')}>
             <Input value={form.tag ?? ''} onChange={e => set('tag', e.target.value)} placeholder="A-123" />

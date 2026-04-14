@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { ArrowLeft, Plus, Loader2, Pencil, Trash2 } from 'lucide-react'
 import { useAnimal, useAnimalEvents, useDeleteAnimal, useAnimalCosts, useCurrentFarm } from '@/hooks/farm/useFarmData'
 import { SpeciesIcon } from '@/components/farm/SpeciesIcon'
+import { getFileUrl } from '@/lib/storage'
 import { AnimalDialog } from '@/components/farm/AnimalDialog'
 import { AnimalEventDialog } from '@/components/farm/SimpleDialogs'
 import { OffspringTree } from '@/components/farm/OffspringTree'
@@ -49,9 +50,13 @@ export function AnimalDetailPage() {
 
       <Card>
         <CardContent className="pt-5 flex items-center gap-4">
-          <div className="h-14 w-14 rounded-lg bg-primary/10 flex items-center justify-center">
-            <SpeciesIcon species={animal.species} className="h-7 w-7 text-primary" />
-          </div>
+          {animal.photo_url ? (
+            <img src={getFileUrl('products', animal.photo_url)} alt="" className="h-14 w-14 rounded-lg object-cover shrink-0" />
+          ) : (
+            <div className="h-14 w-14 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <SpeciesIcon species={animal.species} className="h-7 w-7 text-primary" />
+            </div>
+          )}
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge>{t(`farm.status.${animal.status}`)}</Badge>

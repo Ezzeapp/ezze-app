@@ -1356,10 +1356,14 @@
       "pastures": "Yaylovlar",
       "incubator": "Inkubator",
       "vet": "Veterinariya",
+      "reproduction": "Ko'payish",
       "qr": "QR tamgalar",
       "advisor": "AI-maslahatchi",
       "reports": "Hisobotlar"
     },
+    "bulk": { "title": "Partiya", "subtitle": "Ketma-ket tamgalar bilan ko'p hayvon qo'shish", "count": "Bosh soni", "prefix": "Tamga prefiksi", "startFrom": "Boshlang'ich raqam", "padding": "Razryadlar", "tagsFormat": "Tamga formati", "preview": "Namuna", "totalCost": "Umumiy narx", "perHead": "Bosh uchun", "create": "{{count}} bosh yaratish" },
+    "reproduction": { "title": "Ko'payish", "subtitle": "Juftlashtirish, bo'g'ozlik, tug'ilish prognozi", "pregnant": "Bo'g'oz", "dueSoon": "Yaqin tug'iladi", "overdue": "Muddati o'tgan", "empty": "Juftlashmagan", "recordMating": "Juftlashtirish", "recordBirth": "Tug'ilish", "matingRecorded": "Juftlashtirish yozildi", "birthRecorded": "Tug'ilish yozildi", "daysPregnant": "{{days}} kun bo'g'oz", "birthIn": "tug'ilish {{days}} kun ichida ({{date}})", "overdueBy": "tug'ilish {{days}} kun kechikdi", "status": { "empty": "Juftlashmagan", "mated": "Juftlashgan", "pregnant": "Bo'g'oz", "due_soon": "Yaqin tug'iladi", "overdue": "Muddati o'tgan", "immature": "Yosh", "unsupported": "—" } },
+    "photo": { "upload": "Suratni yuklash", "change": "O'zgartirish" },
     "vet": { "title": "Veterinariya kalendari", "subtitle": "Yosh va turga ko'ra tavsiya etilgan jadval", "overdue": "Muddati o'tgan", "soon": "7 kun ichida", "upcoming": "Kelgusida", "allDone": "Hammasi yaxshi, diqqat talab qilinmaydi", "overdueBy": "{{days}} kun kechikdi", "dueToday": "bugun", "dueIn": "{{days}} kundan so'ng", "markDone": "Bajarildi" },
     "advisor": { "title": "AI-maslahatchi", "subtitle": "Ma'lumotlarni tahlil qilib tavsiyalar beradi", "allGood": "Hammasi tartibda", "allGoodDetail": "Joriy ma'lumotlar bo'yicha tavsiyalar yo'q. Shunday davom eting!", "disclaimer": "Tavsiyalar ma'lumotlaringiz asosida avtomatik shakllanadi. Veterinar yoki zooteknik maslahatini almashtirmaydi." },
     "qr": { "title": "QR tamgalar", "subtitle": "Varaqlarni chop etish va kamera orqali skanerlash", "print": "Chop etish", "scan": "Skanerlash", "scanning": "Skanerlanmoqda…", "selectAll": "Hammasini tanlash", "deselectAll": "Tanlovni olib tashlash", "small": "Kichik", "medium": "O'rta", "large": "Katta", "noSupport": "Brauzer skanerni qo'llab-quvvatlamaydi", "noSupportDetail": "Android'da Chrome'ni oching yoki quyida qo'lda kiriting.", "cameraError": "Kamerani olishda xatolik", "manual": "Qo'lda kiritish", "enterTag": "Tamga yoki URL kiriting" },
@@ -1378,6 +1382,8 @@
       "netMargin30d": "Sof foyda 30 kun",
       "revenueVsExpense": "Daromad / Xarajat (30 kun)",
       "expenseBreakdown": "Xarajat tarkibi",
+      "fcrTitle": "Yem konversiyasi (FCR)",
+      "fcrSubtitle": "60 kun davomida 1 kg vaznga qancha yem ketgan. Kichikroq — yaxshiroq.",
       "topMargin": "Eng foydali"
     },
     "onboarding": {

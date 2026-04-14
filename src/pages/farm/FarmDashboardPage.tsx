@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { Loader2, Beef, Wheat, Package, Milk, Wallet, TrendingUp } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
-import { useCurrentFarm, useFarmDashboardStats, useAnimalCosts } from '@/hooks/farm/useFarmData'
+import { useCurrentFarm, useFarmDashboardStats, useAnimalCosts, useFeedConversion } from '@/hooks/farm/useFarmData'
 import { FarmOnboarding } from '@/components/farm/FarmOnboarding'
 import type { AnimalSpecies, FarmExpenseCategory } from '@/types/farm'
 import dayjs from 'dayjs'
@@ -47,6 +47,7 @@ export function FarmDashboardPage() {
   const { data: farm, isLoading: loadingFarm } = useCurrentFarm()
   const { data: stats } = useFarmDashboardStats(farm?.id)
   const { data: costs } = useAnimalCosts(farm?.id)
+  const { data: fcr } = useFeedConversion(farm?.id, 60)
 
   if (loadingFarm) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
   if (!farm) return <FarmOnboarding />
@@ -163,6 +164,36 @@ export function FarmDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* FCR по мясным/откормочным группам */}
+      {(fcr ?? []).length > 0 && (
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">{t('farm.dashboard.fcrTitle')}</CardTitle></CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground mb-3">{t('farm.dashboard.fcrSubtitle')}</p>
+            <div className="space-y-2">
+              {(fcr ?? []).map((g: any) => {
+                const rating = g.fcr == null ? null : g.fcr < 2 ? 'text-emerald-600 dark:text-emerald-400' : g.fcr < 4 ? '' : g.fcr < 8 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'
+                return (
+                  <div key={g.group_id} className="flex items-center justify-between text-sm border-b last:border-0 py-2">
+                    <div>
+                      <span className="font-medium">{g.group_name}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{t(`farm.species.${g.species}`)}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-muted-foreground">{g.feed_kg.toFixed(0)} {t('farm.common.kg')} → {g.gain_kg.toFixed(0)} {t('farm.common.kg')}</span>
+                      {g.fcr == null
+                        ? <span className="text-xs text-muted-foreground">—</span>
+                        : <span className={`font-bold text-lg ${rating}`}>{g.fcr.toFixed(2)}</span>
+                      }
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Таблица себестоимости */}
       <Card>

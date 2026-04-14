@@ -11,6 +11,7 @@ import { Plus, Search, Loader2, ChevronRight } from 'lucide-react'
 import { useCurrentFarm, useAnimals, useAnimalGroups } from '@/hooks/farm/useFarmData'
 import { SpeciesIcon } from '@/components/farm/SpeciesIcon'
 import { AnimalDialog } from '@/components/farm/AnimalDialog'
+import { BulkAnimalDialog } from '@/components/farm/BulkAnimalDialog'
 import { FarmOnboarding } from '@/components/farm/FarmOnboarding'
 import type { AnimalSpecies, AnimalStatus } from '@/types/farm'
 import { ANIMAL_SPECIES_LIST } from '@/types/farm'
@@ -30,6 +31,7 @@ export function AnimalsPage() {
   const [status, setStatus] = useState<AnimalStatus | ''>('')
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [editing, setEditing] = useState<any>(null)
 
   const { data: animals, isLoading: loadingA } = useAnimals(farm?.id, {
@@ -53,6 +55,9 @@ export function AnimalsPage() {
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4">
       <PageHeader title={t('farm.animals.title')}>
+        <Button variant="outline" onClick={() => setBulkOpen(true)}>
+          <Plus className="h-4 w-4 mr-1" /> {t('farm.bulk.title')}
+        </Button>
         <Button onClick={() => { setEditing(null); setDialogOpen(true) }}>
           <Plus className="h-4 w-4 mr-1" /> {t('farm.animals.add')}
         </Button>
@@ -121,6 +126,7 @@ export function AnimalsPage() {
       )}
 
       {farm && <AnimalDialog open={dialogOpen} onOpenChange={setDialogOpen} farmId={farm.id} initial={editing} />}
+      {farm && <BulkAnimalDialog open={bulkOpen} onOpenChange={setBulkOpen} farmId={farm.id} />}
     </div>
   )
 }

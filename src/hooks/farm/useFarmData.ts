@@ -712,6 +712,131 @@ export function useFarmDashboardStats(farmId: string | null | undefined) {
   })
 }
 
+// ── Репродуктивный статус самок ──────────────────────────────────
+export function useReproduction(farmId: string | null | undefined) {
+  return useQuery({
+    queryKey: [KEY, 'reproduction', farmId],
+    queryFn: async () => {
+      if (!farmId) return [] as any[]
+      const { REPRODUCTION } = await import('@/lib/farm/reproduction')
+      const [animalsRes, eventsRes] = await Promise.all([
+        supabase.from('animals').select('id, tag, name, species, sex, birth_date, status').eq('farm_id', farmId).eq('sex', 'female'),
+        supabase.from('animal_events').select('animal_id, event_type, event_date').eq('farm_id', farmId).in('event_type', ['mating', 'birth']),
+      ])
+      const animals = (animalsRes.data ?? [])
+        .filter(a => !['sold', 'slaughtered', 'dead'].includes(a.status))
+      const events = eventsRes.data ?? []
+
+      const now = new Date()
+      const rows = animals.map(a => {
+        const cycle = REPRODUCTION[a.species as keyof typeof REPRODUCTION]
+        const mineEvents = events.filter(e => e.animal_id === a.id).sort((x, y) => x.event_date < y.event_date ? 1 : -1)
+        const lastMating = mineEvents.find(e => e.event_type === 'mating') ?? null
+        const lastBirth  = mineEvents.find(e => e.event_type === 'birth') ?? null
+        const ageMonths = a.birth_date ? Math.floor((now.getTime() - new Date(a.birth_date).getTime()) / (30 * 24 * 3600 * 1000)) : null
+
+        if (!cycle) {
+          return { animal_id: a.id, tag: a.tag, name: a.name, species: a.species, status: 'unsupported', last_mating_date: null, last_birth_date: null, expected_birth_date: null, days_pregnant: null, days_until_birth: null, age_months: ageMonths }
+        }
+        if (ageMonths != null && ageMonths < cycle.maturity_months) {
+          return { animal_id: a.id, tag: a.tag, name: a.name, species: a.species, status: 'immature', last_mating_date: null, last_birth_date: lastBirth?.event_date ?? null, expected_birth_date: null, days_pregnant: null, days_until_birth: null, age_months: ageMonths }
+        }
+
+        // Если случка произошла ПОСЛЕ последних родов → считаем беременной
+        let status: 'empty' | 'mated' | 'pregnant' | 'due_soon' | 'overdue' = 'empty'
+        let daysPregnant: number | null = null
+        let daysUntilBirth: number | null = null
+        let expectedBirth: string | null = null
+
+        const matingAfterBirth = lastMating && (!lastBirth || lastMating.event_date > lastBirth.event_date)
+        if (matingAfterBirth && lastMating) {
+          const matingDate = new Date(lastMating.event_date)
+          daysPregnant = Math.floor((now.getTime() - matingDate.getTime()) / (24 * 3600 * 1000))
+          const expected = new Date(matingDate.getTime() + cycle.pregnancy_days * 24 * 3600 * 1000)
+          expectedBirth = expected.toISOString().slice(0, 10)
+          daysUntilBirth = Math.floor((expected.getTime() - now.getTime()) / (24 * 3600 * 1000))
+          if (daysPregnant < 7) status = 'mated'
+          else if (daysUntilBirth < 0) status = 'overdue'
+          else if (daysUntilBirth <= 7) status = 'due_soon'
+          else status = 'pregnant'
+        }
+
+        return {
+          animal_id: a.id, tag: a.tag, name: a.name, species: a.species, status,
+          last_mating_date: lastMating?.event_date ?? null,
+          last_birth_date: lastBirth?.event_date ?? null,
+          expected_birth_date: expectedBirth,
+          days_pregnant: daysPregnant,
+          days_until_birth: daysUntilBirth,
+          age_months: ageMonths,
+        }
+      })
+      return rows
+    },
+    enabled: !!farmId,
+    staleTime: 60_000,
+  })
+}
+
+// ── FCR — конверсия корма по группам ─────────────────────────────
+export function useFeedConversion(farmId: string | null | undefined, daysBack: number = 60) {
+  return useQuery({
+    queryKey: [KEY, 'fcr', farmId, daysBack],
+    queryFn: async () => {
+      if (!farmId) return [] as any[]
+      const since = new Date(Date.now() - daysBack * 24 * 3600 * 1000).toISOString().slice(0, 10)
+
+      const [groupsRes, animalsRes, feedCRes, eventsRes] = await Promise.all([
+        supabase.from('animal_groups').select('id, name, species, purpose').eq('farm_id', farmId),
+        supabase.from('animals').select('id, group_id').eq('farm_id', farmId),
+        supabase.from('feed_consumption').select('group_id, animal_id, quantity, date').eq('farm_id', farmId).gte('date', since),
+        supabase.from('animal_events').select('animal_id, event_type, event_date, weight_kg').eq('farm_id', farmId).eq('event_type', 'weighing').gte('event_date', since),
+      ])
+      const groups = groupsRes.data ?? []
+      const animals = animalsRes.data ?? []
+      const consumption = feedCRes.data ?? []
+      const weighings = eventsRes.data ?? []
+
+      // Считаем только для групп мясного/откормочного назначения
+      const meatGroups = groups.filter(g => g.purpose === 'meat' || g.purpose === 'mixed' || g.species === 'poultry')
+      const animalToGroup = new Map<string, string | null>()
+      animals.forEach(a => animalToGroup.set(a.id, a.group_id))
+
+      return meatGroups.map(g => {
+        // Корм на группу (прямой + через животных группы)
+        let feedKg = 0
+        for (const c of consumption) {
+          if (c.group_id === g.id) feedKg += Number(c.quantity)
+          else if (c.animal_id && animalToGroup.get(c.animal_id) === g.id) feedKg += Number(c.quantity)
+        }
+
+        // Привес: для каждого животного группы — разница между последним и первым взвешиванием в периоде
+        const gainKg = animals
+          .filter(a => a.group_id === g.id)
+          .reduce((total, a) => {
+            const ws = weighings
+              .filter(w => w.animal_id === a.id)
+              .sort((x, y) => x.event_date < y.event_date ? -1 : 1)
+            if (ws.length < 2) return total
+            return total + Math.max(0, Number(ws[ws.length - 1].weight_kg ?? 0) - Number(ws[0].weight_kg ?? 0))
+          }, 0)
+
+        const fcr = gainKg > 0 ? feedKg / gainKg : null
+        return {
+          group_id: g.id,
+          group_name: g.name,
+          species: g.species,
+          feed_kg: feedKg,
+          gain_kg: gainKg,
+          fcr,
+        }
+      }).filter(r => r.feed_kg > 0 || r.gain_kg > 0)
+    },
+    enabled: !!farmId,
+    staleTime: 60_000,
+  })
+}
+
 // ── Ветеринарный календарь ───────────────────────────────────────
 export function useVetTasks(farmId: string | null | undefined) {
   return useQuery({

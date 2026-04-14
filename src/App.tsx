@@ -78,6 +78,7 @@ const FarmVetCalendarPage = lazy(() => import('@/pages/farm/VetCalendarPage').th
 const FarmAdvisorPage     = lazy(() => import('@/pages/farm/AdvisorPage').then(m => ({ default: m.AdvisorPage })))
 const FarmQrTagsPage      = lazy(() => import('@/pages/farm/QrTagsPage').then(m => ({ default: m.QrTagsPage })))
 const FarmQrScannerPage   = lazy(() => import('@/pages/farm/QrScannerPage').then(m => ({ default: m.QrScannerPage })))
+const FarmReproductionPage = lazy(() => import('@/pages/farm/ReproductionPage').then(m => ({ default: m.ReproductionPage })))
 
 const router = createBrowserRouter([
   // Public routes
@@ -173,6 +174,7 @@ const router = createBrowserRouter([
         { path: 'farm/advisor',         element: <FarmAdvisorPage /> },
         { path: 'farm/qr',              element: <FarmQrTagsPage /> },
         { path: 'farm/qr/scan',         element: <FarmQrScannerPage /> },
+        { path: 'farm/reproduction',    element: <FarmReproductionPage /> },
       ] : []),
     ],
   },
