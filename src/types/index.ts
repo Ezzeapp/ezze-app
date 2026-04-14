@@ -534,3 +534,112 @@ export interface ClinicVisitTemplate {
   sort_order: number
   created_at: string
 }
+
+// ── Clinic Laboratory ────────────────────────────────────────────
+
+export type LabOrderStatus = 'ordered' | 'in_progress' | 'completed' | 'cancelled'
+export type LabResultFlag = 'normal' | 'low' | 'high' | 'abnormal'
+
+export interface ClinicLabTest {
+  id: string
+  master_id: string
+  name: string
+  category?: string | null
+  unit?: string | null
+  ref_min?: number | null
+  ref_max?: number | null
+  ref_text?: string | null
+  price?: number | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ClinicLabOrder {
+  id: string
+  master_id: string
+  client_id: string
+  visit_id?: string | null
+  status: LabOrderStatus
+  notes?: string | null
+  ordered_at: string
+  completed_at?: string | null
+  created_at: string
+  updated_at: string
+  // joined
+  client?: { first_name: string; last_name?: string | null } | null
+  items?: ClinicLabOrderItem[]
+}
+
+export interface ClinicLabOrderItem {
+  id: string
+  order_id: string
+  test_id?: string | null
+  test_name: string
+  result_value?: string | null
+  result_unit?: string | null
+  ref_min?: number | null
+  ref_max?: number | null
+  ref_text?: string | null
+  flag?: LabResultFlag | null
+  notes?: string | null
+  completed_at?: string | null
+  created_at: string
+}
+
+// ── Clinic Pharmacy ──────────────────────────────────────────────
+
+export type DosageForm = 'tablet' | 'capsule' | 'injection' | 'syrup' |
+  'cream' | 'drops' | 'ointment' | 'powder' |
+  'solution' | 'suppository' | 'inhaler' | 'other'
+
+export interface ClinicPharmacyItem {
+  id: string
+  master_id: string
+  name: string
+  generic_name?: string | null
+  category?: string | null
+  dosage_form?: DosageForm | null
+  manufacturer?: string | null
+  sku?: string | null
+  quantity: number
+  min_quantity: number
+  cost_price?: number | null
+  sell_price?: number | null
+  expiry_date?: string | null
+  prescription_required: boolean
+  unit?: string | null
+  notes?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ClinicPharmacyReceipt {
+  id: string
+  master_id: string
+  item_id: string
+  quantity: number
+  cost_price?: number | null
+  supplier?: string | null
+  batch_number?: string | null
+  expiry_date?: string | null
+  date: string
+  notes?: string | null
+  created_at: string
+}
+
+export interface ClinicDispensing {
+  id: string
+  master_id: string
+  client_id: string
+  visit_id?: string | null
+  item_id: string
+  quantity: number
+  price?: number | null
+  notes?: string | null
+  dispensed_at: string
+  created_at: string
+  // joined
+  item?: { name: string } | null
+  client?: { first_name: string; last_name?: string | null } | null
+}

@@ -7,20 +7,26 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Save, Plus, Trash2, FileText } from 'lucide-react'
+import { Save, Plus, Trash2, FileText, FlaskConical, Pill } from 'lucide-react'
+import { LabOrderDialog } from './LabOrderDialog'
+import { DispenseDialog } from './DispenseDialog'
 import { toast } from '@/components/shared/Toaster'
 import type { Prescription } from '@/types'
 
 interface ClinicVisitPanelProps {
   appointmentId: string
+  clientId?: string
 }
 
-export function ClinicVisitPanel({ appointmentId }: ClinicVisitPanelProps) {
+export function ClinicVisitPanel({ appointmentId, clientId }: ClinicVisitPanelProps) {
   const { t } = useTranslation()
   const { data: visit, isLoading } = useClinicVisit(appointmentId)
   const { data: templates = [] } = useClinicVisitTemplates()
   const createVisit = useCreateClinicVisit()
   const updateVisit = useUpdateClinicVisit()
+
+  const [labDialogOpen, setLabDialogOpen] = useState(false)
+  const [dispenseDialogOpen, setDispenseDialogOpen] = useState(false)
 
   const [form, setForm] = useState({
     complaints: '',
@@ -249,6 +255,39 @@ export function ClinicVisitPanel({ appointmentId }: ClinicVisitPanelProps) {
         <Save className="h-4 w-4" />
         {t('clinic.visit.saveVisit')}
       </Button>
+
+      {/* Lab & Pharmacy buttons (only if visit is saved) */}
+      {visit && clientId && (
+        <div className="flex gap-2 pt-2 border-t">
+          <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => setLabDialogOpen(true)}>
+            <FlaskConical className="h-3.5 w-3.5" />
+            {t('clinic.lab.sendToLab')}
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => setDispenseDialogOpen(true)}>
+            <Pill className="h-3.5 w-3.5" />
+            {t('clinic.pharmacy.dispenseMedicines')}
+          </Button>
+        </div>
+      )}
+
+      {labDialogOpen && clientId && (
+        <LabOrderDialog
+          open={labDialogOpen}
+          onOpenChange={setLabDialogOpen}
+          clientId={clientId}
+          visitId={visit?.id}
+        />
+      )}
+
+      {dispenseDialogOpen && clientId && (
+        <DispenseDialog
+          open={dispenseDialogOpen}
+          onOpenChange={setDispenseDialogOpen}
+          clientId={clientId}
+          visitId={visit?.id}
+          prescriptions={form.prescriptions}
+        />
+      )}
     </div>
   )
 }

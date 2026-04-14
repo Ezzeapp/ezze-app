@@ -36,6 +36,8 @@ import { getFileUrl } from '@/lib/utils'
 import type { Client } from '@/types'
 import { ClinicMedicalCard } from '@/components/clinic/ClinicMedicalCard'
 import { DentalChart } from '@/components/clinic/DentalChart'
+import { useClinicLabOrdersByPatient } from '@/hooks/useClinicLabOrders'
+import { useDispensingByPatient } from '@/hooks/useClinicDispensing'
 import {
   useLoyaltySettings,
   useAllClientsLoyaltyBalances,
@@ -163,6 +165,8 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
   const { data: loyaltyBalance = 0 } = useClientLoyaltyBalance(client.id)
   const { data: loyaltyPoints = [], isLoading: loyaltyLoading } = useClientLoyaltyPoints(client.id)
   const addPoints = useAddLoyaltyPoints()
+  const { data: labOrders = [] } = useClinicLabOrdersByPatient(PRODUCT === 'clinic' ? client.id : undefined)
+  const { data: dispensingHistory = [] } = useDispensingByPatient(PRODUCT === 'clinic' ? client.id : undefined)
 
   const { data: clientOrders = [] } = useQuery({
     queryKey: ['cleaning_orders', 'by_client', client.id],
@@ -179,7 +183,7 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
     enabled: PRODUCT === 'cleaning',
   })
 
-  const [tab, setTab] = useState<'stats' | 'loyalty' | 'medcard' | 'dental'>('stats')
+  const [tab, setTab] = useState<'stats' | 'loyalty' | 'medcard' | 'dental' | 'lab' | 'dispensing'>('stats')
   const [manualAmount, setManualAmount] = useState('')
   const [manualNote, setManualNote] = useState('')
   const [manualMode, setManualMode] = useState<'earn' | 'redeem' | null>(null)
@@ -277,6 +281,22 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'dental' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             >
               {t('clinic.dental.title')}
+            </button>
+          )}
+          {PRODUCT === 'clinic' && (
+            <button
+              onClick={() => setTab('lab')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'lab' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {t('clinic.lab.title')}
+            </button>
+          )}
+          {PRODUCT === 'clinic' && (
+            <button
+              onClick={() => setTab('dispensing')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'dispensing' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {t('clinic.pharmacy.dispensingHistory')}
             </button>
           )}
         </div>
@@ -484,6 +504,59 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
         {/* ── Tab: Dental Chart (clinic only) ── */}
         {PRODUCT === 'clinic' && tab === 'dental' && (
           <DentalChart clientId={client.id} />
+        )}
+
+        {/* ── Tab: Lab History (clinic only) ── */}
+        {PRODUCT === 'clinic' && tab === 'lab' && (
+          <div className="space-y-2">
+            {labOrders.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">{t('clinic.lab.noOrders')}</p>
+            ) : (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {labOrders.map((order: any) => (
+                  <div key={order.id} className="rounded-lg border p-2.5 text-sm space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">{dayjs(order.ordered_at).format('DD.MM.YY HH:mm')}</span>
+                      <Badge variant={order.status === 'completed' ? 'default' : order.status === 'in_progress' ? 'secondary' : 'outline'} className="text-xs">
+                        {t(`clinic.lab.${order.status === 'in_progress' ? 'inProgress' : order.status}`)}
+                      </Badge>
+                    </div>
+                    {order.items?.map((item: any) => (
+                      <div key={item.id} className="flex items-center justify-between text-xs">
+                        <span>{item.test_name}</span>
+                        {item.result_value && (
+                          <span className={`font-medium ${item.flag === 'high' || item.flag === 'abnormal' ? 'text-red-600' : item.flag === 'low' ? 'text-amber-600' : item.flag === 'normal' ? 'text-green-600' : ''}`}>
+                            {item.result_value} {item.result_unit || ''}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Tab: Dispensing History (clinic only) ── */}
+        {PRODUCT === 'clinic' && tab === 'dispensing' && (
+          <div className="space-y-2">
+            {dispensingHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">{t('clinic.pharmacy.noItems')}</p>
+            ) : (
+              <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                {dispensingHistory.map((d: any) => (
+                  <div key={d.id} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
+                    <div className="min-w-0">
+                      <p className="font-medium text-xs">{(d.item as any)?.name || '—'}</p>
+                      <p className="text-[10px] text-muted-foreground">{dayjs(d.dispensed_at).format('DD.MM.YY HH:mm')}</p>
+                    </div>
+                    <span className="text-xs font-bold shrink-0">{d.quantity} {d.price ? `(${formatCurrency(d.price, currency, i18n.language)})` : ''}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         <DialogFooter>

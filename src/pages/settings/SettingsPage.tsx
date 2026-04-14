@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout, FileText, Layers,
+  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout, FileText, Layers, FlaskConical,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '@/contexts/AuthContext'
@@ -21,6 +21,7 @@ import { PublicPageTab } from './PublicPageTab'
 import { ReceiptSettingsTab } from './ReceiptSettingsTab'
 import { OrderTypesSettingsTab } from './OrderTypesSettingsTab'
 import { VisitTemplatesSettingsTab } from './VisitTemplatesSettingsTab'
+import { LabTestsCatalogSettingsTab } from './LabTestsCatalogSettingsTab'
 import { PRODUCT } from '@/lib/config'
 
 const LANGUAGES = [
@@ -65,7 +66,7 @@ const TIMEZONES = [
   { value: 'UTC', label: 'UTC (UTC+0)' },
 ]
 
-type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates'
+type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog'
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -167,6 +168,7 @@ export function SettingsPage() {
     ] : []),
     ...(PRODUCT === 'clinic' ? [
       { id: 'visit_templates' as Tab, label: t('clinic.settings.visitTemplates'), icon: FileText },
+      { id: 'lab_catalog' as Tab, label: t('clinic.lab.testCatalog'), icon: FlaskConical },
     ] : []),
   ]
 
@@ -258,6 +260,9 @@ export function SettingsPage() {
 
       {/* ── Шаблоны приёмов (только clinic) ── */}
       {tab === 'visit_templates' && <VisitTemplatesSettingsTab />}
+
+      {/* ── Справочник анализов (только clinic) ── */}
+      {tab === 'lab_catalog' && <LabTestsCatalogSettingsTab />}
 
       {/* ── Интерфейс ── */}
       {tab === 'interface' && (

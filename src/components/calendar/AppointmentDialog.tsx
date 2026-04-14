@@ -1665,7 +1665,7 @@ export function AppointmentDialog({
 
                     {/* Clinic visit record (mobile) */}
                     {PRODUCT === 'clinic' && editAppt && (editAppt.status === 'done' || status === 'done') && (
-                      <ClinicVisitPanel appointmentId={editAppt.id} />
+                      <ClinicVisitPanel appointmentId={editAppt.id} clientId={selectedClient?.id} />
                     )}
 
                   </div>
@@ -1991,7 +1991,7 @@ export function AppointmentDialog({
                 {/* ── Clinic visit record (clinic only) ── */}
                 {PRODUCT === 'clinic' && editAppt && (editAppt.status === 'done' || status === 'done') && (
                   <div className="px-4 pb-2">
-                    <ClinicVisitPanel appointmentId={editAppt.id} />
+                    <ClinicVisitPanel appointmentId={editAppt.id} clientId={selectedClient?.id} />
                   </div>
                 )}
 
