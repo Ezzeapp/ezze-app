@@ -431,6 +431,17 @@ export function useUpsertEquipment() {
   })
 }
 
+export function useDeleteEquipment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('farm_equipment').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [KEY] }),
+  })
+}
+
 export function useEquipmentMaintenance(equipmentId: string | null | undefined) {
   return useQuery({
     queryKey: [KEY, 'equipment-maintenance', equipmentId],
@@ -459,7 +470,7 @@ export function useAddMaintenance() {
   })
 }
 
-// ── Pastures / Incubations ───────────────────────────────────────
+// ── Pastures ─────────────────────────────────────────────────────
 export function usePastures(farmId: string | null | undefined) {
   return useQuery({
     queryKey: [KEY, 'pastures', farmId],
@@ -474,6 +485,31 @@ export function usePastures(farmId: string | null | undefined) {
   })
 }
 
+export function useUpsertPasture() {
+  const qc = useQueryClient()
+  const { user } = useAuth()
+  return useMutation({
+    mutationFn: async (payload: Partial<Pasture> & { farm_id: string; name: string; area_ha: number }) => {
+      if (!user?.id) throw new Error('not authenticated')
+      const { error } = await supabase.from('pastures').upsert({ master_id: user.id, ...payload })
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [KEY] }),
+  })
+}
+
+export function useDeletePasture() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('pastures').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [KEY] }),
+  })
+}
+
+// ── Incubations ──────────────────────────────────────────────────
 export function useIncubations(farmId: string | null | undefined) {
   return useQuery({
     queryKey: [KEY, 'incubations', farmId],
@@ -485,6 +521,30 @@ export function useIncubations(farmId: string | null | undefined) {
     },
     enabled: !!farmId,
     staleTime: 60_000,
+  })
+}
+
+export function useUpsertIncubation() {
+  const qc = useQueryClient()
+  const { user } = useAuth()
+  return useMutation({
+    mutationFn: async (payload: Partial<Incubation> & { farm_id: string; species: AnimalSpecies; eggs_loaded: number; start_date: string; expected_hatch_date: string }) => {
+      if (!user?.id) throw new Error('not authenticated')
+      const { error } = await supabase.from('incubations').upsert({ master_id: user.id, ...payload })
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [KEY] }),
+  })
+}
+
+export function useDeleteIncubation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('incubations').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [KEY] }),
   })
 }
 
@@ -658,7 +718,7 @@ export function useAnimalCosts(farmId: string | null | undefined) {
     queryKey: [KEY, 'animal-costs', farmId],
     queryFn: async (): Promise<AnimalCostBreakdown[]> => {
       if (!farmId) return []
-      const [animalsRes, eventsRes, feedRes, feedStockRes, expRes, salesRes, prodRes] = await Promise.all([
+      const [animalsRes, eventsRes, feedRes, feedStockRes, expRes, salesRes, prodRes, maintRes] = await Promise.all([
         supabase.from('animals').select('id, tag, name, acquisition_cost, group_id').eq('farm_id', farmId),
         supabase.from('animal_events').select('animal_id, event_type, cost').eq('farm_id', farmId),
         supabase.from('feed_consumption').select('animal_id, group_id, feed_id, quantity').eq('farm_id', farmId),
@@ -666,6 +726,7 @@ export function useAnimalCosts(farmId: string | null | undefined) {
         supabase.from('farm_expenses').select('amount, animal_id, group_id').eq('farm_id', farmId),
         supabase.from('farm_sale_items').select('animal_id, group_id, production_id, amount').eq('farm_id', farmId),
         supabase.from('production').select('id, animal_id, group_id').eq('farm_id', farmId),
+        supabase.from('equipment_maintenance').select('cost').eq('farm_id', farmId),
       ])
       const animals = animalsRes.data ?? []
       const events = eventsRes.data ?? []
@@ -674,6 +735,7 @@ export function useAnimalCosts(farmId: string | null | undefined) {
       const exp = expRes.data ?? []
       const saleItems = salesRes.data ?? []
       const prodRecords = prodRes.data ?? []
+      const maintenanceTotal = (maintRes.data ?? []).reduce((s, m) => s + Number(m.cost ?? 0), 0)
       const feedCost = new Map<string, number>(feedS.map(f => [f.id, Number(f.cost_per_unit)]))
 
       // Группировка животных по group_id для аллокации группового расхода
@@ -718,6 +780,8 @@ export function useAnimalCosts(farmId: string | null | undefined) {
         else if (e.group_id) directGroupExp.set(e.group_id, (directGroupExp.get(e.group_id) ?? 0) + Number(e.amount))
         else overheadPool += Number(e.amount)
       })
+      // ТО техники → в общий overhead (нераспределяемый)
+      overheadPool += maintenanceTotal
       const overheadPerHead = animals.length > 0 ? overheadPool / animals.length : 0
 
       // Доход на животное: прямые продажи + продажи продукции, привязанной к животному/группе

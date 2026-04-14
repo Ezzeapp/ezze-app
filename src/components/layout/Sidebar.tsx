@@ -5,7 +5,7 @@ import {
   LayoutDashboard, User, Users, Package, CalendarDays,
   Settings, Zap, X, ShieldCheck, UsersRound, Megaphone, CreditCard, LifeBuoy,
   ClipboardList, BarChart3, Beef, Wheat, Milk, Wallet, ShoppingCart,
-  FlaskConical, Pill,
+  FlaskConical, Pill, Tractor, TreePine, Egg,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -114,6 +114,9 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
             <SidebarNavItem icon={Milk}      iconColor="dark:text-sky-400"     label={t('farm.nav.production')} to="/farm/production" onClick={onClose} />
             <SidebarNavItem icon={ShoppingCart} iconColor="dark:text-emerald-400" label={t('farm.nav.sales')}   to="/farm/sales"      onClick={onClose} />
             <SidebarNavItem icon={Wallet}    iconColor="dark:text-rose-400"    label={t('farm.nav.expenses')}   to="/farm/expenses"   onClick={onClose} />
+            <SidebarNavItem icon={Tractor}   iconColor="dark:text-slate-400"   label={t('farm.nav.equipment')}  to="/farm/equipment"  onClick={onClose} />
+            <SidebarNavItem icon={TreePine}  iconColor="dark:text-lime-400"    label={t('farm.nav.pastures')}   to="/farm/pastures"   onClick={onClose} />
+            <SidebarNavItem icon={Egg}       iconColor="dark:text-amber-400"   label={t('farm.nav.incubator')}  to="/farm/incubator"  onClick={onClose} />
           </>
         ) : (
           <>

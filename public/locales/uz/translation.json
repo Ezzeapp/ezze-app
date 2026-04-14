@@ -1353,8 +1353,12 @@
       "sales": "Sotuvlar",
       "expenses": "Xarajatlar",
       "equipment": "Texnika",
+      "pastures": "Yaylovlar",
+      "incubator": "Inkubator",
       "reports": "Hisobotlar"
     },
+    "pastures": { "title": "Yaylovlar", "add": "Yaylov qo'shish", "empty": "Yaylovlar yo'q", "overloaded": "Ortiqcha yuk", "heads": "bosh", "fields": { "name": "Nomi", "areaHa": "Maydon (ga)", "capacityHeads": "Tavsiya (bosh)", "currentGroup": "Joriy guruh", "notes": "Izohlar" } },
+    "incubator": { "title": "Inkubator", "add": "Yangi partiya", "empty": "Partiyalar yo'q", "active": "Jarayonda", "completed": "Tugallangan", "ready": "Chiqishga tayyor", "totalLoaded": "Jami qo'yilgan", "totalHatched": "Chiqqan", "avgRate": "O'rtacha chiqish %", "fields": { "eggsLoaded": "Qo'yilgan tuxum", "startDate": "Qo'yish sanasi", "expectedHatchDate": "Kutilayotgan chiqish", "actualHatchDate": "Haqiqiy chiqish", "eggsHatched": "Chiqqan tuxum" } },
     "sales": { "title": "Sotuvlar", "add": "Yangi sotuv", "edit": "Sotuvni tahrirlash", "empty": "Sotuvlar yo'q", "items": "Pozitsiyalar", "addItem": "Pozitsiya qo'shish", "noItems": "Pozitsiyalar yo'q", "itemType": "Turi", "itemRef": "Obyekt", "itemDesc": "Tavsif", "qty": "Miqdor", "price": "Narx", "total": "Jami", "totalRevenue": "Umumiy daromad", "paid": "To'langan", "debt": "Qarz", "fields": { "date": "Sana", "channel": "Kanal", "buyerName": "Xaridor", "buyerContact": "Aloqa", "paidAmount": "To'langan", "notes": "Izohlar" }, "channel": { "retail": "Chakana", "wholesale": "Ulgurji", "market": "Bozor", "direct": "To'g'ridan-to'g'ri", "other": "Boshqa" }, "type": { "animal": "Hayvon", "production": "Mahsulot", "crop": "Hosil", "other": "Boshqa" }, "payment": { "unpaid": "To'lanmagan", "partial": "Qisman", "paid": "To'langan" } },
     "dashboard": {
       "title": "Ferma umumiy",
@@ -1613,7 +1617,8 @@
       "pieces": "dona",
       "ha": "ga",
       "months": "oy",
-      "years": "yil"
+      "years": "yil",
+      "days": "kun"
     }
   },
   "orders": {

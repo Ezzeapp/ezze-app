@@ -67,6 +67,9 @@ const FarmFeedStockPage   = lazy(() => import('@/pages/farm/FeedStockPage').then
 const FarmProductionPage  = lazy(() => import('@/pages/farm/ProductionPage').then(m => ({ default: m.ProductionPage })))
 const FarmExpensesPage    = lazy(() => import('@/pages/farm/ExpensesPage').then(m => ({ default: m.ExpensesPage })))
 const FarmSalesPage       = lazy(() => import('@/pages/farm/SalesPage').then(m => ({ default: m.SalesPage })))
+const FarmEquipmentPage   = lazy(() => import('@/pages/farm/EquipmentPage').then(m => ({ default: m.EquipmentPage })))
+const FarmPasturesPage    = lazy(() => import('@/pages/farm/PasturesPage').then(m => ({ default: m.PasturesPage })))
+const FarmIncubatorPage   = lazy(() => import('@/pages/farm/IncubatorPage').then(m => ({ default: m.IncubatorPage })))
 
 const router = createBrowserRouter([
   // Public routes
@@ -151,6 +154,9 @@ const router = createBrowserRouter([
         { path: 'farm/production',      element: <FarmProductionPage /> },
         { path: 'farm/expenses',        element: <FarmExpensesPage /> },
         { path: 'farm/sales',           element: <FarmSalesPage /> },
+        { path: 'farm/equipment',       element: <FarmEquipmentPage /> },
+        { path: 'farm/pastures',        element: <FarmPasturesPage /> },
+        { path: 'farm/incubator',       element: <FarmIncubatorPage /> },
       ] : []),
     ],
   },
