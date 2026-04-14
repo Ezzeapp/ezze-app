@@ -20,7 +20,7 @@ import { PRODUCT } from '@/lib/config'
 function getDefaultPath(): string {
   if (PRODUCT === 'cleaning') return '/orders'
   if (PRODUCT === 'farm')     return '/farm'
-  return getDefaultPath()
+  return window.innerWidth < 1024 ? '/calendar' : '/dashboard'
 }
 
 const schema = z.object({
