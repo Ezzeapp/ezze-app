@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { toast } from '@/components/shared/Toaster'
-import { useCreateOrder, type OrderType, ORDER_TYPE_LABELS, ORDER_TYPE_ICONS, useCleaningEnabledOrderTypes } from '@/hooks/useCleaningOrders'
+import { useCreateOrder, type OrderType, getOrderTypeIcon, useCleaningEnabledOrderTypes, type CleaningOrderTypeConfig, DEFAULT_ENABLED_CONFIGS } from '@/hooks/useCleaningOrders'
 import { useCleaningItemTypes } from '@/hooks/useCleaningItemTypes'
 import { useClientsPaged, useCreateClient } from '@/hooks/useClients'
 import { formatCurrency } from '@/lib/utils'
@@ -68,28 +68,6 @@ function makeCartItem(name: string, price: number, days: number, typeId: string 
   }
 }
 
-const CARPET_KW   = ['кв.м', 'ковёр', 'ковр']
-const FURNITURE_KW = ['диван', 'кресло', 'матрас', 'пуф', 'угловой']
-const SHOES_KW     = ['сапог', 'ботин', 'кроссов', 'туфл', 'сандал', 'обувь']
-const CURTAINS_KW  = ['штор', 'тюл', 'занавес', 'ламбрек']
-const BEDDING_KW   = ['одеял', 'подушк', 'постел', 'простын', 'наволочк', 'пеленк']
-
-function filterByOrderType(types: any[], orderType: OrderType) {
-  return types.filter(t => {
-    const n = t.name.toLowerCase()
-    if (orderType === 'carpet')    return CARPET_KW.some(k => n.includes(k))
-    if (orderType === 'furniture') return FURNITURE_KW.some(k => n.includes(k))
-    if (orderType === 'shoes')     return SHOES_KW.some(k => n.includes(k))
-    if (orderType === 'curtains')  return CURTAINS_KW.some(k => n.includes(k))
-    if (orderType === 'bedding')   return BEDDING_KW.some(k => n.includes(k))
-    // clothing: всё что не относится к другим категориям
-    return !CARPET_KW.some(k => n.includes(k)) &&
-           !FURNITURE_KW.some(k => n.includes(k)) &&
-           !SHOES_KW.some(k => n.includes(k)) &&
-           !CURTAINS_KW.some(k => n.includes(k)) &&
-           !BEDDING_KW.some(k => n.includes(k))
-  })
-}
 
 // ── Подкатегории для одежды ───────────────────────────────────────────────────
 
@@ -296,7 +274,7 @@ export function POSPage() {
   const { mutateAsync: createOrder, isPending } = useCreateOrder()
 
   // Тип заказа
-  const { data: enabledOrderTypes = ['clothing', 'carpet', 'furniture'] as OrderType[] } = useCleaningEnabledOrderTypes()
+  const { data: enabledOrderTypes = DEFAULT_ENABLED_CONFIGS } = useCleaningEnabledOrderTypes()
   const [orderType, setOrderType] = useState<OrderType>('clothing')
 
   // Клиент
@@ -321,7 +299,7 @@ export function POSPage() {
 
   // Каталог
   const { data: allTypes = [] } = useCleaningItemTypes()
-  const filteredTypes = filterByOrderType(allTypes, orderType)
+  const filteredTypes = allTypes.filter(t => (t.category || 'clothing') === orderType)
   const [catalogSearch, setCatalogSearch] = useState('')
   const [catalogView, setCatalogView] = useState<'grid' | 'list'>('grid')
   const [catalogSubcat, setCatalogSubcat] = useState<string>('all')
@@ -506,7 +484,7 @@ export function POSPage() {
   // ── Рендер ────────────────────────────────────────────────────────────────
 
 
-  const CATALOG_BG: Record<OrderType, string> = {
+  const CATALOG_BG: Record<string, string> = {
     clothing:  'bg-blue-50/40 dark:bg-blue-950/10',
     carpet:    'bg-green-50/40 dark:bg-green-950/10',
     furniture: 'bg-amber-50/40 dark:bg-amber-950/10',
@@ -527,21 +505,21 @@ export function POSPage() {
 
         {/* Тип заказа */}
         <div className="flex gap-1 ml-3">
-          {enabledOrderTypes.map(t => {
-            const Icon = ORDER_TYPE_ICONS[t]
+          {enabledOrderTypes.map((cfg: CleaningOrderTypeConfig) => {
+            const Icon = getOrderTypeIcon(cfg.icon)
             return (
               <button
-                key={t}
-                onClick={() => handleSetOrderType(t)}
+                key={cfg.slug}
+                onClick={() => handleSetOrderType(cfg.slug)}
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border',
-                  orderType === t
+                  orderType === cfg.slug
                     ? 'bg-primary text-primary-foreground border-primary'
                     : 'bg-muted text-muted-foreground border-transparent hover:border-border'
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
-                {ORDER_TYPE_LABELS[t]}
+                {cfg.label}
               </button>
             )
           })}
@@ -667,8 +645,12 @@ export function POSPage() {
           {orderType !== 'clothing' && (
             <div className="px-3 pb-1 shrink-0">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                {(() => { const Icon = ORDER_TYPE_ICONS[orderType]; return <Icon className="h-3.5 w-3.5" /> })()}
-                {ORDER_TYPE_LABELS[orderType]}
+                {(() => {
+                  const cfg = enabledOrderTypes.find((c: CleaningOrderTypeConfig) => c.slug === orderType)
+                  const Icon = getOrderTypeIcon(cfg?.icon ?? orderType)
+                  return <Icon className="h-3.5 w-3.5" />
+                })()}
+                {enabledOrderTypes.find((c: CleaningOrderTypeConfig) => c.slug === orderType)?.label ?? orderType}
                 {orderType === 'carpet' && ' — нажмите для ввода размеров'}
               </p>
             </div>

@@ -1,9 +1,9 @@
 import { useState, useMemo, useRef } from 'react'
-import { Plus, Trash2, Loader2, X, Download, Search, Check } from 'lucide-react'
+import { Plus, Trash2, Loader2, X, Download, Search, Check, ChevronDown } from 'lucide-react'
 import { useCleaningItemTypes, useUpsertItemType, useDeleteItemType } from '@/hooks/useCleaningItemTypes'
 import type { CleaningItemType } from '@/hooks/useCleaningItemTypes'
-import { ORDER_TYPE_LABELS } from '@/hooks/useCleaningOrders'
-import type { OrderType } from '@/hooks/useCleaningOrders'
+import { ORDER_TYPE_LABELS, useCleaningOrderTypesConfig } from '@/hooks/useCleaningOrders'
+import type { CleaningOrderTypeConfig } from '@/hooks/useCleaningOrders'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -15,14 +15,14 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { useGlobalServices } from '@/hooks/useGlobalCatalogs'
 
-// ── Category detection ──────────────────────────────────────────────────────
-const CARPET_KW    = ['кв.м', 'ковёр', 'ковр']
-const FURNITURE_KW = ['диван', 'кресло', 'матрас', 'пуф', 'угловой']
-const SHOES_KW     = ['сапог', 'ботин', 'кроссов', 'туфл', 'сандал', 'обувь']
-const CURTAINS_KW  = ['штор', 'тюл', 'занавес', 'ламбрек']
-const BEDDING_KW   = ['одеял', 'подушк', 'постел', 'простын', 'наволочк', 'пеленк']
+// ── Keyword-based category suggest (used only as UX hint in AddDialog) ───────
+const CARPET_KW    = ['кв.м', 'ковёр', 'ковр', 'палас']
+const FURNITURE_KW = ['диван', 'кресло', 'матрас', 'пуф', 'угловой', 'банкетк', 'стул мягк']
+const SHOES_KW     = ['сапог', 'ботин', 'кроссов', 'туфл', 'сандал', 'обувь', 'угг', 'кед', 'мокасин', 'шлёпанц', 'шлепанц']
+const CURTAINS_KW  = ['штор', 'тюл', 'занавес', 'ламбрек', 'жалюзи', 'гардин', 'портьер']
+const BEDDING_KW   = ['одеял', 'подушк', 'постел', 'простын', 'наволочк', 'пеленк', 'наматрасник', 'плед', 'покрывал']
 
-function detectCategory(name: string): OrderType {
+function suggestCategory(name: string): string {
   const n = name.toLowerCase()
   if (CARPET_KW.some(k => n.includes(k))) return 'carpet'
   if (FURNITURE_KW.some(k => n.includes(k))) return 'furniture'
@@ -32,8 +32,19 @@ function detectCategory(name: string): OrderType {
   return 'clothing'
 }
 
-// ── Badge colors per category ───────────────────────────────────────────────
-const CATEGORY_BADGE_CLASSES: Record<OrderType, string> = {
+// ── Map global catalog category text → OrderType slug ───────────────────────
+function mapGlobalCategoryToSlug(categoryText: string): string {
+  const t = (categoryText || '').toLowerCase()
+  if (t.includes('ковр') || t.includes('палас')) return 'carpet'
+  if (t.includes('мебел') || t.includes('диван') || t.includes('кресл') || t.includes('матрас')) return 'furniture'
+  if (t.includes('обувь') || t.includes('ботин') || t.includes('кроссов') || t.includes('туфл') || t.includes('кед')) return 'shoes'
+  if (t.includes('штор') || t.includes('тюл') || t.includes('занавес') || t.includes('гардин') || t.includes('портьер')) return 'curtains'
+  if (t.includes('постел') || t.includes('одеял') || t.includes('подушк') || t.includes('плед') || t.includes('покрывал')) return 'bedding'
+  return 'clothing'
+}
+
+// ── Badge colors per category ────────────────────────────────────────────────
+const BADGE_COLORS: Record<string, string> = {
   clothing:  'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   carpet:    'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
   furniture: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
@@ -42,28 +53,43 @@ const CATEGORY_BADGE_CLASSES: Record<OrderType, string> = {
   bedding:   'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
 }
 
-function CategoryBadge({ category }: { category: OrderType }) {
+function CategoryBadge({ category, label }: { category: string; label?: string }) {
+  const cls = BADGE_COLORS[category] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+  const text = label ?? ORDER_TYPE_LABELS[category] ?? category
   return (
-    <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', CATEGORY_BADGE_CLASSES[category])}>
-      {ORDER_TYPE_LABELS[category]}
+    <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', cls)}>
+      {text}
     </span>
   )
 }
 
-// ── Add dialog ──────────────────────────────────────────────────────────────
+// ── Default category options (fallback when config not loaded) ────────────────
+const DEFAULT_CAT_OPTIONS: CleaningOrderTypeConfig[] = [
+  { slug: 'clothing',  label: 'Одежда',    icon: 'Shirt',      sort_order: 0, active: true },
+  { slug: 'carpet',    label: 'Ковёр',     icon: 'LayoutGrid', sort_order: 1, active: true },
+  { slug: 'furniture', label: 'Мебель',    icon: 'Sofa',       sort_order: 2, active: true },
+  { slug: 'shoes',     label: 'Обувь',     icon: 'Footprints', sort_order: 3, active: false },
+  { slug: 'curtains',  label: 'Шторы',     icon: 'Wind',       sort_order: 4, active: false },
+  { slug: 'bedding',   label: 'Постельное', icon: 'BedDouble', sort_order: 5, active: false },
+]
+
+// ── Add dialog ────────────────────────────────────────────────────────────────
 interface AddDialogProps {
   open: boolean
   onClose: () => void
   maxSortOrder: number
+  orderTypes: CleaningOrderTypeConfig[]
 }
 
-function AddItemDialog({ open, onClose, maxSortOrder }: AddDialogProps) {
+function AddItemDialog({ open, onClose, maxSortOrder, orderTypes }: AddDialogProps) {
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [days, setDays] = useState('3')
+  const [category, setCategory] = useState('clothing')
   const upsert = useUpsertItemType()
 
-  const detectedCategory = useMemo(() => detectCategory(name), [name])
+  // Auto-suggest category from name
+  const suggestedCategory = useMemo(() => suggestCategory(name), [name])
 
   const handleSubmit = async () => {
     if (!name.trim()) return
@@ -73,11 +99,13 @@ function AddItemDialog({ open, onClose, maxSortOrder }: AddDialogProps) {
         default_price: Number(price) || 0,
         default_days: Number(days) || 3,
         sort_order: maxSortOrder + 1,
+        category,
       })
       toast.success('Позиция добавлена')
       setName('')
       setPrice('')
       setDays('3')
+      setCategory('clothing')
       onClose()
     } catch {
       toast.error('Ошибка сохранения')
@@ -88,6 +116,7 @@ function AddItemDialog({ open, onClose, maxSortOrder }: AddDialogProps) {
     setName('')
     setPrice('')
     setDays('3')
+    setCategory('clothing')
     onClose()
   }
 
@@ -103,16 +132,44 @@ function AddItemDialog({ open, onClose, maxSortOrder }: AddDialogProps) {
             <Label>Название *</Label>
             <Input
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={e => {
+                const v = e.target.value
+                setName(v)
+                // Auto-update category when name changes
+                setCategory(suggestCategory(v))
+              }}
               placeholder="Например: Куртка зимняя"
               onKeyDown={e => e.key === 'Enter' && handleSubmit()}
               autoFocus
             />
-            {name.trim() && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span>Категория:</span>
-                <CategoryBadge category={detectedCategory} />
-              </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Категория</Label>
+            <div className="relative">
+              <select
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className="w-full h-9 appearance-none rounded-md border border-input bg-background px-3 pr-8 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {orderTypes.map(t => (
+                  <option key={t.slug} value={t.slug}>{t.label}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            </div>
+            {name.trim() && suggestedCategory !== category && (
+              <p className="text-xs text-muted-foreground">
+                Подсказка: «{orderTypes.find(t => t.slug === suggestedCategory)?.label ?? suggestedCategory}»
+                {' '}
+                <button
+                  type="button"
+                  className="text-primary hover:underline"
+                  onClick={() => setCategory(suggestedCategory)}
+                >
+                  применить
+                </button>
+              </p>
             )}
           </div>
 
@@ -151,7 +208,7 @@ function AddItemDialog({ open, onClose, maxSortOrder }: AddDialogProps) {
   )
 }
 
-// ── Import from global catalog dialog ───────────────────────────────────────
+// ── Import from global catalog dialog ────────────────────────────────────────
 interface ImportCleaningDialogProps {
   open: boolean
   onClose: () => void
@@ -206,6 +263,7 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
           default_price: s.price || 0,
           default_days: 3,
           sort_order: maxSortOrder + i + 1,
+          category: mapGlobalCategoryToSlug(s.category || ''),
         })
         count++
       } catch {
@@ -334,7 +392,7 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
   )
 }
 
-// ── Inline editable cell ────────────────────────────────────────────────────
+// ── Inline editable cell ──────────────────────────────────────────────────────
 interface EditCellProps {
   item: CleaningItemType
   field: 'name' | 'price' | 'days'
@@ -393,14 +451,15 @@ function EditCell({ item, field, editingCell, editingValue, savingId, onStartEdi
   )
 }
 
-// ── Main component ──────────────────────────────────────────────────────────
+// ── Main component ────────────────────────────────────────────────────────────
 export function CleaningCatalogTab() {
   const { data: items = [], isLoading } = useCleaningItemTypes()
+  const { data: orderTypesConfig = DEFAULT_CAT_OPTIONS } = useCleaningOrderTypesConfig()
   const upsert = useUpsertItemType()
   const deleteItem = useDeleteItemType()
   const currencySymbol = useCurrencySymbol()
 
-  const [categoryFilter, setCategoryFilter] = useState<OrderType | 'all'>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -408,31 +467,30 @@ export function CleaningCatalogTab() {
   const [editingValue, setEditingValue] = useState('')
   const [savingId, setSavingId] = useState<string | null>(null)
 
-  // Detect categories for each item and build category counts
-  const itemsWithCategory = useMemo(() =>
-    items.map(item => ({ ...item, category: detectCategory(item.name) })),
-    [items]
-  )
-
+  // Category counts based on stored category field
   const categoryCounts = useMemo(() => {
-    const counts: Partial<Record<OrderType, number>> = {}
-    itemsWithCategory.forEach(item => {
-      counts[item.category] = (counts[item.category] || 0) + 1
+    const counts: Record<string, number> = {}
+    items.forEach(item => {
+      const cat = item.category || 'clothing'
+      counts[cat] = (counts[cat] || 0) + 1
     })
     return counts
-  }, [itemsWithCategory])
+  }, [items])
 
+  // Available categories ordered by config sort_order
   const availableCategories = useMemo(() =>
-    (['clothing', 'carpet', 'furniture', 'shoes', 'curtains', 'bedding'] as OrderType[])
-      .filter(cat => (categoryCounts[cat] || 0) > 0),
-    [categoryCounts]
+    orderTypesConfig
+      .filter(cfg => (categoryCounts[cfg.slug] || 0) > 0)
+      .map(cfg => cfg.slug),
+    [orderTypesConfig, categoryCounts]
   )
 
+  // Filtered items by selected category
   const filteredItems = useMemo(() =>
     categoryFilter === 'all'
-      ? itemsWithCategory
-      : itemsWithCategory.filter(item => item.category === categoryFilter),
-    [itemsWithCategory, categoryFilter]
+      ? items
+      : items.filter(item => (item.category || 'clothing') === categoryFilter),
+    [items, categoryFilter]
   )
 
   const maxSortOrder = useMemo(() =>
@@ -461,7 +519,6 @@ export function CleaningCatalogTab() {
     if (!item) { cancelEdit(); return }
 
     const trimmed = editingValue.trim()
-    // Check if value actually changed
     const currentValue = editingCell.field === 'name'
       ? item.name
       : editingCell.field === 'price'
@@ -476,6 +533,7 @@ export function CleaningCatalogTab() {
     const payload: Partial<CleaningItemType> & { name: string } = {
       id: item.id,
       name: item.name,
+      category: item.category || 'clothing',
       default_price: item.default_price,
       default_days: item.default_days,
       sort_order: item.sort_order,
@@ -550,20 +608,24 @@ export function CleaningCatalogTab() {
         >
           Все ({items.length})
         </button>
-        {availableCategories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setCategoryFilter(cat)}
-            className={cn(
-              'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border',
-              categoryFilter === cat
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-background text-muted-foreground border-border hover:bg-muted'
-            )}
-          >
-            {ORDER_TYPE_LABELS[cat]} ({categoryCounts[cat]})
-          </button>
-        ))}
+        {availableCategories.map(cat => {
+          const cfg = orderTypesConfig.find(c => c.slug === cat)
+          const label = cfg?.label ?? ORDER_TYPE_LABELS[cat] ?? cat
+          return (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={cn(
+                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border',
+                categoryFilter === cat
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background text-muted-foreground border-border hover:bg-muted'
+              )}
+            >
+              {label} ({categoryCounts[cat]})
+            </button>
+          )
+        })}
       </div>
 
       {/* Table */}
@@ -593,6 +655,7 @@ export function CleaningCatalogTab() {
               {filteredItems.map(item => {
                 const isDeleting = deletingId === item.id
                 const isSaving = savingId === item.id
+                const cfg = orderTypesConfig.find(c => c.slug === (item.category || 'clothing'))
                 return (
                   <tr
                     key={item.id}
@@ -619,7 +682,7 @@ export function CleaningCatalogTab() {
 
                     {/* Category badge */}
                     <td className="p-3 hidden sm:table-cell">
-                      <CategoryBadge category={item.category} />
+                      <CategoryBadge category={item.category || 'clothing'} label={cfg?.label} />
                     </td>
 
                     {/* Price */}
@@ -679,6 +742,7 @@ export function CleaningCatalogTab() {
         open={addOpen}
         onClose={() => setAddOpen(false)}
         maxSortOrder={maxSortOrder}
+        orderTypes={orderTypesConfig}
       />
 
       <ImportCleaningDialog

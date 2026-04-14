@@ -2,11 +2,53 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { PRODUCT } from '@/lib/config'
-import { Shirt, LayoutGrid, Sofa, Footprints, Wind, BedDouble, type LucideIcon } from 'lucide-react'
+import { Shirt, LayoutGrid, Sofa, Footprints, Wind, BedDouble, Package, Scissors, Sparkles, Droplets, Layers, WashingMachine, type LucideIcon } from 'lucide-react'
 import dayjs from 'dayjs'
 
-export type OrderType = 'clothing' | 'carpet' | 'furniture' | 'shoes' | 'curtains' | 'bedding'
+export type OrderType = string   // slug of the order type (e.g. 'clothing', 'carpet', custom...)
 export const ALL_ORDER_TYPES: OrderType[] = ['clothing', 'carpet', 'furniture', 'shoes', 'curtains', 'bedding']
+
+// ── Интерфейс конфигурации типа заказа ────────────────────────────────────────
+export interface CleaningOrderTypeConfig {
+  slug: string
+  label: string
+  icon: string        // имя иконки из CLEANING_ICON_MAP
+  sort_order: number
+  active: boolean
+  description?: string
+}
+
+// ── Карта имён иконок → компонентов ───────────────────────────────────────────
+export const CLEANING_ICON_MAP: Record<string, LucideIcon> = {
+  Shirt:        Shirt,
+  LayoutGrid:   LayoutGrid,
+  Sofa:         Sofa,
+  Footprints:   Footprints,
+  Wind:         Wind,
+  BedDouble:    BedDouble,
+  Package:      Package,
+  Scissors:     Scissors,
+  Sparkles:     Sparkles,
+  Droplets:     Droplets,
+  Layers:       Layers,
+  WashingMachine: WashingMachine,
+}
+
+export const CLEANING_ICON_NAMES = Object.keys(CLEANING_ICON_MAP)
+
+export function getOrderTypeIcon(iconName: string): LucideIcon {
+  return CLEANING_ICON_MAP[iconName] ?? Package
+}
+
+// ── Дефолтные конфиги (fallback когда БД недоступна) ─────────────────────────
+const DEFAULT_ORDER_TYPES: CleaningOrderTypeConfig[] = [
+  { slug: 'clothing',  label: 'Одежда',      icon: 'Shirt',      sort_order: 0, active: true,  description: 'Одежда, пальто, куртки, костюмы' },
+  { slug: 'carpet',    label: 'Ковёр',        icon: 'LayoutGrid', sort_order: 1, active: true,  description: 'Ковры, дорожки (цена за кв.м)' },
+  { slug: 'furniture', label: 'Мебель',       icon: 'Sofa',       sort_order: 2, active: true,  description: 'Диваны, кресла, матрасы' },
+  { slug: 'shoes',     label: 'Обувь',        icon: 'Footprints', sort_order: 3, active: false, description: 'Обувь, сапоги, ботинки' },
+  { slug: 'curtains',  label: 'Шторы',        icon: 'Wind',       sort_order: 4, active: false, description: 'Шторы, тюль, занавески' },
+  { slug: 'bedding',   label: 'Постельное',   icon: 'BedDouble',  sort_order: 5, active: false, description: 'Одеяла, подушки, постельное' },
+]
 export type OrderStatus = 'received' | 'in_progress' | 'ready' | 'issued' | 'paid' | 'cancelled'
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid'
 export type ItemStatus = 'pending' | 'ready' | 'issued'
@@ -91,40 +133,60 @@ export const ORDER_TYPE_ICONS: Record<OrderType, LucideIcon> = {
 
 // ── Конфигурация типов заказов ─────────────────────────────────────────────
 
-const ENABLED_TYPES_KEY = 'cleaning_order_types_enabled'
+export const ORDER_TYPES_CONFIG_KEY = 'cleaning_order_types_config'
+export const DEFAULT_ENABLED_CONFIGS: CleaningOrderTypeConfig[] = DEFAULT_ORDER_TYPES.filter(t => t.active)
 
-export function useCleaningEnabledOrderTypes() {
+const _fetchOrderTypesConfig = async (): Promise<CleaningOrderTypeConfig[]> => {
+  const { data } = await supabase
+    .from('app_settings')
+    .select('value')
+    .eq('product', PRODUCT)
+    .eq('key', ORDER_TYPES_CONFIG_KEY)
+    .maybeSingle()
+  if (!data?.value) return DEFAULT_ORDER_TYPES
+  try {
+    const parsed = JSON.parse(data.value) as CleaningOrderTypeConfig[]
+    return parsed.length > 0 ? parsed : DEFAULT_ORDER_TYPES
+  } catch {
+    return DEFAULT_ORDER_TYPES
+  }
+}
+
+// Полная конфигурация (все типы, для управления в админке)
+export function useCleaningOrderTypesConfig() {
   return useQuery({
-    queryKey: [ENABLED_TYPES_KEY, PRODUCT],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('app_settings')
-        .select('value')
-        .eq('product', PRODUCT)
-        .eq('key', ENABLED_TYPES_KEY)
-        .maybeSingle()
-      if (!data?.value) return ['clothing', 'carpet', 'furniture'] as OrderType[]
-      try {
-        const parsed = JSON.parse(data.value) as OrderType[]
-        return parsed.length > 0 ? parsed : ['clothing', 'carpet', 'furniture'] as OrderType[]
-      } catch {
-        return ['clothing', 'carpet', 'furniture'] as OrderType[]
-      }
-    },
+    queryKey: [ORDER_TYPES_CONFIG_KEY, PRODUCT],
+    queryFn: _fetchOrderTypesConfig,
     staleTime: 60_000,
   })
 }
 
-export function useUpdateCleaningOrderTypes() {
+// Только активные типы отсортированные по sort_order (для вкладок POS)
+export function useCleaningEnabledOrderTypes() {
+  return useQuery({
+    queryKey: [ORDER_TYPES_CONFIG_KEY, PRODUCT],
+    queryFn: _fetchOrderTypesConfig,
+    select: (config) => config
+      .filter(t => t.active)
+      .sort((a, b) => a.sort_order - b.sort_order),
+    staleTime: 60_000,
+  })
+}
+
+// Сохранить полную конфигурацию типов заказов
+export function useUpdateCleaningOrderTypesConfig() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (types: OrderType[]) => {
+    mutationFn: async (config: CleaningOrderTypeConfig[]) => {
       const { error } = await supabase
         .from('app_settings')
-        .upsert({ product: PRODUCT, key: ENABLED_TYPES_KEY, value: JSON.stringify(types) }, { onConflict: 'product,key' })
+        .upsert(
+          { product: PRODUCT, key: ORDER_TYPES_CONFIG_KEY, value: JSON.stringify(config) },
+          { onConflict: 'product,key' }
+        )
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: [ENABLED_TYPES_KEY, PRODUCT] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [ORDER_TYPES_CONFIG_KEY, PRODUCT] }),
   })
 }
 

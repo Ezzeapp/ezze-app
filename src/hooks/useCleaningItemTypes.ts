@@ -6,6 +6,7 @@ export interface CleaningItemType {
   id: string
   product: string
   name: string
+  category: string          // order type slug: 'clothing' | 'carpet' | etc.
   default_price: number
   default_days: number
   sort_order: number
