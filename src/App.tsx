@@ -2,9 +2,11 @@ import { Suspense, lazy, useEffect } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { PRODUCT } from '@/lib/config'
 
-/** Для cleaning → Заказы, для остальных → Календарь */
+/** Для cleaning → Заказы, для farm → ферма, для остальных → Календарь */
 function DefaultRedirect() {
-  return <Navigate to={PRODUCT === 'cleaning' ? '/orders' : '/calendar'} replace />
+  if (PRODUCT === 'cleaning') return <Navigate to="/orders" replace />
+  if (PRODUCT === 'farm')     return <Navigate to="/farm" replace />
+  return <Navigate to="/calendar" replace />
 }
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/queryClient'
@@ -54,6 +56,14 @@ const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage').then
 const POSPage = lazy(() => import('@/pages/orders/POSPage').then(m => ({ default: m.POSPage })))
 const CleaningStatsPage = lazy(() => import('@/pages/cleaning/CleaningStatsPage').then(m => ({ default: m.CleaningStatsPage })))
 const CleaningReportsPage = lazy(() => import('@/pages/cleaning/CleaningReportsPage').then(m => ({ default: m.CleaningReportsPage })))
+const FarmDashboardPage   = lazy(() => import('@/pages/farm/FarmDashboardPage').then(m => ({ default: m.FarmDashboardPage })))
+const FarmAnimalsPage     = lazy(() => import('@/pages/farm/AnimalsPage').then(m => ({ default: m.AnimalsPage })))
+const FarmAnimalDetailPage= lazy(() => import('@/pages/farm/AnimalDetailPage').then(m => ({ default: m.AnimalDetailPage })))
+const FarmGroupsPage      = lazy(() => import('@/pages/farm/GroupsPage').then(m => ({ default: m.GroupsPage })))
+const FarmFieldsPage      = lazy(() => import('@/pages/farm/FieldsPage').then(m => ({ default: m.FieldsPage })))
+const FarmFeedStockPage   = lazy(() => import('@/pages/farm/FeedStockPage').then(m => ({ default: m.FeedStockPage })))
+const FarmProductionPage  = lazy(() => import('@/pages/farm/ProductionPage').then(m => ({ default: m.ProductionPage })))
+const FarmExpensesPage    = lazy(() => import('@/pages/farm/ExpensesPage').then(m => ({ default: m.ExpensesPage })))
 
 const router = createBrowserRouter([
   // Public routes
@@ -123,6 +133,16 @@ const router = createBrowserRouter([
       ...(PRODUCT === 'cleaning' ? [
         { path: 'stats', element: <CleaningStatsPage /> },
         { path: 'reports', element: <CleaningReportsPage /> },
+      ] : []),
+      ...(PRODUCT === 'farm' ? [
+        { path: 'farm',                 element: <FarmDashboardPage /> },
+        { path: 'farm/animals',         element: <FarmAnimalsPage /> },
+        { path: 'farm/animals/:id',     element: <FarmAnimalDetailPage /> },
+        { path: 'farm/groups',          element: <FarmGroupsPage /> },
+        { path: 'farm/fields',          element: <FarmFieldsPage /> },
+        { path: 'farm/feed',            element: <FarmFeedStockPage /> },
+        { path: 'farm/production',      element: <FarmProductionPage /> },
+        { path: 'farm/expenses',        element: <FarmExpensesPage /> },
       ] : []),
     ],
   },

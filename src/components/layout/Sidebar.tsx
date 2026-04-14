@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard, User, Users, Package, CalendarDays,
   Settings, Zap, X, ShieldCheck, UsersRound, Megaphone, CreditCard, LifeBuoy,
-  ClipboardList, BarChart3,
+  ClipboardList, BarChart3, Beef, Wheat, Milk, Wallet,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -81,23 +81,48 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
 
         {/* ── Основное ── */}
         <SidebarGroupLabel label={t('nav.groupMain')} />
-        {PRODUCT === 'cleaning'
-          ? <SidebarNavItem icon={BarChart3}     iconColor="dark:text-blue-400"    label={t('nav.stats')} to="/stats"   onClick={onClose} />
-          : <NavItemGated   icon={LayoutDashboard} iconColor="dark:text-blue-400"  label={t('nav.dashboard')} to="/dashboard" feature={null} onClick={onClose} />
-        }
-        {PRODUCT === 'cleaning'
-          ? <SidebarNavItem icon={ClipboardList} iconColor="dark:text-indigo-400" label={t('nav.orders')}    to="/orders"  onClick={onClose} />
-          : <NavItemGated   icon={CalendarDays}  iconColor="dark:text-indigo-400" label={PRODUCT === 'clinic' ? t('clinic.nav.appointments') : t('nav.calendar')} to="/calendar" feature="calendar" onClick={onClose} />
-        }
-        <NavItemGated icon={Users} iconColor="dark:text-emerald-400" label={PRODUCT === 'clinic' ? t('clinic.nav.patients') : t('nav.clients')} to="/clients" feature="clients" onClick={onClose} />
-        {/* ── Каталог ── */}
-        <SidebarGroupLabel label={t('nav.groupCatalog')} />
-        <NavItemGated icon={ServiceIcon} iconColor="dark:text-purple-400"  label={t('nav.services')}  to="/services"  feature={null}       onClick={onClose} />
-        <NavItemGated icon={Package}     iconColor="dark:text-orange-400"  label={t('nav.inventory')} to="/inventory" feature="inventory"  onClick={onClose} />
+        {PRODUCT === 'cleaning' ? (
+          <SidebarNavItem icon={BarChart3} iconColor="dark:text-blue-400" label={t('nav.stats')} to="/stats" onClick={onClose} />
+        ) : PRODUCT === 'farm' ? (
+          <SidebarNavItem icon={LayoutDashboard} iconColor="dark:text-blue-400" label={t('farm.nav.dashboard')} to="/farm" onClick={onClose} />
+        ) : (
+          <NavItemGated icon={LayoutDashboard} iconColor="dark:text-blue-400" label={t('nav.dashboard')} to="/dashboard" feature={null} onClick={onClose} />
+        )}
+        {PRODUCT === 'cleaning' ? (
+          <SidebarNavItem icon={ClipboardList} iconColor="dark:text-indigo-400" label={t('nav.orders')} to="/orders" onClick={onClose} />
+        ) : PRODUCT === 'farm' ? null : (
+          <NavItemGated icon={CalendarDays} iconColor="dark:text-indigo-400" label={PRODUCT === 'clinic' ? t('clinic.nav.appointments') : t('nav.calendar')} to="/calendar" feature="calendar" onClick={onClose} />
+        )}
+        {PRODUCT !== 'farm' && (
+          <NavItemGated icon={Users} iconColor="dark:text-emerald-400" label={PRODUCT === 'clinic' ? t('clinic.nav.patients') : t('nav.clients')} to="/clients" feature="clients" onClick={onClose} />
+        )}
 
-        {/* ── Маркетинг ── */}
-        <SidebarGroupLabel label={t('nav.groupMarketing')} />
-        <SidebarNavItem icon={Megaphone} iconColor="dark:text-pink-400" label={t('nav.marketing')} to="/marketing" onClick={onClose} />
+        {PRODUCT === 'farm' ? (
+          <>
+            <SidebarNavItem icon={Beef}      iconColor="dark:text-emerald-400" label={t('farm.nav.animals')}    to="/farm/animals"    onClick={onClose} />
+            <SidebarNavItem icon={UsersRound} iconColor="dark:text-cyan-400"   label={t('farm.nav.groups')}     to="/farm/groups"     onClick={onClose} />
+            <SidebarGroupLabel label={t('nav.groupCatalog')} />
+            <SidebarNavItem icon={Wheat}     iconColor="dark:text-amber-400"   label={t('farm.nav.fields')}     to="/farm/fields"     onClick={onClose} />
+            <SidebarNavItem icon={Package}   iconColor="dark:text-orange-400"  label={t('farm.nav.feed')}       to="/farm/feed"       onClick={onClose} />
+            <SidebarNavItem icon={Milk}      iconColor="dark:text-sky-400"     label={t('farm.nav.production')} to="/farm/production" onClick={onClose} />
+            <SidebarNavItem icon={Wallet}    iconColor="dark:text-rose-400"    label={t('farm.nav.expenses')}   to="/farm/expenses"   onClick={onClose} />
+          </>
+        ) : (
+          <>
+            {/* ── Каталог ── */}
+            <SidebarGroupLabel label={t('nav.groupCatalog')} />
+            <NavItemGated icon={ServiceIcon} iconColor="dark:text-purple-400"  label={t('nav.services')}  to="/services"  feature={null}       onClick={onClose} />
+            <NavItemGated icon={Package}     iconColor="dark:text-orange-400"  label={t('nav.inventory')} to="/inventory" feature="inventory"  onClick={onClose} />
+          </>
+        )}
+
+        {PRODUCT !== 'farm' && (
+          <>
+            {/* ── Маркетинг ── */}
+            <SidebarGroupLabel label={t('nav.groupMarketing')} />
+            <SidebarNavItem icon={Megaphone} iconColor="dark:text-pink-400" label={t('nav.marketing')} to="/marketing" onClick={onClose} />
+          </>
+        )}
 
         {/* ── Команда ── */}
         <SidebarGroupLabel label={t('nav.groupTeam')} />
