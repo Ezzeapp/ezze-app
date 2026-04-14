@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Plus, Search, ClipboardList, Loader2, Filter,
   AlertTriangle, Trash2, Download, CalendarRange, X,
@@ -26,25 +27,17 @@ import { useCurrencySymbol } from '@/hooks/useCurrency'
 import dayjs from 'dayjs'
 import { cn } from '@/lib/utils'
 
-const STATUS_TABS: { value: OrderStatus | 'all'; label: string }[] = [
-  { value: 'all',         label: 'Все' },
-  { value: 'received',    label: 'Принят' },
-  { value: 'in_progress', label: 'В работе' },
-  { value: 'ready',       label: 'Готов' },
-  { value: 'issued',      label: 'Выдан' },
-  { value: 'paid',        label: 'Оплачен' },
-  { value: 'cancelled',   label: 'Отменён' },
-]
-
 const NON_URGENT_STATUSES = ['issued', 'paid', 'cancelled']
 
 // ── CSV-экспорт ────────────────────────────────────────────────────────────────
-function exportCSV(orders: CleaningOrder[], symbol: string) {
-  const headers = ['Номер', 'Тип', 'Клиент', 'Статус', `Сумма (${symbol})`, `Оплачено (${symbol})`, 'Дата']
+function exportCSV(orders: CleaningOrder[], symbol: string, noClientLabel: string, colLabels: string[]) {
+  const headers = colLabels.length === 7 ? colLabels : [
+    '#', 'Type', 'Client', 'Status', `Amount (${symbol})`, `Paid (${symbol})`, 'Date',
+  ]
   const rows = orders.map(o => [
     o.number,
     ORDER_TYPE_LABELS[o.order_type as OrderType] ?? o.order_type,
-    o.client ? `${o.client.first_name} ${o.client.last_name || ''}`.trim() : 'Без клиента',
+    o.client ? `${o.client.first_name} ${o.client.last_name || ''}`.trim() : noClientLabel,
     o.status,
     o.total_amount,
     o.paid_amount,
@@ -61,8 +54,16 @@ function exportCSV(orders: CleaningOrder[], symbol: string) {
 }
 
 // ── Диалог подтверждения удаления ─────────────────────────────────────────────
-function DeleteConfirmDialog({ label, onConfirm, onClose, danger = false }: {
-  label: string; onConfirm: () => void; onClose: () => void; danger?: boolean
+function DeleteConfirmDialog({ label, onConfirm, onClose, danger = false, confirmDeleteAllLabel, confirmDeleteLabel, cantUndoLabel, cancelLabel, deleteLabel }: {
+  label: string
+  onConfirm: () => void
+  onClose: () => void
+  danger?: boolean
+  confirmDeleteAllLabel: string
+  confirmDeleteLabel: string
+  cantUndoLabel: string
+  cancelLabel: string
+  deleteLabel: string
 }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -73,13 +74,13 @@ function DeleteConfirmDialog({ label, onConfirm, onClose, danger = false }: {
           </div>
         </div>
         <div className="text-center space-y-1">
-          <p className="font-semibold">{danger ? '⚠️ Удалить все заказы?' : 'Удалить заказ?'}</p>
+          <p className="font-semibold">{danger ? confirmDeleteAllLabel : confirmDeleteLabel}</p>
           <p className="text-sm text-muted-foreground">{label}</p>
-          {danger && <p className="text-xs text-red-500 font-medium">Это действие нельзя отменить!</p>}
+          {danger && <p className="text-xs text-red-500 font-medium">{cantUndoLabel}</p>}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="flex-1" size="sm" onClick={onClose}>Отмена</Button>
-          <Button variant="destructive" className="flex-1" size="sm" onClick={onConfirm}>Удалить</Button>
+          <Button variant="outline" className="flex-1" size="sm" onClick={onClose}>{cancelLabel}</Button>
+          <Button variant="destructive" className="flex-1" size="sm" onClick={onConfirm}>{deleteLabel}</Button>
         </div>
       </div>
     </div>
@@ -87,13 +88,14 @@ function DeleteConfirmDialog({ label, onConfirm, onClose, danger = false }: {
 }
 
 // ── Таблица-вид ────────────────────────────────────────────────────────────────
-function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDueTodayMap }: {
+function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDueTodayMap, t }: {
   orders: CleaningOrder[]
   symbol: string
   onNavigate: (id: string) => void
   onDelete: (id: string) => void
   isOverdueMap: Record<string, boolean>
   isDueTodayMap: Record<string, boolean>
+  t: (key: string, opts?: Record<string, unknown>) => string
 }) {
   const totalAmount = orders.reduce((s, o) => s + (o.total_amount ?? 0), 0)
   const totalPaid   = orders.reduce((s, o) => s + (o.paid_amount  ?? 0), 0)
@@ -104,14 +106,14 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">№</th>
-              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Тип</th>
-              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Клиент</th>
-              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Статус</th>
-              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Оплата</th>
-              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Сумма</th>
-              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Оплачено</th>
-              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Дата / Срок</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.number')}</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.type')}</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.client')}</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.status')}</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.payment')}</th>
+              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.amount')}</th>
+              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.paid')}</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.date')}</th>
               <th className="px-2 py-2.5 w-8" />
             </tr>
           </thead>
@@ -122,7 +124,7 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
               const dueToday  = isDueTodayMap[order.id]
               const clientName = order.client
                 ? `${order.client.first_name} ${order.client.last_name || ''}`.trim()
-                : 'Без клиента'
+                : t('orders.noClient')
               return (
                 <tr
                   key={order.id}
@@ -169,7 +171,7 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
                         overdue  ? 'text-red-500 font-medium'    : '',
                         dueToday ? 'text-orange-500 font-medium' : '',
                       )}>
-                        Срок: {dayjs(order.ready_date).format('DD.MM')}
+                        {t('orders.deadline')} {dayjs(order.ready_date).format('DD.MM')}
                       </div>
                     )}
                   </td>
@@ -190,7 +192,7 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
             <tfoot>
               <tr className="bg-muted/50 border-t font-medium text-sm">
                 <td colSpan={4} className="px-3 py-2.5 text-muted-foreground">
-                  Итого: {orders.length} заказов
+                  {t('orders.total', { count: orders.length })}
                 </td>
                 <td />
                 <td className="px-3 py-2.5 text-right whitespace-nowrap">
@@ -212,7 +214,18 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
 // ── Главный компонент ──────────────────────────────────────────────────────────
 export function OrdersListPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const symbol = useCurrencySymbol()
+
+  const STATUS_TABS: { value: OrderStatus | 'all'; label: string }[] = [
+    { value: 'all',         label: t('orders.status.all') },
+    { value: 'received',    label: t('orders.status.received') },
+    { value: 'in_progress', label: t('orders.status.inProgress') },
+    { value: 'ready',       label: t('orders.status.ready') },
+    { value: 'issued',      label: t('orders.status.issued') },
+    { value: 'paid',        label: t('orders.status.paid') },
+    { value: 'cancelled',   label: t('orders.status.cancelled') },
+  ]
 
   const [status,         setStatus]         = useState<OrderStatus | 'all'>('all')
   const [orderType,      setOrderType]      = useState<OrderType | 'all'>('all')
@@ -270,20 +283,20 @@ export function OrdersListPage() {
   async function handleDeleteOne(id: string) {
     try {
       await deleteOrder(id)
-      toast.success('Заказ удалён')
+      toast.success(t('orders.deleted'))
       setDeleteId(null)
     } catch {
-      toast.error('Ошибка удаления')
+      toast.error(t('orders.deleteError'))
     }
   }
 
   async function handleDeleteAll() {
     try {
       for (const o of orders) { await deleteOrder(o.id) }
-      toast.success(`Удалено ${orders.length} заказов`)
+      toast.success(t('orders.deletedMultiple', { count: orders.length }))
       setDeleteAllOpen(false)
     } catch {
-      toast.error('Ошибка при удалении')
+      toast.error(t('orders.deleteError'))
     }
   }
 
@@ -302,15 +315,15 @@ export function OrdersListPage() {
   return (
     <div className="flex flex-col h-full">
       <PageHeader
-        title="Заказы"
-        description={total > 0 ? `${total} заказов` : undefined}
+        title={t('nav.orders')}
+        description={total > 0 ? `${total} ${t('orders.shortOrders')}` : undefined}
       >
         <div className="flex items-center gap-1.5">
           {/* Период */}
           <Button
             variant="ghost" size="icon"
             className={cn('h-8 w-8', (showDateFilter || hasDateFilter) ? 'text-primary' : 'text-muted-foreground')}
-            title="Фильтр по периоду"
+            title={t('orders.filterPeriod')}
             onClick={() => setShowDateFilter(v => !v)}
           >
             <CalendarRange className="h-4 w-4" />
@@ -320,8 +333,12 @@ export function OrdersListPage() {
             <Button
               variant="ghost" size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              title="Экспорт CSV"
-              onClick={() => exportCSV(orders, symbol)}
+              title={t('orders.exportCsv')}
+              onClick={() => exportCSV(orders, symbol, t('orders.noClient'), [
+                t('orders.col.number'), t('orders.col.type'), t('orders.col.client'),
+                t('orders.col.status'), `${t('orders.col.amount')} (${symbol})`,
+                `${t('orders.col.paid')} (${symbol})`, t('orders.col.date'),
+              ])}
             >
               <Download className="h-4 w-4" />
             </Button>
@@ -331,7 +348,7 @@ export function OrdersListPage() {
             <Button
               variant="ghost" size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-destructive"
-              title="Удалить всё на странице"
+              title={t('orders.deleteAll')}
               onClick={() => setDeleteAllOpen(true)}
             >
               <Trash2 className="h-4 w-4" />
@@ -342,7 +359,7 @@ export function OrdersListPage() {
             size="sm"
           >
             <Plus className="h-4 w-4 mr-1" />
-            Новый заказ
+            {t('orders.newOrder')}
           </Button>
         </div>
       </PageHeader>
@@ -354,8 +371,8 @@ export function OrdersListPage() {
 
           {/* Сегодня */}
           <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[105px]">
-            <span className="text-xs text-muted-foreground">Сегодня</span>
-            <span className="text-sm font-semibold">{stats ? stats.total_today : '—'} зак.</span>
+            <span className="text-xs text-muted-foreground">{t('orders.todayCount')}</span>
+            <span className="text-sm font-semibold">{stats ? stats.total_today : '—'} {t('orders.shortOrders')}</span>
             {stats && stats.revenue_today > 0 && (
               <span className="text-xs text-emerald-600 dark:text-emerald-400 leading-none">
                 {formatCurrency(stats.revenue_today)} {symbol}
@@ -375,9 +392,9 @@ export function OrdersListPage() {
                 : 'bg-muted/50 hover:bg-muted/80'
             )}
           >
-            <span className="text-xs text-muted-foreground">Не оплачено</span>
+            <span className="text-xs text-muted-foreground">{t('orders.unpaid')}</span>
             <span className={cn('text-sm font-semibold', stats && stats.unpaid_count > 0 ? 'text-orange-600 dark:text-orange-400' : '')}>
-              {stats ? stats.unpaid_count : '—'} зак.
+              {stats ? stats.unpaid_count : '—'} {t('orders.shortOrders')}
             </span>
             {stats && stats.unpaid_amount > 0 && (
               <span className="text-xs text-orange-500 dark:text-orange-400 leading-none">
@@ -388,8 +405,8 @@ export function OrdersListPage() {
 
           {/* За месяц */}
           <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[120px]">
-            <span className="text-xs text-muted-foreground">За месяц</span>
-            <span className="text-sm font-semibold">{stats ? stats.total_month : '—'} зак.</span>
+            <span className="text-xs text-muted-foreground">{t('orders.monthCount')}</span>
+            <span className="text-sm font-semibold">{stats ? stats.total_month : '—'} {t('orders.shortOrders')}</span>
             {stats && stats.revenue_month > 0 && (
               <span className="text-xs text-emerald-600 dark:text-emerald-400 leading-none">
                 {formatCurrency(stats.revenue_month)} {symbol}
@@ -399,7 +416,7 @@ export function OrdersListPage() {
 
           {/* Средний чек */}
           <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[110px]">
-            <span className="text-xs text-muted-foreground">Средний чек</span>
+            <span className="text-xs text-muted-foreground">{t('orders.avgCheck')}</span>
             <span className="text-sm font-semibold">
               {stats ? `${formatCurrency(stats.avg_check)} ${symbol}` : '—'}
             </span>
@@ -416,9 +433,9 @@ export function OrdersListPage() {
                   : 'bg-indigo-50/50 dark:bg-indigo-950/10 border-indigo-200 dark:border-indigo-800 hover:ring-1 hover:ring-indigo-300'
               )}
             >
-              <span className="text-xs text-muted-foreground">К выдаче</span>
+              <span className="text-xs text-muted-foreground">{t('orders.readyForIssue')}</span>
               <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                {stats.ready_count} зак.
+                {stats.ready_count} {t('orders.shortOrders')}
               </span>
             </button>
           )}
@@ -426,9 +443,9 @@ export function OrdersListPage() {
           {/* Просроченных */}
           {stats && stats.overdue_count > 0 && (
             <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800 px-3 py-2 min-w-[110px]">
-              <span className="text-xs text-muted-foreground">Просрочено</span>
+              <span className="text-xs text-muted-foreground">{t('orders.overdue')}</span>
               <span className="text-sm font-semibold text-red-600 dark:text-red-400">
-                {stats.overdue_count} зак.
+                {stats.overdue_count} {t('orders.shortOrders')}
               </span>
             </div>
           )}
@@ -438,7 +455,7 @@ export function OrdersListPage() {
         {showDateFilter && (
           <div className="flex items-end gap-3 flex-wrap rounded-xl border bg-muted/30 p-3">
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">С</Label>
+              <Label className="text-xs text-muted-foreground">{t('cleaning.period.from')}</Label>
               <Input
                 type="date" value={dateFrom}
                 onChange={e => { setDateFrom(e.target.value); setPage(1) }}
@@ -446,7 +463,7 @@ export function OrdersListPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">По</Label>
+              <Label className="text-xs text-muted-foreground">{t('cleaning.period.to')}</Label>
               <Input
                 type="date" value={dateTo}
                 onChange={e => { setDateTo(e.target.value); setPage(1) }}
@@ -456,7 +473,7 @@ export function OrdersListPage() {
             {hasDateFilter && (
               <Button variant="ghost" size="sm" className="h-8 text-muted-foreground" onClick={clearDateFilter}>
                 <X className="h-3.5 w-3.5 mr-1" />
-                Сбросить
+                {t('common.clearFilter')}
               </Button>
             )}
           </div>
@@ -467,7 +484,7 @@ export function OrdersListPage() {
           <div className="relative flex-1 min-w-[160px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Поиск по номеру или клиенту..."
+              placeholder={t('orders.search')}
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1) }}
               className="pl-9"
@@ -478,10 +495,10 @@ export function OrdersListPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="newest">↓ Новые</SelectItem>
-              <SelectItem value="oldest">↑ Старые</SelectItem>
-              <SelectItem value="amount_desc">Сумма ↓</SelectItem>
-              <SelectItem value="deadline_asc">Срок ↑</SelectItem>
+              <SelectItem value="newest">{t('orders.sortNewest')}</SelectItem>
+              <SelectItem value="oldest">{t('orders.sortOldest')}</SelectItem>
+              <SelectItem value="amount_desc">{t('orders.sortAmountDesc')}</SelectItem>
+              <SelectItem value="deadline_asc">{t('orders.sortDeadlineAsc')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={orderType} onValueChange={v => { setOrderType(v as OrderType | 'all'); setPage(1) }}>
@@ -489,10 +506,10 @@ export function OrdersListPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Все типы</SelectItem>
-              <SelectItem value="clothing">Одежда</SelectItem>
-              <SelectItem value="carpet">Ковёр</SelectItem>
-              <SelectItem value="furniture">Мебель</SelectItem>
+              <SelectItem value="all">{t('orders.allTypes')}</SelectItem>
+              <SelectItem value="clothing">{ORDER_TYPE_LABELS.clothing}</SelectItem>
+              <SelectItem value="carpet">{ORDER_TYPE_LABELS.carpet}</SelectItem>
+              <SelectItem value="furniture">{ORDER_TYPE_LABELS.furniture}</SelectItem>
             </SelectContent>
           </Select>
           <Button
@@ -502,7 +519,7 @@ export function OrdersListPage() {
             className="shrink-0 h-10"
           >
             <Filter className="h-4 w-4 mr-1" />
-            Мои
+            {t('orders.mine')}
           </Button>
         </div>
 
@@ -532,9 +549,9 @@ export function OrdersListPage() {
         ) : orders.length === 0 ? (
           <EmptyState
             icon={ClipboardList}
-            title="Заказов нет"
-            description="Создайте первый заказ при приёме вещей"
-            action={{ label: 'Новый заказ', onClick: () => navigate('/orders/new') }}
+            title={t('orders.emptyTitle')}
+            description={t('orders.emptyDesc')}
+            action={{ label: t('orders.newOrder'), onClick: () => navigate('/orders/new') }}
           />
         ) : (
           <>
@@ -547,6 +564,7 @@ export function OrdersListPage() {
                 onDelete={id => setDeleteId(id)}
                 isOverdueMap={isOverdueMap}
                 isDueTodayMap={isDueTodayMap}
+                t={t as (key: string, opts?: Record<string, unknown>) => string}
               />
             </div>
             {/* Мобиль — карточки */}
@@ -568,7 +586,7 @@ export function OrdersListPage() {
                   <button
                     onClick={e => { e.stopPropagation(); setDeleteId(order.id) }}
                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 z-10"
-                    title="Удалить заказ"
+                    title={t('orders.confirmDelete')}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -594,7 +612,7 @@ export function OrdersListPage() {
                             {order.client.phone && ` · ${order.client.phone}`}
                           </p>
                         ) : (
-                          <span className="text-xs text-muted-foreground italic mt-0.5 block">Без клиента</span>
+                          <span className="text-xs text-muted-foreground italic mt-0.5 block">{t('orders.noClient')}</span>
                         )}
                         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                           <span>{dayjs(order.created_at).format('DD.MM.YYYY')}</span>
@@ -603,20 +621,20 @@ export function OrdersListPage() {
                               isOverdue  ? 'text-red-500 font-medium'    : '',
                               isDueToday ? 'text-orange-500 font-medium' : '',
                             )}>
-                              Срок: {dayjs(order.ready_date).format('DD.MM')}
+                              {t('orders.deadline')} {dayjs(order.ready_date).format('DD.MM')}
                             </span>
                           )}
                           {order.assigned_to_profile && (
-                            <span>Исп.: {order.assigned_to_profile.display_name}</span>
+                            <span>{t('orders.executor')} {order.assigned_to_profile.display_name}</span>
                           )}
-                          {itemsCount !== null && <span>· {itemsCount} изд.</span>}
+                          {itemsCount !== null && <span>· {itemsCount} {t('orders.shortItems')}</span>}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
                         <p className="font-semibold text-sm">{formatCurrency(order.total_amount)} {symbol}</p>
                         {order.paid_amount > 0 && order.paid_amount < order.total_amount && (
                           <p className="text-xs text-muted-foreground">
-                            Опл.: {formatCurrency(order.paid_amount)}
+                            {t('orders.paidShort')} {formatCurrency(order.paid_amount)}
                           </p>
                         )}
                       </div>
@@ -632,9 +650,9 @@ export function OrdersListPage() {
         {/* Пагинация */}
         {totalPages > 1 && (
           <div className="flex justify-center gap-2 pt-2">
-            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Назад</Button>
+            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>{t('common.back')}</Button>
             <span className="flex items-center px-3 text-sm text-muted-foreground">{page} / {totalPages}</span>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Далее</Button>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>{t('common.next')}</Button>
           </div>
         )}
 
@@ -642,17 +660,27 @@ export function OrdersListPage() {
 
       {deleteId && (
         <DeleteConfirmDialog
-          label={`Заказ ${orders.find(o => o.id === deleteId)?.number ?? ''} будет удалён безвозвратно`}
+          label={`${t('orders.confirmDelete').replace('?', '')} ${orders.find(o => o.id === deleteId)?.number ?? ''}`}
           onConfirm={() => handleDeleteOne(deleteId)}
           onClose={() => setDeleteId(null)}
+          confirmDeleteAllLabel={t('orders.confirmDeleteAll')}
+          confirmDeleteLabel={t('orders.confirmDelete')}
+          cantUndoLabel={t('orders.cantUndo')}
+          cancelLabel={t('common.cancel')}
+          deleteLabel={t('common.delete')}
         />
       )}
       {deleteAllOpen && (
         <DeleteConfirmDialog
-          label={`${orders.length} заказов на этой странице будут удалены`}
+          label={t('orders.deletedMultiple', { count: orders.length })}
           onConfirm={handleDeleteAll}
           onClose={() => setDeleteAllOpen(false)}
           danger
+          confirmDeleteAllLabel={t('orders.confirmDeleteAll')}
+          confirmDeleteLabel={t('orders.confirmDelete')}
+          cantUndoLabel={t('orders.cantUndo')}
+          cancelLabel={t('common.cancel')}
+          deleteLabel={t('common.delete')}
         />
       )}
     </div>

@@ -1339,5 +1339,87 @@
     "allServices": "Barlyk qyzmetler",
     "openInMaps": "Kartada ashu",
     "poweredBy": "Ezze platformasynda zhumys ysteydi"
+  },
+  "orders": {
+    "newOrder": "Жаңа тапсырыс",
+    "search": "Нөмір немесе клиент бойынша іздеу...",
+    "filterPeriod": "Кезең бойынша сүзу",
+    "exportCsv": "CSV экспорт",
+    "deleteAll": "Беттегі барлығын жою",
+    "noClient": "Клиентсіз",
+    "total": "Барлығы: {{count}} тапсырыс",
+    "todayCount": "Бүгін",
+    "monthCount": "Айлық",
+    "avgCheck": "Орташа чек",
+    "unpaid": "Төленбеген",
+    "readyForIssue": "Беруге дайын",
+    "overdue": "Мерзімі өткен",
+    "shortOrders": "тап.",
+    "mine": "Менің",
+    "allTypes": "Барлық түрлер",
+    "sortNewest": "↓ Жаңалар",
+    "sortOldest": "↑ Ескілер",
+    "sortAmountDesc": "Сумма ↓",
+    "sortDeadlineAsc": "Мерзім ↑",
+    "deadline": "Мерзім:",
+    "executor": "Орынд.:",
+    "shortItems": "б.",
+    "paidShort": "Төл.:",
+    "emptyTitle": "Тапсырыстар жоқ",
+    "emptyDesc": "Заттарды қабылдау кезінде алғашқы тапсырысты жасаңыз",
+    "deleted": "Тапсырыс жойылды",
+    "deletedMultiple": "{{count}} тапсырыс жойылды",
+    "deleteError": "Жою қатесі",
+    "confirmDeleteAll": "⚠️ Барлық тапсырыстарды жою?",
+    "confirmDelete": "Тапсырысты жою?",
+    "cantUndo": "Бұл әрекетті болдырмауға болмайды\\!",
+    "status": {
+      "all": "Барлығы",
+      "received": "Қабылданды",
+      "inProgress": "Жұмыста",
+      "ready": "Дайын",
+      "issued": "Берілді",
+      "paid": "Төленді",
+      "cancelled": "Бас тартылды"
+    },
+    "payStatus": {
+      "unpaid": "Төленбеген",
+      "partial": "Ішінара",
+      "paid": "Төленді"
+    },
+    "col": {
+      "number": "№",
+      "type": "Түр",
+      "client": "Клиент",
+      "status": "Күй",
+      "payment": "Төлем",
+      "amount": "Сумма",
+      "paid": "Төленген",
+      "date": "Күн / Мерзім"
+    }
+  },
+  "cleaning": {
+    "stats": {
+      "title": "Статистика",
+      "revenue": "Табыс",
+      "orders": "Тапсырыстар",
+      "avgCheck": "Орташа чек",
+      "unpaid": "Төленбеген",
+      "revenueByDay": "Күндік табыс",
+      "topServices": "Танымал қызметтер",
+      "orderStatuses": "Тапсырыс күйлері",
+      "noData": "Деректер жоқ"
+    },
+    "period": {
+      "days7": "7 күн",
+      "days30": "30 күн",
+      "days90": "90 күн",
+      "custom": "Кезең",
+      "from": "Бастап",
+      "to": "Дейін"
+    },
+    "item": {
+      "unnamed": "Атысыз"
+    }
   }
 }

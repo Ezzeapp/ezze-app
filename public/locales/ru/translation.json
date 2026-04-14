@@ -1510,5 +1510,87 @@
     "equipment": { "title": "Техника", "add": "Добавить", "empty": "Нет техники", "fields": { "name": "Название", "category": "Категория", "purchaseDate": "Дата покупки", "purchaseCost": "Стоимость", "usefulLifeMonths": "Срок службы (мес)", "status": "Статус" }, "status": { "active": "В работе", "repair": "На ремонте", "decommissioned": "Списано" }, "maintenance": { "title": "ТО и ремонт", "add": "Добавить", "type": { "service": "ТО", "repair": "Ремонт", "fuel": "Топливо", "insurance": "Страховка" } } },
     "reports": { "title": "Отчёты", "costBreakdown": "Себестоимость животных", "columns": { "animal": "Животное", "acquisitionCost": "Покупка", "feedCost": "Корма", "vetCost": "Ветеринария", "overhead": "Накладные", "totalCost": "Итого", "revenue": "Доход", "margin": "Маржа" } },
     "common": { "save": "Сохранить", "cancel": "Отмена", "delete": "Удалить", "confirmDelete": "Удалить запись?", "loading": "Загрузка…", "error": "Ошибка", "retry": "Повторить", "noData": "Нет данных", "all": "Все", "add": "Добавить", "edit": "Редактировать", "back": "Назад", "from": "Дата", "to": "По", "kg": "кг", "liters": "л", "pieces": "шт", "ha": "га", "months": "мес", "years": "лет" }
+  },
+  "orders": {
+    "newOrder": "Новый заказ",
+    "search": "Поиск по номеру или клиенту...",
+    "filterPeriod": "Фильтр по периоду",
+    "exportCsv": "Экспорт CSV",
+    "deleteAll": "Удалить всё на странице",
+    "noClient": "Без клиента",
+    "total": "Итого: {{count}} заказов",
+    "todayCount": "Сегодня",
+    "monthCount": "За месяц",
+    "avgCheck": "Средний чек",
+    "unpaid": "Не оплачено",
+    "readyForIssue": "К выдаче",
+    "overdue": "Просрочено",
+    "shortOrders": "зак.",
+    "mine": "Мои",
+    "allTypes": "Все типы",
+    "sortNewest": "↓ Новые",
+    "sortOldest": "↑ Старые",
+    "sortAmountDesc": "Сумма ↓",
+    "sortDeadlineAsc": "Срок ↑",
+    "deadline": "Срок:",
+    "executor": "Исп.:",
+    "shortItems": "изд.",
+    "paidShort": "Опл.:",
+    "emptyTitle": "Заказов нет",
+    "emptyDesc": "Создайте первый заказ при приёме вещей",
+    "deleted": "Заказ удалён",
+    "deletedMultiple": "Удалено {{count}} заказов",
+    "deleteError": "Ошибка удаления",
+    "confirmDeleteAll": "⚠️ Удалить все заказы?",
+    "confirmDelete": "Удалить заказ?",
+    "cantUndo": "Это действие нельзя отменить!",
+    "status": {
+      "all": "Все",
+      "received": "Принят",
+      "inProgress": "В работе",
+      "ready": "Готов",
+      "issued": "Выдан",
+      "paid": "Оплачен",
+      "cancelled": "Отменён"
+    },
+    "payStatus": {
+      "unpaid": "Не оплачено",
+      "partial": "Частично",
+      "paid": "Оплачено"
+    },
+    "col": {
+      "number": "№",
+      "type": "Тип",
+      "client": "Клиент",
+      "status": "Статус",
+      "payment": "Оплата",
+      "amount": "Сумма",
+      "paid": "Оплачено",
+      "date": "Дата / Срок"
+    }
+  },
+  "cleaning": {
+    "stats": {
+      "title": "Статистика",
+      "revenue": "Выручка",
+      "orders": "Заказов",
+      "avgCheck": "Средний чек",
+      "unpaid": "Не оплачено",
+      "revenueByDay": "Выручка по дням",
+      "topServices": "Популярные услуги",
+      "orderStatuses": "Статусы заказов",
+      "noData": "Нет данных"
+    },
+    "period": {
+      "days7": "7 дн",
+      "days30": "30 дн",
+      "days90": "90 дн",
+      "custom": "Период",
+      "from": "С",
+      "to": "По"
+    },
+    "item": {
+      "unnamed": "Без названия"
+    }
   }
 }

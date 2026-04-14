@@ -1343,22 +1343,354 @@
     "poweredBy": "Ezze asosida ishlaydi"
   },
   "farm": {
-    "nav": { "dashboard": "Umumiy", "animals": "Hayvonlar", "groups": "Guruhlar", "fields": "Dalalar", "feed": "Yem", "production": "Mahsulot", "expenses": "Xarajatlar", "equipment": "Texnika", "reports": "Hisobotlar" },
-    "dashboard": { "title": "Ferma umumiy", "totalAnimals": "Jami hayvonlar", "totalFields": "Dalalar maydoni", "feedStockValue": "Yem qiymati", "production30d": "Mahsulot 30 kun", "expenses30d": "Xarajat 30 kun", "revenue30d": "Daromad 30 kun", "topMargin": "Eng foydali" },
-    "onboarding": { "subtitle": "Hisobni boshlash uchun ferma yarating", "name": "Ferma nomi", "namePlaceholder": "«Quyosh» fermasi", "location": "Manzil", "area": "Umumiy maydon (ga)", "create": "Ferma yaratish" },
-    "species": { "cattle": "Yirik shoxli mol", "poultry": "Parranda", "sheep": "Qo'y", "goat": "Echki", "pig": "Cho'chqa", "rabbit": "Quyon", "bee": "Asalari", "fish": "Baliq", "horse": "Ot", "other": "Boshqa" },
-    "sex": { "male": "Erkak", "female": "Urg'ochi", "unknown": "Ko'rsatilmagan" },
-    "status": { "growing": "O'sayapti", "dairy": "Sog'in", "meat": "Semirtirilyapti", "breeding": "Urug'lik", "sold": "Sotilgan", "slaughtered": "So'yilgan", "dead": "Nobud" },
-    "purpose": { "dairy": "Sut", "meat": "Go'sht", "eggs": "Tuxum", "wool": "Jun", "breeding": "Urug'lik", "mixed": "Aralash" },
-    "eventType": { "weighing": "Tortish", "vaccination": "Emlash", "treatment": "Davolash", "exam": "Ko'rik", "mating": "Juftlashtirish", "pregnancy": "Bo'g'ozlik", "birth": "Tug'ilish", "transfer": "O'tkazish", "note": "Izoh" },
-    "animals": { "title": "Hayvonlar", "add": "Qo'shish", "edit": "Tahrirlash", "delete": "O'chirish", "search": "Tamga yoki ism bo'yicha", "filterBySpecies": "Turi", "filterByGroup": "Guruh", "filterByStatus": "Holat", "empty": "Hayvonlar yo'q", "species": "Turi", "sex": "Jinsi", "status": "Holati", "purpose": "Maqsadi", "addEvent": "Hodisa qo'shish", "noEvents": "Hodisalar yo'q", "tabs": { "info": "Ma'lumot", "events": "Hodisalar", "costs": "Tannarx", "offspring": "Nasl" }, "fields": { "tag": "Tamga", "name": "Ism", "breed": "Zot", "birthDate": "Tug'ilgan sana", "acquisitionDate": "Kirim sanasi", "acquisitionCost": "Xarid narxi", "currentWeight": "Joriy vazn (kg)", "notes": "Izohlar" } },
-    "groups": { "title": "Guruhlar", "empty": "Guruhlar yo'q", "fields": { "name": "Nomi", "location": "Joyi", "notes": "Izohlar" } },
-    "fields": { "title": "Dalalar", "add": "Dala qo'shish", "empty": "Dalalar yo'q", "fields": { "name": "Nomi", "areaHa": "Maydon (ga)", "soilType": "Tuproq turi", "status": "Holati", "currentCrop": "Joriy ekin" }, "status": { "idle": "Bo'sh", "sown": "Ekilgan", "growing": "O'sayapti", "harvested": "Yig'ilgan" } },
-    "feed": { "title": "Yem", "addStock": "Yem kirim", "addConsumption": "Sarflash", "lowStock": "Tugayapti", "empty": "Omborda yem yo'q", "fields": { "name": "Nomi", "unit": "O'lchov", "quantity": "Miqdori", "costPerUnit": "Birlik narxi", "source": "Manba", "lowStockThreshold": "Min. zahira" }, "unit": { "kg": "kg", "t": "t", "l": "l", "bale": "bog'lam" }, "source": { "own": "O'z hosili", "purchased": "Sotib olingan" } },
-    "production": { "title": "Mahsulot", "add": "Yozuv qo'shish", "empty": "Yozuvlar yo'q", "fields": { "type": "Turi", "date": "Sana", "quantity": "Miqdori", "quality": "Sifati" }, "type": { "milk": "Sut", "eggs": "Tuxum", "meat": "Go'sht", "wool": "Jun", "honey": "Asal", "offspring": "Nasl" } },
-    "expenses": { "title": "Xarajatlar", "add": "Xarajat qo'shish", "empty": "Xarajatlar yo'q", "fields": { "category": "Toifa", "amount": "Summa", "date": "Sana", "description": "Tavsif" }, "category": { "feed": "Yem", "veterinary": "Veterinariya", "salary": "Maosh", "utilities": "Kommunal", "fuel": "Yoqilg'i", "rent": "Ijara", "repair": "Ta'mirlash", "equipment": "Texnika", "seeds": "Urug'", "fertilizer": "O'g'it", "transport": "Transport", "other": "Boshqa" } },
-    "equipment": { "title": "Texnika", "add": "Qo'shish", "empty": "Texnika yo'q", "fields": { "name": "Nomi", "category": "Toifa", "purchaseDate": "Xarid sanasi", "purchaseCost": "Narxi", "usefulLifeMonths": "Xizmat muddati (oy)", "status": "Holati" }, "status": { "active": "Ishlayapti", "repair": "Ta'mirda", "decommissioned": "Hisobdan chiqarilgan" }, "maintenance": { "title": "Texxizmat va ta'mirlash", "add": "Qo'shish", "type": { "service": "Texxizmat", "repair": "Ta'mirlash", "fuel": "Yoqilg'i", "insurance": "Sug'urta" } } },
-    "reports": { "title": "Hisobotlar", "costBreakdown": "Hayvonlar tannarxi", "columns": { "animal": "Hayvon", "acquisitionCost": "Xarid", "feedCost": "Yem", "vetCost": "Veterinariya", "overhead": "Qo'shimcha", "totalCost": "Jami", "revenue": "Daromad", "margin": "Foyda" } },
-    "common": { "save": "Saqlash", "cancel": "Bekor qilish", "delete": "O'chirish", "confirmDelete": "Yozuvni o'chirilsinmi?", "loading": "Yuklanmoqda…", "error": "Xatolik", "retry": "Qayta urinish", "noData": "Ma'lumot yo'q", "all": "Hammasi", "add": "Qo'shish", "edit": "Tahrirlash", "back": "Orqaga", "from": "Boshlanish", "to": "Tugash", "kg": "kg", "liters": "l", "pieces": "dona", "ha": "ga", "months": "oy", "years": "yil" }
+    "nav": {
+      "dashboard": "Umumiy",
+      "animals": "Hayvonlar",
+      "groups": "Guruhlar",
+      "fields": "Dalalar",
+      "feed": "Yem",
+      "production": "Mahsulot",
+      "expenses": "Xarajatlar",
+      "equipment": "Texnika",
+      "reports": "Hisobotlar"
+    },
+    "dashboard": {
+      "title": "Ferma umumiy",
+      "totalAnimals": "Jami hayvonlar",
+      "totalFields": "Dalalar maydoni",
+      "feedStockValue": "Yem qiymati",
+      "production30d": "Mahsulot 30 kun",
+      "expenses30d": "Xarajat 30 kun",
+      "revenue30d": "Daromad 30 kun",
+      "topMargin": "Eng foydali"
+    },
+    "onboarding": {
+      "subtitle": "Hisobni boshlash uchun ferma yarating",
+      "name": "Ferma nomi",
+      "namePlaceholder": "«Quyosh» fermasi",
+      "location": "Manzil",
+      "area": "Umumiy maydon (ga)",
+      "create": "Ferma yaratish"
+    },
+    "species": {
+      "cattle": "Yirik shoxli mol",
+      "poultry": "Parranda",
+      "sheep": "Qo'y",
+      "goat": "Echki",
+      "pig": "Cho'chqa",
+      "rabbit": "Quyon",
+      "bee": "Asalari",
+      "fish": "Baliq",
+      "horse": "Ot",
+      "other": "Boshqa"
+    },
+    "sex": {
+      "male": "Erkak",
+      "female": "Urg'ochi",
+      "unknown": "Ko'rsatilmagan"
+    },
+    "status": {
+      "growing": "O'sayapti",
+      "dairy": "Sog'in",
+      "meat": "Semirtirilyapti",
+      "breeding": "Urug'lik",
+      "sold": "Sotilgan",
+      "slaughtered": "So'yilgan",
+      "dead": "Nobud"
+    },
+    "purpose": {
+      "dairy": "Sut",
+      "meat": "Go'sht",
+      "eggs": "Tuxum",
+      "wool": "Jun",
+      "breeding": "Urug'lik",
+      "mixed": "Aralash"
+    },
+    "eventType": {
+      "weighing": "Tortish",
+      "vaccination": "Emlash",
+      "treatment": "Davolash",
+      "exam": "Ko'rik",
+      "mating": "Juftlashtirish",
+      "pregnancy": "Bo'g'ozlik",
+      "birth": "Tug'ilish",
+      "transfer": "O'tkazish",
+      "note": "Izoh"
+    },
+    "animals": {
+      "title": "Hayvonlar",
+      "add": "Qo'shish",
+      "edit": "Tahrirlash",
+      "delete": "O'chirish",
+      "search": "Tamga yoki ism bo'yicha",
+      "filterBySpecies": "Turi",
+      "filterByGroup": "Guruh",
+      "filterByStatus": "Holat",
+      "empty": "Hayvonlar yo'q",
+      "species": "Turi",
+      "sex": "Jinsi",
+      "status": "Holati",
+      "purpose": "Maqsadi",
+      "addEvent": "Hodisa qo'shish",
+      "noEvents": "Hodisalar yo'q",
+      "tabs": {
+        "info": "Ma'lumot",
+        "events": "Hodisalar",
+        "costs": "Tannarx",
+        "offspring": "Nasl"
+      },
+      "fields": {
+        "tag": "Tamga",
+        "name": "Ism",
+        "breed": "Zot",
+        "birthDate": "Tug'ilgan sana",
+        "acquisitionDate": "Kirim sanasi",
+        "acquisitionCost": "Xarid narxi",
+        "currentWeight": "Joriy vazn (kg)",
+        "notes": "Izohlar"
+      }
+    },
+    "groups": {
+      "title": "Guruhlar",
+      "empty": "Guruhlar yo'q",
+      "fields": {
+        "name": "Nomi",
+        "location": "Joyi",
+        "notes": "Izohlar"
+      }
+    },
+    "fields": {
+      "title": "Dalalar",
+      "add": "Dala qo'shish",
+      "empty": "Dalalar yo'q",
+      "fields": {
+        "name": "Nomi",
+        "areaHa": "Maydon (ga)",
+        "soilType": "Tuproq turi",
+        "status": "Holati",
+        "currentCrop": "Joriy ekin"
+      },
+      "status": {
+        "idle": "Bo'sh",
+        "sown": "Ekilgan",
+        "growing": "O'sayapti",
+        "harvested": "Yig'ilgan"
+      }
+    },
+    "feed": {
+      "title": "Yem",
+      "addStock": "Yem kirim",
+      "addConsumption": "Sarflash",
+      "lowStock": "Tugayapti",
+      "empty": "Omborda yem yo'q",
+      "fields": {
+        "name": "Nomi",
+        "unit": "O'lchov",
+        "quantity": "Miqdori",
+        "costPerUnit": "Birlik narxi",
+        "source": "Manba",
+        "lowStockThreshold": "Min. zahira"
+      },
+      "unit": {
+        "kg": "kg",
+        "t": "t",
+        "l": "l",
+        "bale": "bog'lam"
+      },
+      "source": {
+        "own": "O'z hosili",
+        "purchased": "Sotib olingan"
+      }
+    },
+    "production": {
+      "title": "Mahsulot",
+      "add": "Yozuv qo'shish",
+      "empty": "Yozuvlar yo'q",
+      "fields": {
+        "type": "Turi",
+        "date": "Sana",
+        "quantity": "Miqdori",
+        "quality": "Sifati"
+      },
+      "type": {
+        "milk": "Sut",
+        "eggs": "Tuxum",
+        "meat": "Go'sht",
+        "wool": "Jun",
+        "honey": "Asal",
+        "offspring": "Nasl"
+      }
+    },
+    "expenses": {
+      "title": "Xarajatlar",
+      "add": "Xarajat qo'shish",
+      "empty": "Xarajatlar yo'q",
+      "fields": {
+        "category": "Toifa",
+        "amount": "Summa",
+        "date": "Sana",
+        "description": "Tavsif"
+      },
+      "category": {
+        "feed": "Yem",
+        "veterinary": "Veterinariya",
+        "salary": "Maosh",
+        "utilities": "Kommunal",
+        "fuel": "Yoqilg'i",
+        "rent": "Ijara",
+        "repair": "Ta'mirlash",
+        "equipment": "Texnika",
+        "seeds": "Urug'",
+        "fertilizer": "O'g'it",
+        "transport": "Transport",
+        "other": "Boshqa"
+      }
+    },
+    "equipment": {
+      "title": "Texnika",
+      "add": "Qo'shish",
+      "empty": "Texnika yo'q",
+      "fields": {
+        "name": "Nomi",
+        "category": "Toifa",
+        "purchaseDate": "Xarid sanasi",
+        "purchaseCost": "Narxi",
+        "usefulLifeMonths": "Xizmat muddati (oy)",
+        "status": "Holati"
+      },
+      "status": {
+        "active": "Ishlayapti",
+        "repair": "Ta'mirda",
+        "decommissioned": "Hisobdan chiqarilgan"
+      },
+      "maintenance": {
+        "title": "Texxizmat va ta'mirlash",
+        "add": "Qo'shish",
+        "type": {
+          "service": "Texxizmat",
+          "repair": "Ta'mirlash",
+          "fuel": "Yoqilg'i",
+          "insurance": "Sug'urta"
+        }
+      }
+    },
+    "reports": {
+      "title": "Hisobotlar",
+      "costBreakdown": "Hayvonlar tannarxi",
+      "columns": {
+        "animal": "Hayvon",
+        "acquisitionCost": "Xarid",
+        "feedCost": "Yem",
+        "vetCost": "Veterinariya",
+        "overhead": "Qo'shimcha",
+        "totalCost": "Jami",
+        "revenue": "Daromad",
+        "margin": "Foyda"
+      }
+    },
+    "common": {
+      "save": "Saqlash",
+      "cancel": "Bekor qilish",
+      "delete": "O'chirish",
+      "confirmDelete": "Yozuvni o'chirilsinmi?",
+      "loading": "Yuklanmoqda…",
+      "error": "Xatolik",
+      "retry": "Qayta urinish",
+      "noData": "Ma'lumot yo'q",
+      "all": "Hammasi",
+      "add": "Qo'shish",
+      "edit": "Tahrirlash",
+      "back": "Orqaga",
+      "from": "Boshlanish",
+      "to": "Tugash",
+      "kg": "kg",
+      "liters": "l",
+      "pieces": "dona",
+      "ha": "ga",
+      "months": "oy",
+      "years": "yil"
+    }
+  },
+  "orders": {
+    "newOrder": "Yangi buyurtma",
+    "search": "Raqam yoki mijoz boyicha qidirish...",
+    "filterPeriod": "Davr boyicha filtr",
+    "exportCsv": "CSV eksport",
+    "deleteAll": "Sahifadagi barchasini ochirish",
+    "noClient": "Mijoz",
+    "total": "Jami: {{count}} ta buyurtma",
+    "todayCount": "Bugun",
+    "monthCount": "Oylik",
+    "avgCheck": "Ortacha chek",
+    "unpaid": "Tolanmagan",
+    "readyForIssue": "Berishga tayyor",
+    "overdue": "Muddati otgan",
+    "shortOrders": "ta",
+    "mine": "Mening",
+    "allTypes": "Barcha turlar",
+    "sortNewest": "↓ Yangi",
+    "sortOldest": "↑ Eski",
+    "sortAmountDesc": "Summa ↓",
+    "sortDeadlineAsc": "Muddat ↑",
+    "deadline": "Muddat:",
+    "executor": "Ijrochi:",
+    "shortItems": "ta",
+    "paidShort": "Tolangan:",
+    "emptyTitle": "Buyurtmalar yoq",
+    "emptyDesc": "Narsalarni qabul qilishda birinchi buyurtma yarating",
+    "deleted": "Buyurtma ochirildi",
+    "deletedMultiple": "{{count}} ta buyurtma ochirildi",
+    "deleteError": "Ochirishda xato",
+    "confirmDeleteAll": "⚠️ Barcha buyurtmalarni ochirish?",
+    "confirmDelete": "Buyurtmani ochirish?",
+    "cantUndo": "Bu amalni qaytarib bolmaydi\\!",
+    "status": {
+      "all": "Barchasi",
+      "received": "Qabul qilindi",
+      "inProgress": "Ishda",
+      "ready": "Tayyor",
+      "issued": "Berildi",
+      "paid": "Tolandi",
+      "cancelled": "Bekor qilindi"
+    },
+    "payStatus": {
+      "unpaid": "Tolanmagan",
+      "partial": "Qisman",
+      "paid": "Tolangan"
+    },
+    "col": {
+      "number": "№",
+      "type": "Tur",
+      "client": "Mijoz",
+      "status": "Holat",
+      "payment": "Tolov",
+      "amount": "Summa",
+      "paid": "Tolangan",
+      "date": "Sana / Muddat"
+    }
+  },
+  "cleaning": {
+    "stats": {
+      "title": "Statistika",
+      "revenue": "Daromad",
+      "orders": "Buyurtmalar",
+      "avgCheck": "Ortacha chek",
+      "unpaid": "Tolanmagan",
+      "revenueByDay": "Kunlik daromad",
+      "topServices": "Mashhur xizmatlar",
+      "orderStatuses": "Buyurtma holatlari",
+      "noData": "Malumot yoq"
+    },
+    "period": {
+      "days7": "7 kun",
+      "days30": "30 kun",
+      "days90": "90 kun",
+      "custom": "Davr",
+      "from": "Dan",
+      "to": "Gacha"
+    },
+    "item": {
+      "unnamed": "Nomsiz"
+    }
   }
 }

@@ -1339,5 +1339,87 @@
     "allServices": "Barlyk kyzmatter",
     "openInMaps": "Kartada achuu",
     "poweredBy": "Ezze’de ishteyt"
+  },
+  "orders": {
+    "newOrder": "Жаңы буйрутма",
+    "search": "Номер же кардар боюнча издөө...",
+    "filterPeriod": "Мезгил боюнча чыпка",
+    "exportCsv": "CSV экспорт",
+    "deleteAll": "Баракчадагынын бардығын өчүрүү",
+    "noClient": "Кардарсыз",
+    "total": "Жалпы: {{count}} буйрутма",
+    "todayCount": "Бүгүн",
+    "monthCount": "Айлык",
+    "avgCheck": "Орточо чек",
+    "unpaid": "Төлөнбөгөн",
+    "readyForIssue": "Берүүгө даяр",
+    "overdue": "Мөөнөтү өткөн",
+    "shortOrders": "б.",
+    "mine": "Менин",
+    "allTypes": "Бардык түрлөр",
+    "sortNewest": "↓ Жаңылар",
+    "sortOldest": "↑ Эскилер",
+    "sortAmountDesc": "Сумма ↓",
+    "sortDeadlineAsc": "Мөөнөт ↑",
+    "deadline": "Мөөнөт:",
+    "executor": "Аткар.:",
+    "shortItems": "нер.",
+    "paidShort": "Төл.:",
+    "emptyTitle": "Буйрутмалар жок",
+    "emptyDesc": "Буюмдарды кабыл алуу учурунда биринчи буйрутма түзүңүз",
+    "deleted": "Буйрутма өчүрүлдү",
+    "deletedMultiple": "{{count}} буйрутма өчүрүлдү",
+    "deleteError": "Өчүрүү катасы",
+    "confirmDeleteAll": "⚠️ Бардык буйрутмаларды өчүрүү?",
+    "confirmDelete": "Буйрутманы өчүрүү?",
+    "cantUndo": "Бул аракетти артка кайтарып болбойт\\!",
+    "status": {
+      "all": "Баары",
+      "received": "Кабыл алынды",
+      "inProgress": "Жумушта",
+      "ready": "Даяр",
+      "issued": "Берилди",
+      "paid": "Төлөндү",
+      "cancelled": "Жокко чыгарылды"
+    },
+    "payStatus": {
+      "unpaid": "Төлөнбөгөн",
+      "partial": "Жарым-жартылай",
+      "paid": "Төлөндү"
+    },
+    "col": {
+      "number": "№",
+      "type": "Түр",
+      "client": "Кардар",
+      "status": "Абал",
+      "payment": "Төлөм",
+      "amount": "Сумма",
+      "paid": "Төлөнгөн",
+      "date": "Күн / Мөөнөт"
+    }
+  },
+  "cleaning": {
+    "stats": {
+      "title": "Статистика",
+      "revenue": "Киреше",
+      "orders": "Буйрутмалар",
+      "avgCheck": "Орточо чек",
+      "unpaid": "Төлөнбөгөн",
+      "revenueByDay": "Күнүмдүк киреше",
+      "topServices": "Популярдуу кызматтар",
+      "orderStatuses": "Буйрутма абалдары",
+      "noData": "Маалымат жок"
+    },
+    "period": {
+      "days7": "7 күн",
+      "days30": "30 күн",
+      "days90": "90 күн",
+      "custom": "Мезгил",
+      "from": "Баштап",
+      "to": "Чейин"
+    },
+    "item": {
+      "unnamed": "Аттары жок"
+    }
   }
 }

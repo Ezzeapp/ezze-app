@@ -1339,5 +1339,87 @@
     "allServices": "Barlıq xızmetler",
     "openInMaps": "Kartada ashıw",
     "poweredBy": "Ezze’de islep atır"
+  },
+  "orders": {
+    "newOrder": "Janı buyırtma",
+    "search": "Nomer yaki klient boyınsha izlew...",
+    "filterPeriod": "Dáwir boyınsha filtr",
+    "exportCsv": "CSV eksport",
+    "deleteAll": "Bettegisin bárın óshiriw",
+    "noClient": "Klientsiz",
+    "total": "Jámi: {{count}} buyırtma",
+    "todayCount": "Bügün",
+    "monthCount": "Aylıq",
+    "avgCheck": "Orta chek",
+    "unpaid": "Tólenbeygen",
+    "readyForIssue": "Beriw ushın tayar",
+    "overdue": "Merzimi ótken",
+    "shortOrders": "b.",
+    "mine": "Menin",
+    "allTypes": "Barlıq türler",
+    "sortNewest": "↓ Janılar",
+    "sortOldest": "↑ Eskilar",
+    "sortAmountDesc": "Summa ↓",
+    "sortDeadlineAsc": "Merzi ↑",
+    "deadline": "Merzi:",
+    "executor": "Orındaw.:",
+    "shortItems": "z.",
+    "paidShort": "Tól.:",
+    "emptyTitle": "Buyırtmalar joq",
+    "emptyDesc": "Buyımlardı qabıl alıwda birinshi buyırtma düziń",
+    "deleted": "Buyırtma óshirildi",
+    "deletedMultiple": "{{count}} buyırtma óshirildi",
+    "deleteError": "Óshiriw qatesi",
+    "confirmDeleteAll": "⚠️ Barlıq buyırtmalardı óshiriw?",
+    "confirmDelete": "Buyırtmanı óshiriw?",
+    "cantUndo": "Bul ámeldi qaytarip bolmaydı\\!",
+    "status": {
+      "all": "Bárshe",
+      "received": "Qabıl etildi",
+      "inProgress": "Jumısta",
+      "ready": "Tayar",
+      "issued": "Berildi",
+      "paid": "Tólendi",
+      "cancelled": "Biykar etildi"
+    },
+    "payStatus": {
+      "unpaid": "Tólenbeygen",
+      "partial": "Qısım",
+      "paid": "Tólendi"
+    },
+    "col": {
+      "number": "№",
+      "type": "Tür",
+      "client": "Klient",
+      "status": "Jáy",
+      "payment": "Tólem",
+      "amount": "Summa",
+      "paid": "Tólendi",
+      "date": "Sana / Merzi"
+    }
+  },
+  "cleaning": {
+    "stats": {
+      "title": "Statistika",
+      "revenue": "Daromad",
+      "orders": "Buyırtmalar",
+      "avgCheck": "Orta chek",
+      "unpaid": "Tólenbeygen",
+      "revenueByDay": "Künlik daromad",
+      "topServices": "Mashxúr xizmetler",
+      "orderStatuses": "Buyırtma jaylaları",
+      "noData": "Maálımat joq"
+    },
+    "period": {
+      "days7": "7 kün",
+      "days30": "30 kün",
+      "days90": "90 kün",
+      "custom": "Dáwir",
+      "from": "Den",
+      "to": "Shekem"
+    },
+    "item": {
+      "unnamed": "Atsız"
+    }
   }
 }

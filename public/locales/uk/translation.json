@@ -1339,5 +1339,87 @@
     "allServices": "Vsi posluhy",
     "openInMaps": "Vidkryty na karti",
     "poweredBy": "Pratsуuye na Ezze"
+  },
+  "orders": {
+    "newOrder": "Нове замовлення",
+    "search": "Пошук за номером або клієнтом...",
+    "filterPeriod": "Фільтр за періодом",
+    "exportCsv": "Експорт CSV",
+    "deleteAll": "Видалити все на сторінці",
+    "noClient": "Без клієнта",
+    "total": "Разом: {{count}} замовлень",
+    "todayCount": "Сьогодні",
+    "monthCount": "За місяць",
+    "avgCheck": "Середній чек",
+    "unpaid": "Не оплачено",
+    "readyForIssue": "До видачі",
+    "overdue": "Прострочено",
+    "shortOrders": "зам.",
+    "mine": "Мої",
+    "allTypes": "Всі типи",
+    "sortNewest": "↓ Нові",
+    "sortOldest": "↑ Старі",
+    "sortAmountDesc": "Сума ↓",
+    "sortDeadlineAsc": "Строк ↑",
+    "deadline": "Строк:",
+    "executor": "Вик.:",
+    "shortItems": "виробів",
+    "paidShort": "Опл.:",
+    "emptyTitle": "Замовлень немає",
+    "emptyDesc": "Створіть перше замовлення при прийомі речей",
+    "deleted": "Замовлення видалено",
+    "deletedMultiple": "Видалено {{count}} замовлень",
+    "deleteError": "Помилка видалення",
+    "confirmDeleteAll": "⚠️ Видалити всі замовлення?",
+    "confirmDelete": "Видалити замовлення?",
+    "cantUndo": "Цю дію не можна скасувати\\!",
+    "status": {
+      "all": "Всі",
+      "received": "Прийнято",
+      "inProgress": "В роботі",
+      "ready": "Готово",
+      "issued": "Видано",
+      "paid": "Оплачено",
+      "cancelled": "Скасовано"
+    },
+    "payStatus": {
+      "unpaid": "Не оплачено",
+      "partial": "Частково",
+      "paid": "Оплачено"
+    },
+    "col": {
+      "number": "№",
+      "type": "Тип",
+      "client": "Клієнт",
+      "status": "Статус",
+      "payment": "Оплата",
+      "amount": "Сума",
+      "paid": "Оплачено",
+      "date": "Дата / Строк"
+    }
+  },
+  "cleaning": {
+    "stats": {
+      "title": "Статистика",
+      "revenue": "Виручка",
+      "orders": "Замовлень",
+      "avgCheck": "Середній чек",
+      "unpaid": "Не оплачено",
+      "revenueByDay": "Виручка по днях",
+      "topServices": "Популярні послуги",
+      "orderStatuses": "Статуси замовлень",
+      "noData": "Немає даних"
+    },
+    "period": {
+      "days7": "7 дн",
+      "days30": "30 дн",
+      "days90": "90 дн",
+      "custom": "Період",
+      "from": "З",
+      "to": "По"
+    },
+    "item": {
+      "unnamed": "Без назви"
+    }
   }
 }

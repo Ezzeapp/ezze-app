@@ -1339,5 +1339,87 @@
     "allServices": "Usіye paslugi",
     "openInMaps": "Adkrits na karce",
     "poweredBy": "Pratsuye na Ezze"
+  },
+  "orders": {
+    "newOrder": "Новы заказ",
+    "search": "Пошук па нумары ці кліенту...",
+    "filterPeriod": "Фільтр па перыядзе",
+    "exportCsv": "Экспарт CSV",
+    "deleteAll": "Выдаліць усё на старонцы",
+    "noClient": "Без кліента",
+    "total": "Разам: {{count}} заказаў",
+    "todayCount": "Сёння",
+    "monthCount": "За месяц",
+    "avgCheck": "Сярэдні чэк",
+    "unpaid": "Не аплачана",
+    "readyForIssue": "Да выдачы",
+    "overdue": "Прасрочана",
+    "shortOrders": "зак.",
+    "mine": "Мае",
+    "allTypes": "Усе тыпы",
+    "sortNewest": "↓ Новыя",
+    "sortOldest": "↑ Старыя",
+    "sortAmountDesc": "Сума ↓",
+    "sortDeadlineAsc": "Тэрмін ↑",
+    "deadline": "Тэрмін:",
+    "executor": "Выкан.:",
+    "shortItems": "выр.",
+    "paidShort": "Опл.:",
+    "emptyTitle": "Заказаў няма",
+    "emptyDesc": "Стварыце першы заказ пры прыёме рэчаў",
+    "deleted": "Заказ выдалены",
+    "deletedMultiple": "Выдалена {{count}} заказаў",
+    "deleteError": "Памылка выдалення",
+    "confirmDeleteAll": "⚠️ Выдаліць усе заказы?",
+    "confirmDelete": "Выдаліць заказ?",
+    "cantUndo": "Гэтае дзеянне нельга адмяніць\\!",
+    "status": {
+      "all": "Усе",
+      "received": "Прыняты",
+      "inProgress": "У рабоце",
+      "ready": "Гатовы",
+      "issued": "Выданы",
+      "paid": "Аплачаны",
+      "cancelled": "Адменены"
+    },
+    "payStatus": {
+      "unpaid": "Не аплачана",
+      "partial": "Часткова",
+      "paid": "Аплачана"
+    },
+    "col": {
+      "number": "№",
+      "type": "Тып",
+      "client": "Кліент",
+      "status": "Статус",
+      "payment": "Аплата",
+      "amount": "Сума",
+      "paid": "Аплачана",
+      "date": "Дата / Тэрмін"
+    }
+  },
+  "cleaning": {
+    "stats": {
+      "title": "Статыстыка",
+      "revenue": "Выручка",
+      "orders": "Заказаў",
+      "avgCheck": "Сярэдні чэк",
+      "unpaid": "Не аплачана",
+      "revenueByDay": "Выручка па днях",
+      "topServices": "Папулярныя паслугі",
+      "orderStatuses": "Статусы заказаў",
+      "noData": "Няма даных"
+    },
+    "period": {
+      "days7": "7 дн",
+      "days30": "30 дн",
+      "days90": "90 дн",
+      "custom": "Перыяд",
+      "from": "З",
+      "to": "Па"
+    },
+    "item": {
+      "unnamed": "Без назвы"
+    }
   }
 }

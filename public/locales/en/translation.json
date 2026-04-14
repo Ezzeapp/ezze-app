@@ -1510,5 +1510,87 @@
     "equipment": { "title": "Equipment", "add": "Add", "empty": "No equipment", "fields": { "name": "Name", "category": "Category", "purchaseDate": "Purchase Date", "purchaseCost": "Cost", "usefulLifeMonths": "Useful Life (mo)", "status": "Status" }, "status": { "active": "Active", "repair": "In Repair", "decommissioned": "Decommissioned" }, "maintenance": { "title": "Maintenance", "add": "Add", "type": { "service": "Service", "repair": "Repair", "fuel": "Fuel", "insurance": "Insurance" } } },
     "reports": { "title": "Reports", "costBreakdown": "Animal Cost Breakdown", "columns": { "animal": "Animal", "acquisitionCost": "Purchase", "feedCost": "Feed", "vetCost": "Vet", "overhead": "Overhead", "totalCost": "Total", "revenue": "Revenue", "margin": "Margin" } },
     "common": { "save": "Save", "cancel": "Cancel", "delete": "Delete", "confirmDelete": "Delete this record?", "loading": "Loading…", "error": "Error", "retry": "Retry", "noData": "No data", "all": "All", "add": "Add", "edit": "Edit", "back": "Back", "from": "From", "to": "To", "kg": "kg", "liters": "l", "pieces": "pcs", "ha": "ha", "months": "mo", "years": "yr" }
+  },
+  "orders": {
+    "newOrder": "New Order",
+    "search": "Search by number or client...",
+    "filterPeriod": "Filter by period",
+    "exportCsv": "Export CSV",
+    "deleteAll": "Delete all on page",
+    "noClient": "No client",
+    "total": "Total: {{count}} orders",
+    "todayCount": "Today",
+    "monthCount": "This month",
+    "avgCheck": "Avg. check",
+    "unpaid": "Unpaid",
+    "readyForIssue": "Ready for issue",
+    "overdue": "Overdue",
+    "shortOrders": "ord.",
+    "mine": "Mine",
+    "allTypes": "All types",
+    "sortNewest": "↓ Newest",
+    "sortOldest": "↑ Oldest",
+    "sortAmountDesc": "Amount ↓",
+    "sortDeadlineAsc": "Deadline ↑",
+    "deadline": "Due:",
+    "executor": "Exec.:",
+    "shortItems": "pcs.",
+    "paidShort": "Paid:",
+    "emptyTitle": "No orders",
+    "emptyDesc": "Create the first order when accepting items",
+    "deleted": "Order deleted",
+    "deletedMultiple": "Deleted {{count}} orders",
+    "deleteError": "Delete error",
+    "confirmDeleteAll": "⚠️ Delete all orders?",
+    "confirmDelete": "Delete order?",
+    "cantUndo": "This action cannot be undone!",
+    "status": {
+      "all": "All",
+      "received": "Received",
+      "inProgress": "In Progress",
+      "ready": "Ready",
+      "issued": "Issued",
+      "paid": "Paid",
+      "cancelled": "Cancelled"
+    },
+    "payStatus": {
+      "unpaid": "Unpaid",
+      "partial": "Partial",
+      "paid": "Paid"
+    },
+    "col": {
+      "number": "#",
+      "type": "Type",
+      "client": "Client",
+      "status": "Status",
+      "payment": "Payment",
+      "amount": "Amount",
+      "paid": "Paid",
+      "date": "Date / Due"
+    }
+  },
+  "cleaning": {
+    "stats": {
+      "title": "Statistics",
+      "revenue": "Revenue",
+      "orders": "Orders",
+      "avgCheck": "Avg. check",
+      "unpaid": "Unpaid",
+      "revenueByDay": "Revenue by day",
+      "topServices": "Top services",
+      "orderStatuses": "Order statuses",
+      "noData": "No data"
+    },
+    "period": {
+      "days7": "7 d",
+      "days30": "30 d",
+      "days90": "90 d",
+      "custom": "Period",
+      "from": "From",
+      "to": "To"
+    },
+    "item": {
+      "unnamed": "Unnamed"
+    }
   }
 }

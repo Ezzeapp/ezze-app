@@ -1339,5 +1339,87 @@
     "allServices": "Hamayi khizmatho",
     "openInMaps": "Dar harita kushodan",
     "poweredBy": "Dar Ezze kor mekunad"
+  },
+  "orders": {
+    "newOrder": "Фармоиши нав",
+    "search": "Дҷустҷӯҷ аз рӯи рақам ё муштарӣ...",
+    "filterPeriod": "Филтр аз рӯи давра",
+    "exportCsv": "Содироти CSV",
+    "deleteAll": "Ҳамаи саҳифаро нест кунед",
+    "noClient": "Бе муштарӣ",
+    "total": "Ҳамъ: {{count}} фармоиш",
+    "todayCount": "Имрӯз",
+    "monthCount": "Моҳона",
+    "avgCheck": "Миёнаи чек",
+    "unpaid": "Нопардохт",
+    "readyForIssue": "Барои додан омода",
+    "overdue": "Мӯҳлат гузашта",
+    "shortOrders": "ф.",
+    "mine": "Мани",
+    "allTypes": "Ҳамаи намудҳо",
+    "sortNewest": "↓ Нав",
+    "sortOldest": "↑ Кӯҳна",
+    "sortAmountDesc": "Маблағ ↓",
+    "sortDeadlineAsc": "Мӯҳлат ↑",
+    "deadline": "Мӯҳлат:",
+    "executor": "Иҷр.:",
+    "shortItems": "ш.",
+    "paidShort": "Пар.:",
+    "emptyTitle": "Фармоишҳо нест",
+    "emptyDesc": "Ҳангоми қабули ашёҳо фармоиши аввалро созед",
+    "deleted": "Фармоиш нест карда шуд",
+    "deletedMultiple": "{{count}} фармоиш нест карда шуд",
+    "deleteError": "Хатои несткунӣ",
+    "confirmDeleteAll": "⚠️ Ҳамаи фармоишҳоро нест кунед?",
+    "confirmDelete": "Фармоишро нест кунед?",
+    "cantUndo": "Ин амалро лағв кардан мумкин нест\\!",
+    "status": {
+      "all": "Ҳама",
+      "received": "Қабул шуд",
+      "inProgress": "Дар кор",
+      "ready": "Омода",
+      "issued": "Дода шуд",
+      "paid": "Пардохт шуд",
+      "cancelled": "Бекор шуд"
+    },
+    "payStatus": {
+      "unpaid": "Нопардохт",
+      "partial": "Қисман",
+      "paid": "Пардохт шуд"
+    },
+    "col": {
+      "number": "№",
+      "type": "Намуд",
+      "client": "Муштарӣ",
+      "status": "Вазъ",
+      "payment": "Пардохт",
+      "amount": "Маблағ",
+      "paid": "Пардохт шуд",
+      "date": "Сана / Мӯҳлат"
+    }
+  },
+  "cleaning": {
+    "stats": {
+      "title": "Омор",
+      "revenue": "Даромад",
+      "orders": "Фармоишҳо",
+      "avgCheck": "Миёнаи чек",
+      "unpaid": "Нопардохт",
+      "revenueByDay": "Даромади рӯзона",
+      "topServices": "Хизматҳои машҳур",
+      "orderStatuses": "Ҳолатҳои фармоиш",
+      "noData": "Маълумот нест"
+    },
+    "period": {
+      "days7": "7 рӯз",
+      "days30": "30 рӯз",
+      "days90": "90 рӯз",
+      "custom": "Давра",
+      "from": "Аз",
+      "to": "То"
+    },
+    "item": {
+      "unnamed": "Бе ном"
+    }
   }
 }

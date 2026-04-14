@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -24,21 +25,6 @@ const STATUS_COLORS: Record<string, string> = {
   paid:        '#22c55e',
   cancelled:   '#ef4444',
 }
-
-const STATUS_LABELS: Record<string, string> = {
-  received:    'Принят',
-  in_progress: 'В работе',
-  ready:       'Готов',
-  issued:      'Выдан',
-  paid:        'Оплачен',
-  cancelled:   'Отменён',
-}
-
-const PERIOD_OPTIONS = [
-  { label: '7 дн',  days: 7 },
-  { label: '30 дн', days: 30 },
-  { label: '90 дн', days: 90 },
-]
 
 const TOOLTIP_STYLE = {
   backgroundColor: 'hsl(var(--background))',
@@ -90,11 +76,27 @@ function StatusTooltip({ active, payload }: any) {
 }
 
 export function CleaningStatsPage() {
+  const { t } = useTranslation()
   const [days,        setDays]        = useState(30)
   const [customMode,  setCustomMode]  = useState(false)
   const [dateFrom,    setDateFrom]    = useState('')
   const [dateTo,      setDateTo]      = useState('')
   const symbol = useCurrencySymbol()
+
+  const PERIOD_OPTIONS = [
+    { label: t('cleaning.period.days7'),  days: 7 },
+    { label: t('cleaning.period.days30'), days: 30 },
+    { label: t('cleaning.period.days90'), days: 90 },
+  ]
+
+  const STATUS_LABELS: Record<string, string> = {
+    received:    t('orders.status.received'),
+    in_progress: t('orders.status.inProgress'),
+    ready:       t('orders.status.ready'),
+    issued:      t('orders.status.issued'),
+    paid:        t('orders.status.paid'),
+    cancelled:   t('orders.status.cancelled'),
+  }
 
   // Вычисляем since/until в зависимости от режима
   const since = customMode && dateFrom
@@ -193,7 +195,7 @@ export function CleaningStatsPage() {
   // Top services
   const serviceMap: Record<string, number> = {}
   ;(itemsData ?? []).forEach(i => {
-    const name = i.item_type_name || 'Без названия'
+    const name = i.item_type_name || t('cleaning.item.unnamed')
     serviceMap[name] = (serviceMap[name] ?? 0) + 1
   })
   const topServices = Object.entries(serviceMap)
@@ -203,7 +205,7 @@ export function CleaningStatsPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
-      <PageHeader title="Статистика">
+      <PageHeader title={t('cleaning.stats.title')}>
         {/* Period selector */}
         <div className="flex gap-1 bg-muted rounded-lg p-1">
           {PERIOD_OPTIONS.map(opt => (
@@ -230,7 +232,7 @@ export function CleaningStatsPage() {
             )}
           >
             <CalendarRange className="h-3.5 w-3.5" />
-            Период
+            {t('cleaning.period.custom')}
           </button>
         </div>
       </PageHeader>
@@ -239,7 +241,7 @@ export function CleaningStatsPage() {
       {customMode && (
         <div className="flex items-end gap-3 flex-wrap rounded-xl border bg-muted/30 px-4 py-3">
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">С</Label>
+            <Label className="text-xs text-muted-foreground">{t('cleaning.period.from')}</Label>
             <Input
               type="date" value={dateFrom}
               onChange={e => setDateFrom(e.target.value)}
@@ -247,7 +249,7 @@ export function CleaningStatsPage() {
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">По</Label>
+            <Label className="text-xs text-muted-foreground">{t('cleaning.period.to')}</Label>
             <Input
               type="date" value={dateTo}
               onChange={e => setDateTo(e.target.value)}
@@ -258,8 +260,8 @@ export function CleaningStatsPage() {
             <p className="text-xs text-muted-foreground pb-1">
               {dateFrom && dateTo
                 ? `${dayjs(dateFrom).format('DD.MM.YYYY')} — ${dayjs(dateTo).format('DD.MM.YYYY')}`
-                : dateFrom ? `с ${dayjs(dateFrom).format('DD.MM.YYYY')}`
-                : `по ${dayjs(dateTo).format('DD.MM.YYYY')}`}
+                : dateFrom ? `${t('cleaning.period.from')} ${dayjs(dateFrom).format('DD.MM.YYYY')}`
+                : `${t('cleaning.period.to')} ${dayjs(dateTo).format('DD.MM.YYYY')}`}
             </p>
           )}
         </div>
@@ -274,19 +276,19 @@ export function CleaningStatsPage() {
           {/* Summary cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <SummaryCard
-              title="Выручка"
+              title={t('cleaning.stats.revenue')}
               value={`${formatCurrency(revenue)} ${symbol}`}
             />
             <SummaryCard
-              title="Заказов"
+              title={t('cleaning.stats.orders')}
               value={String(ordersCount)}
             />
             <SummaryCard
-              title="Средний чек"
+              title={t('cleaning.stats.avgCheck')}
               value={`${formatCurrency(avgCheck)} ${symbol}`}
             />
             <SummaryCard
-              title="Не оплачено"
+              title={t('cleaning.stats.unpaid')}
               value={`${formatCurrency(unpaidAmount)} ${symbol}`}
             />
           </div>
@@ -294,7 +296,7 @@ export function CleaningStatsPage() {
           {/* Revenue by day */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Выручка по дням</CardTitle>
+              <CardTitle className="text-base">{t('cleaning.stats.revenueByDay')}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={220}>
@@ -336,11 +338,11 @@ export function CleaningStatsPage() {
             {/* Top services */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Популярные услуги</CardTitle>
+                <CardTitle className="text-base">{t('cleaning.stats.topServices')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {topServices.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">Нет данных</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">{t('cleaning.stats.noData')}</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={260}>
                     <BarChart
@@ -375,11 +377,11 @@ export function CleaningStatsPage() {
             {/* Order status pie */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Статусы заказов</CardTitle>
+                <CardTitle className="text-base">{t('cleaning.stats.orderStatuses')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {statusData.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">Нет данных</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">{t('cleaning.stats.noData')}</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={260}>
                     <PieChart>
