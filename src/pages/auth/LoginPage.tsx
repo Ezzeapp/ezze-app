@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -22,36 +22,6 @@ const schema = z.object({
 })
 type FormValues = z.infer<typeof schema>
 
-// ── Telegram Login Widget (официальный виджет Telegram для web) ──────────────
-function TelegramLoginWidget({ onAuth }: { onAuth: (user: Record<string, unknown>) => void }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const onAuthRef = useRef(onAuth)
-  useEffect(() => { onAuthRef.current = onAuth }, [onAuth])
-
-  useEffect(() => {
-    if (!containerRef.current) return
-    ;(window as any).onTelegramAuth = (user: Record<string, unknown>) => {
-      onAuthRef.current(user)
-    }
-
-    const script = document.createElement('script')
-    script.src = 'https://telegram.org/js/telegram-widget.js?22'
-    script.setAttribute('data-telegram-login', import.meta.env.VITE_MASTER_BOT || 'ezzepro_bot')
-    script.setAttribute('data-size', 'large')
-    script.setAttribute('data-radius', '8')
-    script.setAttribute('data-onauth', 'onTelegramAuth(user)')
-    script.setAttribute('data-request-access', 'write')
-    script.async = true
-    containerRef.current.appendChild(script)
-
-    return () => {
-      delete (window as any).onTelegramAuth
-      if (containerRef.current) containerRef.current.innerHTML = ''
-    }
-  }, [])
-
-  return <div ref={containerRef} className="flex justify-center" />
-}
 
 export function LoginPage() {
   const { t } = useTranslation()
@@ -66,9 +36,6 @@ export function LoginPage() {
       navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard', { replace: true })
     }
   }, [isAuthenticated, authLoading, navigate])
-  const [tgAuthLoading, setTgAuthLoading] = useState(false)
-  const [tgNotFound, setTgNotFound] = useState(false)
-
   // ── Phone login state ────────────────────────────────────────────────────
   const [loginMode, setLoginMode] = useState<'email' | 'phone'>('email')
   const [phoneNumber, setPhoneNumber] = useState('')
@@ -141,37 +108,6 @@ export function LoginPage() {
         toast.error(t('auth.loginError'))
       }
       setLoading(false)
-    }
-  }
-
-  // ── Telegram Widget: обработчик данных ───────────────────────────────────
-  const handleTelegramWidgetAuth = async (user: Record<string, unknown>) => {
-    setTgAuthLoading(true)
-    setTgNotFound(false)
-    try {
-      const { data, error } = await supabase.functions.invoke('tg-widget-login', { body: user })
-      const status = (error as any)?.status ?? 0
-      if (error || !data) {
-        if (status === 404) {
-          setTgNotFound(true)
-        } else if (status === 401) {
-          toast.error('Данные Telegram устарели, попробуйте снова')
-        } else {
-          toast.error('Ошибка входа через Telegram')
-        }
-        return
-      }
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-      })
-      if (sessionError) {
-        toast.error('Ошибка входа через Telegram')
-      } else {
-        navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard', { replace: true })
-      }
-    } finally {
-      setTgAuthLoading(false)
     }
   }
 
@@ -286,22 +222,6 @@ export function LoginPage() {
             <CardDescription>{t('auth.loginSubtitle')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-
-            {/* Telegram Login Widget */}
-            {tgAuthLoading ? (
-              <div className="flex justify-center py-2">
-                <LoadingSpinner />
-              </div>
-            ) : (
-              <TelegramLoginWidget onAuth={handleTelegramWidgetAuth} />
-            )}
-
-            {tgNotFound && (
-              <p className="text-center text-xs text-destructive">
-                Telegram не привязан к аккаунту.{' '}
-                <Link to="/register" className="underline">Зарегистрируйтесь</Link>
-              </p>
-            )}
 
             {/* Divider */}
             <div className="relative">
