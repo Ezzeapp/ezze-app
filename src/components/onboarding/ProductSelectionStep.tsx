@@ -7,7 +7,7 @@ import { useState } from 'react'
 import {
   Scissors, Stethoscope, Wrench, GraduationCap,
   BedDouble, UtensilsCrossed, PartyPopper, Wheat,
-  Car, HardHat, ShoppingCart, type LucideIcon,
+  Car, HardHat, ShoppingCart, WashingMachine, type LucideIcon,
 } from 'lucide-react'
 import { PRODUCT_LIST } from '@/lib/products'
 
@@ -27,6 +27,7 @@ const PRODUCT_ICONS: Record<string, LucideIcon> = {
   transport: Car,
   build:     HardHat,
   trade:     ShoppingCart,
+  cleaning:  WashingMachine,
 }
 
 export function ProductSelectionStep({ onSelect }: Props) {
