@@ -28,6 +28,7 @@ import { toast } from '@/components/shared/Toaster'
 import { printReceipt } from '@/lib/printReceipt'
 import { PRODUCT } from '@/lib/config'
 import { ClinicVisitPanel } from '@/components/clinic/ClinicVisitPanel'
+import { useClinicExamRooms } from '@/hooks/useClinicExamRooms'
 import type { Appointment, Service, Client, Schedule, ScheduleBreak } from '@/types'
 
 // Тип данных черновика новой записи
@@ -171,6 +172,7 @@ export function AppointmentDialog({
   const breaks = breaksData ?? EMPTY_BREAKS
   const createClient = useCreateClient()
   const confirm = useConfirmAppointment()
+  const { data: examRooms = [] } = useClinicExamRooms()
 
   // ── Черновик ──────────────────────────────────────────────────────────────
   const draftKey = `appt_draft_${user?.id || 'anon'}`
@@ -283,6 +285,9 @@ export function AppointmentDialog({
   const [adjustMode, setAdjustMode]         = useState<'discount' | 'surcharge'>('discount')
   const [paymentMethod, setPaymentMethod]   = useState<'cash' | 'card' | 'transfer' | 'other' | ''>('')
 
+  // ── Кабинет (clinic) ────────────────────────────────────────────────────
+  const [roomId, setRoomId]             = useState<string | null>(null)
+
   // ── Прочее ────────────────────────────────────────────────────────────────
   const [notes, setNotes]               = useState('')
   const [status, setStatus]             = useState<AppointmentFormData['status']>('scheduled')
@@ -349,6 +354,7 @@ export function AppointmentDialog({
         setDiscount(0); setCustomDiscount(''); setSurcharge(0); setCustomSurcharge(''); setAdjustMode('discount')
       }
       setPaymentMethod((editAppt.payment_method || '') as any)
+      setRoomId((editAppt as any).room_id || null)
       setActiveSection4(null)
       // Обратный пересчёт базовой цены из finalPrice: basePrice = finalPrice / (1 + saved/100)
       if (editAppt.price !== undefined) {
@@ -607,7 +613,8 @@ export function AppointmentDialog({
       recurring, recurring_weeks: recurringWeeks,
       discount: netAdjustment,
       payment_method: paymentMethod || undefined,
-    })
+      ...(PRODUCT === 'clinic' && roomId ? { room_id: roomId } : {}),
+    } as any)
     // Успешно сохранено — очищаем черновик
     if (!editAppt) draft.clear()
   }
@@ -1987,6 +1994,21 @@ export function AppointmentDialog({
                   </div>
 
                 </div>{/* end 3 columns */}
+
+                {/* ── Room selector (clinic only) ── */}
+                {PRODUCT === 'clinic' && examRooms.length > 0 && (
+                  <div className="px-4 pb-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs shrink-0">{t('clinic.ward.examRoom')}</Label>
+                      <Select value={roomId || ''} onValueChange={v => setRoomId(v || null)}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectContent>
+                          {examRooms.map(r => <SelectItem key={r.id} value={r.id}>{r.name}{r.floor ? ` (${t('clinic.ward.floor')} ${r.floor})` : ''}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
 
                 {/* ── Clinic visit record (clinic only) ── */}
                 {PRODUCT === 'clinic' && editAppt && (editAppt.status === 'done' || status === 'done') && (

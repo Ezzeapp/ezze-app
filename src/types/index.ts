@@ -811,3 +811,14 @@ export interface ClinicMealRecord {
   notes?: string | null
   created_at: string
 }
+
+export interface ClinicExamRoom {
+  id: string
+  master_id: string
+  name: string
+  floor?: number | null
+  notes?: string | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+}

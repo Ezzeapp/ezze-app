@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout, FileText, Layers, FlaskConical, BedDouble, Syringe, UtensilsCrossed,
+  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout, FileText, Layers, FlaskConical, BedDouble, Syringe, UtensilsCrossed, DoorOpen,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '@/contexts/AuthContext'
@@ -25,6 +25,7 @@ import { LabTestsCatalogSettingsTab } from './LabTestsCatalogSettingsTab'
 import { WardsSettingsTab } from './WardsSettingsTab'
 import { OperatingRoomsSettingsTab } from './OperatingRoomsSettingsTab'
 import { DietTablesSettingsTab } from './DietTablesSettingsTab'
+import { ExamRoomsSettingsTab } from './ExamRoomsSettingsTab'
 import { PRODUCT } from '@/lib/config'
 
 const LANGUAGES = [
@@ -69,7 +70,7 @@ const TIMEZONES = [
   { value: 'UTC', label: 'UTC (UTC+0)' },
 ]
 
-type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config'
+type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config' | 'exam_rooms'
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -175,6 +176,7 @@ export function SettingsPage() {
       { id: 'wards_config' as Tab, label: t('clinic.settings.wardsConfig'), icon: BedDouble },
       { id: 'or_config' as Tab, label: t('clinic.settings.orConfig'), icon: Syringe },
       { id: 'diet_config' as Tab, label: t('clinic.settings.dietConfig'), icon: UtensilsCrossed },
+      { id: 'exam_rooms' as Tab, label: t('clinic.settings.examRooms'), icon: DoorOpen },
     ] : []),
   ]
 
@@ -278,6 +280,9 @@ export function SettingsPage() {
 
       {/* ── Диетстолы (только clinic) ── */}
       {tab === 'diet_config' && <DietTablesSettingsTab />}
+
+      {/* ── Кабинеты (только clinic) ── */}
+      {tab === 'exam_rooms' && <ExamRoomsSettingsTab />}
 
       {/* ── Интерфейс ── */}
       {tab === 'interface' && (
