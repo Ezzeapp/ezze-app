@@ -56,6 +56,8 @@ const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage').then
 const POSPage = lazy(() => import('@/pages/orders/POSPage').then(m => ({ default: m.POSPage })))
 const CleaningStatsPage = lazy(() => import('@/pages/cleaning/CleaningStatsPage').then(m => ({ default: m.CleaningStatsPage })))
 const CleaningReportsPage = lazy(() => import('@/pages/cleaning/CleaningReportsPage').then(m => ({ default: m.CleaningReportsPage })))
+const ClinicLabPage       = lazy(() => import('@/pages/clinic/LabPage').then(m => ({ default: m.LabPage })))
+const ClinicPharmacyPage  = lazy(() => import('@/pages/clinic/PharmacyPage').then(m => ({ default: m.PharmacyPage })))
 const FarmDashboardPage   = lazy(() => import('@/pages/farm/FarmDashboardPage').then(m => ({ default: m.FarmDashboardPage })))
 const FarmAnimalsPage     = lazy(() => import('@/pages/farm/AnimalsPage').then(m => ({ default: m.AnimalsPage })))
 const FarmAnimalDetailPage= lazy(() => import('@/pages/farm/AnimalDetailPage').then(m => ({ default: m.AnimalDetailPage })))
@@ -64,6 +66,7 @@ const FarmFieldsPage      = lazy(() => import('@/pages/farm/FieldsPage').then(m 
 const FarmFeedStockPage   = lazy(() => import('@/pages/farm/FeedStockPage').then(m => ({ default: m.FeedStockPage })))
 const FarmProductionPage  = lazy(() => import('@/pages/farm/ProductionPage').then(m => ({ default: m.ProductionPage })))
 const FarmExpensesPage    = lazy(() => import('@/pages/farm/ExpensesPage').then(m => ({ default: m.ExpensesPage })))
+const FarmSalesPage       = lazy(() => import('@/pages/farm/SalesPage').then(m => ({ default: m.SalesPage })))
 
 const router = createBrowserRouter([
   // Public routes
@@ -134,6 +137,10 @@ const router = createBrowserRouter([
         { path: 'stats', element: <CleaningStatsPage /> },
         { path: 'reports', element: <CleaningReportsPage /> },
       ] : []),
+      ...(PRODUCT === 'clinic' ? [
+        { path: 'clinic/lab', element: <ClinicLabPage /> },
+        { path: 'clinic/pharmacy', element: <ClinicPharmacyPage /> },
+      ] : []),
       ...(PRODUCT === 'farm' ? [
         { path: 'farm',                 element: <FarmDashboardPage /> },
         { path: 'farm/animals',         element: <FarmAnimalsPage /> },
@@ -143,6 +150,7 @@ const router = createBrowserRouter([
         { path: 'farm/feed',            element: <FarmFeedStockPage /> },
         { path: 'farm/production',      element: <FarmProductionPage /> },
         { path: 'farm/expenses',        element: <FarmExpensesPage /> },
+        { path: 'farm/sales',           element: <FarmSalesPage /> },
       ] : []),
     ],
   },

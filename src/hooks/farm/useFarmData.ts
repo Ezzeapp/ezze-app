@@ -7,7 +7,8 @@ import type {
   FarmExpense, FarmEquipment, EquipmentMaintenance,
   Pasture, Incubation, AnimalSpecies, AnimalStatus,
   AnimalCostBreakdown, FarmDashboardStats, ProductionType,
-  FarmExpenseCategory,
+  FarmExpenseCategory, FarmSale, FarmSaleItem, FarmSaleWithItems,
+  SalePaymentStatus,
 } from '@/types/farm'
 
 const KEY = 'farm'
@@ -487,25 +488,132 @@ export function useIncubations(farmId: string | null | undefined) {
   })
 }
 
+// ── Sales / Продажи ──────────────────────────────────────────────
+export function useFarmSales(params: { farmId?: string | null; from?: string; to?: string }) {
+  return useQuery({
+    queryKey: [KEY, 'sales', params],
+    queryFn: async () => {
+      if (!params.farmId) return []
+      let q = supabase.from('farm_sales').select('*').eq('farm_id', params.farmId)
+      if (params.from) q = q.gte('date', params.from)
+      if (params.to)   q = q.lte('date', params.to)
+      const { data, error } = await q.order('date', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as FarmSale[]
+    },
+    enabled: !!params.farmId,
+    staleTime: 30_000,
+  })
+}
+
+export function useFarmSale(id: string | null | undefined) {
+  return useQuery({
+    queryKey: [KEY, 'sale', id],
+    queryFn: async (): Promise<FarmSaleWithItems | null> => {
+      if (!id) return null
+      const [saleRes, itemsRes] = await Promise.all([
+        supabase.from('farm_sales').select('*').eq('id', id).single(),
+        supabase.from('farm_sale_items').select('*').eq('sale_id', id).order('created_at'),
+      ])
+      if (saleRes.error) throw saleRes.error
+      return { ...(saleRes.data as FarmSale), items: (itemsRes.data ?? []) as FarmSaleItem[] }
+    },
+    enabled: !!id,
+    staleTime: 30_000,
+  })
+}
+
+export function useUpsertFarmSale() {
+  const qc = useQueryClient()
+  const { user } = useAuth()
+  return useMutation({
+    mutationFn: async (payload: {
+      sale: Partial<FarmSale> & { farm_id: string; date: string }
+      items: Array<Partial<FarmSaleItem> & { item_type: FarmSaleItem['item_type']; quantity: number; price_per_unit: number }>
+    }) => {
+      if (!user?.id) throw new Error('not authenticated')
+      const total = payload.items.reduce((s, i) => s + Number(i.quantity ?? 1) * Number(i.price_per_unit ?? 0), 0)
+      const saleData = {
+        master_id: user.id,
+        ...payload.sale,
+        total_amount: total,
+        payment_status: (payload.sale.paid_amount ?? 0) >= total && total > 0
+          ? 'paid'
+          : (payload.sale.paid_amount ?? 0) > 0
+            ? 'partial'
+            : 'unpaid' as SalePaymentStatus,
+      }
+      const { data: saved, error } = await supabase.from('farm_sales').upsert(saleData).select().single()
+      if (error) throw error
+      const saleId = saved.id as string
+
+      // Перезаписываем строки
+      await supabase.from('farm_sale_items').delete().eq('sale_id', saleId)
+      if (payload.items.length > 0) {
+        const rows = payload.items.map(i => ({
+          sale_id: saleId,
+          farm_id: payload.sale.farm_id,
+          master_id: user.id,
+          item_type: i.item_type,
+          animal_id: i.animal_id ?? null,
+          production_id: i.production_id ?? null,
+          crop_id: i.crop_id ?? null,
+          group_id: i.group_id ?? null,
+          description: i.description ?? null,
+          quantity: Number(i.quantity),
+          unit: i.unit ?? null,
+          price_per_unit: Number(i.price_per_unit),
+          amount: Number(i.quantity) * Number(i.price_per_unit),
+        }))
+        const { error: itErr } = await supabase.from('farm_sale_items').insert(rows)
+        if (itErr) throw itErr
+
+        // Если продано животное целиком — меняем статус
+        for (const i of payload.items) {
+          if (i.item_type === 'animal' && i.animal_id) {
+            await supabase.from('animals').update({ status: 'sold' }).eq('id', i.animal_id)
+          }
+        }
+      }
+      return saved
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [KEY] }),
+  })
+}
+
+export function useDeleteFarmSale() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('farm_sales').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [KEY] }),
+  })
+}
+
 // ── Dashboard Stats ──────────────────────────────────────────────
 export function useFarmDashboardStats(farmId: string | null | undefined) {
   return useQuery({
     queryKey: [KEY, 'stats', farmId],
     queryFn: async (): Promise<FarmDashboardStats | null> => {
       if (!farmId) return null
-      const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10)
-      const [animalsRes, fieldsRes, feedRes, prodRes, expRes] = await Promise.all([
+      const sinceDate = new Date(Date.now() - 29 * 24 * 3600 * 1000)
+      const since = sinceDate.toISOString().slice(0, 10)
+      const [animalsRes, fieldsRes, feedRes, prodRes, expRes, salesRes] = await Promise.all([
         supabase.from('animals').select('species, status').eq('farm_id', farmId),
         supabase.from('fields').select('area_ha').eq('farm_id', farmId),
         supabase.from('feed_stock').select('quantity, cost_per_unit').eq('farm_id', farmId),
         supabase.from('production').select('type, quantity, date').eq('farm_id', farmId).gte('date', since),
-        supabase.from('farm_expenses').select('amount, date').eq('farm_id', farmId).gte('date', since),
+        supabase.from('farm_expenses').select('amount, date, category').eq('farm_id', farmId).gte('date', since),
+        supabase.from('farm_sales').select('total_amount, date').eq('farm_id', farmId).gte('date', since),
       ])
       const animals = animalsRes.data ?? []
       const fields = fieldsRes.data ?? []
       const feed = feedRes.data ?? []
       const prod = prodRes.data ?? []
       const exp = expRes.data ?? []
+      const sales = salesRes.data ?? []
 
       const animals_by_species: Record<string, number> = {}
       const active = animals.filter(a => a.status !== 'sold' && a.status !== 'slaughtered' && a.status !== 'dead')
@@ -514,6 +622,19 @@ export function useFarmDashboardStats(farmId: string | null | undefined) {
       const production_last_30d: Record<string, number> = {}
       prod.forEach(p => { production_last_30d[p.type] = (production_last_30d[p.type] ?? 0) + Number(p.quantity) })
 
+      const expenses_by_category: Record<string, number> = {}
+      exp.forEach(e => { expenses_by_category[e.category] = (expenses_by_category[e.category] ?? 0) + Number(e.amount) })
+
+      // Daily series за 30 дней
+      const daily: Record<string, { revenue: number; expense: number }> = {}
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(sinceDate.getTime() + i * 24 * 3600 * 1000).toISOString().slice(0, 10)
+        daily[d] = { revenue: 0, expense: 0 }
+      }
+      exp.forEach(e => { if (daily[e.date]) daily[e.date].expense += Number(e.amount) })
+      sales.forEach(s => { if (daily[s.date]) daily[s.date].revenue += Number(s.total_amount) })
+      const daily_series = Object.entries(daily).map(([date, v]) => ({ date, ...v }))
+
       return {
         animals_total: active.length,
         animals_by_species: animals_by_species as any,
@@ -521,7 +642,9 @@ export function useFarmDashboardStats(farmId: string | null | undefined) {
         feed_stock_total_value: feed.reduce((s, f) => s + Number(f.quantity) * Number(f.cost_per_unit), 0),
         production_last_30d: production_last_30d as any,
         expenses_last_30d: exp.reduce((s, e) => s + Number(e.amount), 0),
-        revenue_last_30d: 0, // TODO: подключить продажи когда появятся
+        revenue_last_30d: sales.reduce((s, x) => s + Number(x.total_amount), 0),
+        expenses_by_category: expenses_by_category as any,
+        daily_series,
       }
     },
     enabled: !!farmId,
@@ -535,18 +658,22 @@ export function useAnimalCosts(farmId: string | null | undefined) {
     queryKey: [KEY, 'animal-costs', farmId],
     queryFn: async (): Promise<AnimalCostBreakdown[]> => {
       if (!farmId) return []
-      const [animalsRes, eventsRes, feedRes, feedStockRes, expRes] = await Promise.all([
+      const [animalsRes, eventsRes, feedRes, feedStockRes, expRes, salesRes, prodRes] = await Promise.all([
         supabase.from('animals').select('id, tag, name, acquisition_cost, group_id').eq('farm_id', farmId),
         supabase.from('animal_events').select('animal_id, event_type, cost').eq('farm_id', farmId),
         supabase.from('feed_consumption').select('animal_id, group_id, feed_id, quantity').eq('farm_id', farmId),
         supabase.from('feed_stock').select('id, cost_per_unit').eq('farm_id', farmId),
         supabase.from('farm_expenses').select('amount, animal_id, group_id').eq('farm_id', farmId),
+        supabase.from('farm_sale_items').select('animal_id, group_id, production_id, amount').eq('farm_id', farmId),
+        supabase.from('production').select('id, animal_id, group_id').eq('farm_id', farmId),
       ])
       const animals = animalsRes.data ?? []
       const events = eventsRes.data ?? []
       const feedC = feedRes.data ?? []
       const feedS = feedStockRes.data ?? []
       const exp = expRes.data ?? []
+      const saleItems = salesRes.data ?? []
+      const prodRecords = prodRes.data ?? []
       const feedCost = new Map<string, number>(feedS.map(f => [f.id, Number(f.cost_per_unit)]))
 
       // Группировка животных по group_id для аллокации группового расхода
@@ -593,6 +720,29 @@ export function useAnimalCosts(farmId: string | null | undefined) {
       })
       const overheadPerHead = animals.length > 0 ? overheadPool / animals.length : 0
 
+      // Доход на животное: прямые продажи + продажи продукции, привязанной к животному/группе
+      const prodToAnimal = new Map<string, string | null>()
+      const prodToGroup  = new Map<string, string | null>()
+      prodRecords.forEach(p => { prodToAnimal.set(p.id, p.animal_id); prodToGroup.set(p.id, p.group_id) })
+      const revenuePerAnimal = new Map<string, number>()
+      animals.forEach(a => revenuePerAnimal.set(a.id, 0))
+      saleItems.forEach(si => {
+        const amt = Number(si.amount ?? 0)
+        let aid: string | null = si.animal_id
+        let gid: string | null = si.group_id
+        if (!aid && si.production_id) {
+          aid = prodToAnimal.get(si.production_id) ?? null
+          if (!aid) gid = prodToGroup.get(si.production_id) ?? gid
+        }
+        if (aid && revenuePerAnimal.has(aid)) {
+          revenuePerAnimal.set(aid, revenuePerAnimal.get(aid)! + amt)
+        } else if (gid && animalsByGroup.has(gid)) {
+          const list = animalsByGroup.get(gid)!
+          const per = amt / Math.max(1, list.length)
+          list.forEach(id => revenuePerAnimal.set(id, (revenuePerAnimal.get(id) ?? 0) + per))
+        }
+      })
+
       return animals.map(a => {
         const p = perAnimal.get(a.id)!
         const groupDirect = a.group_id && directGroupExp.has(a.group_id)
@@ -601,6 +751,7 @@ export function useAnimalCosts(farmId: string | null | undefined) {
         const acquisition = Number(a.acquisition_cost ?? 0)
         const direct = directAnimalExp.get(a.id) ?? 0
         const total = acquisition + p.feed + p.vet + overheadPerHead + direct + groupDirect
+        const revenue = revenuePerAnimal.get(a.id) ?? 0
         return {
           animal_id: a.id,
           tag: a.tag,
@@ -610,10 +761,10 @@ export function useAnimalCosts(farmId: string | null | undefined) {
           veterinary_cost: p.vet,
           allocated_overhead: overheadPerHead + direct + groupDirect,
           total_cost: total,
-          revenue: 0, // TODO
-          margin: -total,
+          revenue,
+          margin: revenue - total,
         }
-      }).sort((a, b) => b.total_cost - a.total_cost)
+      }).sort((a, b) => b.margin - a.margin)
     },
     enabled: !!farmId,
     staleTime: 60_000,

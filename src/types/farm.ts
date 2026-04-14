@@ -273,6 +273,50 @@ export interface Incubation {
   created_at: string
 }
 
+// ── Sales / Продажи ──────────────────────────────────────────────
+
+export type SaleChannel = 'retail' | 'wholesale' | 'market' | 'direct' | 'other'
+export type SaleItemType = 'animal' | 'production' | 'crop' | 'other'
+export type SalePaymentStatus = 'unpaid' | 'partial' | 'paid'
+
+export interface FarmSale {
+  id: string
+  farm_id: string
+  master_id: string
+  date: string
+  buyer_name: string | null
+  buyer_contact: string | null
+  channel: SaleChannel
+  total_amount: number
+  paid_amount: number
+  payment_status: SalePaymentStatus
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface FarmSaleItem {
+  id: string
+  sale_id: string
+  farm_id: string
+  master_id: string
+  item_type: SaleItemType
+  animal_id: string | null
+  production_id: string | null
+  crop_id: string | null
+  group_id: string | null
+  description: string | null
+  quantity: number
+  unit: string | null
+  price_per_unit: number
+  amount: number
+  created_at: string
+}
+
+export interface FarmSaleWithItems extends FarmSale {
+  items: FarmSaleItem[]
+}
+
 // ── Derived / UI ─────────────────────────────────────────────────
 
 export interface AnimalWithGroup extends Animal {
@@ -300,6 +344,8 @@ export interface FarmDashboardStats {
   production_last_30d: Record<ProductionType, number>
   expenses_last_30d: number
   revenue_last_30d: number
+  expenses_by_category: Record<FarmExpenseCategory, number>
+  daily_series: { date: string; revenue: number; expense: number }[]
 }
 
 // ── Константы для UI ─────────────────────────────────────────────

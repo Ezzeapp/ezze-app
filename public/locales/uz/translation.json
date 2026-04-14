@@ -1350,10 +1350,12 @@
       "fields": "Dalalar",
       "feed": "Yem",
       "production": "Mahsulot",
+      "sales": "Sotuvlar",
       "expenses": "Xarajatlar",
       "equipment": "Texnika",
       "reports": "Hisobotlar"
     },
+    "sales": { "title": "Sotuvlar", "add": "Yangi sotuv", "edit": "Sotuvni tahrirlash", "empty": "Sotuvlar yo'q", "items": "Pozitsiyalar", "addItem": "Pozitsiya qo'shish", "noItems": "Pozitsiyalar yo'q", "itemType": "Turi", "itemRef": "Obyekt", "itemDesc": "Tavsif", "qty": "Miqdor", "price": "Narx", "total": "Jami", "totalRevenue": "Umumiy daromad", "paid": "To'langan", "debt": "Qarz", "fields": { "date": "Sana", "channel": "Kanal", "buyerName": "Xaridor", "buyerContact": "Aloqa", "paidAmount": "To'langan", "notes": "Izohlar" }, "channel": { "retail": "Chakana", "wholesale": "Ulgurji", "market": "Bozor", "direct": "To'g'ridan-to'g'ri", "other": "Boshqa" }, "type": { "animal": "Hayvon", "production": "Mahsulot", "crop": "Hosil", "other": "Boshqa" }, "payment": { "unpaid": "To'lanmagan", "partial": "Qisman", "paid": "To'langan" } },
     "dashboard": {
       "title": "Ferma umumiy",
       "totalAnimals": "Jami hayvonlar",
@@ -1362,6 +1364,9 @@
       "production30d": "Mahsulot 30 kun",
       "expenses30d": "Xarajat 30 kun",
       "revenue30d": "Daromad 30 kun",
+      "netMargin30d": "Sof foyda 30 kun",
+      "revenueVsExpense": "Daromad / Xarajat (30 kun)",
+      "expenseBreakdown": "Xarajat tarkibi",
       "topMargin": "Eng foydali"
     },
     "onboarding": {

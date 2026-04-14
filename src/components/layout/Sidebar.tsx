@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard, User, Users, Package, CalendarDays,
   Settings, Zap, X, ShieldCheck, UsersRound, Megaphone, CreditCard, LifeBuoy,
-  ClipboardList, BarChart3, Beef, Wheat, Milk, Wallet,
+  ClipboardList, BarChart3, Beef, Wheat, Milk, Wallet, ShoppingCart,
+  FlaskConical, Pill,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -96,6 +97,12 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
         {PRODUCT !== 'farm' && (
           <NavItemGated icon={Users} iconColor="dark:text-emerald-400" label={PRODUCT === 'clinic' ? t('clinic.nav.patients') : t('nav.clients')} to="/clients" feature="clients" onClick={onClose} />
         )}
+        {PRODUCT === 'clinic' && (
+          <>
+            <SidebarNavItem icon={FlaskConical} iconColor="dark:text-teal-400" label={t('clinic.nav.lab')} to="/clinic/lab" onClick={onClose} />
+            <SidebarNavItem icon={Pill} iconColor="dark:text-rose-400" label={t('clinic.nav.pharmacy')} to="/clinic/pharmacy" onClick={onClose} />
+          </>
+        )}
 
         {PRODUCT === 'farm' ? (
           <>
@@ -105,6 +112,7 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
             <SidebarNavItem icon={Wheat}     iconColor="dark:text-amber-400"   label={t('farm.nav.fields')}     to="/farm/fields"     onClick={onClose} />
             <SidebarNavItem icon={Package}   iconColor="dark:text-orange-400"  label={t('farm.nav.feed')}       to="/farm/feed"       onClick={onClose} />
             <SidebarNavItem icon={Milk}      iconColor="dark:text-sky-400"     label={t('farm.nav.production')} to="/farm/production" onClick={onClose} />
+            <SidebarNavItem icon={ShoppingCart} iconColor="dark:text-emerald-400" label={t('farm.nav.sales')}   to="/farm/sales"      onClick={onClose} />
             <SidebarNavItem icon={Wallet}    iconColor="dark:text-rose-400"    label={t('farm.nav.expenses')}   to="/farm/expenses"   onClick={onClose} />
           </>
         ) : (
