@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Zap, Search, Phone, Globe, X } from 'lucide-react'
+import { Zap, Phone, Globe } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/shared/Toaster'
@@ -18,9 +18,6 @@ import {
   getTelegramLanguageCode,
 } from '@/lib/telegramWebApp'
 import {
-  SPECIALTY_TO_CATEGORY,
-  FALLBACK_SPECIALTIES,
-  autoImportServices,
   completeOnboarding,
   saveProfession,
 } from '@/lib/onboarding-utils'
@@ -66,9 +63,6 @@ export function RegisterPage() {
     nameParam || (isTg ? getTelegramDisplayName() : '') || ''
   )
   const [formPhone, setFormPhone] = useState(phoneParam || '')
-  const [formSpecialty, setFormSpecialty] = useState('')
-  const [specSearch, setSpecSearch] = useState('')
-  const [specialties, setSpecialties] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
   // Шаг 0: выбор продукта — всегда показываем новым мастерам в боте.
@@ -95,31 +89,6 @@ export function RegisterPage() {
       navigate(inviteCode ? `/join/${inviteCode}` : '/calendar', { replace: true })
     }
   }, [isAuthenticated, authLoading, navigate, inviteCode, isTg])
-
-  // Загружаем специальности из БД, фильтруем по выбранному продукту
-  useEffect(() => {
-    if (!selectedProduct) return   // ждём выбора продукта на шаге 0
-    const product = selectedProduct
-    supabase
-      .from('specialties')
-      .select('name, activity_types(products)')
-      .is('master_id', null)
-      .order('name')
-      .then(({ data }) => {
-        if (data?.length) {
-          const filtered = data
-            .filter((s: { name: string; activity_types: { products: string[] }[] | null }) => {
-              const prods = s.activity_types?.[0]?.products ?? []
-              // Пустой массив products = доступно для всех продуктов
-              return prods.length === 0 || prods.includes(product)
-            })
-            .map((s: { name: string }) => s.name)
-          setSpecialties([...new Set(filtered)] as string[])
-        } else {
-          setSpecialties(FALLBACK_SPECIALTIES)
-        }
-      }, () => setSpecialties(FALLBACK_SPECIALTIES))
-  }, [selectedProduct])
 
   // ── Telegram: проверяем — вдруг уже зарегистрирован ──────────────────────
   const [tgChecking, setTgChecking] = useState(isTg)
@@ -174,7 +143,6 @@ export function RegisterPage() {
                 // Зарегистрирован, но не онбордeн — показываем форму с предзаполненными данными
                 if (profile.display_name) setFormName(profile.display_name)
                 if (profile.phone) setFormPhone(profile.phone)
-                if (profile.profession) setFormSpecialty(profile.profession)
                 setExistingUserId(sbUser.id)
                 setTgChecking(false)
                 return
@@ -296,16 +264,9 @@ export function RegisterPage() {
     if (ok === false) { clearTimeout(timer); setContactRequested(false) }
   }, [startPhonePolling])
 
-  // ── Фильтрация специальностей ─────────────────────────────────────────────
-  const filtered = useMemo(
-    () => specialties.filter(s => s.toLowerCase().includes(specSearch.toLowerCase())),
-    [specialties, specSearch]
-  )
-
   // ── Валидация формы ───────────────────────────────────────────────────────
   const canSubmit = formName.trim().length >= 2
     && formPhone.replace(/\D/g, '').length >= 7
-    && !!formSpecialty
     && !saving
 
   // ── Сабмит — регистрация + онбординг за один раз ──────────────────────────
@@ -336,13 +297,10 @@ export function RegisterPage() {
 
       if (!userId) throw new Error('No userId')
 
-      // 4. Сохраняем профессию + slug
-      await saveProfession(userId, formSpecialty, formName.trim())
+      // 4. Сохраняем slug (профессию мастер выберет сам через справочник)
+      await saveProfession(userId, '', formName.trim())
 
-      // 5. Авто-импорт услуг и товаров
-      await autoImportServices(userId, formSpecialty)
-
-      // 6. Завершаем онбординг + tg-master-welcome (с product и app_url)
+      // 5. Завершаем онбординг + tg-master-welcome (с product и app_url)
       const finalProduct = selectedProduct || import.meta.env.VITE_PRODUCT || 'beauty'
       const finalAppUrl  = PRODUCT_URL_MAP[finalProduct] || import.meta.env.VITE_APP_URL || 'https://pro.ezze.site'
       await completeOnboarding(userId, String(tgId), formName.trim(), formLang, finalProduct, finalAppUrl)
@@ -380,8 +338,7 @@ export function RegisterPage() {
               const { data: { user: sbUser } } = await supabase.auth.getUser()
               if (sbUser?.id) {
                 await saveTgProfile(sbUser.id, formName.trim(), formPhone)
-                await saveProfession(sbUser.id, formSpecialty, formName.trim())
-                await autoImportServices(sbUser.id, formSpecialty)
+                await saveProfession(sbUser.id, '', formName.trim())
                 const fallbackProduct = selectedProduct || import.meta.env.VITE_PRODUCT || 'beauty'
                 const fallbackAppUrl  = PRODUCT_URL_MAP[fallbackProduct] || import.meta.env.VITE_APP_URL || 'https://pro.ezze.site'
                 await completeOnboarding(sbUser.id, String(tgId), formName.trim(), formLang, fallbackProduct, fallbackAppUrl)
@@ -501,71 +458,6 @@ export function RegisterPage() {
               </Button>
             )}
           </div>
-
-          {/* Специальность */}
-          <label className="text-sm font-medium mb-1">{t('specialty.select')}</label>
-          <p className="text-muted-foreground text-xs mb-2">{t('specialty.hint')}</p>
-
-          {/* Выбранная специальность */}
-          {formSpecialty && !specSearch && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 mb-2">
-              <span className="text-sm font-medium text-primary flex-1">{formSpecialty}</span>
-              <button
-                type="button"
-                onClick={() => setFormSpecialty('')}
-                className="text-primary/60 hover:text-primary transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-
-          {/* Поиск */}
-          <div className="relative mb-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-            <input
-              type="text"
-              placeholder={formSpecialty ? t('specialty.search') : t('specialty.search')}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              value={specSearch}
-              onChange={e => setSpecSearch(e.target.value)}
-              className={[
-                'flex h-10 w-full rounded-md border border-input bg-background',
-                'px-3 py-2 pl-9 text-sm ring-offset-background',
-                'placeholder:text-muted-foreground',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              ].join(' ')}
-            />
-          </div>
-
-          {/* Выпадающий список — только при вводе */}
-          {specSearch.length > 0 && (
-            <div className="overflow-y-auto rounded-xl border bg-card divide-y shadow-lg mb-2" style={{ maxHeight: '40vh' }}>
-              {filtered.length === 0 ? (
-                <p className="text-center text-muted-foreground text-sm py-6">
-                  {t('specialty.notFound')}
-                </p>
-              ) : (
-                filtered.map(spec => (
-                  <button
-                    key={spec}
-                    onClick={() => { setFormSpecialty(spec); setSpecSearch('') }}
-                    className={[
-                      'w-full text-left px-4 py-2.5 text-sm transition-colors',
-                      formSpecialty === spec
-                        ? 'bg-primary text-primary-foreground font-medium'
-                        : 'hover:bg-muted',
-                    ].join(' ')}
-                  >
-                    {spec}
-                  </button>
-                ))
-              )}
-            </div>
-          )}
 
           {/* Кнопка */}
           <div className="mt-4 pb-safe-bottom pb-4">

@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
-import { Plus, Trash2, Loader2, X } from 'lucide-react'
+import { Plus, Trash2, Loader2, X, Download, Search, Check } from 'lucide-react'
 import { useCleaningItemTypes, useUpsertItemType, useDeleteItemType } from '@/hooks/useCleaningItemTypes'
 import type { CleaningItemType } from '@/hooks/useCleaningItemTypes'
 import { ORDER_TYPE_LABELS } from '@/hooks/useCleaningOrders'
@@ -11,7 +11,9 @@ import { toast } from '@/components/shared/Toaster'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { useGlobalServices } from '@/hooks/useGlobalCatalogs'
 
 // ── Category detection ──────────────────────────────────────────────────────
 const CARPET_KW    = ['кв.м', 'ковёр', 'ковр']
@@ -149,6 +151,189 @@ function AddItemDialog({ open, onClose, maxSortOrder }: AddDialogProps) {
   )
 }
 
+// ── Import from global catalog dialog ───────────────────────────────────────
+interface ImportCleaningDialogProps {
+  open: boolean
+  onClose: () => void
+  maxSortOrder: number
+}
+
+function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDialogProps) {
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [importing, setImporting] = useState(false)
+
+  const { data: globalServices = [], isLoading } = useGlobalServices()
+  const upsert = useUpsertItemType()
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return q ? globalServices.filter(s => s.name.toLowerCase().includes(q)) : globalServices
+  }, [globalServices, search])
+
+  const grouped = useMemo(() =>
+    filtered.reduce<Record<string, typeof filtered>>((acc, s) => {
+      const cat = s.category || 'Другое'
+      if (!acc[cat]) acc[cat] = []
+      acc[cat].push(s)
+      return acc
+    }, {}),
+    [filtered]
+  )
+
+  const allSelected = filtered.length > 0 && selected.size === filtered.length
+
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const handleImport = async () => {
+    if (selected.size === 0) return
+    setImporting(true)
+    const toImport = globalServices.filter(s => selected.has(s.id))
+    let count = 0
+    let errors = 0
+    for (let i = 0; i < toImport.length; i++) {
+      const s = toImport[i]
+      try {
+        await upsert.mutateAsync({
+          name: s.name,
+          default_price: s.price || 0,
+          default_days: 3,
+          sort_order: maxSortOrder + i + 1,
+        })
+        count++
+      } catch {
+        errors++
+      }
+    }
+    setImporting(false)
+    if (count > 0) toast.success(`Добавлено позиций: ${count}`)
+    if (errors > 0) toast.error('Некоторые позиции не добавились')
+    setSelected(new Set())
+    onClose()
+  }
+
+  const handleClose = () => {
+    setSearch('')
+    setSelected(new Set())
+    onClose()
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent mobileFullscreen className="max-w-lg sm:h-[85vh] sm:max-h-[85vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0">
+          <DialogTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            Импорт из справочника
+          </DialogTitle>
+        </DialogHeader>
+
+        {/* Search */}
+        <div className="px-6 pb-3 shrink-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={e => { setSearch(e.target.value); setSelected(new Set()) }}
+              placeholder="Поиск по позициям..."
+              className="pl-9"
+            />
+          </div>
+        </div>
+
+        {/* Select all */}
+        {filtered.length > 0 && (
+          <div className="px-6 pb-2 shrink-0 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setSelected(allSelected ? new Set() : new Set(filtered.map(s => s.id)))}
+              className="text-xs text-primary hover:underline"
+            >
+              {allSelected ? 'Снять выделение' : 'Выбрать все'}
+            </button>
+            {selected.size > 0 && (
+              <Badge variant="secondary" className="text-xs">Выбрано: {selected.size}</Badge>
+            )}
+          </div>
+        )}
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-2 border-t pt-2">
+          {isLoading && (
+            <div className="space-y-2 pt-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-10 w-full rounded-lg bg-muted animate-pulse" />
+              ))}
+            </div>
+          )}
+
+          {!isLoading && filtered.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-sm text-muted-foreground">
+                {search ? 'Ничего не найдено' : 'Справочник пуст'}
+              </p>
+            </div>
+          )}
+
+          {!isLoading && Object.entries(grouped).map(([cat, items]) => (
+            <div key={cat}>
+              <div className="py-1.5">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{cat}</span>
+              </div>
+              <div className="space-y-1">
+                {items.map(s => {
+                  const isSelected = selected.has(s.id)
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => toggleSelect(s.id)}
+                      className={cn(
+                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-colors',
+                        isSelected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/30'
+                      )}
+                    >
+                      <div className={cn(
+                        'h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors',
+                        isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40'
+                      )}>
+                        {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                      </div>
+                      <span className="text-sm font-medium flex-1">{s.name}</span>
+                      {s.price != null && s.price > 0 && (
+                        <span className="text-xs text-muted-foreground shrink-0">{s.price}</span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <DialogFooter className="px-6 pb-6 pt-3 shrink-0 border-t">
+          <Button variant="outline" onClick={handleClose}>Отмена</Button>
+          <Button
+            onClick={handleImport}
+            disabled={selected.size === 0}
+            loading={importing}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Добавить выбранное ({selected.size})
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ── Inline editable cell ────────────────────────────────────────────────────
 interface EditCellProps {
   item: CleaningItemType
@@ -217,6 +402,7 @@ export function CleaningCatalogTab() {
 
   const [categoryFilter, setCategoryFilter] = useState<OrderType | 'all'>('all')
   const [addOpen, setAddOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingCell, setEditingCell] = useState<{ id: string; field: 'name' | 'price' | 'days' } | null>(null)
   const [editingValue, setEditingValue] = useState('')
@@ -339,10 +525,16 @@ export function CleaningCatalogTab() {
         <div>
           <p className="text-sm text-muted-foreground">{items.length} позиций в каталоге</p>
         </div>
-        <Button size="sm" onClick={() => setAddOpen(true)}>
-          <Plus className="h-3.5 w-3.5 mr-1.5" />
-          Добавить
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+            <Download className="h-3.5 w-3.5 mr-1.5" />
+            <span className="hidden sm:inline">Из справочника</span>
+          </Button>
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            Добавить
+          </Button>
+        </div>
       </div>
 
       {/* Category filter tabs */}
@@ -486,6 +678,12 @@ export function CleaningCatalogTab() {
       <AddItemDialog
         open={addOpen}
         onClose={() => setAddOpen(false)}
+        maxSortOrder={maxSortOrder}
+      />
+
+      <ImportCleaningDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
         maxSortOrder={maxSortOrder}
       />
     </div>
