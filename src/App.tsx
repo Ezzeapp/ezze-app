@@ -58,6 +58,10 @@ const CleaningStatsPage = lazy(() => import('@/pages/cleaning/CleaningStatsPage'
 const CleaningReportsPage = lazy(() => import('@/pages/cleaning/CleaningReportsPage').then(m => ({ default: m.CleaningReportsPage })))
 const ClinicLabPage       = lazy(() => import('@/pages/clinic/LabPage').then(m => ({ default: m.LabPage })))
 const ClinicPharmacyPage  = lazy(() => import('@/pages/clinic/PharmacyPage').then(m => ({ default: m.PharmacyPage })))
+const ClinicWardPage      = lazy(() => import('@/pages/clinic/WardPage').then(m => ({ default: m.WardPage })))
+const ClinicHospPage      = lazy(() => import('@/pages/clinic/HospitalizationsPage').then(m => ({ default: m.HospitalizationsPage })))
+const ClinicSurgeryPage   = lazy(() => import('@/pages/clinic/SurgeryPage').then(m => ({ default: m.SurgeryPage })))
+const ClinicNutritionPage = lazy(() => import('@/pages/clinic/NutritionPage').then(m => ({ default: m.NutritionPage })))
 const FarmDashboardPage   = lazy(() => import('@/pages/farm/FarmDashboardPage').then(m => ({ default: m.FarmDashboardPage })))
 const FarmAnimalsPage     = lazy(() => import('@/pages/farm/AnimalsPage').then(m => ({ default: m.AnimalsPage })))
 const FarmAnimalDetailPage= lazy(() => import('@/pages/farm/AnimalDetailPage').then(m => ({ default: m.AnimalDetailPage })))
@@ -147,6 +151,10 @@ const router = createBrowserRouter([
       ...(PRODUCT === 'clinic' ? [
         { path: 'clinic/lab', element: <ClinicLabPage /> },
         { path: 'clinic/pharmacy', element: <ClinicPharmacyPage /> },
+        { path: 'clinic/wards', element: <ClinicWardPage /> },
+        { path: 'clinic/hospitalizations', element: <ClinicHospPage /> },
+        { path: 'clinic/surgery', element: <ClinicSurgeryPage /> },
+        { path: 'clinic/nutrition', element: <ClinicNutritionPage /> },
       ] : []),
       ...(PRODUCT === 'farm' ? [
         { path: 'farm',                 element: <FarmDashboardPage /> },

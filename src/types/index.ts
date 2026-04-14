@@ -643,3 +643,171 @@ export interface ClinicDispensing {
   item?: { name: string } | null
   client?: { first_name: string; last_name?: string | null } | null
 }
+
+// ── Clinic Inpatient (Стационар) ──────────────────────────────────
+
+export type WardType = 'therapeutic' | 'surgical' | 'intensive' | 'pediatric' | 'maternity' | 'other'
+export type BedStatus = 'free' | 'occupied' | 'maintenance'
+export type HospitalizationStatus = 'admitted' | 'in_treatment' | 'pre_discharge' | 'discharged'
+
+export interface ClinicWard {
+  id: string
+  master_id: string
+  name: string
+  ward_type: WardType
+  floor?: number | null
+  capacity: number
+  notes?: string | null
+  created_at: string
+  updated_at: string
+  rooms?: ClinicRoom[]
+}
+
+export interface ClinicRoom {
+  id: string
+  ward_id: string
+  name: string
+  capacity: number
+  notes?: string | null
+  created_at: string
+  updated_at: string
+  beds?: ClinicBed[]
+  ward?: { name: string } | null
+}
+
+export interface ClinicBed {
+  id: string
+  room_id: string
+  number: string
+  status: BedStatus
+  created_at: string
+  updated_at: string
+  room?: { name: string; ward_id: string } | null
+}
+
+export interface ClinicHospitalization {
+  id: string
+  master_id: string
+  client_id: string
+  visit_id?: string | null
+  ward_id: string
+  room_id: string
+  bed_id: string
+  admission_date: string
+  discharge_date?: string | null
+  status: HospitalizationStatus
+  diagnosis?: string | null
+  diagnosis_code?: string | null
+  reason?: string | null
+  attending_doctor?: string | null
+  discharge_summary?: string | null
+  notes?: string | null
+  created_at: string
+  updated_at: string
+  client?: { first_name: string; last_name?: string | null } | null
+  ward?: { name: string } | null
+  room?: { name: string } | null
+  bed?: { number: string } | null
+}
+
+export interface ClinicDailyObservation {
+  id: string
+  hospitalization_id: string
+  master_id: string
+  observation_date: string
+  temperature?: number | null
+  bp_systolic?: number | null
+  bp_diastolic?: number | null
+  pulse?: number | null
+  spo2?: number | null
+  respiratory_rate?: number | null
+  notes?: string | null
+  treatment_notes?: string | null
+  created_at: string
+}
+
+// ── Clinic Surgery (Операционная) ─────────────────────────────────
+
+export type SurgeryStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+export type AnesthesiaType = 'general' | 'regional' | 'local' | 'sedation'
+
+export interface ClinicOperatingRoom {
+  id: string
+  master_id: string
+  name: string
+  equipment_notes?: string | null
+  status: 'available' | 'in_use' | 'maintenance'
+  created_at: string
+  updated_at: string
+}
+
+export interface ClinicSurgery {
+  id: string
+  master_id: string
+  client_id: string
+  hospitalization_id: string
+  operating_room_id?: string | null
+  scheduled_date: string
+  actual_start?: string | null
+  actual_end?: string | null
+  status: SurgeryStatus
+  procedure_name: string
+  pre_op_diagnosis?: string | null
+  post_op_diagnosis?: string | null
+  anesthesia_type?: AnesthesiaType | null
+  anesthesia_duration_min?: number | null
+  blood_loss_ml?: number | null
+  complications?: string | null
+  surgeon_name?: string | null
+  anesthesiologist_name?: string | null
+  assistants: string[]
+  notes?: string | null
+  created_at: string
+  updated_at: string
+  client?: { first_name: string; last_name?: string | null } | null
+  hospitalization?: { diagnosis?: string | null } | null
+  operating_room?: { name: string } | null
+}
+
+// ── Clinic Nutrition (Питание) ────────────────────────────────────
+
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+
+export interface ClinicDietTable {
+  id: string
+  master_id: string
+  number: string
+  name: string
+  description?: string | null
+  allowed_foods?: string | null
+  restricted_foods?: string | null
+  calories_target?: number | null
+  notes?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ClinicMealPlan {
+  id: string
+  hospitalization_id: string
+  diet_table_id: string
+  start_date: string
+  end_date?: string | null
+  special_instructions?: string | null
+  notes?: string | null
+  created_at: string
+  updated_at: string
+  diet_table?: { number: string; name: string } | null
+  hospitalization?: { client?: { first_name: string; last_name?: string | null } | null } | null
+}
+
+export interface ClinicMealRecord {
+  id: string
+  meal_plan_id: string
+  date: string
+  meal_type: MealType
+  menu_items?: string | null
+  served: boolean
+  notes?: string | null
+  created_at: string
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout, FileText, Layers, FlaskConical,
+  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout, FileText, Layers, FlaskConical, BedDouble, Syringe, UtensilsCrossed,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '@/contexts/AuthContext'
@@ -22,6 +22,9 @@ import { ReceiptSettingsTab } from './ReceiptSettingsTab'
 import { OrderTypesSettingsTab } from './OrderTypesSettingsTab'
 import { VisitTemplatesSettingsTab } from './VisitTemplatesSettingsTab'
 import { LabTestsCatalogSettingsTab } from './LabTestsCatalogSettingsTab'
+import { WardsSettingsTab } from './WardsSettingsTab'
+import { OperatingRoomsSettingsTab } from './OperatingRoomsSettingsTab'
+import { DietTablesSettingsTab } from './DietTablesSettingsTab'
 import { PRODUCT } from '@/lib/config'
 
 const LANGUAGES = [
@@ -66,7 +69,7 @@ const TIMEZONES = [
   { value: 'UTC', label: 'UTC (UTC+0)' },
 ]
 
-type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog'
+type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config'
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -169,6 +172,9 @@ export function SettingsPage() {
     ...(PRODUCT === 'clinic' ? [
       { id: 'visit_templates' as Tab, label: t('clinic.settings.visitTemplates'), icon: FileText },
       { id: 'lab_catalog' as Tab, label: t('clinic.lab.testCatalog'), icon: FlaskConical },
+      { id: 'wards_config' as Tab, label: t('clinic.settings.wardsConfig'), icon: BedDouble },
+      { id: 'or_config' as Tab, label: t('clinic.settings.orConfig'), icon: Syringe },
+      { id: 'diet_config' as Tab, label: t('clinic.settings.dietConfig'), icon: UtensilsCrossed },
     ] : []),
   ]
 
@@ -263,6 +269,15 @@ export function SettingsPage() {
 
       {/* ── Справочник анализов (только clinic) ── */}
       {tab === 'lab_catalog' && <LabTestsCatalogSettingsTab />}
+
+      {/* ── Палаты (только clinic) ── */}
+      {tab === 'wards_config' && <WardsSettingsTab />}
+
+      {/* ── Операционные (только clinic) ── */}
+      {tab === 'or_config' && <OperatingRoomsSettingsTab />}
+
+      {/* ── Диетстолы (только clinic) ── */}
+      {tab === 'diet_config' && <DietTablesSettingsTab />}
 
       {/* ── Интерфейс ── */}
       {tab === 'interface' && (

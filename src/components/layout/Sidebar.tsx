@@ -6,6 +6,7 @@ import {
   Settings, Zap, X, ShieldCheck, UsersRound, Megaphone, CreditCard, LifeBuoy,
   ClipboardList, BarChart3, Beef, Wheat, Milk, Wallet, ShoppingCart,
   FlaskConical, Pill, Tractor, TreePine, Egg, Syringe, Sparkles, QrCode,
+  BedDouble, UtensilsCrossed,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -101,6 +102,9 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
           <>
             <SidebarNavItem icon={FlaskConical} iconColor="dark:text-teal-400" label={t('clinic.nav.lab')} to="/clinic/lab" onClick={onClose} />
             <SidebarNavItem icon={Pill} iconColor="dark:text-rose-400" label={t('clinic.nav.pharmacy')} to="/clinic/pharmacy" onClick={onClose} />
+            <SidebarNavItem icon={BedDouble} iconColor="dark:text-amber-400" label={t('clinic.nav.wards')} to="/clinic/wards" onClick={onClose} />
+            <SidebarNavItem icon={Syringe} iconColor="dark:text-purple-400" label={t('clinic.nav.surgery')} to="/clinic/surgery" onClick={onClose} />
+            <SidebarNavItem icon={UtensilsCrossed} iconColor="dark:text-orange-400" label={t('clinic.nav.nutrition')} to="/clinic/nutrition" onClick={onClose} />
           </>
         )}
 

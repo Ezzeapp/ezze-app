@@ -38,6 +38,7 @@ import { ClinicMedicalCard } from '@/components/clinic/ClinicMedicalCard'
 import { DentalChart } from '@/components/clinic/DentalChart'
 import { useClinicLabOrdersByPatient } from '@/hooks/useClinicLabOrders'
 import { useDispensingByPatient } from '@/hooks/useClinicDispensing'
+import { useHospitalizationsByPatient } from '@/hooks/useClinicHospitalizations'
 import {
   useLoyaltySettings,
   useAllClientsLoyaltyBalances,
@@ -167,6 +168,7 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
   const addPoints = useAddLoyaltyPoints()
   const { data: labOrders = [] } = useClinicLabOrdersByPatient(PRODUCT === 'clinic' ? client.id : undefined)
   const { data: dispensingHistory = [] } = useDispensingByPatient(PRODUCT === 'clinic' ? client.id : undefined)
+  const { data: hospHistory = [] } = useHospitalizationsByPatient(PRODUCT === 'clinic' ? client.id : undefined)
 
   const { data: clientOrders = [] } = useQuery({
     queryKey: ['cleaning_orders', 'by_client', client.id],
@@ -183,7 +185,7 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
     enabled: PRODUCT === 'cleaning',
   })
 
-  const [tab, setTab] = useState<'stats' | 'loyalty' | 'medcard' | 'dental' | 'lab' | 'dispensing'>('stats')
+  const [tab, setTab] = useState<'stats' | 'loyalty' | 'medcard' | 'dental' | 'lab' | 'dispensing' | 'hosp'>('stats')
   const [manualAmount, setManualAmount] = useState('')
   const [manualNote, setManualNote] = useState('')
   const [manualMode, setManualMode] = useState<'earn' | 'redeem' | null>(null)
@@ -297,6 +299,14 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'dispensing' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             >
               {t('clinic.pharmacy.dispensingHistory')}
+            </button>
+          )}
+          {PRODUCT === 'clinic' && (
+            <button
+              onClick={() => setTab('hosp')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'hosp' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {t('clinic.hosp.hospHistory')}
             </button>
           )}
         </div>
@@ -552,6 +562,30 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
                       <p className="text-[10px] text-muted-foreground">{dayjs(d.dispensed_at).format('DD.MM.YY HH:mm')}</p>
                     </div>
                     <span className="text-xs font-bold shrink-0">{d.quantity} {d.price ? `(${formatCurrency(d.price, currency, i18n.language)})` : ''}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Tab: Hospitalization History (clinic only) ── */}
+        {PRODUCT === 'clinic' && tab === 'hosp' && (
+          <div className="space-y-2">
+            {hospHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">{t('clinic.hosp.noHosp')}</p>
+            ) : (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {hospHistory.map((h: any) => (
+                  <div key={h.id} className="rounded-lg border p-2.5 text-sm space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">{dayjs(h.admission_date).format('DD.MM.YY')} — {h.discharge_date ? dayjs(h.discharge_date).format('DD.MM.YY') : '...'}</span>
+                      <Badge variant={h.status === 'discharged' ? 'outline' : h.status === 'admitted' ? 'default' : 'secondary'} className="text-xs">
+                        {t(`clinic.hosp.${h.status === 'in_treatment' ? 'inTreatment' : h.status === 'pre_discharge' ? 'preDischarge' : h.status}`)}
+                      </Badge>
+                    </div>
+                    <p className="text-xs">{(h.ward as any)?.name} / {(h.room as any)?.name} / {(h.bed as any)?.number}</p>
+                    {h.diagnosis && <p className="text-xs text-muted-foreground">{h.diagnosis}</p>}
                   </div>
                 ))}
               </div>
