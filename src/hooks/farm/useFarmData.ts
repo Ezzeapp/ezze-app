@@ -712,13 +712,69 @@ export function useFarmDashboardStats(farmId: string | null | undefined) {
   })
 }
 
+// ── Ветеринарный календарь ───────────────────────────────────────
+export function useVetTasks(farmId: string | null | undefined) {
+  return useQuery({
+    queryKey: [KEY, 'vet-tasks', farmId],
+    queryFn: async () => {
+      if (!farmId) return { tasks: [] as any[] }
+      const { VET_PROTOCOLS } = await import('@/lib/farm/vetProtocols')
+      const [animalsRes, eventsRes] = await Promise.all([
+        supabase.from('animals').select('id, tag, name, species, birth_date, status').eq('farm_id', farmId),
+        supabase.from('animal_events').select('animal_id, event_type, event_date, data').eq('farm_id', farmId).in('event_type', ['vaccination', 'treatment', 'exam']),
+      ])
+      const animals = (animalsRes.data ?? [])
+        .filter(a => a.birth_date && a.status !== 'sold' && a.status !== 'slaughtered' && a.status !== 'dead')
+      const events = eventsRes.data ?? []
+
+      const now = new Date()
+      const today = now.toISOString().slice(0, 10)
+      const tasks: any[] = []
+
+      for (const a of animals) {
+        const protocol = VET_PROTOCOLS[a.species as keyof typeof VET_PROTOCOLS] ?? []
+        const birth = new Date(a.birth_date!)
+        for (const item of protocol) {
+          const firstDue = new Date(birth.getTime() + item.day * 24 * 3600 * 1000)
+          // Последнее выполнение именно этой процедуры
+          const done = events
+            .filter(e => e.animal_id === a.id && e.event_type === item.type
+              && ((e.data as any)?.protocol_name === item.name || (e.data as any)?.name === item.name))
+            .sort((x, y) => (x.event_date < y.event_date ? 1 : -1))[0]
+          let due = firstDue
+          if (done) {
+            const lastDate = new Date(done.event_date)
+            if (item.repeat_days) {
+              due = new Date(lastDate.getTime() + item.repeat_days * 24 * 3600 * 1000)
+            } else {
+              continue // одноразовое, уже выполнено
+            }
+          }
+          const dueStr = due.toISOString().slice(0, 10)
+          const overdueDays = Math.floor((now.getTime() - due.getTime()) / (24 * 3600 * 1000))
+          tasks.push({
+            animal_id: a.id, animal_tag: a.tag, animal_name: a.name,
+            species: a.species, protocol: item,
+            due_date: dueStr, overdue_days: overdueDays,
+            last_done_date: done?.event_date ?? null,
+          })
+        }
+      }
+      tasks.sort((x, y) => y.overdue_days - x.overdue_days)
+      return { tasks, today }
+    },
+    enabled: !!farmId,
+    staleTime: 60_000,
+  })
+}
+
 // ── Cost breakdown по животным ───────────────────────────────────
 export function useAnimalCosts(farmId: string | null | undefined) {
   return useQuery({
     queryKey: [KEY, 'animal-costs', farmId],
     queryFn: async (): Promise<AnimalCostBreakdown[]> => {
       if (!farmId) return []
-      const [animalsRes, eventsRes, feedRes, feedStockRes, expRes, salesRes, prodRes, maintRes] = await Promise.all([
+      const [animalsRes, eventsRes, feedRes, feedStockRes, expRes, salesRes, prodRes, maintRes, eqRes] = await Promise.all([
         supabase.from('animals').select('id, tag, name, acquisition_cost, group_id').eq('farm_id', farmId),
         supabase.from('animal_events').select('animal_id, event_type, cost').eq('farm_id', farmId),
         supabase.from('feed_consumption').select('animal_id, group_id, feed_id, quantity').eq('farm_id', farmId),
@@ -727,6 +783,7 @@ export function useAnimalCosts(farmId: string | null | undefined) {
         supabase.from('farm_sale_items').select('animal_id, group_id, production_id, amount').eq('farm_id', farmId),
         supabase.from('production').select('id, animal_id, group_id').eq('farm_id', farmId),
         supabase.from('equipment_maintenance').select('cost').eq('farm_id', farmId),
+        supabase.from('farm_equipment').select('purchase_cost, useful_life_months, status').eq('farm_id', farmId),
       ])
       const animals = animalsRes.data ?? []
       const events = eventsRes.data ?? []
@@ -736,6 +793,10 @@ export function useAnimalCosts(farmId: string | null | undefined) {
       const saleItems = salesRes.data ?? []
       const prodRecords = prodRes.data ?? []
       const maintenanceTotal = (maintRes.data ?? []).reduce((s, m) => s + Number(m.cost ?? 0), 0)
+      // Амортизация: месячная доля активной техники × 12 мес (годовая в overhead)
+      const depreciationYearly = (eqRes.data ?? [])
+        .filter(e => e.status === 'active' && e.purchase_cost && e.useful_life_months && e.useful_life_months > 0)
+        .reduce((s, e) => s + (Number(e.purchase_cost) / Number(e.useful_life_months)) * 12, 0)
       const feedCost = new Map<string, number>(feedS.map(f => [f.id, Number(f.cost_per_unit)]))
 
       // Группировка животных по group_id для аллокации группового расхода
@@ -780,8 +841,8 @@ export function useAnimalCosts(farmId: string | null | undefined) {
         else if (e.group_id) directGroupExp.set(e.group_id, (directGroupExp.get(e.group_id) ?? 0) + Number(e.amount))
         else overheadPool += Number(e.amount)
       })
-      // ТО техники → в общий overhead (нераспределяемый)
-      overheadPool += maintenanceTotal
+      // ТО техники + годовая амортизация → в общий overhead (нераспределяемый)
+      overheadPool += maintenanceTotal + depreciationYearly
       const overheadPerHead = animals.length > 0 ? overheadPool / animals.length : 0
 
       // Доход на животное: прямые продажи + продажи продукции, привязанной к животному/группе

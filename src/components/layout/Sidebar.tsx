@@ -5,7 +5,7 @@ import {
   LayoutDashboard, User, Users, Package, CalendarDays,
   Settings, Zap, X, ShieldCheck, UsersRound, Megaphone, CreditCard, LifeBuoy,
   ClipboardList, BarChart3, Beef, Wheat, Milk, Wallet, ShoppingCart,
-  FlaskConical, Pill, Tractor, TreePine, Egg,
+  FlaskConical, Pill, Tractor, TreePine, Egg, Syringe, Sparkles, QrCode,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -117,6 +117,9 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
             <SidebarNavItem icon={Tractor}   iconColor="dark:text-slate-400"   label={t('farm.nav.equipment')}  to="/farm/equipment"  onClick={onClose} />
             <SidebarNavItem icon={TreePine}  iconColor="dark:text-lime-400"    label={t('farm.nav.pastures')}   to="/farm/pastures"   onClick={onClose} />
             <SidebarNavItem icon={Egg}       iconColor="dark:text-amber-400"   label={t('farm.nav.incubator')}  to="/farm/incubator"  onClick={onClose} />
+            <SidebarNavItem icon={Syringe}   iconColor="dark:text-fuchsia-400" label={t('farm.nav.vet')}        to="/farm/vet"        onClick={onClose} />
+            <SidebarNavItem icon={QrCode}    iconColor="dark:text-slate-300"   label={t('farm.nav.qr')}         to="/farm/qr"         onClick={onClose} />
+            <SidebarNavItem icon={Sparkles}  iconColor="dark:text-purple-400"  label={t('farm.nav.advisor')}    to="/farm/advisor"    onClick={onClose} />
           </>
         ) : (
           <>

@@ -11,6 +11,7 @@ import { useAnimal, useAnimalEvents, useDeleteAnimal, useAnimalCosts, useCurrent
 import { SpeciesIcon } from '@/components/farm/SpeciesIcon'
 import { AnimalDialog } from '@/components/farm/AnimalDialog'
 import { AnimalEventDialog } from '@/components/farm/SimpleDialogs'
+import { OffspringTree } from '@/components/farm/OffspringTree'
 import { formatCurrency } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import dayjs from 'dayjs'
@@ -69,6 +70,7 @@ export function AnimalDetailPage() {
         <TabsList>
           <TabsTrigger value="events">{t('farm.animals.tabs.events')}</TabsTrigger>
           <TabsTrigger value="costs">{t('farm.animals.tabs.costs')}</TabsTrigger>
+          <TabsTrigger value="offspring">{t('farm.animals.tabs.offspring')}</TabsTrigger>
           <TabsTrigger value="info">{t('farm.animals.tabs.info')}</TabsTrigger>
         </TabsList>
 
@@ -114,6 +116,15 @@ export function AnimalDetailPage() {
                   </div>
                 </>
               ) : <p className="text-sm text-muted-foreground">{t('farm.common.noData')}</p>}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="offspring">
+          <Card>
+            <CardHeader><CardTitle className="text-base">{t('farm.animals.tabs.offspring')}</CardTitle></CardHeader>
+            <CardContent>
+              <OffspringTree animalId={animal.id} sex={animal.sex} />
             </CardContent>
           </Card>
         </TabsContent>
