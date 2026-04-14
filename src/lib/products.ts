@@ -12,7 +12,7 @@ export interface ProductInfo {
 }
 
 export const PRODUCT_LIST: ProductInfo[] = [
-  { key: 'beauty',    emoji: '💄', name: 'Красота',        desc: 'Салоны, парикмахеры, косметологи',   url: 'https://pro.ezze.site' },
+  { key: 'beauty',    emoji: '💄', name: 'Красота',        desc: 'Салоны, парикмахеры, косметологи',   url: 'https://beauty.ezze.site' },
   { key: 'clinic',    emoji: '🏥', name: 'Медицина',       desc: 'Клиники, врачи, стоматология',        url: 'https://clinic.ezze.site' },
   { key: 'workshop',  emoji: '🔧', name: 'Мастерская',     desc: 'Ремонт, сервис, умельцы',             url: 'https://workshop.ezze.site' },
   { key: 'edu',       emoji: '📚', name: 'Образование',    desc: 'Репетиторы, курсы, тренинги',         url: 'https://edu.ezze.site' },

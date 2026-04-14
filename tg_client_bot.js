@@ -30,7 +30,7 @@ const masterBot = createBotHelpers(MASTER_BOT_TOKEN);
 // ── Маппинг продукт → URL (единый бот для всех продуктов) ────────────────────
 
 const PRODUCT_MAP = {
-  beauty:    "https://pro.ezze.site",
+  beauty:    "https://beauty.ezze.site",
   clinic:    "https://clinic.ezze.site",
   workshop:  "https://workshop.ezze.site",
   edu:       "https://edu.ezze.site",

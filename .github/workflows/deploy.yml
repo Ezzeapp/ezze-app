@@ -17,8 +17,8 @@ jobs:
       matrix:
         include:
           - product: beauty
-            app_url: https://pro.ezze.site
-            web_path: /var/www/ezze-app/
+            app_url: https://beauty.ezze.site
+            web_path: /var/www/ezze-beauty/
           - product: clinic
             app_url: https://clinic.ezze.site
             web_path: /var/www/ezze-clinic/
