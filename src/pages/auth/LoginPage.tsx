@@ -226,7 +226,6 @@ export function LoginPage() {
         <Card className="shadow-lg">
           <CardHeader className="text-center">
             <CardTitle>{t('auth.welcomeBack')}</CardTitle>
-            <CardDescription>{t('auth.loginSubtitle')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
 
