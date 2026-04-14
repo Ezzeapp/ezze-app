@@ -739,7 +739,9 @@
     "expandCalendar": "Show full month",
     "collapseCalendar": "Collapse",
     "limitReached": "Online booking is temporarily unavailable: the master has reached this month's limit.",
-    "bookingError": "Failed to create booking. Please try again."
+    "bookingError": "Failed to create booking. Please try again.",
+    "reasonForVisit": "Reason for Visit",
+    "reasonPlaceholder": "Describe your reason..."
   },
   "onboarding": {
     "title": "Welcome to Ezze!",
@@ -1491,7 +1493,8 @@
       "noTemplatesDesc": "Create a template for quick visit filling",
       "wardsConfig": "Wards",
       "orConfig": "Operating Rooms",
-      "dietConfig": "Diet Tables"
+      "dietConfig": "Diet Tables",
+      "examRooms": "Exam Rooms"
     },
     "stats": {
       "patientsToday": "Patients Today",
@@ -1612,6 +1615,10 @@
       "occupancy": "Occupancy",
       "noWards": "No wards",
       "noWardsDesc": "Create wards in settings",
+      "examRoom": "Exam Room",
+      "addExamRoom": "Add Exam Room",
+      "noExamRooms": "No exam rooms",
+      "noExamRoomsDesc": "Add rooms in settings",
       "types": {
         "therapeutic": "Therapeutic",
         "surgical": "Surgical",
@@ -1729,36 +1736,451 @@
       "dietAssigned": "Diet assigned",
       "mealSaved": "Meal saved",
       "savedDiet": "Diet saved"
+    },
+    "print": {
+      "visitRecord": "Print Visit",
+      "prescription": "Print Prescription",
+      "labResults": "Print Lab Results",
+      "dischargeSummary": "Print Discharge"
     }
   },
   "farm": {
-    "nav": { "dashboard": "Overview", "animals": "Animals", "groups": "Groups", "fields": "Fields", "feed": "Feed", "production": "Production", "sales": "Sales", "expenses": "Expenses", "equipment": "Equipment", "pastures": "Pastures", "incubator": "Incubator", "vet": "Veterinary", "reproduction": "Reproduction", "qr": "QR Tags", "advisor": "AI Advisor", "reports": "Reports" },
-    "bulk": { "title": "Batch", "subtitle": "Add multiple animals at once with sequential tags", "count": "Head count", "prefix": "Tag prefix", "startFrom": "Start from", "padding": "Digits", "tagsFormat": "Tag format", "preview": "Preview", "totalCost": "Total cost", "perHead": "Per head", "create": "Create {{count}} heads" },
-    "reproduction": { "title": "Reproduction", "subtitle": "Matings, pregnancies, birth forecast", "pregnant": "Pregnant", "dueSoon": "Due Soon", "overdue": "Overdue", "empty": "Not mated", "recordMating": "Mating", "recordBirth": "Birth", "matingRecorded": "Mating recorded", "birthRecorded": "Birth recorded", "daysPregnant": "{{days}} days pregnant", "birthIn": "birth in {{days}} days ({{date}})", "overdueBy": "overdue by {{days}} days", "status": { "empty": "Not mated", "mated": "Mated", "pregnant": "Pregnant", "due_soon": "Due soon", "overdue": "Overdue", "immature": "Immature", "unsupported": "—" } },
-    "photo": { "upload": "Upload photo", "change": "Change" },
-    "vet": { "title": "Veterinary Calendar", "subtitle": "Recommended schedule by age and species", "overdue": "Overdue", "soon": "Within 7 days", "upcoming": "Upcoming", "allDone": "All clear, nothing needs attention", "overdueBy": "overdue by {{days}} days", "dueToday": "today", "dueIn": "in {{days}} days", "markDone": "Mark done" },
-    "advisor": { "title": "AI Advisor", "subtitle": "Analyzes data and gives recommendations", "allGood": "All good", "allGoodDetail": "No recommendations based on current data. Keep it up!", "disclaimer": "Recommendations are generated automatically from your data. Not a substitute for veterinary or zootechnical consultation." },
-    "qr": { "title": "QR Tags", "subtitle": "Print sheets and scan via camera", "print": "Print", "scan": "Scan", "scanning": "Scanning…", "selectAll": "Select all", "deselectAll": "Deselect", "small": "Small", "medium": "Medium", "large": "Large", "noSupport": "Scanner not supported by browser", "noSupportDetail": "Open in Chrome on Android or use manual input below.", "cameraError": "Camera access error", "manual": "Manual input", "enterTag": "Enter tag or URL" },
-    "offspring": { "empty": "No offspring registered" },
-    "pastures": { "title": "Pastures", "add": "Add Pasture", "empty": "No pastures yet", "overloaded": "Overloaded", "heads": "heads", "fields": { "name": "Name", "areaHa": "Area (ha)", "capacityHeads": "Capacity (heads)", "currentGroup": "Current Group", "notes": "Notes" } },
-    "incubator": { "title": "Incubator", "add": "New Batch", "empty": "No batches yet", "active": "In Progress", "completed": "Completed", "ready": "Ready to Hatch", "totalLoaded": "Total Loaded", "totalHatched": "Hatched", "avgRate": "Avg Hatch Rate", "fields": { "eggsLoaded": "Eggs Loaded", "startDate": "Start Date", "expectedHatchDate": "Expected Hatch", "actualHatchDate": "Actual Hatch", "eggsHatched": "Eggs Hatched" } },
-    "dashboard": { "title": "Farm Overview", "totalAnimals": "Total Animals", "totalFields": "Fields Area", "feedStockValue": "Feed Stock Value", "production30d": "Production 30d", "expenses30d": "Expenses 30d", "revenue30d": "Revenue 30d", "netMargin30d": "Net Margin 30d", "topMargin": "Top by Margin", "revenueVsExpense": "Revenue / Expense (30d)", "expenseBreakdown": "Expense Breakdown", "fcrTitle": "Feed Conversion Ratio (FCR)", "fcrSubtitle": "kg feed per 1 kg gain over 60 days. Lower is better." },
-    "sales": { "title": "Sales", "add": "New Sale", "edit": "Edit Sale", "empty": "No sales yet", "items": "Items", "addItem": "Add Item", "noItems": "No items added", "itemType": "Type", "itemRef": "Reference", "itemDesc": "Description", "qty": "Qty", "price": "Price", "total": "Total", "totalRevenue": "Total Revenue", "paid": "Paid", "debt": "Debt", "fields": { "date": "Date", "channel": "Channel", "buyerName": "Buyer", "buyerContact": "Contact", "paidAmount": "Paid Amount", "notes": "Notes" }, "channel": { "retail": "Retail", "wholesale": "Wholesale", "market": "Market", "direct": "Direct", "other": "Other" }, "type": { "animal": "Animal", "production": "Production", "crop": "Crop", "other": "Other" }, "payment": { "unpaid": "Unpaid", "partial": "Partial", "paid": "Paid" } },
-    "onboarding": { "subtitle": "Create a farm to start tracking", "name": "Farm Name", "namePlaceholder": "Sunrise Farm", "location": "Location", "area": "Total Area (ha)", "create": "Create Farm" },
-    "species": { "cattle": "Cattle", "poultry": "Poultry", "sheep": "Sheep", "goat": "Goats", "pig": "Pigs", "rabbit": "Rabbits", "bee": "Bees", "fish": "Fish", "horse": "Horses", "other": "Other" },
-    "sex": { "male": "Male", "female": "Female", "unknown": "Unknown" },
-    "status": { "growing": "Growing", "dairy": "Dairy", "meat": "Fattening", "breeding": "Breeding", "sold": "Sold", "slaughtered": "Slaughtered", "dead": "Dead" },
-    "purpose": { "dairy": "Dairy", "meat": "Meat", "eggs": "Eggs", "wool": "Wool", "breeding": "Breeding", "mixed": "Mixed" },
-    "eventType": { "weighing": "Weighing", "vaccination": "Vaccination", "treatment": "Treatment", "exam": "Exam", "mating": "Mating", "pregnancy": "Pregnancy", "birth": "Birth", "transfer": "Transfer", "note": "Note" },
-    "animals": { "title": "Animals", "add": "Add Animal", "edit": "Edit", "delete": "Delete", "search": "Search by tag or name", "filterBySpecies": "Species", "filterByGroup": "Group", "filterByStatus": "Status", "empty": "No animals yet", "species": "Species", "sex": "Sex", "status": "Status", "purpose": "Purpose", "addEvent": "Add Event", "noEvents": "No events", "tabs": { "info": "Info", "events": "Events", "costs": "Costs", "offspring": "Offspring" }, "fields": { "tag": "Tag", "name": "Name", "breed": "Breed", "birthDate": "Birth Date", "acquisitionDate": "Acquisition Date", "acquisitionCost": "Acquisition Cost", "currentWeight": "Current Weight (kg)", "notes": "Notes" } },
-    "groups": { "title": "Groups", "empty": "No groups", "fields": { "name": "Name", "location": "Location", "notes": "Notes" } },
-    "fields": { "title": "Fields", "add": "Add Field", "empty": "No fields", "fields": { "name": "Name", "areaHa": "Area (ha)", "soilType": "Soil Type", "status": "Status", "currentCrop": "Current Crop" }, "status": { "idle": "Idle", "sown": "Sown", "growing": "Growing", "harvested": "Harvested" } },
-    "feed": { "title": "Feed", "addStock": "Add Feed", "addConsumption": "Record Usage", "lowStock": "Low Stock", "empty": "No feed in stock", "fields": { "name": "Name", "unit": "Unit", "quantity": "Quantity", "costPerUnit": "Cost per Unit", "source": "Source", "lowStockThreshold": "Low Stock Threshold" }, "unit": { "kg": "kg", "t": "t", "l": "l", "bale": "bale" }, "source": { "own": "Own harvest", "purchased": "Purchased" } },
-    "production": { "title": "Production", "add": "Add Record", "empty": "No records", "fields": { "type": "Type", "date": "Date", "quantity": "Quantity", "quality": "Quality" }, "type": { "milk": "Milk", "eggs": "Eggs", "meat": "Meat", "wool": "Wool", "honey": "Honey", "offspring": "Offspring" } },
-    "expenses": { "title": "Expenses", "add": "Add Expense", "empty": "No expenses", "fields": { "category": "Category", "amount": "Amount", "date": "Date", "description": "Description" }, "category": { "feed": "Feed", "veterinary": "Veterinary", "salary": "Salary", "utilities": "Utilities", "fuel": "Fuel", "rent": "Rent", "repair": "Repair", "equipment": "Equipment", "seeds": "Seeds", "fertilizer": "Fertilizer", "transport": "Transport", "other": "Other" } },
-    "equipment": { "title": "Equipment", "add": "Add", "empty": "No equipment", "fields": { "name": "Name", "category": "Category", "purchaseDate": "Purchase Date", "purchaseCost": "Cost", "usefulLifeMonths": "Useful Life (mo)", "status": "Status" }, "status": { "active": "Active", "repair": "In Repair", "decommissioned": "Decommissioned" }, "maintenance": { "title": "Maintenance", "add": "Add", "type": { "service": "Service", "repair": "Repair", "fuel": "Fuel", "insurance": "Insurance" } } },
-    "reports": { "title": "Reports", "costBreakdown": "Animal Cost Breakdown", "columns": { "animal": "Animal", "acquisitionCost": "Purchase", "feedCost": "Feed", "vetCost": "Vet", "overhead": "Overhead", "totalCost": "Total", "revenue": "Revenue", "margin": "Margin" } },
-    "common": { "save": "Save", "cancel": "Cancel", "delete": "Delete", "confirmDelete": "Delete this record?", "loading": "Loading…", "error": "Error", "retry": "Retry", "noData": "No data", "all": "All", "add": "Add", "edit": "Edit", "back": "Back", "from": "From", "to": "To", "kg": "kg", "liters": "l", "pieces": "pcs", "ha": "ha", "months": "mo", "years": "yr", "days": "days" }
+    "nav": {
+      "dashboard": "Overview",
+      "animals": "Animals",
+      "groups": "Groups",
+      "fields": "Fields",
+      "feed": "Feed",
+      "production": "Production",
+      "sales": "Sales",
+      "expenses": "Expenses",
+      "equipment": "Equipment",
+      "pastures": "Pastures",
+      "incubator": "Incubator",
+      "vet": "Veterinary",
+      "reproduction": "Reproduction",
+      "qr": "QR Tags",
+      "advisor": "AI Advisor",
+      "reports": "Reports"
+    },
+    "bulk": {
+      "title": "Batch",
+      "subtitle": "Add multiple animals at once with sequential tags",
+      "count": "Head count",
+      "prefix": "Tag prefix",
+      "startFrom": "Start from",
+      "padding": "Digits",
+      "tagsFormat": "Tag format",
+      "preview": "Preview",
+      "totalCost": "Total cost",
+      "perHead": "Per head",
+      "create": "Create {{count}} heads"
+    },
+    "reproduction": {
+      "title": "Reproduction",
+      "subtitle": "Matings, pregnancies, birth forecast",
+      "pregnant": "Pregnant",
+      "dueSoon": "Due Soon",
+      "overdue": "Overdue",
+      "empty": "Not mated",
+      "recordMating": "Mating",
+      "recordBirth": "Birth",
+      "matingRecorded": "Mating recorded",
+      "birthRecorded": "Birth recorded",
+      "daysPregnant": "{{days}} days pregnant",
+      "birthIn": "birth in {{days}} days ({{date}})",
+      "overdueBy": "overdue by {{days}} days",
+      "status": {
+        "empty": "Not mated",
+        "mated": "Mated",
+        "pregnant": "Pregnant",
+        "due_soon": "Due soon",
+        "overdue": "Overdue",
+        "immature": "Immature",
+        "unsupported": "—"
+      }
+    },
+    "photo": {
+      "upload": "Upload photo",
+      "change": "Change"
+    },
+    "vet": {
+      "title": "Veterinary Calendar",
+      "subtitle": "Recommended schedule by age and species",
+      "overdue": "Overdue",
+      "soon": "Within 7 days",
+      "upcoming": "Upcoming",
+      "allDone": "All clear, nothing needs attention",
+      "overdueBy": "overdue by {{days}} days",
+      "dueToday": "today",
+      "dueIn": "in {{days}} days",
+      "markDone": "Mark done"
+    },
+    "advisor": {
+      "title": "AI Advisor",
+      "subtitle": "Analyzes data and gives recommendations",
+      "allGood": "All good",
+      "allGoodDetail": "No recommendations based on current data. Keep it up!",
+      "disclaimer": "Recommendations are generated automatically from your data. Not a substitute for veterinary or zootechnical consultation."
+    },
+    "qr": {
+      "title": "QR Tags",
+      "subtitle": "Print sheets and scan via camera",
+      "print": "Print",
+      "scan": "Scan",
+      "scanning": "Scanning…",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "noSupport": "Scanner not supported by browser",
+      "noSupportDetail": "Open in Chrome on Android or use manual input below.",
+      "cameraError": "Camera access error",
+      "manual": "Manual input",
+      "enterTag": "Enter tag or URL"
+    },
+    "offspring": {
+      "empty": "No offspring registered"
+    },
+    "pastures": {
+      "title": "Pastures",
+      "add": "Add Pasture",
+      "empty": "No pastures yet",
+      "overloaded": "Overloaded",
+      "heads": "heads",
+      "fields": {
+        "name": "Name",
+        "areaHa": "Area (ha)",
+        "capacityHeads": "Capacity (heads)",
+        "currentGroup": "Current Group",
+        "notes": "Notes"
+      }
+    },
+    "incubator": {
+      "title": "Incubator",
+      "add": "New Batch",
+      "empty": "No batches yet",
+      "active": "In Progress",
+      "completed": "Completed",
+      "ready": "Ready to Hatch",
+      "totalLoaded": "Total Loaded",
+      "totalHatched": "Hatched",
+      "avgRate": "Avg Hatch Rate",
+      "fields": {
+        "eggsLoaded": "Eggs Loaded",
+        "startDate": "Start Date",
+        "expectedHatchDate": "Expected Hatch",
+        "actualHatchDate": "Actual Hatch",
+        "eggsHatched": "Eggs Hatched"
+      }
+    },
+    "dashboard": {
+      "title": "Farm Overview",
+      "totalAnimals": "Total Animals",
+      "totalFields": "Fields Area",
+      "feedStockValue": "Feed Stock Value",
+      "production30d": "Production 30d",
+      "expenses30d": "Expenses 30d",
+      "revenue30d": "Revenue 30d",
+      "netMargin30d": "Net Margin 30d",
+      "topMargin": "Top by Margin",
+      "revenueVsExpense": "Revenue / Expense (30d)",
+      "expenseBreakdown": "Expense Breakdown",
+      "fcrTitle": "Feed Conversion Ratio (FCR)",
+      "fcrSubtitle": "kg feed per 1 kg gain over 60 days. Lower is better."
+    },
+    "sales": {
+      "title": "Sales",
+      "add": "New Sale",
+      "edit": "Edit Sale",
+      "empty": "No sales yet",
+      "items": "Items",
+      "addItem": "Add Item",
+      "noItems": "No items added",
+      "itemType": "Type",
+      "itemRef": "Reference",
+      "itemDesc": "Description",
+      "qty": "Qty",
+      "price": "Price",
+      "total": "Total",
+      "totalRevenue": "Total Revenue",
+      "paid": "Paid",
+      "debt": "Debt",
+      "fields": {
+        "date": "Date",
+        "channel": "Channel",
+        "buyerName": "Buyer",
+        "buyerContact": "Contact",
+        "paidAmount": "Paid Amount",
+        "notes": "Notes"
+      },
+      "channel": {
+        "retail": "Retail",
+        "wholesale": "Wholesale",
+        "market": "Market",
+        "direct": "Direct",
+        "other": "Other"
+      },
+      "type": {
+        "animal": "Animal",
+        "production": "Production",
+        "crop": "Crop",
+        "other": "Other"
+      },
+      "payment": {
+        "unpaid": "Unpaid",
+        "partial": "Partial",
+        "paid": "Paid"
+      }
+    },
+    "onboarding": {
+      "subtitle": "Create a farm to start tracking",
+      "name": "Farm Name",
+      "namePlaceholder": "Sunrise Farm",
+      "location": "Location",
+      "area": "Total Area (ha)",
+      "create": "Create Farm"
+    },
+    "species": {
+      "cattle": "Cattle",
+      "poultry": "Poultry",
+      "sheep": "Sheep",
+      "goat": "Goats",
+      "pig": "Pigs",
+      "rabbit": "Rabbits",
+      "bee": "Bees",
+      "fish": "Fish",
+      "horse": "Horses",
+      "other": "Other"
+    },
+    "sex": {
+      "male": "Male",
+      "female": "Female",
+      "unknown": "Unknown"
+    },
+    "status": {
+      "growing": "Growing",
+      "dairy": "Dairy",
+      "meat": "Fattening",
+      "breeding": "Breeding",
+      "sold": "Sold",
+      "slaughtered": "Slaughtered",
+      "dead": "Dead"
+    },
+    "purpose": {
+      "dairy": "Dairy",
+      "meat": "Meat",
+      "eggs": "Eggs",
+      "wool": "Wool",
+      "breeding": "Breeding",
+      "mixed": "Mixed"
+    },
+    "eventType": {
+      "weighing": "Weighing",
+      "vaccination": "Vaccination",
+      "treatment": "Treatment",
+      "exam": "Exam",
+      "mating": "Mating",
+      "pregnancy": "Pregnancy",
+      "birth": "Birth",
+      "transfer": "Transfer",
+      "note": "Note"
+    },
+    "animals": {
+      "title": "Animals",
+      "add": "Add Animal",
+      "edit": "Edit",
+      "delete": "Delete",
+      "search": "Search by tag or name",
+      "filterBySpecies": "Species",
+      "filterByGroup": "Group",
+      "filterByStatus": "Status",
+      "empty": "No animals yet",
+      "species": "Species",
+      "sex": "Sex",
+      "status": "Status",
+      "purpose": "Purpose",
+      "addEvent": "Add Event",
+      "noEvents": "No events",
+      "tabs": {
+        "info": "Info",
+        "events": "Events",
+        "costs": "Costs",
+        "offspring": "Offspring"
+      },
+      "fields": {
+        "tag": "Tag",
+        "name": "Name",
+        "breed": "Breed",
+        "birthDate": "Birth Date",
+        "acquisitionDate": "Acquisition Date",
+        "acquisitionCost": "Acquisition Cost",
+        "currentWeight": "Current Weight (kg)",
+        "notes": "Notes"
+      }
+    },
+    "groups": {
+      "title": "Groups",
+      "empty": "No groups",
+      "fields": {
+        "name": "Name",
+        "location": "Location",
+        "notes": "Notes"
+      }
+    },
+    "fields": {
+      "title": "Fields",
+      "add": "Add Field",
+      "empty": "No fields",
+      "fields": {
+        "name": "Name",
+        "areaHa": "Area (ha)",
+        "soilType": "Soil Type",
+        "status": "Status",
+        "currentCrop": "Current Crop"
+      },
+      "status": {
+        "idle": "Idle",
+        "sown": "Sown",
+        "growing": "Growing",
+        "harvested": "Harvested"
+      }
+    },
+    "feed": {
+      "title": "Feed",
+      "addStock": "Add Feed",
+      "addConsumption": "Record Usage",
+      "lowStock": "Low Stock",
+      "empty": "No feed in stock",
+      "fields": {
+        "name": "Name",
+        "unit": "Unit",
+        "quantity": "Quantity",
+        "costPerUnit": "Cost per Unit",
+        "source": "Source",
+        "lowStockThreshold": "Low Stock Threshold"
+      },
+      "unit": {
+        "kg": "kg",
+        "t": "t",
+        "l": "l",
+        "bale": "bale"
+      },
+      "source": {
+        "own": "Own harvest",
+        "purchased": "Purchased"
+      }
+    },
+    "production": {
+      "title": "Production",
+      "add": "Add Record",
+      "empty": "No records",
+      "fields": {
+        "type": "Type",
+        "date": "Date",
+        "quantity": "Quantity",
+        "quality": "Quality"
+      },
+      "type": {
+        "milk": "Milk",
+        "eggs": "Eggs",
+        "meat": "Meat",
+        "wool": "Wool",
+        "honey": "Honey",
+        "offspring": "Offspring"
+      }
+    },
+    "expenses": {
+      "title": "Expenses",
+      "add": "Add Expense",
+      "empty": "No expenses",
+      "fields": {
+        "category": "Category",
+        "amount": "Amount",
+        "date": "Date",
+        "description": "Description"
+      },
+      "category": {
+        "feed": "Feed",
+        "veterinary": "Veterinary",
+        "salary": "Salary",
+        "utilities": "Utilities",
+        "fuel": "Fuel",
+        "rent": "Rent",
+        "repair": "Repair",
+        "equipment": "Equipment",
+        "seeds": "Seeds",
+        "fertilizer": "Fertilizer",
+        "transport": "Transport",
+        "other": "Other"
+      }
+    },
+    "equipment": {
+      "title": "Equipment",
+      "add": "Add",
+      "empty": "No equipment",
+      "fields": {
+        "name": "Name",
+        "category": "Category",
+        "purchaseDate": "Purchase Date",
+        "purchaseCost": "Cost",
+        "usefulLifeMonths": "Useful Life (mo)",
+        "status": "Status"
+      },
+      "status": {
+        "active": "Active",
+        "repair": "In Repair",
+        "decommissioned": "Decommissioned"
+      },
+      "maintenance": {
+        "title": "Maintenance",
+        "add": "Add",
+        "type": {
+          "service": "Service",
+          "repair": "Repair",
+          "fuel": "Fuel",
+          "insurance": "Insurance"
+        }
+      }
+    },
+    "reports": {
+      "title": "Reports",
+      "costBreakdown": "Animal Cost Breakdown",
+      "columns": {
+        "animal": "Animal",
+        "acquisitionCost": "Purchase",
+        "feedCost": "Feed",
+        "vetCost": "Vet",
+        "overhead": "Overhead",
+        "totalCost": "Total",
+        "revenue": "Revenue",
+        "margin": "Margin"
+      }
+    },
+    "common": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "confirmDelete": "Delete this record?",
+      "loading": "Loading…",
+      "error": "Error",
+      "retry": "Retry",
+      "noData": "No data",
+      "all": "All",
+      "add": "Add",
+      "edit": "Edit",
+      "back": "Back",
+      "from": "From",
+      "to": "To",
+      "kg": "kg",
+      "liters": "l",
+      "pieces": "pcs",
+      "ha": "ha",
+      "months": "mo",
+      "years": "yr",
+      "days": "days"
+    }
   },
   "orders": {
     "newOrder": "New Order",

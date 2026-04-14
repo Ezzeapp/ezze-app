@@ -1575,6 +1575,14 @@ export function PublicBookingPage() {
                 <Input placeholder="+998 90 000 00 00" {...register('client_phone')} />
                 {errors.client_phone && <p className="text-xs text-destructive">{t('common.required')}</p>}
               </div>
+              <div className="space-y-2">
+                <Label>{PRODUCT === 'clinic' ? t('booking.reasonForVisit') : t('booking.comment')}</Label>
+                <textarea
+                  className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  placeholder={PRODUCT === 'clinic' ? t('booking.reasonPlaceholder') : t('booking.commentPlaceholder')}
+                  {...register('notes')}
+                />
+              </div>
             </form>
           </div>
         )}

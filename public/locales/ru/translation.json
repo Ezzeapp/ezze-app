@@ -1018,7 +1018,9 @@
     "expandCalendar": "Показать весь месяц",
     "collapseCalendar": "Свернуть",
     "limitReached": "Мастер временно не принимает онлайн-записи: достигнут лимит на этот месяц.",
-    "bookingError": "Не удалось создать запись. Попробуйте ещё раз."
+    "bookingError": "Не удалось создать запись. Попробуйте ещё раз.",
+    "reasonForVisit": "Причина обращения",
+    "reasonPlaceholder": "Опишите причину визита..."
   },
   "analytics": {
     "title": "Аналитика",
@@ -1491,7 +1493,8 @@
       "noTemplatesDesc": "Создайте шаблон для быстрого заполнения приёма",
       "wardsConfig": "Палаты",
       "orConfig": "Операционные",
-      "dietConfig": "Диетстолы"
+      "dietConfig": "Диетстолы",
+      "examRooms": "Кабинеты"
     },
     "stats": {
       "patientsToday": "Пациентов сегодня",
@@ -1612,6 +1615,10 @@
       "occupancy": "Заполненность",
       "noWards": "Нет отделений",
       "noWardsDesc": "Создайте отделения в настройках",
+      "examRoom": "Кабинет",
+      "addExamRoom": "Добавить кабинет",
+      "noExamRooms": "Нет кабинетов",
+      "noExamRoomsDesc": "Добавьте кабинеты в настройках",
       "types": {
         "therapeutic": "Терапевтическое",
         "surgical": "Хирургическое",
@@ -1729,36 +1736,451 @@
       "dietAssigned": "Диета назначена",
       "mealSaved": "Запись сохранена",
       "savedDiet": "Диета сохранена"
+    },
+    "print": {
+      "visitRecord": "Печать приёма",
+      "prescription": "Печать рецепта",
+      "labResults": "Печать анализов",
+      "dischargeSummary": "Печать эпикриза"
     }
   },
   "farm": {
-    "nav": { "dashboard": "Обзор", "animals": "Животные", "groups": "Группы", "fields": "Поля", "feed": "Корма", "production": "Продукция", "sales": "Продажи", "expenses": "Расходы", "equipment": "Техника", "pastures": "Пастбища", "incubator": "Инкубатор", "vet": "Ветеринария", "reproduction": "Воспроизводство", "qr": "QR-бирки", "advisor": "AI-советник", "reports": "Отчёты" },
-    "bulk": { "title": "Партия", "subtitle": "Добавить сразу несколько животных с последовательными бирками", "count": "Кол-во голов", "prefix": "Префикс бирки", "startFrom": "С номера", "padding": "Разрядов", "tagsFormat": "Формат бирок", "preview": "Пример", "totalCost": "Общая стоимость", "perHead": "Цена за голову", "create": "Создать {{count}} голов" },
-    "reproduction": { "title": "Воспроизводство", "subtitle": "Случки, беременности, прогноз родов", "pregnant": "Беременные", "dueSoon": "Скоро роды", "overdue": "Просрочка", "empty": "Без случки", "recordMating": "Случка", "recordBirth": "Роды", "matingRecorded": "Записана случка", "birthRecorded": "Записаны роды", "daysPregnant": "{{days}} дн беременности", "birthIn": "роды через {{days}} дн ({{date}})", "overdueBy": "роды просрочены на {{days}} дн", "status": { "empty": "Не покрыта", "mated": "Покрыта", "pregnant": "Беременна", "due_soon": "Скоро роды", "overdue": "Просрочка", "immature": "Молодняк", "unsupported": "—" } },
-    "photo": { "upload": "Загрузить фото", "change": "Изменить" },
-    "vet": { "title": "Ветеринарный календарь", "subtitle": "Рекомендуемый график по возрасту и виду", "overdue": "Просрочено", "soon": "В течение 7 дней", "upcoming": "Плановые", "allDone": "Всё по плану, ничего не требует внимания", "overdueBy": "просрочено на {{days}} дн", "dueToday": "сегодня", "dueIn": "через {{days}} дн", "markDone": "Отметить сделано" },
-    "advisor": { "title": "AI-советник", "subtitle": "Анализирует данные и даёт рекомендации", "allGood": "Всё в порядке", "allGoodDetail": "По текущим данным рекомендаций нет. Продолжайте в том же духе!", "disclaimer": "Рекомендации формируются автоматически на основе ваших данных. Это не замена консультации ветеринара или зоотехника." },
-    "qr": { "title": "QR-бирки", "subtitle": "Печать листов и сканирование через камеру", "print": "Печать", "scan": "Сканировать", "scanning": "Сканирование…", "selectAll": "Выбрать все", "deselectAll": "Снять выбор", "small": "Маленький", "medium": "Средний", "large": "Большой", "noSupport": "Сканер не поддерживается браузером", "noSupportDetail": "Откройте в Chrome на Android или используйте ручной ввод ниже.", "cameraError": "Ошибка доступа к камере", "manual": "Ручной ввод", "enterTag": "Введите бирку или URL" },
-    "offspring": { "empty": "Потомков не зарегистрировано" },
-    "pastures": { "title": "Пастбища", "add": "Добавить пастбище", "empty": "Пастбищ пока нет", "overloaded": "Перегрузка", "heads": "голов", "fields": { "name": "Название", "areaHa": "Площадь (га)", "capacityHeads": "Рек. нагрузка (голов)", "currentGroup": "Текущая группа", "notes": "Заметки" } },
-    "incubator": { "title": "Инкубатор", "add": "Новая партия", "empty": "Партий пока нет", "active": "В процессе", "completed": "Завершённые", "ready": "Готово к выводу", "totalLoaded": "Всего заложено", "totalHatched": "Вывелось", "avgRate": "Средний % вывода", "fields": { "eggsLoaded": "Яиц заложено", "startDate": "Дата закладки", "expectedHatchDate": "Ожидаемый вывод", "actualHatchDate": "Фактический вывод", "eggsHatched": "Яиц вывелось" } },
-    "dashboard": { "title": "Обзор фермы", "totalAnimals": "Всего животных", "totalFields": "Площадь полей", "feedStockValue": "Стоимость кормов", "production30d": "Продукция 30 дн", "expenses30d": "Расходы 30 дн", "revenue30d": "Доход 30 дн", "netMargin30d": "Чистая маржа 30 дн", "topMargin": "Топ по марже", "revenueVsExpense": "Доход / Расход (30 дн)", "expenseBreakdown": "Структура расходов", "fcrTitle": "Конверсия корма (FCR)", "fcrSubtitle": "кг корма на 1 кг привеса за 60 дней. Меньше — лучше." },
-    "sales": { "title": "Продажи", "add": "Новая продажа", "edit": "Редактировать продажу", "empty": "Продаж пока нет", "items": "Позиции", "addItem": "Добавить позицию", "noItems": "Позиции не добавлены", "itemType": "Тип", "itemRef": "Объект", "itemDesc": "Описание", "qty": "Кол-во", "price": "Цена", "total": "Итого", "totalRevenue": "Общая выручка", "paid": "Оплачено", "debt": "Задолженность", "fields": { "date": "Дата", "channel": "Канал", "buyerName": "Покупатель", "buyerContact": "Контакт", "paidAmount": "Оплачено", "notes": "Заметки" }, "channel": { "retail": "Розница", "wholesale": "Опт", "market": "Рынок", "direct": "Напрямую", "other": "Другое" }, "type": { "animal": "Животное", "production": "Продукция", "crop": "Урожай", "other": "Другое" }, "payment": { "unpaid": "Не оплачено", "partial": "Частично", "paid": "Оплачено" } },
-    "onboarding": { "subtitle": "Создайте ферму, чтобы начать учёт", "name": "Название фермы", "namePlaceholder": "Ферма «Рассвет»", "location": "Расположение", "area": "Общая площадь (га)", "create": "Создать ферму" },
-    "species": { "cattle": "КРС", "poultry": "Птица", "sheep": "Овцы", "goat": "Козы", "pig": "Свиньи", "rabbit": "Кролики", "bee": "Пчёлы", "fish": "Рыба", "horse": "Лошади", "other": "Другое" },
-    "sex": { "male": "Самец", "female": "Самка", "unknown": "Не указан" },
-    "status": { "growing": "Растёт", "dairy": "Дойное", "meat": "На откорме", "breeding": "Племенное", "sold": "Продано", "slaughtered": "Забито", "dead": "Пало" },
-    "purpose": { "dairy": "Молочное", "meat": "Мясное", "eggs": "Яичное", "wool": "Шерсть", "breeding": "Племенное", "mixed": "Смешанное" },
-    "eventType": { "weighing": "Взвешивание", "vaccination": "Вакцинация", "treatment": "Лечение", "exam": "Осмотр", "mating": "Случка", "pregnancy": "Беременность", "birth": "Роды", "transfer": "Перевод", "note": "Заметка" },
-    "animals": { "title": "Животные", "add": "Добавить", "edit": "Редактировать", "delete": "Удалить", "search": "Поиск по бирке или кличке", "filterBySpecies": "Вид", "filterByGroup": "Группа", "filterByStatus": "Статус", "empty": "Нет животных", "species": "Вид", "sex": "Пол", "status": "Статус", "purpose": "Назначение", "addEvent": "Добавить событие", "noEvents": "Событий нет", "tabs": { "info": "Инфо", "events": "События", "costs": "Себестоимость", "offspring": "Потомство" }, "fields": { "tag": "Бирка", "name": "Кличка", "breed": "Порода", "birthDate": "Дата рождения", "acquisitionDate": "Дата поступления", "acquisitionCost": "Цена покупки", "currentWeight": "Текущий вес (кг)", "notes": "Заметки" } },
-    "groups": { "title": "Группы", "empty": "Нет групп", "fields": { "name": "Название", "location": "Местоположение", "notes": "Заметки" } },
-    "fields": { "title": "Поля", "add": "Добавить поле", "empty": "Нет полей", "fields": { "name": "Название", "areaHa": "Площадь (га)", "soilType": "Тип почвы", "status": "Статус", "currentCrop": "Текущая культура" }, "status": { "idle": "Свободно", "sown": "Посеяно", "growing": "Растёт", "harvested": "Собрано" } },
-    "feed": { "title": "Корма", "addStock": "Приход корма", "addConsumption": "Списание", "lowStock": "Заканчивается", "empty": "Склад пуст", "fields": { "name": "Название", "unit": "Ед. измерения", "quantity": "Количество", "costPerUnit": "Цена за единицу", "source": "Источник", "lowStockThreshold": "Порог минимума" }, "unit": { "kg": "кг", "t": "т", "l": "л", "bale": "тюк" }, "source": { "own": "Свой урожай", "purchased": "Закуплено" } },
-    "production": { "title": "Продукция", "add": "Добавить запись", "empty": "Нет записей", "fields": { "type": "Тип", "date": "Дата", "quantity": "Количество", "quality": "Качество" }, "type": { "milk": "Молоко", "eggs": "Яйца", "meat": "Мясо", "wool": "Шерсть", "honey": "Мёд", "offspring": "Потомство" } },
-    "expenses": { "title": "Расходы", "add": "Добавить расход", "empty": "Нет расходов", "fields": { "category": "Категория", "amount": "Сумма", "date": "Дата", "description": "Описание" }, "category": { "feed": "Корма", "veterinary": "Ветеринария", "salary": "Зарплата", "utilities": "Коммуналка", "fuel": "ГСМ", "rent": "Аренда", "repair": "Ремонт", "equipment": "Техника", "seeds": "Семена", "fertilizer": "Удобрения", "transport": "Транспорт", "other": "Прочее" } },
-    "equipment": { "title": "Техника", "add": "Добавить", "empty": "Нет техники", "fields": { "name": "Название", "category": "Категория", "purchaseDate": "Дата покупки", "purchaseCost": "Стоимость", "usefulLifeMonths": "Срок службы (мес)", "status": "Статус" }, "status": { "active": "В работе", "repair": "На ремонте", "decommissioned": "Списано" }, "maintenance": { "title": "ТО и ремонт", "add": "Добавить", "type": { "service": "ТО", "repair": "Ремонт", "fuel": "Топливо", "insurance": "Страховка" } } },
-    "reports": { "title": "Отчёты", "costBreakdown": "Себестоимость животных", "columns": { "animal": "Животное", "acquisitionCost": "Покупка", "feedCost": "Корма", "vetCost": "Ветеринария", "overhead": "Накладные", "totalCost": "Итого", "revenue": "Доход", "margin": "Маржа" } },
-    "common": { "save": "Сохранить", "cancel": "Отмена", "delete": "Удалить", "confirmDelete": "Удалить запись?", "loading": "Загрузка…", "error": "Ошибка", "retry": "Повторить", "noData": "Нет данных", "all": "Все", "add": "Добавить", "edit": "Редактировать", "back": "Назад", "from": "Дата", "to": "По", "kg": "кг", "liters": "л", "pieces": "шт", "ha": "га", "months": "мес", "years": "лет", "days": "дн" }
+    "nav": {
+      "dashboard": "Обзор",
+      "animals": "Животные",
+      "groups": "Группы",
+      "fields": "Поля",
+      "feed": "Корма",
+      "production": "Продукция",
+      "sales": "Продажи",
+      "expenses": "Расходы",
+      "equipment": "Техника",
+      "pastures": "Пастбища",
+      "incubator": "Инкубатор",
+      "vet": "Ветеринария",
+      "reproduction": "Воспроизводство",
+      "qr": "QR-бирки",
+      "advisor": "AI-советник",
+      "reports": "Отчёты"
+    },
+    "bulk": {
+      "title": "Партия",
+      "subtitle": "Добавить сразу несколько животных с последовательными бирками",
+      "count": "Кол-во голов",
+      "prefix": "Префикс бирки",
+      "startFrom": "С номера",
+      "padding": "Разрядов",
+      "tagsFormat": "Формат бирок",
+      "preview": "Пример",
+      "totalCost": "Общая стоимость",
+      "perHead": "Цена за голову",
+      "create": "Создать {{count}} голов"
+    },
+    "reproduction": {
+      "title": "Воспроизводство",
+      "subtitle": "Случки, беременности, прогноз родов",
+      "pregnant": "Беременные",
+      "dueSoon": "Скоро роды",
+      "overdue": "Просрочка",
+      "empty": "Без случки",
+      "recordMating": "Случка",
+      "recordBirth": "Роды",
+      "matingRecorded": "Записана случка",
+      "birthRecorded": "Записаны роды",
+      "daysPregnant": "{{days}} дн беременности",
+      "birthIn": "роды через {{days}} дн ({{date}})",
+      "overdueBy": "роды просрочены на {{days}} дн",
+      "status": {
+        "empty": "Не покрыта",
+        "mated": "Покрыта",
+        "pregnant": "Беременна",
+        "due_soon": "Скоро роды",
+        "overdue": "Просрочка",
+        "immature": "Молодняк",
+        "unsupported": "—"
+      }
+    },
+    "photo": {
+      "upload": "Загрузить фото",
+      "change": "Изменить"
+    },
+    "vet": {
+      "title": "Ветеринарный календарь",
+      "subtitle": "Рекомендуемый график по возрасту и виду",
+      "overdue": "Просрочено",
+      "soon": "В течение 7 дней",
+      "upcoming": "Плановые",
+      "allDone": "Всё по плану, ничего не требует внимания",
+      "overdueBy": "просрочено на {{days}} дн",
+      "dueToday": "сегодня",
+      "dueIn": "через {{days}} дн",
+      "markDone": "Отметить сделано"
+    },
+    "advisor": {
+      "title": "AI-советник",
+      "subtitle": "Анализирует данные и даёт рекомендации",
+      "allGood": "Всё в порядке",
+      "allGoodDetail": "По текущим данным рекомендаций нет. Продолжайте в том же духе!",
+      "disclaimer": "Рекомендации формируются автоматически на основе ваших данных. Это не замена консультации ветеринара или зоотехника."
+    },
+    "qr": {
+      "title": "QR-бирки",
+      "subtitle": "Печать листов и сканирование через камеру",
+      "print": "Печать",
+      "scan": "Сканировать",
+      "scanning": "Сканирование…",
+      "selectAll": "Выбрать все",
+      "deselectAll": "Снять выбор",
+      "small": "Маленький",
+      "medium": "Средний",
+      "large": "Большой",
+      "noSupport": "Сканер не поддерживается браузером",
+      "noSupportDetail": "Откройте в Chrome на Android или используйте ручной ввод ниже.",
+      "cameraError": "Ошибка доступа к камере",
+      "manual": "Ручной ввод",
+      "enterTag": "Введите бирку или URL"
+    },
+    "offspring": {
+      "empty": "Потомков не зарегистрировано"
+    },
+    "pastures": {
+      "title": "Пастбища",
+      "add": "Добавить пастбище",
+      "empty": "Пастбищ пока нет",
+      "overloaded": "Перегрузка",
+      "heads": "голов",
+      "fields": {
+        "name": "Название",
+        "areaHa": "Площадь (га)",
+        "capacityHeads": "Рек. нагрузка (голов)",
+        "currentGroup": "Текущая группа",
+        "notes": "Заметки"
+      }
+    },
+    "incubator": {
+      "title": "Инкубатор",
+      "add": "Новая партия",
+      "empty": "Партий пока нет",
+      "active": "В процессе",
+      "completed": "Завершённые",
+      "ready": "Готово к выводу",
+      "totalLoaded": "Всего заложено",
+      "totalHatched": "Вывелось",
+      "avgRate": "Средний % вывода",
+      "fields": {
+        "eggsLoaded": "Яиц заложено",
+        "startDate": "Дата закладки",
+        "expectedHatchDate": "Ожидаемый вывод",
+        "actualHatchDate": "Фактический вывод",
+        "eggsHatched": "Яиц вывелось"
+      }
+    },
+    "dashboard": {
+      "title": "Обзор фермы",
+      "totalAnimals": "Всего животных",
+      "totalFields": "Площадь полей",
+      "feedStockValue": "Стоимость кормов",
+      "production30d": "Продукция 30 дн",
+      "expenses30d": "Расходы 30 дн",
+      "revenue30d": "Доход 30 дн",
+      "netMargin30d": "Чистая маржа 30 дн",
+      "topMargin": "Топ по марже",
+      "revenueVsExpense": "Доход / Расход (30 дн)",
+      "expenseBreakdown": "Структура расходов",
+      "fcrTitle": "Конверсия корма (FCR)",
+      "fcrSubtitle": "кг корма на 1 кг привеса за 60 дней. Меньше — лучше."
+    },
+    "sales": {
+      "title": "Продажи",
+      "add": "Новая продажа",
+      "edit": "Редактировать продажу",
+      "empty": "Продаж пока нет",
+      "items": "Позиции",
+      "addItem": "Добавить позицию",
+      "noItems": "Позиции не добавлены",
+      "itemType": "Тип",
+      "itemRef": "Объект",
+      "itemDesc": "Описание",
+      "qty": "Кол-во",
+      "price": "Цена",
+      "total": "Итого",
+      "totalRevenue": "Общая выручка",
+      "paid": "Оплачено",
+      "debt": "Задолженность",
+      "fields": {
+        "date": "Дата",
+        "channel": "Канал",
+        "buyerName": "Покупатель",
+        "buyerContact": "Контакт",
+        "paidAmount": "Оплачено",
+        "notes": "Заметки"
+      },
+      "channel": {
+        "retail": "Розница",
+        "wholesale": "Опт",
+        "market": "Рынок",
+        "direct": "Напрямую",
+        "other": "Другое"
+      },
+      "type": {
+        "animal": "Животное",
+        "production": "Продукция",
+        "crop": "Урожай",
+        "other": "Другое"
+      },
+      "payment": {
+        "unpaid": "Не оплачено",
+        "partial": "Частично",
+        "paid": "Оплачено"
+      }
+    },
+    "onboarding": {
+      "subtitle": "Создайте ферму, чтобы начать учёт",
+      "name": "Название фермы",
+      "namePlaceholder": "Ферма «Рассвет»",
+      "location": "Расположение",
+      "area": "Общая площадь (га)",
+      "create": "Создать ферму"
+    },
+    "species": {
+      "cattle": "КРС",
+      "poultry": "Птица",
+      "sheep": "Овцы",
+      "goat": "Козы",
+      "pig": "Свиньи",
+      "rabbit": "Кролики",
+      "bee": "Пчёлы",
+      "fish": "Рыба",
+      "horse": "Лошади",
+      "other": "Другое"
+    },
+    "sex": {
+      "male": "Самец",
+      "female": "Самка",
+      "unknown": "Не указан"
+    },
+    "status": {
+      "growing": "Растёт",
+      "dairy": "Дойное",
+      "meat": "На откорме",
+      "breeding": "Племенное",
+      "sold": "Продано",
+      "slaughtered": "Забито",
+      "dead": "Пало"
+    },
+    "purpose": {
+      "dairy": "Молочное",
+      "meat": "Мясное",
+      "eggs": "Яичное",
+      "wool": "Шерсть",
+      "breeding": "Племенное",
+      "mixed": "Смешанное"
+    },
+    "eventType": {
+      "weighing": "Взвешивание",
+      "vaccination": "Вакцинация",
+      "treatment": "Лечение",
+      "exam": "Осмотр",
+      "mating": "Случка",
+      "pregnancy": "Беременность",
+      "birth": "Роды",
+      "transfer": "Перевод",
+      "note": "Заметка"
+    },
+    "animals": {
+      "title": "Животные",
+      "add": "Добавить",
+      "edit": "Редактировать",
+      "delete": "Удалить",
+      "search": "Поиск по бирке или кличке",
+      "filterBySpecies": "Вид",
+      "filterByGroup": "Группа",
+      "filterByStatus": "Статус",
+      "empty": "Нет животных",
+      "species": "Вид",
+      "sex": "Пол",
+      "status": "Статус",
+      "purpose": "Назначение",
+      "addEvent": "Добавить событие",
+      "noEvents": "Событий нет",
+      "tabs": {
+        "info": "Инфо",
+        "events": "События",
+        "costs": "Себестоимость",
+        "offspring": "Потомство"
+      },
+      "fields": {
+        "tag": "Бирка",
+        "name": "Кличка",
+        "breed": "Порода",
+        "birthDate": "Дата рождения",
+        "acquisitionDate": "Дата поступления",
+        "acquisitionCost": "Цена покупки",
+        "currentWeight": "Текущий вес (кг)",
+        "notes": "Заметки"
+      }
+    },
+    "groups": {
+      "title": "Группы",
+      "empty": "Нет групп",
+      "fields": {
+        "name": "Название",
+        "location": "Местоположение",
+        "notes": "Заметки"
+      }
+    },
+    "fields": {
+      "title": "Поля",
+      "add": "Добавить поле",
+      "empty": "Нет полей",
+      "fields": {
+        "name": "Название",
+        "areaHa": "Площадь (га)",
+        "soilType": "Тип почвы",
+        "status": "Статус",
+        "currentCrop": "Текущая культура"
+      },
+      "status": {
+        "idle": "Свободно",
+        "sown": "Посеяно",
+        "growing": "Растёт",
+        "harvested": "Собрано"
+      }
+    },
+    "feed": {
+      "title": "Корма",
+      "addStock": "Приход корма",
+      "addConsumption": "Списание",
+      "lowStock": "Заканчивается",
+      "empty": "Склад пуст",
+      "fields": {
+        "name": "Название",
+        "unit": "Ед. измерения",
+        "quantity": "Количество",
+        "costPerUnit": "Цена за единицу",
+        "source": "Источник",
+        "lowStockThreshold": "Порог минимума"
+      },
+      "unit": {
+        "kg": "кг",
+        "t": "т",
+        "l": "л",
+        "bale": "тюк"
+      },
+      "source": {
+        "own": "Свой урожай",
+        "purchased": "Закуплено"
+      }
+    },
+    "production": {
+      "title": "Продукция",
+      "add": "Добавить запись",
+      "empty": "Нет записей",
+      "fields": {
+        "type": "Тип",
+        "date": "Дата",
+        "quantity": "Количество",
+        "quality": "Качество"
+      },
+      "type": {
+        "milk": "Молоко",
+        "eggs": "Яйца",
+        "meat": "Мясо",
+        "wool": "Шерсть",
+        "honey": "Мёд",
+        "offspring": "Потомство"
+      }
+    },
+    "expenses": {
+      "title": "Расходы",
+      "add": "Добавить расход",
+      "empty": "Нет расходов",
+      "fields": {
+        "category": "Категория",
+        "amount": "Сумма",
+        "date": "Дата",
+        "description": "Описание"
+      },
+      "category": {
+        "feed": "Корма",
+        "veterinary": "Ветеринария",
+        "salary": "Зарплата",
+        "utilities": "Коммуналка",
+        "fuel": "ГСМ",
+        "rent": "Аренда",
+        "repair": "Ремонт",
+        "equipment": "Техника",
+        "seeds": "Семена",
+        "fertilizer": "Удобрения",
+        "transport": "Транспорт",
+        "other": "Прочее"
+      }
+    },
+    "equipment": {
+      "title": "Техника",
+      "add": "Добавить",
+      "empty": "Нет техники",
+      "fields": {
+        "name": "Название",
+        "category": "Категория",
+        "purchaseDate": "Дата покупки",
+        "purchaseCost": "Стоимость",
+        "usefulLifeMonths": "Срок службы (мес)",
+        "status": "Статус"
+      },
+      "status": {
+        "active": "В работе",
+        "repair": "На ремонте",
+        "decommissioned": "Списано"
+      },
+      "maintenance": {
+        "title": "ТО и ремонт",
+        "add": "Добавить",
+        "type": {
+          "service": "ТО",
+          "repair": "Ремонт",
+          "fuel": "Топливо",
+          "insurance": "Страховка"
+        }
+      }
+    },
+    "reports": {
+      "title": "Отчёты",
+      "costBreakdown": "Себестоимость животных",
+      "columns": {
+        "animal": "Животное",
+        "acquisitionCost": "Покупка",
+        "feedCost": "Корма",
+        "vetCost": "Ветеринария",
+        "overhead": "Накладные",
+        "totalCost": "Итого",
+        "revenue": "Доход",
+        "margin": "Маржа"
+      }
+    },
+    "common": {
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "delete": "Удалить",
+      "confirmDelete": "Удалить запись?",
+      "loading": "Загрузка…",
+      "error": "Ошибка",
+      "retry": "Повторить",
+      "noData": "Нет данных",
+      "all": "Все",
+      "add": "Добавить",
+      "edit": "Редактировать",
+      "back": "Назад",
+      "from": "Дата",
+      "to": "По",
+      "kg": "кг",
+      "liters": "л",
+      "pieces": "шт",
+      "ha": "га",
+      "months": "мес",
+      "years": "лет",
+      "days": "дн"
+    }
   },
   "orders": {
     "newOrder": "Новый заказ",

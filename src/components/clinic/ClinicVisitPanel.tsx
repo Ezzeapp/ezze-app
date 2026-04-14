@@ -7,18 +7,21 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Save, Plus, Trash2, FileText, FlaskConical, Pill } from 'lucide-react'
+import { Save, Plus, Trash2, FileText, FlaskConical, Pill, Printer } from 'lucide-react'
+import { ICD10Autocomplete } from './ICD10Autocomplete'
 import { LabOrderDialog } from './LabOrderDialog'
 import { DispenseDialog } from './DispenseDialog'
 import { toast } from '@/components/shared/Toaster'
+import { printVisitRecord, printPrescription } from '@/lib/printMedicalDocument'
 import type { Prescription } from '@/types'
 
 interface ClinicVisitPanelProps {
   appointmentId: string
   clientId?: string
+  clientName?: string
 }
 
-export function ClinicVisitPanel({ appointmentId, clientId }: ClinicVisitPanelProps) {
+export function ClinicVisitPanel({ appointmentId, clientId, clientName }: ClinicVisitPanelProps) {
   const { t } = useTranslation()
   const { data: visit, isLoading } = useClinicVisit(appointmentId)
   const { data: templates = [] } = useClinicVisitTemplates()
@@ -170,11 +173,14 @@ export function ClinicVisitPanel({ appointmentId, clientId }: ClinicVisitPanelPr
         </div>
         <div>
           <Label className="text-xs">{t('clinic.visit.diagnosisCode')}</Label>
-          <Input
-            className="h-9 mt-1"
-            placeholder="K02.1"
+          <ICD10Autocomplete
             value={form.diagnosis_code}
-            onChange={e => setForm(f => ({ ...f, diagnosis_code: e.target.value }))}
+            onChange={(code, name) => setForm(f => ({
+              ...f,
+              diagnosis_code: code,
+              diagnosis: f.diagnosis || name,
+            }))}
+            className="mt-1"
           />
         </div>
       </div>
@@ -287,6 +293,21 @@ export function ClinicVisitPanel({ appointmentId, clientId }: ClinicVisitPanelPr
           visitId={visit?.id}
           prescriptions={form.prescriptions}
         />
+      )}
+
+      {visit && (
+        <div className="flex gap-2 pt-2 border-t">
+          <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => printVisitRecord(visit, { name: clientName || '' }, '')}>
+            <Printer className="h-3.5 w-3.5" />
+            {t('clinic.print.visitRecord')}
+          </Button>
+          {visit.prescriptions?.length > 0 && (
+            <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => printPrescription(visit.prescriptions, { name: clientName || '' }, '')}>
+              <Printer className="h-3.5 w-3.5" />
+              {t('clinic.print.prescription')}
+            </Button>
+          )}
+        </div>
       )}
     </div>
   )

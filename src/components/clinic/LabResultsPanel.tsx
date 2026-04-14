@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Save, Play, CheckCircle, Loader2 } from 'lucide-react'
+import { Save, Play, CheckCircle, Loader2, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useClinicLabOrder, useUpdateLabOrderItems, useUpdateLabOrderStatus } from '@/hooks/useClinicLabOrders'
 import { toast } from '@/components/shared/Toaster'
+import { printLabResults } from '@/lib/printMedicalDocument'
 import type { LabOrderStatus, LabResultFlag, ClinicLabOrderItem } from '@/types'
 
 interface LabResultsPanelProps {
@@ -257,11 +258,21 @@ export function LabResultsPanel({ orderId, onClose }: LabResultsPanelProps) {
         )}
       </div>
 
-      {/* Save */}
-      <Button className="w-full gap-1.5" onClick={handleSave} disabled={isSaving}>
-        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-        {t('clinic.lab.saveResults')}
-      </Button>
+      {/* Save + Print */}
+      <div className="flex gap-2">
+        <Button className="flex-1 gap-1.5" onClick={handleSave} disabled={isSaving}>
+          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {t('clinic.lab.saveResults')}
+        </Button>
+        <Button variant="outline" className="gap-1.5" onClick={() => {
+          if (order) {
+            const cName = `${(order.client as any)?.first_name || ''} ${(order.client as any)?.last_name || ''}`.trim()
+            printLabResults({ ordered_at: order.ordered_at, notes: order.notes }, order.items || [], { name: cName }, '')
+          }
+        }}>
+          <Printer className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   )
 }

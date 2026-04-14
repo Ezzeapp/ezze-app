@@ -1,16 +1,17 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { UserPlus, BedDouble, Stethoscope, Calendar, Loader2 } from 'lucide-react'
+import { UserPlus, BedDouble, Stethoscope, Calendar, Loader2, Printer } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useClinicHospitalizations, useDischargePatient } from '@/hooks/useClinicHospitalizations'
+import { useClinicHospitalizations, useDischargePatient, useClinicObservations } from '@/hooks/useClinicHospitalizations'
 import { AdmitPatientDialog } from '@/components/clinic/AdmitPatientDialog'
 import { DailyObservationPanel } from '@/components/clinic/DailyObservationPanel'
 import { DischargeDialog } from '@/components/clinic/DischargeDialog'
+import { printDischargeSummary } from '@/lib/printMedicalDocument'
 import type { ClinicHospitalization, HospitalizationStatus } from '@/types'
 
 const STATUS_TABS: Array<HospitalizationStatus | 'all'> = [
@@ -40,6 +41,27 @@ function clientName(h: ClinicHospitalization) {
 
 function locationStr(h: ClinicHospitalization) {
   return [h.ward?.name, h.room?.name, h.bed?.number].filter(Boolean).join(' / ')
+}
+
+function PrintDischargeButton({ hospitalization }: { hospitalization: ClinicHospitalization }) {
+  const { t } = useTranslation()
+  const { data: observations = [] } = useClinicObservations(hospitalization.id)
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="gap-1.5"
+      onClick={() => printDischargeSummary(
+        hospitalization,
+        observations,
+        { name: clientName(hospitalization) },
+        hospitalization.attending_doctor || '',
+      )}
+    >
+      <Printer className="h-3.5 w-3.5" />
+      {t('clinic.print.dischargeSummary')}
+    </Button>
+  )
 }
 
 export function HospitalizationsPage() {
@@ -152,6 +174,12 @@ export function HospitalizationsPage() {
                           >
                             {t('clinic.hosp.discharge')}
                           </Button>
+                        </div>
+                      )}
+
+                      {h.status === 'discharged' && h.discharge_summary && (
+                        <div className="flex justify-end">
+                          <PrintDischargeButton hospitalization={h} />
                         </div>
                       )}
                     </div>
