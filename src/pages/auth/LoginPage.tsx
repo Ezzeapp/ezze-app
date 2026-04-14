@@ -15,6 +15,13 @@ import { toast } from '@/components/shared/Toaster'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { supabase } from '@/lib/supabase'
 import { isTelegramMiniApp, initMiniApp } from '@/lib/telegramWebApp'
+import { PRODUCT } from '@/lib/config'
+
+function getDefaultPath(): string {
+  if (PRODUCT === 'cleaning') return '/orders'
+  if (PRODUCT === 'farm')     return '/farm'
+  return getDefaultPath()
+}
 
 const schema = z.object({
   email: z.string().email(),
@@ -33,7 +40,7 @@ export function LoginPage() {
   // Redirect when auth state becomes valid (handles race condition after login)
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard', { replace: true })
+      navigate(getDefaultPath(), { replace: true })
     }
   }, [isAuthenticated, authLoading, navigate])
   // ── Phone login state ────────────────────────────────────────────────────
@@ -82,7 +89,7 @@ export function LoginPage() {
           setTgError('Не удалось войти через Telegram')
           setTgLoading(false)
         } else {
-          navigate('/dashboard', { replace: true })
+          navigate(getDefaultPath(), { replace: true })
         }
       })
       .catch(() => {
@@ -179,7 +186,7 @@ export function LoginPage() {
       if (sessionErr) {
         toast.error(t('auth.verifyError'))
       } else {
-        navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard', { replace: true })
+        navigate(getDefaultPath(), { replace: true })
       }
     } catch {
       toast.error(t('auth.verifyError'))

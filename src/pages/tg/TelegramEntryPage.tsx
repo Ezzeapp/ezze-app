@@ -2,12 +2,20 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { PRODUCT } from '@/lib/config'
 import {
   isTelegramMiniApp,
   initMiniApp,
   getTelegramUserId,
   getTelegramStartParam,
 } from '@/lib/telegramWebApp'
+
+/** Дефолтный путь после входа — зависит от продукта */
+function getDefaultPath(): string {
+  if (PRODUCT === 'cleaning') return '/orders'
+  if (PRODUCT === 'farm')     return '/farm'
+  return getDefaultPath()
+}
 import { TelegramSplash } from '@/components/shared/TelegramSplash'
 import { Button } from '@/components/ui/button'
 
@@ -57,7 +65,7 @@ export function TelegramEntryPage() {
               // Полная перезагрузка страницы — к этому моменту setSession уже записал
               // сессию в localStorage, поэтому при новой загрузке getSession() вернёт
               // сессию и AuthContext инициализируется корректно (нет race condition).
-              const target = window.innerWidth < 1024 ? '/calendar' : '/dashboard'
+              const target = getDefaultPath()
               window.location.replace(target)
             } else {
               doTgAuth(navigate, setNotFound, true)
@@ -197,7 +205,7 @@ async function doTgAuth(
           if (!profile) {
             if (profileErr) {
               // Ошибка запроса — не сбрасываем онбординг, пускаем в приложение
-              navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard', { replace: true })
+              navigate(getDefaultPath(), { replace: true })
               return
             }
             // Профиль точно отсутствует — сбрасываем онбординг
@@ -212,7 +220,7 @@ async function doTgAuth(
             supabase.from('master_profiles').update({ tg_chat_id: tgId }).eq('id', profile.id)
           }
         }
-        navigate(window.innerWidth < 1024 ? '/calendar' : '/dashboard', { replace: true })
+        navigate(getDefaultPath(), { replace: true })
         return
       }
     }
