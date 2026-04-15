@@ -12,11 +12,15 @@ import { useClientsRealtime } from '@/hooks/useClientsRealtime'
 import { useDynamicFavicon } from '@/hooks/useDynamicFavicon'
 import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/lib/supabase'
+import { PRODUCT } from '@/lib/config'
 
 const inTelegram = isTelegramMiniApp()
 
 // Маршруты, которые занимают весь экран без padding-контейнера
-const FULLSCREEN_ROUTES = ['/orders/pos']
+const FULLSCREEN_ROUTES = [
+  '/orders/pos',
+  ...(PRODUCT === 'cleaning' ? ['/orders'] : []),
+]
 
 export function AppLayout() {
   const { user } = useAuth()
