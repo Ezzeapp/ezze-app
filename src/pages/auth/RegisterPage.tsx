@@ -379,7 +379,7 @@ export function RegisterPage() {
 
   // ── Шаг 0: выбор продукта (только для универсальной регистрации через @ezzemaster_bot)
   if (isTg && tgId && !selectedProduct) {
-    return <ProductSelectionStep onSelect={setSelectedProduct} />
+    return <ProductSelectionStep onSelect={setSelectedProduct} initialLang={formLang} />
   }
 
   // ── TG: единая форма регистрации ──────────────────────────────────────────
