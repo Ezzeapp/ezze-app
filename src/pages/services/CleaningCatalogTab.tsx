@@ -219,6 +219,8 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)
+  // expanded categories — по умолчанию пусто = все свёрнуты
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const { data: globalServices = [], isLoading } = useGlobalServices()
   const upsert = useUpsertItemType()
@@ -239,6 +241,16 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
   )
 
   const allSelected = filtered.length > 0 && selected.size === filtered.length
+  const isSearching = search.trim().length > 0
+
+  const toggleExpanded = (cat: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      if (next.has(cat)) next.delete(cat)
+      else next.add(cat)
+      return next
+    })
+  }
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
@@ -280,6 +292,7 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
   const handleClose = () => {
     setSearch('')
     setSelected(new Set())
+    setExpanded(new Set())
     onClose()
   }
 
@@ -340,40 +353,67 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
             </div>
           )}
 
-          {!isLoading && Object.entries(grouped).map(([cat, items]) => (
-            <div key={cat}>
-              <div className="py-1.5">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{cat}</span>
+          {!isLoading && Object.entries(grouped).map(([cat, items]) => {
+            const isOpen = isSearching || expanded.has(cat)
+            const selectedInCat = items.filter(s => selected.has(s.id)).length
+            return (
+              <div key={cat}>
+                {/* Category header — click to expand/collapse */}
+                <button
+                  type="button"
+                  onClick={() => toggleExpanded(cat)}
+                  className="w-full flex items-center justify-between py-2 px-1 hover:bg-muted/30 rounded-md transition-colors group"
+                >
+                  <div className="flex items-center gap-2">
+                    {isOpen
+                      ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      : <ChevronUp className="h-3.5 w-3.5 text-muted-foreground rotate-180" />
+                    }
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {cat}
+                    </span>
+                    <span className="text-xs text-muted-foreground/60">({items.length})</span>
+                  </div>
+                  {selectedInCat > 0 && (
+                    <span className="text-xs font-medium text-primary">
+                      {selectedInCat} выбрано
+                    </span>
+                  )}
+                </button>
+
+                {/* Items — visible only when expanded or searching */}
+                {isOpen && (
+                  <div className="space-y-1 mb-1">
+                    {items.map(s => {
+                      const isSelected = selected.has(s.id)
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => toggleSelect(s.id)}
+                          className={cn(
+                            'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-colors',
+                            isSelected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/30'
+                          )}
+                        >
+                          <div className={cn(
+                            'h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors',
+                            isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40'
+                          )}>
+                            {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                          </div>
+                          <span className="text-sm font-medium flex-1">{s.name}</span>
+                          {s.price != null && s.price > 0 && (
+                            <span className="text-xs text-muted-foreground shrink-0">{s.price}</span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
-              <div className="space-y-1">
-                {items.map(s => {
-                  const isSelected = selected.has(s.id)
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => toggleSelect(s.id)}
-                      className={cn(
-                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-colors',
-                        isSelected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/30'
-                      )}
-                    >
-                      <div className={cn(
-                        'h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors',
-                        isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40'
-                      )}>
-                        {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
-                      </div>
-                      <span className="text-sm font-medium flex-1">{s.name}</span>
-                      {s.price != null && s.price > 0 && (
-                        <span className="text-xs text-muted-foreground shrink-0">{s.price}</span>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         <DialogFooter className="px-6 pb-6 pt-3 shrink-0 border-t">
