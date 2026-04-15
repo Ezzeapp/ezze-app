@@ -16,6 +16,7 @@ import {
   useClientWorkshopDevices,
 } from '@/hooks/useWorkshopOrders'
 import { useClients, useCreateClient } from '@/hooks/useClients'
+import { WorkshopPhotosUploader } from './WorkshopPhotosUploader'
 import dayjs from 'dayjs'
 
 export function WorkshopOrderFormPage() {
@@ -40,6 +41,7 @@ export function WorkshopOrderFormPage() {
   const [readyDate, setReadyDate] = useState('')
   const [warrantyDays, setWarrantyDays] = useState<number>(30)
   const [notes, setNotes] = useState('')
+  const [photos, setPhotos] = useState<string[]>([])
 
   const selectedType = itemTypes?.find(t => t.id === itemTypeId)
 
@@ -78,6 +80,7 @@ export function WorkshopOrderFormPage() {
         ready_date: readyDate || null,
         warranty_days: warrantyDays,
         notes: notes || null,
+        photos,
       })
       toast.success(t('workshop.form.created', { number: order.number }))
       navigate(`/orders/${order.id}`)
@@ -159,6 +162,10 @@ export function WorkshopOrderFormPage() {
           <div>
             <Label>{t('workshop.form.completeness')}</Label>
             <Input value={completeness} onChange={e => setCompleteness(e.target.value)} />
+          </div>
+          <div>
+            <Label>Фото устройства</Label>
+            <WorkshopPhotosUploader photos={photos} onChange={setPhotos} />
           </div>
         </Section>
 

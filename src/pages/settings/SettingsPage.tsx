@@ -28,6 +28,7 @@ import { DietTablesSettingsTab } from './DietTablesSettingsTab'
 import { ExamRoomsSettingsTab } from './ExamRoomsSettingsTab'
 import { WorkshopItemTypesSettingsTab } from './WorkshopItemTypesSettingsTab'
 import { WorkshopNotificationTemplatesTab } from './WorkshopNotificationTemplatesTab'
+import { WorkshopReceiptTemplateTab } from './WorkshopReceiptTemplateTab'
 import { PRODUCT } from '@/lib/config'
 
 const LANGUAGES = [
@@ -72,7 +73,7 @@ const TIMEZONES = [
   { value: 'UTC', label: 'UTC (UTC+0)' },
 ]
 
-type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config' | 'exam_rooms' | 'workshop_types' | 'workshop_notifications'
+type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config' | 'exam_rooms' | 'workshop_types' | 'workshop_notifications' | 'workshop_receipt'
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -174,6 +175,7 @@ export function SettingsPage() {
     ] : []),
     ...(PRODUCT === 'workshop' ? [
       { id: 'workshop_types' as Tab, label: 'Типы устройств', icon: Wrench },
+      { id: 'workshop_receipt' as Tab, label: 'Квитанция', icon: FileText },
       { id: 'workshop_notifications' as Tab, label: 'Уведомления', icon: FileText },
     ] : []),
     ...(PRODUCT === 'clinic' ? [
@@ -277,6 +279,9 @@ export function SettingsPage() {
 
       {/* ── Шаблоны уведомлений (только workshop) ── */}
       {tab === 'workshop_notifications' && <WorkshopNotificationTemplatesTab />}
+
+      {/* ── Шаблон квитанции (только workshop) ── */}
+      {tab === 'workshop_receipt' && <WorkshopReceiptTemplateTab />}
 
       {/* ── Шаблоны приёмов (только clinic) ── */}
       {tab === 'visit_templates' && <VisitTemplatesSettingsTab />}

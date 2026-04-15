@@ -102,6 +102,7 @@ export interface WorkshopOrder {
   issued_at: string | null
   warranty_days: number
   notes: string | null
+  photos: string[]
   created_at: string
   updated_at: string
   // joined
@@ -284,6 +285,7 @@ export interface CreateWorkshopOrderPayload {
   ready_date?: string | null
   warranty_days?: number
   notes?: string | null
+  photos?: string[]
 }
 
 export function useCreateWorkshopOrder() {
@@ -318,6 +320,7 @@ export function useCreateWorkshopOrder() {
           ready_date:         payload.ready_date ?? null,
           warranty_days:      payload.warranty_days ?? 0,
           notes:              payload.notes ?? null,
+          photos:             payload.photos ?? [],
         })
         .select()
         .single()

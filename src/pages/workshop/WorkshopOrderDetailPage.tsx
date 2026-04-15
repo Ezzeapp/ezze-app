@@ -6,7 +6,8 @@ import {
   History, Phone, User, Calendar, AlertTriangle, Printer, Link2,
 } from 'lucide-react'
 import { printWorkshopReceipt } from './printReceipt'
-import { useAppSettings } from '@/hooks/useAppSettings'
+import { WorkshopPhotosUploader } from './WorkshopPhotosUploader'
+import { useWorkshopReceiptTemplate } from '@/pages/settings/WorkshopReceiptTemplateTab'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -46,7 +47,7 @@ export function WorkshopOrderDetailPage() {
   const { t } = useTranslation()
   const { data: order, isLoading } = useWorkshopOrder(id)
   const { data: history } = useWorkshopOrderHistory(id)
-  const { data: appSettings } = useAppSettings()
+  const { data: receiptTpl } = useWorkshopReceiptTemplate()
 
   const updateOrder = useUpdateWorkshopOrder()
   const updateStatus = useUpdateWorkshopStatus()
@@ -119,7 +120,16 @@ export function WorkshopOrderDetailPage() {
           </Button>
           <Button
             variant="ghost" size="sm"
-            onClick={() => printWorkshopReceipt(order!, appSettings?.platform_name ?? 'Ezze', t(`workshop.status.${order!.status}`))}
+            onClick={() => {
+              if (!receiptTpl) return
+              const trackUrl = `${window.location.origin}/track/${encodeURIComponent(order!.number)}`
+              printWorkshopReceipt({
+                order: order!,
+                template: receiptTpl,
+                statusLabel: t(`workshop.status.${order!.status}`),
+                trackUrl,
+              })
+            }}
           >
             <Printer className="h-4 w-4 mr-1" /> Печать
           </Button>
@@ -189,6 +199,15 @@ export function WorkshopOrderDetailPage() {
                 <div className="text-muted-foreground">{order.completeness}</div>
               </div>
             )}
+            <div className="mt-3 pt-3 border-t">
+              <div className="text-sm font-semibold mb-2">Фото</div>
+              <WorkshopPhotosUploader
+                orderId={order.id}
+                photos={order.photos ?? []}
+                onChange={(photos) => updateOrder.mutate({ id: order.id, data: { photos } })}
+                compact
+              />
+            </div>
           </Card>
 
           <DiagnosticCard order={order} onUpdate={(data) => updateOrder.mutate({ id: order.id, data })} />
