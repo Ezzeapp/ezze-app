@@ -309,6 +309,13 @@ export interface CreateOrderPayload {
   total_amount?: number
   ready_date?: string | null
   notes?: string | null
+  // оплата
+  is_express?: boolean
+  payment_method?: string
+  surcharge_percent?: number
+  surcharge_amount?: number
+  payment_cash?: number
+  payment_card?: number
   // ковры
   pickup_date?: string | null
   delivery_date?: string | null
@@ -351,11 +358,17 @@ export function useCreateOrder() {
           prepaid_amount: payload.prepaid_amount ?? 0,
           total_amount:   payload.total_amount ?? 0,
           ready_date:     payload.ready_date ?? null,
-          notes:          payload.notes ?? null,
-          pickup_date:    payload.pickup_date ?? null,
-          delivery_date:  payload.delivery_date ?? null,
-          visit_address:  payload.visit_address ?? null,
-          visit_date:     payload.visit_date ?? null,
+          notes:             payload.notes ?? null,
+          is_express:        payload.is_express ?? false,
+          payment_method:    payload.payment_method ?? 'cash',
+          surcharge_percent: payload.surcharge_percent ?? 0,
+          surcharge_amount:  payload.surcharge_amount ?? 0,
+          payment_cash:      payload.payment_cash ?? 0,
+          payment_card:      payload.payment_card ?? 0,
+          pickup_date:       payload.pickup_date ?? null,
+          delivery_date:     payload.delivery_date ?? null,
+          visit_address:     payload.visit_address ?? null,
+          visit_date:        payload.visit_date ?? null,
         })
         .select()
         .single()

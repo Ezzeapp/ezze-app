@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Tag } from 'lucide-react'
+import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Tag, Zap, CreditCard, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,8 +18,16 @@ import { supabase } from '@/lib/supabase'
 import { PRODUCT } from '@/lib/config'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 
-// ── Типы ─────────────────────────────────────────────────────────────────────
+// ── Константы ─────────────────────────────────────────────────────────────────
 
+const LIST_PAGE_SIZE = 20
+
+const PAYMENT_METHODS = [
+  { value: 'cash',     label: 'Наличные' },
+  { value: 'card',     label: 'Карта' },
+  { value: 'transfer', label: 'Перевод' },
+  { value: 'mixed',    label: 'Смешанная' },
+]
 
 const COLORS_LIST = [
   { label: "Белый",       bg: "bg-white border border-gray-300 dark:border-gray-600" },
@@ -67,7 +75,6 @@ function makeCartItem(name: string, price: number, days: number, typeId: string 
     width_m: '', length_m: '', area_m2: null,
   }
 }
-
 
 // ── Диалог размеров ковра ─────────────────────────────────────────────────────
 
@@ -155,15 +162,9 @@ function OrderCreatedDialog({ orderNumber, onPrint, onGoToOrder, onNewOrder }: {
           <p className="text-muted-foreground text-sm mt-1">№ {orderNumber}</p>
         </div>
         <div className="flex flex-col gap-2">
-          <Button className="w-full" onClick={onPrint}>
-            Печать квитанции
-          </Button>
-          <Button variant="outline" className="w-full" onClick={onGoToOrder}>
-            Открыть заказ
-          </Button>
-          <Button variant="ghost" className="w-full" onClick={onNewOrder}>
-            Новый заказ
-          </Button>
+          <Button className="w-full" onClick={onPrint}>Печать квитанции</Button>
+          <Button variant="outline" className="w-full" onClick={onGoToOrder}>Открыть заказ</Button>
+          <Button variant="ghost" className="w-full" onClick={onNewOrder}>Новый заказ</Button>
         </div>
       </div>
     </div>
@@ -272,8 +273,8 @@ export function POSPage() {
   const [catalogSearch, setCatalogSearch] = useState('')
   const [catalogView, setCatalogView] = useState<'grid' | 'list'>('grid')
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
+  const [listPage, setListPage] = useState(1)
 
-  // Группировка по подкатегориям для текущего типа заказа
   const subcategories = useMemo(() => {
     const map = new Map<string, number>()
     filteredTypes.forEach(t => {
@@ -286,7 +287,7 @@ export function POSPage() {
   }, [filteredTypes])
 
   const handleSetOrderType = (t: OrderType) => {
-    setOrderType(t); setCart([]); setCatalogSearch(''); setSelectedSubcategory(null)
+    setOrderType(t); setCart([]); setCatalogSearch(''); setSelectedSubcategory(null); setListPage(1)
   }
 
   const visibleTypes = useMemo(() => {
@@ -315,19 +316,27 @@ export function POSPage() {
   const [notes, setNotes] = useState('')
   const [globalReadyDate, setGlobalReadyDate] = useState('')
   const [discount, setDiscount] = useState('')
+  const [isExpress, setIsExpress] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState('cash')
+  const [surchargePct, setSurchargePct] = useState('')
+  const [paymentCash, setPaymentCash] = useState('')
+  const [paymentCard, setPaymentCard] = useState('')
 
-  const total = cart.reduce((s, i) => s + i.price, 0)
-  const discountAmt = total * (parseFloat(discount) || 0) / 100
-  const finalTotal = total - discountAmt
+  const subtotal = cart.reduce((s, i) => s + i.price, 0)
+  const surchargeAmt = subtotal * (parseFloat(surchargePct) || 0) / 100
+  const discountAmt  = subtotal * (parseFloat(discount) || 0) / 100
+  const finalTotal   = subtotal + surchargeAmt - discountAmt
 
-  // When globalReadyDate changes, update all cart items
+  const isMixed = paymentMethod === 'mixed'
+  const mixedPrepaid = (parseFloat(paymentCash) || 0) + (parseFloat(paymentCard) || 0)
+  const effectivePrepaid = isMixed ? mixedPrepaid : (parseFloat(prepaid) || 0)
+
   useEffect(() => {
     if (globalReadyDate) {
       setCart(prev => prev.map(i => ({ ...i, ready_date: globalReadyDate })))
     }
   }, [globalReadyDate])
 
-  // ── Закрытие выпадающего списка клиентов по клику снаружи ────────────────
   useEffect(() => {
     function handler(e: MouseEvent) {
       const target = e.target as Element
@@ -375,49 +384,44 @@ export function POSPage() {
     setShowClientList(false)
   }
 
-  function clearClient() {
-    setClientId(null)
-    setClientName('')
-    setClientSearch('')
-  }
+  function clearClient() { setClientId(null); setClientName(''); setClientSearch('') }
 
   function resetForm() {
-    setCart([])
-    setClientId(null)
-    setClientName('')
-    setClientSearch('')
-    setAssignedTo(null)
-    setPrepaid('')
-    setNotes('')
-    setGlobalReadyDate('')
-    setDiscount('')
-    setExpandedKey(null)
-    setCreatedOrder(null)
-    setReceiptData(null)
+    setCart([]); setClientId(null); setClientName(''); setClientSearch('')
+    setAssignedTo(null); setPrepaid(''); setNotes(''); setGlobalReadyDate('')
+    setDiscount(''); setIsExpress(false); setPaymentMethod('cash')
+    setSurchargePct(''); setPaymentCash(''); setPaymentCard('')
+    setExpandedKey(null); setCreatedOrder(null); setReceiptData(null)
   }
 
   async function handleSubmit() {
     if (cart.length === 0) { toast.error('Добавьте хотя бы одно изделие'); return }
     try {
       const order = await createOrder({
-        order_type: orderType,
-        client_id: clientId,
-        assigned_to: assignedTo,
-        prepaid_amount: parseFloat(prepaid) || 0,
-        total_amount: finalTotal,
-        notes: notes || null,
-        ready_date: globalReadyDate || null,
+        order_type:        orderType,
+        client_id:         clientId,
+        assigned_to:       assignedTo,
+        prepaid_amount:    effectivePrepaid,
+        total_amount:      finalTotal,
+        notes:             notes || null,
+        ready_date:        globalReadyDate || null,
+        is_express:        isExpress,
+        payment_method:    paymentMethod,
+        surcharge_percent: parseFloat(surchargePct) || 0,
+        surcharge_amount:  surchargeAmt,
+        payment_cash:      parseFloat(paymentCash) || 0,
+        payment_card:      parseFloat(paymentCard) || 0,
         items: cart.map(i => ({
-          item_type_id: i.item_type_id,
+          item_type_id:   i.item_type_id,
           item_type_name: i.item_type_name,
-          color: i.color || null,
-          brand: i.brand || null,
-          defects: i.defects || null,
-          price: i.price,
-          ready_date: i.ready_date || null,
-          width_m: i.area_m2 ? parseFloat(i.width_m) : null,
-          length_m: i.area_m2 ? parseFloat(i.length_m) : null,
-          area_m2: i.area_m2,
+          color:          i.color || null,
+          brand:          i.brand || null,
+          defects:        i.defects || null,
+          price:          i.price,
+          ready_date:     i.ready_date || null,
+          width_m:        i.area_m2 ? parseFloat(i.width_m) : null,
+          length_m:       i.area_m2 ? parseFloat(i.length_m) : null,
+          area_m2:        i.area_m2,
         })),
       })
 
@@ -428,23 +432,23 @@ export function POSPage() {
         order_type: orderType,
         client: clientId ? {
           first_name: clientName.split(' · ')[0]?.split(' ')[0] ?? '',
-          last_name: clientName.split(' · ')[0]?.split(' ').slice(1).join(' ') ?? null,
-          phone: clientName.includes(' · ') ? clientName.split(' · ')[1] : null,
+          last_name:  clientName.split(' · ')[0]?.split(' ').slice(1).join(' ') ?? null,
+          phone:      clientName.includes(' · ') ? clientName.split(' · ')[1] : null,
         } : null,
         items: cart.map(i => ({
           item_type_name: i.item_type_name,
-          price: i.price,
-          ready_date: i.ready_date || null,
-          color: i.color || null,
-          brand: i.brand || null,
-          defects: i.defects || null,
-          area_m2: i.area_m2,
-          width_m: i.width_m || null,
-          length_m: i.length_m || null,
+          price:          i.price,
+          ready_date:     i.ready_date || null,
+          color:          i.color || null,
+          brand:          i.brand || null,
+          defects:        i.defects || null,
+          area_m2:        i.area_m2,
+          width_m:        i.width_m || null,
+          length_m:       i.length_m || null,
         })),
-        total_amount: finalTotal,
-        prepaid_amount: parseFloat(prepaid) || 0,
-        notes: notes || null,
+        total_amount:   finalTotal,
+        prepaid_amount: effectivePrepaid,
+        notes:          notes || null,
       }
 
       setReceiptData(rData)
@@ -472,6 +476,10 @@ export function POSPage() {
     setExpandedKey(item.key)
   }
 
+  // Список: показываем первые listPage*20 позиций
+  const pagedListTypes = visibleTypes.slice(0, listPage * LIST_PAGE_SIZE)
+  const hasMoreList = pagedListTypes.length < visibleTypes.length
+
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden">
 
@@ -482,7 +490,6 @@ export function POSPage() {
         </Button>
         <span className="font-semibold text-base">Приём заказа</span>
 
-        {/* Исполнитель */}
         {members.length > 0 && (
           <select
             value={assignedTo ?? ""}
@@ -496,7 +503,6 @@ export function POSPage() {
           </select>
         )}
 
-        {/* Поиск клиента */}
         <div className="relative ml-auto w-72" data-client-search>
           {clientId ? (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-primary/5 border-primary/30 text-sm">
@@ -519,11 +525,8 @@ export function POSPage() {
               {showClientList && clientSearch && (
                 <div className="absolute top-full mt-1 w-full bg-background dark:bg-card border shadow-xl rounded-lg z-50 overflow-hidden">
                   {clients.slice(0, 8).map(c => (
-                    <button
-                      key={c.id}
-                      onClick={() => selectClient(c)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors"
-                    >
+                    <button key={c.id} onClick={() => selectClient(c)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors">
                       <span className="font-medium">{[c.first_name, c.last_name].filter(Boolean).join(' ')}</span>
                       {c.phone && <span className="text-muted-foreground ml-2">{c.phone}</span>}
                     </button>
@@ -545,33 +548,33 @@ export function POSPage() {
       {/* ── Основная область ── */}
       <div className="flex-1 flex overflow-hidden min-h-0">
 
-        {/* ── Тип заказа — боковая панель ── */}
-        <div className="w-[82px] shrink-0 border-r flex flex-col gap-1 p-1.5 bg-background overflow-y-auto">
-          {enabledOrderTypes.map((cfg: CleaningOrderTypeConfig) => {
-            const Icon = getOrderTypeIcon(cfg.icon)
-            return (
-              <button
-                key={cfg.slug}
-                onClick={() => handleSetOrderType(cfg.slug)}
-                className={cn(
-                  'flex flex-col items-center gap-1 px-1 py-2.5 rounded-lg text-xs font-medium transition-colors w-full',
-                  orderType === cfg.slug
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="leading-tight text-center">{cfg.label}</span>
-              </button>
-            )
-          })}
-        </div>
-
         {/* ── Каталог ── */}
         <div className={cn("flex-1 border-r flex flex-col overflow-hidden min-h-0", CATALOG_BG[orderType])}>
 
+          {/* Тип заказа — горизонтальные табы */}
+          <div className="flex items-center gap-1 px-3 pt-2 pb-1 shrink-0 flex-wrap">
+            {enabledOrderTypes.map((cfg: CleaningOrderTypeConfig) => {
+              const Icon = getOrderTypeIcon(cfg.icon)
+              return (
+                <button
+                  key={cfg.slug}
+                  onClick={() => handleSetOrderType(cfg.slug)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border',
+                    orderType === cfg.slug
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background/80 text-muted-foreground border-transparent hover:border-border hover:text-foreground'
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {cfg.label}
+                </button>
+              )
+            })}
+          </div>
+
           {/* Поиск + вид */}
-          <div className="px-3 pt-3 pb-2 flex items-center gap-2 shrink-0">
+          <div className="px-3 pt-1 pb-2 flex items-center gap-2 shrink-0">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
@@ -585,44 +588,34 @@ export function POSPage() {
               <button
                 onClick={() => setCatalogView('grid')}
                 className={cn('p-1.5 transition-colors', catalogView === 'grid' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
-                title="Плитки"
               >
                 <LayoutGrid className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setCatalogView('list')}
                 className={cn('p-1.5 transition-colors', catalogView === 'list' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
-                title="Список"
               >
                 <List className="h-4 w-4" />
               </button>
             </div>
           </div>
 
-          {/* Подсказка для ковра */}
-          {orderType === 'carpet' && selectedSubcategory && (
-            <div className="px-3 pb-1 shrink-0">
-              <p className="text-xs text-muted-foreground">Нажмите на позицию для ввода размеров</p>
-            </div>
-          )}
-
           {/* Каталог: категории → позиции */}
           <div className="flex-1 overflow-y-auto px-3 pb-3 min-h-0">
 
             {!catalogSearch && !selectedSubcategory ? (
-              /* ── Карточки категорий ── */
+              /* Карточки категорий */
               <div className="grid grid-cols-3 gap-2">
                 {subcategories.map(sub => (
                   <button
                     key={sub.name}
-                    onClick={() => setSelectedSubcategory(sub.name)}
+                    onClick={() => { setSelectedSubcategory(sub.name); setListPage(1) }}
                     className="flex flex-col items-start gap-1 p-3 rounded-xl border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left"
                   >
                     <span className="text-sm font-semibold leading-tight line-clamp-2">{sub.name}</span>
                     <span className="text-xs text-muted-foreground">{sub.count} позиций</span>
                   </button>
                 ))}
-                {/* Своё */}
                 <button
                   onClick={addCustomItem}
                   className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-all"
@@ -632,9 +625,8 @@ export function POSPage() {
                 </button>
               </div>
             ) : (
-              /* ── Позиции (по категории или поиск) ── */
+              /* Позиции */
               <>
-                {/* Кнопка назад (только когда выбрана категория, не поиск) */}
                 {selectedSubcategory && !catalogSearch && (
                   <button
                     onClick={() => setSelectedSubcategory(null)}
@@ -657,18 +649,13 @@ export function POSPage() {
                           flashTypeId === type.id && "ring-2 ring-primary scale-95"
                         )}
                       >
-                        <span className="text-sm font-medium leading-tight group-hover:text-primary transition-colors line-clamp-2">
-                          {type.name}
-                        </span>
+                        <span className="text-sm font-medium leading-tight group-hover:text-primary transition-colors line-clamp-2">{type.name}</span>
                         <span className="text-xs text-muted-foreground">
-                          {orderType === 'carpet'
-                            ? `${formatCurrency(type.default_price)} ${symbol}/м²`
-                            : `${formatCurrency(type.default_price)} ${symbol}`}
+                          {orderType === 'carpet' ? `${formatCurrency(type.default_price)} ${symbol}/м²` : `${formatCurrency(type.default_price)} ${symbol}`}
                         </span>
                         <span className="text-xs text-muted-foreground">{type.default_days} дн.</span>
                       </button>
                     ))}
-                    {/* Своё */}
                     <button
                       onClick={addCustomItem}
                       className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-all"
@@ -678,8 +665,9 @@ export function POSPage() {
                     </button>
                   </div>
                 ) : (
+                  /* Список: партиями по 20 */
                   <div className="space-y-1">
-                    {visibleTypes.map(type => (
+                    {pagedListTypes.map(type => (
                       <button
                         key={type.id}
                         onClick={() => addFromCatalog(type)}
@@ -688,20 +676,21 @@ export function POSPage() {
                           flashTypeId === type.id && "ring-2 ring-primary scale-95"
                         )}
                       >
-                        <span className="text-sm font-medium group-hover:text-primary transition-colors truncate flex-1 mr-3">
-                          {type.name}
-                        </span>
+                        <span className="text-sm font-medium group-hover:text-primary transition-colors truncate flex-1 mr-3">{type.name}</span>
                         <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
-                          <span>
-                            {orderType === 'carpet'
-                              ? `${formatCurrency(type.default_price)} ${symbol}/м²`
-                              : `${formatCurrency(type.default_price)} ${symbol}`}
-                          </span>
+                          <span>{orderType === 'carpet' ? `${formatCurrency(type.default_price)} ${symbol}/м²` : `${formatCurrency(type.default_price)} ${symbol}`}</span>
                           <span>{type.default_days} дн.</span>
                         </div>
                       </button>
                     ))}
-                    {/* Своё в виде строки */}
+                    {hasMoreList && (
+                      <button
+                        onClick={() => setListPage(p => p + 1)}
+                        className="w-full py-2 text-xs text-primary hover:underline"
+                      >
+                        Показать ещё ({visibleTypes.length - pagedListTypes.length})
+                      </button>
+                    )}
                     <button
                       onClick={addCustomItem}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-all"
@@ -713,9 +702,7 @@ export function POSPage() {
                 )}
 
                 {visibleTypes.length === 0 && catalogSearch && (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    Ничего не найдено по «{catalogSearch}»
-                  </p>
+                  <p className="text-sm text-muted-foreground text-center py-8">Ничего не найдено по «{catalogSearch}»</p>
                 )}
               </>
             )}
@@ -859,21 +846,14 @@ export function POSPage() {
                             }}
                           />
                           {item.defects && (
-                            <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                              {item.defects}
-                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate">{item.defects}</p>
                           )}
                         </div>
-                        <div>
+                        {/* Цена — только в развёрнутом виде */}
+                        <div className="col-span-2">
                           <Label className="text-xs">Цена ({symbol})</Label>
                           <Input type="number" value={item.price}
                             onChange={e => updateItem(item.key, 'price', e.target.value as any)}
-                            className="h-7 text-xs mt-0.5" />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Срок готовности</Label>
-                          <Input type="date" value={item.ready_date}
-                            onChange={e => updateItem(item.key, 'ready_date', e.target.value)}
                             className="h-7 text-xs mt-0.5" />
                         </div>
                       </div>
@@ -884,10 +864,10 @@ export function POSPage() {
             )}
           </div>
 
-          {/* Нижняя панель: итоги + кнопка */}
+          {/* Нижняя панель: итоги + оплата + кнопка */}
           <div className="border-t bg-background shrink-0 p-3 space-y-2">
 
-            {/* Примечание */}
+            {/* Примечание + Срок */}
             <div className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground w-20 shrink-0">Примечание</Label>
               <Input
@@ -897,13 +877,12 @@ export function POSPage() {
                 className="flex-1 h-7 text-xs"
               />
             </div>
-
-            {/* Срок готовности для всех */}
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <Label className="text-xs text-muted-foreground w-[4.5rem] shrink-0">Срок для всех</Label>
               <Input
                 type="date"
+                placeholder="01.01.2000"
                 value={globalReadyDate}
                 onChange={e => setGlobalReadyDate(e.target.value)}
                 className="flex-1 h-7 text-xs"
@@ -912,41 +891,54 @@ export function POSPage() {
 
             <Separator />
 
-            {/* Итого */}
-            <div className="flex items-center justify-between py-1">
-              <span className="text-sm text-muted-foreground">Позиций: {cart.length}</span>
-              <span className="font-bold text-xl tabular-nums">{formatCurrency(finalTotal)} {symbol}</span>
-            </div>
-
-            {/* Скидка строка */}
-            {discountAmt > 0 && (
-              <div className="flex justify-between text-sm font-medium text-green-600 dark:text-green-400">
-                <span>Скидка:</span>
-                <span>-{formatCurrency(discountAmt)} {symbol}</span>
-              </div>
-            )}
-
-            {/* К оплате */}
-            {parseFloat(prepaid) > 0 && (
-              <div className="flex justify-between text-sm font-medium text-orange-600 dark:text-orange-400">
-                <span>К оплате:</span>
-                <span>{formatCurrency(Math.max(0, finalTotal - (parseFloat(prepaid) || 0)))} {symbol}</span>
-              </div>
-            )}
-
-            {/* Предоплата */}
+            {/* Строка: Экспресс + Форма оплаты */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground flex-1">Предоплата</span>
-              <Input
-                type="number" min={0} placeholder="0"
-                value={prepaid}
-                onChange={e => setPrepaid(e.target.value)}
-                className="w-28 h-7 text-sm text-right"
-              />
-              <span className="text-xs text-muted-foreground">{symbol}</span>
+              <button
+                onClick={() => setIsExpress(v => !v)}
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors shrink-0',
+                  isExpress
+                    ? 'bg-orange-500 text-white border-orange-500'
+                    : 'text-muted-foreground border-border hover:border-orange-400 hover:text-orange-500'
+                )}
+              >
+                <Zap className="h-3.5 w-3.5" />
+                Экспресс
+              </button>
+              <div className="relative flex-1">
+                <CreditCard className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                <select
+                  value={paymentMethod}
+                  onChange={e => setPaymentMethod(e.target.value)}
+                  className="w-full h-7 appearance-none rounded-md border border-input bg-background pl-8 pr-6 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  {PAYMENT_METHODS.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+              </div>
             </div>
 
-            {/* Скидка % */}
+            {/* Надбавка */}
+            <div className="flex items-center gap-2">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-xs text-muted-foreground flex-1">Надбавка</span>
+              <Input
+                type="number" min={0} max={200} placeholder="0"
+                value={surchargePct}
+                onChange={e => setSurchargePct(e.target.value)}
+                className="w-20 h-7 text-sm text-right"
+              />
+              <span className="text-xs text-muted-foreground">%</span>
+              {surchargeAmt > 0 && (
+                <span className="text-xs text-orange-600 dark:text-orange-400 tabular-nums">
+                  +{formatCurrency(surchargeAmt)}
+                </span>
+              )}
+            </div>
+
+            {/* Скидка */}
             <div className="flex items-center gap-2">
               <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <span className="text-xs text-muted-foreground flex-1">Скидка</span>
@@ -957,13 +949,69 @@ export function POSPage() {
                 className="w-20 h-7 text-sm text-right"
               />
               <span className="text-xs text-muted-foreground">%</span>
+              {discountAmt > 0 && (
+                <span className="text-xs text-green-600 dark:text-green-400 tabular-nums">
+                  -{formatCurrency(discountAmt)}
+                </span>
+              )}
             </div>
+
+            <Separator />
+
+            {/* Итого */}
+            <div className="flex items-center justify-between py-0.5">
+              <span className="text-sm text-muted-foreground">Позиций: {cart.length}</span>
+              <span className="font-bold text-xl tabular-nums">{formatCurrency(finalTotal)} {symbol}</span>
+            </div>
+
+            {/* Оплата: смешанная или обычная предоплата */}
+            {isMixed ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-24 shrink-0">Наличными</span>
+                  <Input type="number" min={0} placeholder="0"
+                    value={paymentCash} onChange={e => setPaymentCash(e.target.value)}
+                    className="flex-1 h-7 text-sm text-right" />
+                  <span className="text-xs text-muted-foreground">{symbol}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-24 shrink-0">Картой</span>
+                  <Input type="number" min={0} placeholder="0"
+                    value={paymentCard} onChange={e => setPaymentCard(e.target.value)}
+                    className="flex-1 h-7 text-sm text-right" />
+                  <span className="text-xs text-muted-foreground">{symbol}</span>
+                </div>
+                {mixedPrepaid > 0 && (
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Оплачено:</span>
+                    <span className="font-medium">{formatCurrency(mixedPrepaid)} {symbol}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground flex-1">Предоплата</span>
+                <Input
+                  type="number" min={0} placeholder="0"
+                  value={prepaid}
+                  onChange={e => setPrepaid(e.target.value)}
+                  className="w-28 h-7 text-sm text-right"
+                />
+                <span className="text-xs text-muted-foreground">{symbol}</span>
+              </div>
+            )}
+
+            {effectivePrepaid > 0 && (
+              <div className="flex justify-between text-sm font-medium text-orange-600 dark:text-orange-400">
+                <span>К оплате:</span>
+                <span>{formatCurrency(Math.max(0, finalTotal - effectivePrepaid))} {symbol}</span>
+              </div>
+            )}
 
             <div className="flex gap-2">
               {cart.length > 0 && (
                 <Button
-                  variant="outline"
-                  size="icon"
+                  variant="outline" size="icon"
                   className="h-10 w-10 shrink-0 text-muted-foreground hover:text-destructive hover:border-destructive"
                   onClick={() => { setCart([]); setExpandedKey(null) }}
                   title="Очистить корзину"
@@ -972,21 +1020,22 @@ export function POSPage() {
                 </Button>
               )}
               <Button
-                className="flex-1 h-10 text-sm font-semibold"
+                className={cn("flex-1 h-10 text-sm font-semibold", isExpress && "bg-orange-500 hover:bg-orange-600 border-orange-500")}
                 onClick={handleSubmit}
                 disabled={isPending || cart.length === 0}
               >
                 {isPending
                   ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  : <ShoppingBag className="h-4 w-4 mr-2" />}
-                Принять заказ
+                  : isExpress
+                    ? <Zap className="h-4 w-4 mr-2" />
+                    : <ShoppingBag className="h-4 w-4 mr-2" />}
+                {isExpress ? 'Экспресс-заказ' : 'Принять заказ'}
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Диалог размеров ковра */}
       {carpetDialog && (
         <CarpetSizeDialog
           typeName={carpetDialog.typeName}
@@ -998,7 +1047,6 @@ export function POSPage() {
         />
       )}
 
-      {/* Диалог успешного создания */}
       {createdOrder && !showReceipt && (
         <OrderCreatedDialog
           orderNumber={createdOrder.number}
@@ -1008,7 +1056,6 @@ export function POSPage() {
         />
       )}
 
-      {/* Модальное окно квитанции */}
       {showReceipt && receiptData && (
         <ReceiptModal
           data={receiptData}
@@ -1016,7 +1063,6 @@ export function POSPage() {
         />
       )}
 
-      {/* Быстрое создание клиента */}
       {quickAddClient && (
         <QuickAddClientDialog
           initialName={clientSearch}
