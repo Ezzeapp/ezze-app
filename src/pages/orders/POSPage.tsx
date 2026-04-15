@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Tag, Zap, CreditCard, ChevronDown, Camera, Weight } from 'lucide-react'
+import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Zap, CreditCard, ChevronDown, Camera, Weight, TrendingUp, TrendingDown, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -319,7 +319,7 @@ export function POSPage() {
   // Оплата
   const [prepaid, setPrepaid] = useState('')
   const [notes, setNotes] = useState('')
-  const [globalReadyDate, setGlobalReadyDate] = useState('')
+  const [globalReadyDate, setGlobalReadyDate] = useState(() => dayjs().add(1, 'day').format('YYYY-MM-DD'))
   const [discount, setDiscount] = useState('')
   const [isExpress, setIsExpress] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cash')
@@ -396,7 +396,7 @@ export function POSPage() {
 
   function resetForm() {
     setCart([]); setClientId(null); setClientName(''); setClientSearch('')
-    setAssignedTo(null); setPrepaid(''); setNotes(''); setGlobalReadyDate('')
+    setAssignedTo(null); setPrepaid(''); setNotes(''); setGlobalReadyDate(dayjs().add(1, 'day').format('YYYY-MM-DD'))
     setDiscount(''); setIsExpress(false); setPaymentMethod('cash')
     setSurchargePct(''); setPaymentCash(''); setPaymentCard('')
     setOrderTags([]); setExpandedKey(null); setCreatedOrder(null); setReceiptData(null)
@@ -953,10 +953,10 @@ export function POSPage() {
             )}
           </div>
 
-          {/* Нижняя панель: итоги + оплата + кнопка */}
-          <div className="border-t bg-background shrink-0 px-3 pt-2 pb-3 space-y-2">
+          {/* Нижняя панель */}
+          <div className="border-t bg-background shrink-0 px-3 pt-2 pb-3 space-y-1.5">
 
-            {/* Теги */}
+            {/* Зона 1: Теги */}
             <div className="flex flex-wrap gap-1">
               {ORDER_TAGS.map(tag => (
                 <button
@@ -979,157 +979,139 @@ export function POSPage() {
               ))}
             </div>
 
-            {/* Примечание + Срок — сетка 2×1 */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs text-muted-foreground">Примечание</Label>
-                <Input
-                  placeholder="Дополнительно..."
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  className="mt-1 h-7 text-xs"
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Calendar className="h-3 w-3" /> Срок
-                </Label>
-                <div className="mt-1 flex gap-1">
-                  <div className="grid grid-cols-4 gap-0.5 shrink-0">
-                    {[['Сег', 0], ['+1', 1], ['+2', 2], ['+3', 3]].map(([label, days]) => (
-                      <button
-                        key={label as string}
-                        type="button"
-                        onClick={() => setGlobalReadyDate(dayjs().add(days as number, 'day').format('YYYY-MM-DD'))}
-                        className={cn(
-                          'px-1 py-1 text-xs rounded border leading-none transition-colors',
-                          globalReadyDate === dayjs().add(days as number, 'day').format('YYYY-MM-DD')
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-background text-muted-foreground hover:bg-accent'
-                        )}
-                      >
-                        {label as string}
-                      </button>
-                    ))}
-                  </div>
-                  <Input
-                    type="date"
-                    value={globalReadyDate}
-                    onChange={e => setGlobalReadyDate(e.target.value)}
-                    className="h-7 text-xs flex-1 min-w-0"
-                  />
-                </div>
-              </div>
+            {/* Зона 2: Примечание — иконка + input */}
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <Input
+                placeholder="Примечание к заказу..."
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                className="h-7 text-xs flex-1"
+              />
             </div>
 
-            <Separator />
+            {/* Зона 3: Срок — иконка + чипсы + дата (одна строка) */}
+            <div className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              {[['Сег', 0], ['+1', 1], ['+2', 2], ['+3', 3]].map(([label, days]) => (
+                <button
+                  key={label as string}
+                  type="button"
+                  onClick={() => setGlobalReadyDate(dayjs().add(days as number, 'day').format('YYYY-MM-DD'))}
+                  className={cn(
+                    'px-2 py-1 text-xs rounded-md border leading-none transition-colors shrink-0',
+                    globalReadyDate === dayjs().add(days as number, 'day').format('YYYY-MM-DD')
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-muted text-muted-foreground border-transparent hover:bg-accent hover:text-foreground'
+                  )}
+                >
+                  {label as string}
+                </button>
+              ))}
+              <Input
+                type="date"
+                value={globalReadyDate}
+                onChange={e => setGlobalReadyDate(e.target.value)}
+                className="h-7 text-xs flex-1 min-w-0"
+              />
+            </div>
 
-            {/* Экспресс + Оплата */}
-            <div className="flex items-center gap-2">
+            {/* Зона 4: Экспресс + Оплата + Надбавка + Скидка (одна строка) */}
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setIsExpress(v => !v)}
                 className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors shrink-0',
+                  'flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium transition-colors shrink-0',
                   isExpress
                     ? 'bg-orange-500 text-white border-orange-500'
                     : 'text-muted-foreground border-border hover:border-orange-400 hover:text-orange-500'
                 )}
               >
-                <Zap className="h-3.5 w-3.5" />
+                <Zap className="h-3 w-3" />
                 Экспресс
               </button>
-              <div className="relative flex-1">
-                <CreditCard className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <div className="relative flex-1 min-w-0">
+                <CreditCard className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
                 <select
                   value={paymentMethod}
                   onChange={e => setPaymentMethod(e.target.value)}
-                  className="w-full h-7 appearance-none rounded-md border border-input bg-background pl-8 pr-6 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="w-full h-7 appearance-none rounded-md border border-input bg-background pl-6 pr-5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   {PAYMENT_METHODS.map(m => (
                     <option key={m.value} value={m.value}>{m.label}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
               </div>
+              <TrendingUp className="h-3 w-3 text-orange-500 shrink-0" />
+              <Input
+                type="number" min={0} max={200} placeholder="0"
+                value={surchargePct}
+                onChange={e => setSurchargePct(e.target.value)}
+                className="w-12 h-7 text-xs text-center px-1"
+              />
+              <span className="text-xs text-muted-foreground shrink-0">%</span>
+              <TrendingDown className="h-3 w-3 text-green-500 shrink-0" />
+              <Input
+                type="number" min={0} max={100} placeholder="0"
+                value={discount}
+                onChange={e => setDiscount(e.target.value)}
+                className="w-12 h-7 text-xs text-center px-1"
+              />
+              <span className="text-xs text-muted-foreground shrink-0">%</span>
             </div>
 
-            {/* Надбавка + Скидка — сетка 2×1 */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-1.5">
-                <Tag className="h-3 w-3 text-muted-foreground shrink-0" />
-                <span className="text-xs text-muted-foreground">Надбавка</span>
-                <Input
-                  type="number" min={0} max={200} placeholder="0"
-                  value={surchargePct}
-                  onChange={e => setSurchargePct(e.target.value)}
-                  className="flex-1 h-7 text-xs text-right min-w-0"
-                />
-                <span className="text-xs text-muted-foreground shrink-0">%</span>
+            {/* Зона 5: Итоги — выделенный блок */}
+            <div className="rounded-xl bg-muted/50 dark:bg-muted/30 px-3 py-2 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Позиций: {cart.length}
+                  {surchargeAmt > 0 && <span className="ml-2 text-orange-500">+{formatCurrency(surchargeAmt)}</span>}
+                  {discountAmt > 0 && <span className="ml-1 text-green-600">−{formatCurrency(discountAmt)}</span>}
+                </span>
+                <span className="font-bold text-xl tabular-nums">{formatCurrency(finalTotal)} {symbol}</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Tag className="h-3 w-3 text-muted-foreground shrink-0" />
-                <span className="text-xs text-muted-foreground">Скидка</span>
-                <Input
-                  type="number" min={0} max={100} placeholder="0"
-                  value={discount}
-                  onChange={e => setDiscount(e.target.value)}
-                  className="flex-1 h-7 text-xs text-right min-w-0"
-                />
-                <span className="text-xs text-muted-foreground shrink-0">%</span>
-              </div>
-            </div>
-            {(surchargeAmt > 0 || discountAmt > 0) && (
-              <div className="flex gap-3 text-xs">
-                {surchargeAmt > 0 && <span className="text-orange-600 dark:text-orange-400 tabular-nums">+{formatCurrency(surchargeAmt)}</span>}
-                {discountAmt > 0 && <span className="text-green-600 dark:text-green-400 tabular-nums">-{formatCurrency(discountAmt)}</span>}
-              </div>
-            )}
 
-            <Separator />
-
-            {/* Итого */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Позиций: {cart.length}</span>
-              <span className="font-bold text-xl tabular-nums">{formatCurrency(finalTotal)} {symbol}</span>
-            </div>
-
-            {/* Предоплата: смешанная — 2 колонки, обычная — строка */}
-            {isMixed ? (
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-muted-foreground shrink-0">Нал.</span>
-                  <Input type="number" min={0} placeholder="0"
-                    value={paymentCash} onChange={e => setPaymentCash(e.target.value)}
-                    className="flex-1 h-7 text-xs text-right min-w-0" />
+              {isMixed ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground shrink-0">Нал.</span>
+                    <Input type="number" min={0} placeholder="0"
+                      value={paymentCash} onChange={e => setPaymentCash(e.target.value)}
+                      className="flex-1 h-7 text-xs text-right min-w-0 bg-background" />
+                    <span className="text-xs text-muted-foreground shrink-0">{symbol}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground shrink-0">Карта</span>
+                    <Input type="number" min={0} placeholder="0"
+                      value={paymentCard} onChange={e => setPaymentCard(e.target.value)}
+                      className="flex-1 h-7 text-xs text-right min-w-0 bg-background" />
+                    <span className="text-xs text-muted-foreground shrink-0">{symbol}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-muted-foreground shrink-0">Карта</span>
-                  <Input type="number" min={0} placeholder="0"
-                    value={paymentCard} onChange={e => setPaymentCard(e.target.value)}
-                    className="flex-1 h-7 text-xs text-right min-w-0" />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Предоплата</span>
+                  <Input
+                    type="number" min={0} placeholder="0"
+                    value={prepaid}
+                    onChange={e => setPrepaid(e.target.value)}
+                    className="flex-1 h-7 text-sm text-right bg-background"
+                  />
+                  <span className="text-xs text-muted-foreground shrink-0">{symbol}</span>
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Предоплата</span>
-                <Input
-                  type="number" min={0} placeholder="0"
-                  value={prepaid}
-                  onChange={e => setPrepaid(e.target.value)}
-                  className="flex-1 h-7 text-sm text-right"
-                />
-                <span className="text-xs text-muted-foreground shrink-0">{symbol}</span>
-              </div>
-            )}
+              )}
 
-            {effectivePrepaid > 0 && (
-              <div className="flex justify-between text-sm font-medium text-orange-600 dark:text-orange-400">
-                <span>К оплате:</span>
-                <span className="tabular-nums">{formatCurrency(Math.max(0, finalTotal - effectivePrepaid))} {symbol}</span>
-              </div>
-            )}
+              {effectivePrepaid > 0 && (
+                <div className="flex justify-between text-sm font-semibold text-orange-600 dark:text-orange-400">
+                  <span>К оплате:</span>
+                  <span className="tabular-nums">{formatCurrency(Math.max(0, finalTotal - effectivePrepaid))} {symbol}</span>
+                </div>
+              )}
+            </div>
 
-            <div className="flex gap-2 pt-0.5">
+            {/* Кнопки */}
+            <div className="flex gap-2">
               {cart.length > 0 && (
                 <Button
                   variant="outline" size="icon"
