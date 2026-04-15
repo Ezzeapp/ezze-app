@@ -13,9 +13,11 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import {
   useWorkshopOrders,
   useWorkshopOrdersStats,
+  useUpdateWorkshopStatus,
   type WorkshopOrderStatus,
   type WorkshopOrder,
 } from '@/hooks/useWorkshopOrders'
+import { toast } from '@/components/shared/Toaster'
 import { formatCurrency, cn } from '@/lib/utils'
 import dayjs from 'dayjs'
 
@@ -143,7 +145,17 @@ export function WorkshopOrdersListPage() {
           action={{ label: t('workshop.list.newOrder'), onClick: () => navigate('/orders/new') }}
         />
       ) : view === 'board' ? (
-        <KanbanBoard orders={orders} onOpen={(id) => navigate(`/orders/${id}`)} />
+        <>
+          <KanbanBoard orders={orders} onOpen={(id) => navigate(`/orders/${id}`)} />
+          {(() => {
+            const hidden = orders.filter(o => !KANBAN_STATUSES.includes(o.status)).length
+            return hidden > 0 ? (
+              <div className="mt-3 text-xs text-muted-foreground text-center">
+                Ещё {hidden} заказов в архивных статусах (оплачен / отказ / отменён) — в режиме «Список».
+              </div>
+            ) : null
+          })()}
+        </>
       ) : (
         <div className="space-y-2">
           {orders.map(o => (
@@ -155,49 +167,121 @@ export function WorkshopOrdersListPage() {
   )
 }
 
-// ── Канбан-доска ─────────────────────────────────────────────────────────────
+// ── Канбан-доска с drag & drop ──────────────────────────────────────────────
 function KanbanBoard({ orders, onOpen }: { orders: WorkshopOrder[]; onOpen: (id: string) => void }) {
   const { t } = useTranslation()
+  const updateStatus = useUpdateWorkshopStatus()
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [dragOver, setDragOver] = useState<WorkshopOrderStatus | null>(null)
+
   const grouped = KANBAN_STATUSES.map(s => ({
     status: s,
     orders: orders.filter(o => o.status === s),
   }))
 
+  async function handleDrop(newStatus: WorkshopOrderStatus) {
+    const id = dragId
+    setDragId(null)
+    setDragOver(null)
+    if (!id) return
+    const order = orders.find(o => o.id === id)
+    if (!order || order.status === newStatus) return
+    try {
+      await updateStatus.mutateAsync({ id, status: newStatus })
+      toast.success(`${order.number} → ${t(`workshop.status.${newStatus}`)}`)
+    } catch (e: any) {
+      toast.error(e.message ?? 'Ошибка')
+    }
+  }
+
   return (
     <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 sm:mx-0 px-4 sm:px-0">
-      {grouped.map(col => (
-        <div key={col.status} className="flex-shrink-0 w-72">
-          <div className={cn(
-            'sticky top-0 rounded-t-lg border border-b-0 px-3 py-2 text-sm font-semibold flex items-center justify-between',
-            STATUS_COLORS[col.status],
-          )}>
-            <span>{t(`workshop.status.${col.status}`)}</span>
-            <span className="text-xs opacity-75">{col.orders.length}</span>
+      {grouped.map(col => {
+        const isOver = dragOver === col.status
+        return (
+          <div
+            key={col.status}
+            className="flex-shrink-0 w-72"
+            onDragOver={(e) => {
+              if (!dragId) return
+              e.preventDefault()
+              e.dataTransfer.dropEffect = 'move'
+              if (dragOver !== col.status) setDragOver(col.status)
+            }}
+            onDragLeave={(e) => {
+              // Очищаем только когда действительно покинули колонку (а не перешли на ребёнка)
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                setDragOver(prev => prev === col.status ? null : prev)
+              }
+            }}
+            onDrop={(e) => {
+              e.preventDefault()
+              handleDrop(col.status)
+            }}
+          >
+            <div className={cn(
+              'sticky top-0 rounded-t-lg border border-b-0 px-3 py-2 text-sm font-semibold flex items-center justify-between z-10',
+              STATUS_COLORS[col.status],
+            )}>
+              <span>{t(`workshop.status.${col.status}`)}</span>
+              <span className="text-xs opacity-75">{col.orders.length}</span>
+            </div>
+            <div className={cn(
+              'rounded-b-lg border bg-muted/20 p-2 min-h-[60vh] space-y-2 transition-colors',
+              isOver && 'bg-primary/10 border-primary ring-2 ring-primary/40',
+            )}>
+              {col.orders.map(o => (
+                <KanbanCard
+                  key={o.id}
+                  order={o}
+                  dragging={dragId === o.id}
+                  onOpen={() => onOpen(o.id)}
+                  onDragStart={() => setDragId(o.id)}
+                  onDragEnd={() => { setDragId(null); setDragOver(null) }}
+                />
+              ))}
+              {col.orders.length === 0 && (
+                <div className="text-center text-xs text-muted-foreground py-8 select-none">
+                  {isOver ? 'Отпустите, чтобы переместить' : '—'}
+                </div>
+              )}
+            </div>
           </div>
-          <div className="rounded-b-lg border bg-muted/20 p-2 min-h-[60vh] space-y-2">
-            {col.orders.map(o => (
-              <KanbanCard key={o.id} order={o} onClick={() => onOpen(o.id)} />
-            ))}
-            {col.orders.length === 0 && (
-              <div className="text-center text-xs text-muted-foreground py-8">—</div>
-            )}
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
 
-function KanbanCard({ order, onClick }: { order: WorkshopOrder; onClick: () => void }) {
+function KanbanCard({ order, dragging, onOpen, onDragStart, onDragEnd }: {
+  order: WorkshopOrder
+  dragging: boolean
+  onOpen: () => void
+  onDragStart: () => void
+  onDragEnd: () => void
+}) {
   const device = [order.item_type_name, order.brand, order.model].filter(Boolean).join(' · ')
   const clientName = order.client ? `${order.client.first_name} ${order.client.last_name ?? ''}`.trim() : '—'
   const overdue = order.ready_date && dayjs(order.ready_date).isBefore(dayjs(), 'day')
     && !['issued','paid','cancelled','refused'].includes(order.status)
 
+  // отличаем клик от перетаскивания по dataTransfer
+  function handleDragStart(e: React.DragEvent) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', order.id)
+    onDragStart()
+  }
+
   return (
     <div
-      onClick={onClick}
-      className="rounded-md border bg-card p-2 cursor-pointer hover:shadow-sm transition-all text-sm"
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={onDragEnd}
+      onClick={() => { if (!dragging) onOpen() }}
+      className={cn(
+        'rounded-md border bg-card p-2 cursor-grab active:cursor-grabbing hover:shadow-sm transition-all text-sm select-none',
+        dragging && 'opacity-40 scale-95',
+      )}
     >
       <div className="flex items-center justify-between">
         <span className="font-semibold text-xs">{order.number}</span>
