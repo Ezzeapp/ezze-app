@@ -7,15 +7,20 @@ on:
 
 jobs:
 
-  # ── Frontend: 11 продуктов собираются и деплоятся параллельно ──────────────
+  # ── Frontend: 12 продуктов + регистрационный портал ──────────────────────────
   frontend:
-    name: Build & Deploy ${{ matrix.product }}
+    name: Build & Deploy ${{ matrix.label || matrix.product }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false   # падение одного продукта не останавливает остальные
       max-parallel: 4    # не более 4 одновременных SSH на VPS
       matrix:
         include:
+          # Регистрационный портал (app.ezze.site) — должен деплоиться первым в списке
+          - product: beauty
+            label: app.ezze.site (register)
+            app_url: https://app.ezze.site
+            web_path: /var/www/ezze-app/
           - product: beauty
             app_url: https://beauty.ezze.site
             web_path: /var/www/ezze-beauty/
@@ -185,4 +190,4 @@ jobs:
           '
 
       - name: Notify success
-        run: echo "✅ All 11 products deployed successfully"
+        run: echo "✅ All 12 products + registration portal deployed successfully"
