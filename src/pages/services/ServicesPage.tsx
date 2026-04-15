@@ -257,7 +257,7 @@ type SortKey = 'name' | 'price' | 'duration' | 'category'
 // ── Main page ──────────────────────────────────────────────────────────────
 export function ServicesPage() {
   const { t, i18n } = useTranslation()
-  const [servicesView, setServicesView] = useState<'services' | 'catalog'>('services')
+  const [servicesView, setServicesView] = useState<'services' | 'catalog'>(PRODUCT === 'cleaning' ? 'catalog' : 'services')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editService, setEditService] = useState<Service | null>(null)
   const [activeTab, setActiveTab] = useState('main')
