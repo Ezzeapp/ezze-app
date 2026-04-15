@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Tag, Shirt, Briefcase, Flower, Layers, Scissors, Dumbbell, Baby, Crown, Gem, Package, Grid3x3, Ribbon, type LucideIcon } from 'lucide-react'
+import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -68,37 +68,6 @@ function makeCartItem(name: string, price: number, days: number, typeId: string 
   }
 }
 
-
-// ── Подкатегории для одежды ───────────────────────────────────────────────────
-
-interface CatalogCategory { id: string; label: string; icon: LucideIcon; iconCls: string; bg: string; keywords: string[] }
-
-const CLOTHING_SUBCATS: CatalogCategory[] = [
-  { id: 'outer',   label: 'Верхняя одежда', icon: Shirt,     iconCls: 'text-blue-600   dark:text-blue-400',   bg: 'bg-blue-50   dark:bg-blue-900/30',   keywords: ['пальто','куртк','пуховик','плащ','пончо','шуба','дублён','ветровк','кожан','замшев'] },
-  { id: 'suits',   label: 'Костюмы',        icon: Briefcase, iconCls: 'text-slate-600  dark:text-slate-400',  bg: 'bg-slate-50  dark:bg-slate-800/40',  keywords: ['пиджак','жилет','костюм','смокинг','фрак','мундир','форма'] },
-  { id: 'dresses', label: 'Платья и юбки',  icon: Flower,    iconCls: 'text-pink-600   dark:text-pink-400',   bg: 'bg-pink-50   dark:bg-pink-900/30',   keywords: ['платье','юбка'] },
-  { id: 'bottoms', label: 'Брюки и джинсы', icon: Layers,    iconCls: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/30', keywords: ['брюк','джинс','шорт'] },
-  { id: 'knit',    label: 'Трикотаж',       icon: Scissors,  iconCls: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/30', keywords: ['свитер','кардиган','джемпер','водолазк','толстовк','худи'] },
-  { id: 'shirts',  label: 'Рубашки и топы', icon: Tag,       iconCls: 'text-green-600  dark:text-green-400',  bg: 'bg-green-50  dark:bg-green-900/30',  keywords: ['рубашк','футболк','поло','майк'] },
-  { id: 'sports',  label: 'Спортивная',     icon: Dumbbell,  iconCls: 'text-lime-600   dark:text-lime-400',   bg: 'bg-lime-50   dark:bg-lime-900/30',   keywords: ['спортив','комбинезон взрос','рабоч'] },
-  { id: 'kids',    label: 'Детская',        icon: Baby,      iconCls: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-900/30', keywords: ['детск','детское','детская','комбинезон детск'] },
-  { id: 'formal',  label: 'Официальная',    icon: Crown,     iconCls: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/30', keywords: ['вечерн','свадебн','смокинг','фрак','мундир','медицин','халат','пижам'] },
-  { id: 'access',  label: 'Аксессуары',     icon: Gem,       iconCls: 'text-rose-600   dark:text-rose-400',   bg: 'bg-rose-50   dark:bg-rose-900/30',   keywords: ['шарф','палантин','галстук','перчатк','шапк','берет'] },
-  { id: 'other',   label: 'Прочее',         icon: Package,   iconCls: 'text-gray-500   dark:text-gray-400',   bg: 'bg-gray-50   dark:bg-gray-800/40',   keywords: ['одеял','подушк','постел'] },
-]
-
-function matchSubcat(name: string, cat: CatalogCategory): boolean {
-  const n = name.toLowerCase()
-  return cat.keywords.some(k => n.includes(k))
-}
-
-function getSubcatCounts(items: any[]): Record<string, number> {
-  const counts: Record<string, number> = {}
-  CLOTHING_SUBCATS.forEach(cat => {
-    counts[cat.id] = items.filter(i => matchSubcat(i.name, cat)).length
-  })
-  return counts
-}
 
 // ── Диалог размеров ковра ─────────────────────────────────────────────────────
 
@@ -302,23 +271,12 @@ export function POSPage() {
   const filteredTypes = allTypes.filter(t => (t.category || 'clothing') === orderType)
   const [catalogSearch, setCatalogSearch] = useState('')
   const [catalogView, setCatalogView] = useState<'grid' | 'list'>('grid')
-  const [catalogSubcat, setCatalogSubcat] = useState<string>('all')
 
-  // Сброс подкатегории при смене типа заказа
-  const handleSetOrderType = (t: OrderType) => { setOrderType(t); setCart([]); setCatalogSearch(''); setCatalogSubcat('all') }
+  const handleSetOrderType = (t: OrderType) => { setOrderType(t); setCart([]); setCatalogSearch('') }
 
-  const subcatCounts = orderType === 'clothing' ? getSubcatCounts(filteredTypes) : {}
-  const activeSubcats = CLOTHING_SUBCATS.filter(c => (subcatCounts[c.id] ?? 0) > 0)
-
-  const visibleTypes = (() => {
-    let items = filteredTypes
-    if (catalogSearch) return items.filter(t => t.name.toLowerCase().includes(catalogSearch.toLowerCase()))
-    if (orderType === 'clothing' && catalogSubcat !== 'all' && catalogSubcat !== '_all_items') {
-      const cat = CLOTHING_SUBCATS.find(c => c.id === catalogSubcat)
-      if (cat) items = items.filter(t => matchSubcat(t.name, cat))
-    }
-    return items
-  })()
+  const visibleTypes = catalogSearch
+    ? filteredTypes.filter(t => t.name.toLowerCase().includes(catalogSearch.toLowerCase()))
+    : filteredTypes
 
   // Корзина
   const [cart, setCart] = useState<CartItem[]>([])
@@ -620,27 +578,6 @@ export function POSPage() {
             </div>
           </div>
 
-          {/* Хлебная крошка при выбранной категории */}
-          {orderType === 'clothing' && catalogSubcat !== 'all' && !catalogSearch && (
-            <div className="px-3 pb-2 shrink-0">
-              <button
-                onClick={() => setCatalogSubcat('all')}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                {catalogSubcat === '_all_items' ? (
-                  <><Grid3x3 className="h-3.5 w-3.5" /><span className="font-medium">Все товары</span></>
-                ) : (() => {
-                  const cat = CLOTHING_SUBCATS.find(c => c.id === catalogSubcat)
-                  if (!cat) return null
-                  const Icon = cat.icon
-                  return <><Icon className={cn('h-3.5 w-3.5', cat.iconCls)} /><span className="font-medium">{cat.label}</span></>
-                })()}
-                <span className="text-muted-foreground/60">· {visibleTypes.length} поз.</span>
-              </button>
-            </div>
-          )}
-
           {/* Подпись типа (для нон-одежда) */}
           {orderType !== 'clothing' && (
             <div className="px-3 pb-1 shrink-0">
@@ -656,41 +593,7 @@ export function POSPage() {
             </div>
           )}
 
-          {/* Плитки категорий одежды (первый экран) */}
-          {orderType === 'clothing' && catalogSubcat === 'all' && !catalogSearch && activeSubcats.length > 1 ? (
-            <div className="flex-1 overflow-y-auto px-3 pb-3 min-h-0">
-              <div className="grid grid-cols-3 gap-2">
-                {activeSubcats.map(cat => {
-                  const Icon = cat.icon
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => setCatalogSubcat(cat.id)}
-                      className={cn(
-                        'flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-transparent',
-                        'hover:border-primary/30 hover:shadow-sm transition-all active:scale-95 text-center',
-                        cat.bg
-                      )}
-                    >
-                      <Icon className={cn('h-7 w-7', cat.iconCls)} strokeWidth={1.5} />
-                      <span className="text-xs font-semibold leading-tight">{cat.label}</span>
-                      <span className="text-[10px] text-muted-foreground">{subcatCounts[cat.id]} поз.</span>
-                    </button>
-                  )
-                })}
-                {/* Показать всё */}
-                <button
-                  onClick={() => { setCatalogSubcat('_all_items') }}
-                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-dashed border-border hover:border-primary/40 transition-all active:scale-95 text-center"
-                >
-                  <Grid3x3 className="h-7 w-7 text-muted-foreground" strokeWidth={1.5} />
-                  <span className="text-xs font-semibold leading-tight">Все товары</span>
-                  <span className="text-[10px] text-muted-foreground">{filteredTypes.length} поз.</span>
-                </button>
-              </div>
-            </div>
-          ) : (
-          /* Список/плитки */
+          {/* Список/плитки */}
           <div className="flex-1 overflow-y-auto px-3 pb-3 min-h-0">
             {catalogView === 'grid' ? (
               <div className="grid grid-cols-3 gap-2">
@@ -772,7 +675,6 @@ export function POSPage() {
               </p>
             )}
           </div>
-          )}
         </div>
 
         {/* ── Правая панель: чек ── */}
