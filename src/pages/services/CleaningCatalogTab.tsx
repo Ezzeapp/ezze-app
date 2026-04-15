@@ -160,7 +160,7 @@ function AddItemDialog({ open, onClose, maxSortOrder, orderTypes, existingSubcat
           </div>
 
           <div className="space-y-1.5">
-            <Label>Категория</Label>
+            <Label>Тип заказа</Label>
             <div className="relative">
               <select
                 value={category}
@@ -189,7 +189,7 @@ function AddItemDialog({ open, onClose, maxSortOrder, orderTypes, existingSubcat
           </div>
 
           <div className="space-y-1.5">
-            <Label>Подкатегория</Label>
+            <Label>Категория</Label>
             <Input
               value={subcategory}
               onChange={e => setSubcategory(e.target.value)}
@@ -928,8 +928,8 @@ export function CleaningCatalogTab() {
                     Название<SortIcon col="name" />
                   </button>
                 </th>
-                <th className="text-left p-3 font-medium hidden sm:table-cell">Категория</th>
-                <th className="text-left p-3 font-medium hidden md:table-cell">Подкатегория</th>
+                <th className="text-left p-3 font-medium hidden sm:table-cell">Тип заказа</th>
+                <th className="text-left p-3 font-medium hidden md:table-cell">Категория</th>
                 <th className="text-left p-3 font-medium">
                   <button onClick={() => toggleSort('price')} className="flex items-center hover:text-foreground">
                     Цена ({currencySymbol})<SortIcon col="price" />
