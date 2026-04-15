@@ -671,7 +671,7 @@ export function POSPage() {
             </button>
           </div>
 
-          {/* Поиск + вид */}
+          {/* Поиск + вид + Своё */}
           <div className="px-3 pt-1 pb-2 flex items-center gap-2 shrink-0">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -682,6 +682,14 @@ export function POSPage() {
                 className="pl-8 h-8 text-sm"
               />
             </div>
+            <button
+              onClick={addCustomItem}
+              className="flex items-center gap-1 px-2.5 h-8 rounded-lg border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-colors shrink-0 text-xs"
+              title="Добавить своё изделие"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Своё
+            </button>
             <div className="flex rounded-lg border overflow-hidden shrink-0">
               <button
                 onClick={() => setCatalogView('grid')}
@@ -750,13 +758,6 @@ export function POSPage() {
                     <span className="text-xs text-muted-foreground">{sub.count} позиций</span>
                   </button>
                 ))}
-                <button
-                  onClick={addCustomItem}
-                  className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-all"
-                >
-                  <Plus className="h-5 w-5" />
-                  <span className="text-xs">Своё</span>
-                </button>
               </div>
             ) : (
               /* Позиции */
@@ -837,13 +838,6 @@ export function POSPage() {
                         Показать ещё ({visibleTypes.length - pagedListTypes.length})
                       </button>
                     )}
-                    <button
-                      onClick={addCustomItem}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-all"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span className="text-sm">Своё изделие</span>
-                    </button>
                   </div>
                 )}
 
@@ -880,13 +874,14 @@ export function POSPage() {
                     >
                       <span className="text-xs text-muted-foreground w-5 shrink-0">{idx + 1}</span>
                       <div className="flex-1 min-w-0">
-                        {item.item_type_name ? (
+                        {item.item_type_id ? (
                           <p className="text-sm font-medium truncate">{item.item_type_name}</p>
                         ) : (
                           <Input
                             placeholder="Название изделия..."
                             value={item.item_type_name}
                             onChange={e => updateItem(item.key, 'item_type_name', e.target.value)}
+                            onClick={e => e.stopPropagation()}
                             className="h-7 text-sm"
                           />
                         )}
