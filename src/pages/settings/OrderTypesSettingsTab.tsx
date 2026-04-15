@@ -2,24 +2,23 @@ import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Layers } from 'lucide-react'
 import {
-  ALL_ORDER_TYPES, ORDER_TYPE_LABELS, ORDER_TYPE_DESCRIPTIONS, ORDER_TYPE_ICONS,
-  useCleaningEnabledOrderTypes, useUpdateCleaningOrderTypes, type OrderType,
+  useCleaningOrderTypesConfig, useUpdateCleaningOrderTypesConfig, getOrderTypeIcon,
 } from '@/hooks/useCleaningOrders'
 import { toast } from '@/components/shared/Toaster'
 
 export function OrderTypesSettingsTab() {
-  const { data: enabled = ['clothing', 'carpet', 'furniture'] as OrderType[] } = useCleaningEnabledOrderTypes()
-  const update = useUpdateCleaningOrderTypes()
+  const { data: allTypes = [] } = useCleaningOrderTypesConfig()
+  const update = useUpdateCleaningOrderTypesConfig()
 
-  const toggle = async (type: OrderType) => {
-    const isEnabled = enabled.includes(type)
-    if (isEnabled && enabled.length <= 1) {
+  const toggle = async (slug: string) => {
+    const type = allTypes.find(t => t.slug === slug)
+    if (!type) return
+    const isEnabled = type.active
+    if (isEnabled && allTypes.filter(t => t.active).length <= 1) {
       toast.error('Нельзя отключить все типы заказов')
       return
     }
-    const next = isEnabled
-      ? enabled.filter(t => t !== type)
-      : [...enabled, type]
+    const next = allTypes.map(t => t.slug === slug ? { ...t, active: !t.active } : t)
     try {
       await update.mutateAsync(next)
       toast.success('Сохранено')
@@ -40,12 +39,12 @@ export function OrderTypesSettingsTab() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-1">
-        {ALL_ORDER_TYPES.map(type => {
-          const Icon = ORDER_TYPE_ICONS[type]
-          const isEnabled = enabled.includes(type)
+        {[...allTypes].sort((a, b) => a.sort_order - b.sort_order).map(type => {
+          const Icon = getOrderTypeIcon(type.icon)
+          const isEnabled = type.active
           return (
             <div
-              key={type}
+              key={type.slug}
               className="flex items-center justify-between py-3 border-b last:border-0"
             >
               <div className="flex items-center gap-3">
@@ -54,14 +53,16 @@ export function OrderTypesSettingsTab() {
                 </div>
                 <div>
                   <p className={`text-sm font-medium ${!isEnabled && 'text-muted-foreground'}`}>
-                    {ORDER_TYPE_LABELS[type]}
+                    {type.label}
                   </p>
-                  <p className="text-xs text-muted-foreground">{ORDER_TYPE_DESCRIPTIONS[type]}</p>
+                  {type.description && (
+                    <p className="text-xs text-muted-foreground">{type.description}</p>
+                  )}
                 </div>
               </div>
               <Switch
                 checked={isEnabled}
-                onCheckedChange={() => toggle(type)}
+                onCheckedChange={() => toggle(type.slug)}
                 disabled={update.isPending}
               />
             </div>
