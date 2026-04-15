@@ -14,7 +14,7 @@ import {
 function getDefaultPath(): string {
   if (PRODUCT === 'cleaning') return '/orders'
   if (PRODUCT === 'farm')     return '/farm'
-  return getDefaultPath()
+  return window.innerWidth < 1024 ? '/calendar' : '/dashboard'
 }
 import { TelegramSplash } from '@/components/shared/TelegramSplash'
 import { Button } from '@/components/ui/button'
