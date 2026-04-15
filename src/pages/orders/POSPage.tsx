@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -271,12 +271,29 @@ export function POSPage() {
   const filteredTypes = allTypes.filter(t => (t.category || 'clothing') === orderType)
   const [catalogSearch, setCatalogSearch] = useState('')
   const [catalogView, setCatalogView] = useState<'grid' | 'list'>('grid')
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
 
-  const handleSetOrderType = (t: OrderType) => { setOrderType(t); setCart([]); setCatalogSearch('') }
+  // Группировка по подкатегориям для текущего типа заказа
+  const subcategories = useMemo(() => {
+    const map = new Map<string, number>()
+    filteredTypes.forEach(t => {
+      const sub = t.subcategory || 'Другое'
+      map.set(sub, (map.get(sub) || 0) + 1)
+    })
+    return Array.from(map.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ru'))
+  }, [filteredTypes])
 
-  const visibleTypes = catalogSearch
-    ? filteredTypes.filter(t => t.name.toLowerCase().includes(catalogSearch.toLowerCase()))
-    : filteredTypes
+  const handleSetOrderType = (t: OrderType) => {
+    setOrderType(t); setCart([]); setCatalogSearch(''); setSelectedSubcategory(null)
+  }
+
+  const visibleTypes = useMemo(() => {
+    if (catalogSearch) return filteredTypes.filter(t => t.name.toLowerCase().includes(catalogSearch.toLowerCase()))
+    if (selectedSubcategory) return filteredTypes.filter(t => (t.subcategory || 'Другое') === selectedSubcategory)
+    return filteredTypes
+  }, [filteredTypes, catalogSearch, selectedSubcategory])
 
   // Корзина
   const [cart, setCart] = useState<CartItem[]>([])
@@ -404,7 +421,6 @@ export function POSPage() {
         })),
       })
 
-      // Собираем данные для квитанции (пока у нас есть корзина)
       const rData: ReceiptData = {
         id: order.id,
         number: order.number,
@@ -441,7 +457,6 @@ export function POSPage() {
 
   // ── Рендер ────────────────────────────────────────────────────────────────
 
-
   const CATALOG_BG: Record<string, string> = {
     clothing:  'bg-blue-50/40 dark:bg-blue-950/10',
     carpet:    'bg-green-50/40 dark:bg-green-950/10',
@@ -449,6 +464,12 @@ export function POSPage() {
     shoes:     'bg-rose-50/40 dark:bg-rose-950/10',
     curtains:  'bg-violet-50/40 dark:bg-violet-950/10',
     bedding:   'bg-sky-50/40 dark:bg-sky-950/10',
+  }
+
+  const addCustomItem = () => {
+    const item = makeCartItem('', 0, 3)
+    setCart(prev => [...prev, item])
+    setExpandedKey(item.key)
   }
 
   return (
@@ -461,29 +482,7 @@ export function POSPage() {
         </Button>
         <span className="font-semibold text-base">Приём заказа</span>
 
-        {/* Тип заказа */}
-        <div className="flex gap-1 ml-3">
-          {enabledOrderTypes.map((cfg: CleaningOrderTypeConfig) => {
-            const Icon = getOrderTypeIcon(cfg.icon)
-            return (
-              <button
-                key={cfg.slug}
-                onClick={() => handleSetOrderType(cfg.slug)}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border',
-                  orderType === cfg.slug
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-muted text-muted-foreground border-transparent hover:border-border'
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {cfg.label}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Исполнитель — compact select in header */}
+        {/* Исполнитель */}
         {members.length > 0 && (
           <select
             value={assignedTo ?? ""}
@@ -546,8 +545,30 @@ export function POSPage() {
       {/* ── Основная область ── */}
       <div className="flex-1 flex overflow-hidden min-h-0">
 
-        {/* ── Левая панель: каталог ── */}
-        <div className={cn("w-[55%] border-r flex flex-col overflow-hidden", CATALOG_BG[orderType])}>
+        {/* ── Тип заказа — боковая панель ── */}
+        <div className="w-[82px] shrink-0 border-r flex flex-col gap-1 p-1.5 bg-background overflow-y-auto">
+          {enabledOrderTypes.map((cfg: CleaningOrderTypeConfig) => {
+            const Icon = getOrderTypeIcon(cfg.icon)
+            return (
+              <button
+                key={cfg.slug}
+                onClick={() => handleSetOrderType(cfg.slug)}
+                className={cn(
+                  'flex flex-col items-center gap-1 px-1 py-2.5 rounded-lg text-xs font-medium transition-colors w-full',
+                  orderType === cfg.slug
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="leading-tight text-center">{cfg.label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* ── Каталог ── */}
+        <div className={cn("flex-1 border-r flex flex-col overflow-hidden min-h-0", CATALOG_BG[orderType])}>
 
           {/* Поиск + вид */}
           <div className="px-3 pt-3 pb-2 flex items-center gap-2 shrink-0">
@@ -578,52 +599,32 @@ export function POSPage() {
             </div>
           </div>
 
-          {/* Подпись типа (для нон-одежда) */}
-          {orderType !== 'clothing' && (
+          {/* Подсказка для ковра */}
+          {orderType === 'carpet' && selectedSubcategory && (
             <div className="px-3 pb-1 shrink-0">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                {(() => {
-                  const cfg = enabledOrderTypes.find((c: CleaningOrderTypeConfig) => c.slug === orderType)
-                  const Icon = getOrderTypeIcon(cfg?.icon ?? orderType)
-                  return <Icon className="h-3.5 w-3.5" />
-                })()}
-                {enabledOrderTypes.find((c: CleaningOrderTypeConfig) => c.slug === orderType)?.label ?? orderType}
-                {orderType === 'carpet' && ' — нажмите для ввода размеров'}
-              </p>
+              <p className="text-xs text-muted-foreground">Нажмите на позицию для ввода размеров</p>
             </div>
           )}
 
-          {/* Список/плитки */}
+          {/* Каталог: категории → позиции */}
           <div className="flex-1 overflow-y-auto px-3 pb-3 min-h-0">
-            {catalogView === 'grid' ? (
+
+            {!catalogSearch && !selectedSubcategory ? (
+              /* ── Карточки категорий ── */
               <div className="grid grid-cols-3 gap-2">
-                {visibleTypes.map(type => (
+                {subcategories.map(sub => (
                   <button
-                    key={type.id}
-                    onClick={() => addFromCatalog(type)}
-                    className={cn(
-                      "flex flex-col items-start gap-1 p-3 rounded-xl border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95",
-                      flashTypeId === type.id && "ring-2 ring-primary scale-95"
-                    )}
+                    key={sub.name}
+                    onClick={() => setSelectedSubcategory(sub.name)}
+                    className="flex flex-col items-start gap-1 p-3 rounded-xl border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left"
                   >
-                    <span className="text-sm font-medium leading-tight group-hover:text-primary transition-colors line-clamp-2">
-                      {type.name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {orderType === 'carpet'
-                        ? `${formatCurrency(type.default_price)} ${symbol}/м²`
-                        : `${formatCurrency(type.default_price)} ${symbol}`}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{type.default_days} дн.</span>
+                    <span className="text-sm font-semibold leading-tight line-clamp-2">{sub.name}</span>
+                    <span className="text-xs text-muted-foreground">{sub.count} позиций</span>
                   </button>
                 ))}
-                {/* Добавить своё */}
+                {/* Своё */}
                 <button
-                  onClick={() => {
-                    const item = makeCartItem('', 0, 3)
-                    setCart(prev => [...prev, item])
-                    setExpandedKey(item.key)
-                  }}
+                  onClick={addCustomItem}
                   className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-all"
                 >
                   <Plus className="h-5 w-5" />
@@ -631,54 +632,98 @@ export function POSPage() {
                 </button>
               </div>
             ) : (
-              <div className="space-y-1">
-                {visibleTypes.map(type => (
+              /* ── Позиции (по категории или поиск) ── */
+              <>
+                {/* Кнопка назад (только когда выбрана категория, не поиск) */}
+                {selectedSubcategory && !catalogSearch && (
                   <button
-                    key={type.id}
-                    onClick={() => addFromCatalog(type)}
-                    className={cn(
-                      "w-full flex items-center justify-between px-3 py-2 rounded-lg border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95",
-                      flashTypeId === type.id && "ring-2 ring-primary scale-95"
-                    )}
+                    onClick={() => setSelectedSubcategory(null)}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-2 -ml-1 px-2 py-1 rounded-lg hover:bg-muted/60 transition-colors"
                   >
-                    <span className="text-sm font-medium group-hover:text-primary transition-colors truncate flex-1 mr-3">
-                      {type.name}
-                    </span>
-                    <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
-                      <span>
-                        {orderType === 'carpet'
-                          ? `${formatCurrency(type.default_price)} ${symbol}/м²`
-                          : `${formatCurrency(type.default_price)} ${symbol}`}
-                      </span>
-                      <span>{type.default_days} дн.</span>
-                    </div>
+                    <ArrowLeft className="h-3 w-3" />
+                    <span>Все категории</span>
+                    <span className="text-foreground font-medium">· {selectedSubcategory}</span>
                   </button>
-                ))}
-                {/* Своё в виде строки */}
-                <button
-                  onClick={() => {
-                    const item = makeCartItem('', 0, 3)
-                    setCart(prev => [...prev, item])
-                    setExpandedKey(item.key)
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-all"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="text-sm">Своё изделие</span>
-                </button>
-              </div>
-            )}
+                )}
 
-            {visibleTypes.length === 0 && catalogSearch && (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Ничего не найдено по «{catalogSearch}»
-              </p>
+                {catalogView === 'grid' ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {visibleTypes.map(type => (
+                      <button
+                        key={type.id}
+                        onClick={() => addFromCatalog(type)}
+                        className={cn(
+                          "flex flex-col items-start gap-1 p-3 rounded-xl border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95",
+                          flashTypeId === type.id && "ring-2 ring-primary scale-95"
+                        )}
+                      >
+                        <span className="text-sm font-medium leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                          {type.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {orderType === 'carpet'
+                            ? `${formatCurrency(type.default_price)} ${symbol}/м²`
+                            : `${formatCurrency(type.default_price)} ${symbol}`}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{type.default_days} дн.</span>
+                      </button>
+                    ))}
+                    {/* Своё */}
+                    <button
+                      onClick={addCustomItem}
+                      className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-all"
+                    >
+                      <Plus className="h-5 w-5" />
+                      <span className="text-xs">Своё</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {visibleTypes.map(type => (
+                      <button
+                        key={type.id}
+                        onClick={() => addFromCatalog(type)}
+                        className={cn(
+                          "w-full flex items-center justify-between px-3 py-2 rounded-lg border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95",
+                          flashTypeId === type.id && "ring-2 ring-primary scale-95"
+                        )}
+                      >
+                        <span className="text-sm font-medium group-hover:text-primary transition-colors truncate flex-1 mr-3">
+                          {type.name}
+                        </span>
+                        <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
+                          <span>
+                            {orderType === 'carpet'
+                              ? `${formatCurrency(type.default_price)} ${symbol}/м²`
+                              : `${formatCurrency(type.default_price)} ${symbol}`}
+                          </span>
+                          <span>{type.default_days} дн.</span>
+                        </div>
+                      </button>
+                    ))}
+                    {/* Своё в виде строки */}
+                    <button
+                      onClick={addCustomItem}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-all"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span className="text-sm">Своё изделие</span>
+                    </button>
+                  </div>
+                )}
+
+                {visibleTypes.length === 0 && catalogSearch && (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Ничего не найдено по «{catalogSearch}»
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>
 
         {/* ── Правая панель: чек ── */}
-        <div className="w-[45%] flex flex-col overflow-hidden min-h-0">
+        <div className="w-[40%] flex flex-col overflow-hidden min-h-0">
 
           {/* Список позиций */}
           <div className="flex-1 overflow-y-auto min-h-0">
