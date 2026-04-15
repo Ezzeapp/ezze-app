@@ -89,13 +89,19 @@ jobs:
           printf 'Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  ConnectTimeout 30\n  ServerAliveInterval 15\n  ServerAliveCountMax 4\n' > ~/.ssh/config
 
       - name: Deploy frontend to VPS
-        continue-on-error: true   # SSH-таймауты GitHub раннеров не ломают весь workflow
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 5
           max_attempts: 3
           retry_wait_seconds: 15
           command: rsync -az --delete dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ matrix.web_path }}
+
+      - name: Verify deploy landed on VPS
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "test -f ${{ matrix.web_path }}/index.html && \
+             find ${{ matrix.web_path }}/index.html -mmin -10 -print -quit | grep -q . \
+             || { echo 'ERROR: ${{ matrix.web_path }}/index.html is stale or missing'; exit 1; }"
 
   # ── Infrastructure: миграции + edge functions (один раз, не на каждый продукт) ──
   infrastructure:
