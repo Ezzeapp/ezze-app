@@ -26,6 +26,7 @@ import { CalendarPage } from '@/pages/calendar/CalendarPage'
 import { ClientsPage } from '@/pages/clients/ClientsPage'
 import { SchedulePage } from '@/pages/schedule/SchedulePage'
 import { ServicesPage } from '@/pages/services/ServicesPage'
+import { CleaningServicesPage } from '@/pages/services/CleaningServicesPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
 // Lazy pages — грузятся только при переходе (редко посещаемые)
@@ -126,7 +127,7 @@ const router = createBrowserRouter([
       { path: 'dashboard', element: <DashboardPage /> },
       { path: 'profile', element: <ProfilePage /> },
       { path: 'clients', element: <ClientsPage /> },
-      { path: 'services', element: <ServicesPage /> },
+      { path: 'services', element: PRODUCT === 'cleaning' ? <CleaningServicesPage /> : <ServicesPage /> },
       { path: 'schedule', element: <SchedulePage /> },
       { path: 'inventory', element: <InventoryPage /> },
       { path: 'calendar', element: <CalendarPage /> },

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, MoreVertical, Trash2, Edit, Clock, DollarSign, Tags, X, Pencil, Download, Search, Square, CheckSquare, Check, ChevronsUpDown, ArrowUpDown, Percent, Loader2, BookOpen } from 'lucide-react'
+import { Plus, MoreVertical, Trash2, Edit, Clock, Tags, X, Pencil, Download, Search, Square, CheckSquare, Check, ChevronsUpDown, ArrowUpDown } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -10,15 +10,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
-import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { BulkActionBar } from '@/components/shared/BulkActionBar'
@@ -27,9 +24,6 @@ import { ServiceMaterialsTab } from '@/components/services/ServiceMaterialsTab'
 import { ImportServicesDialog } from '@/components/services/ImportServicesDialog'
 import { PlanLimitBanner } from '@/components/shared/PlanLimitBanner'
 import { formatCurrency, formatDuration, cn } from '@/lib/utils'
-import { PRODUCT } from '@/lib/config'
-import { useCleaningItemTypes, useUpsertItemType } from '@/hooks/useCleaningItemTypes'
-import { CleaningCatalogTab } from './CleaningCatalogTab'
 import { useCurrency } from '@/hooks/useCurrency'
 import { useProfileIcon } from '@/hooks/useProfileIcon'
 import { usePlanLimitCheck } from '@/hooks/useAppSettings'
@@ -257,7 +251,6 @@ type SortKey = 'name' | 'price' | 'duration' | 'category'
 // ── Main page ──────────────────────────────────────────────────────────────
 export function ServicesPage() {
   const { t, i18n } = useTranslation()
-  const [servicesView, setServicesView] = useState<'services' | 'catalog'>(PRODUCT === 'cleaning' ? 'catalog' : 'services')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editService, setEditService] = useState<Service | null>(null)
   const [activeTab, setActiveTab] = useState('main')
@@ -445,33 +438,6 @@ export function ServicesPage() {
     categories: categories?.length ?? 0,
   }), [totalItems, categories])
 
-  // ── Mass price change (cleaning only) ──────────────────────────────────────
-  const [priceModalOpen, setPriceModalOpen] = useState(false)
-  const [pricePercent, setPricePercent] = useState('')
-  const [isUpdatingPrices, setIsUpdatingPrices] = useState(false)
-  const { data: itemTypes = [] } = useCleaningItemTypes()
-  const upsertItemType = useUpsertItemType()
-
-  const handleMassPriceChange = async () => {
-    const pct = parseFloat(pricePercent)
-    if (isNaN(pct) || pct === 0) return
-    setIsUpdatingPrices(true)
-    try {
-      const multiplier = 1 + pct / 100
-      for (const item of itemTypes) {
-        const newPrice = Math.max(0, Math.round(item.default_price * multiplier))
-        await upsertItemType.mutateAsync({ id: item.id, name: item.name, default_price: newPrice, default_days: item.default_days, sort_order: item.sort_order, product: item.product })
-      }
-      toast.success(`Цены обновлены на ${pct > 0 ? '+' : ''}${pct}%`)
-      setPriceModalOpen(false)
-      setPricePercent('')
-    } catch {
-      toast.error('Ошибка обновления цен')
-    } finally {
-      setIsUpdatingPrices(false)
-    }
-  }
-
   return (
     <div className="space-y-6">
       <div className="space-y-2 sticky top-0 z-10 bg-background -mx-3 px-3 lg:-mx-6 lg:px-6 -mt-4 pt-4 lg:-mt-6 lg:pt-6 pb-3 shadow-sm">
@@ -514,11 +480,6 @@ export function ServicesPage() {
             <Button variant="outline" size="icon" className="sm:hidden" onClick={() => setCatDialogOpen(true)}>
               <Tags className="h-4 w-4" />
             </Button>
-            {PRODUCT === 'cleaning' && (
-              <Button variant="outline" size="icon" className="sm:hidden" onClick={() => setPriceModalOpen(true)}>
-                <Percent className="h-4 w-4" />
-              </Button>
-            )}
             {hasGlobalServices && (
               <Button variant="outline" size="icon" className="sm:hidden" onClick={() => setImportOpen(true)}>
                 <Download className="h-4 w-4" />
@@ -528,12 +489,6 @@ export function ServicesPage() {
               <Tags className="h-4 w-4 mr-2" />
               {t('services.manageCategories')}
             </Button>
-            {PRODUCT === 'cleaning' && (
-              <Button variant="outline" className="hidden sm:flex" onClick={() => setPriceModalOpen(true)}>
-                <Percent className="h-4 w-4 mr-2" />
-                Изменить цены
-              </Button>
-            )}
             {hasGlobalServices && (
               <Button variant="outline" className="hidden sm:flex" onClick={() => setImportOpen(true)}>
                 <Download className="h-4 w-4 mr-2" />
@@ -547,8 +502,6 @@ export function ServicesPage() {
           </div>
         </div>
       </div>
-
-      {servicesView === 'services' ? (<>
 
       {/* Plan limit banner */}
       <PlanLimitBanner limitKey="services" count={serviceCount} entityKey="services" />
@@ -758,9 +711,6 @@ export function ServicesPage() {
         </>
       )}
 
-      </>) : (
-        <CleaningCatalogTab />
-      )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent mobileFullscreen className="max-w-lg overflow-y-auto max-sm:flex max-sm:flex-col">
@@ -990,47 +940,6 @@ export function ServicesPage() {
 
       <CategoriesDialog open={catDialogOpen} onClose={() => setCatDialogOpen(false)} />
       <ImportServicesDialog open={importOpen} onClose={() => setImportOpen(false)} />
-
-      {priceModalOpen && PRODUCT === 'cleaning' && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-2xl shadow-2xl p-6 w-80 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Изменить все цены</h3>
-              <button onClick={() => setPriceModalOpen(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Введите процент изменения. Например: +10 для увеличения на 10%, -20 для уменьшения на 20%.
-            </p>
-            <div>
-              <Label>Процент изменения</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  type="number"
-                  placeholder="+10"
-                  value={pricePercent}
-                  onChange={e => setPricePercent(e.target.value)}
-                  className="flex-1"
-                />
-                <span className="text-sm text-muted-foreground">%</span>
-              </div>
-              {pricePercent && itemTypes.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Например: {itemTypes[0]?.name} {formatCurrency(itemTypes[0]?.default_price)} → {formatCurrency(Math.round(itemTypes[0]?.default_price * (1 + parseFloat(pricePercent) / 100)))}
-                </p>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" size="sm" onClick={() => { setPriceModalOpen(false); setPricePercent('') }}>
-                Отмена
-              </Button>
-              <Button className="flex-1" size="sm" disabled={!pricePercent || isUpdatingPrices} onClick={handleMassPriceChange}>
-                {isUpdatingPrices ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-                Применить
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete}
         title={t('services.deleteConfirm')} loading={del.isPending} />
