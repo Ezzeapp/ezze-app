@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard, CalendarDays, Users, MoreHorizontal, Bot, Megaphone,
   Package, User, Settings, ShieldCheck, X, UsersRound, ChevronRight, LogOut, CreditCard, LifeBuoy,
-  ClipboardList,
+  ClipboardList, Wrench,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -160,7 +160,7 @@ export function BottomNav() {
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-background border-t pb-safe lg:hidden">
         <div className="flex items-stretch h-16 w-full">
 
-          {/* Календарь / Квитанции */}
+          {/* Календарь / Квитанции / Заказы в ремонт */}
           {PRODUCT === 'cleaning' ? (
             <NavLink
               to="/orders"
@@ -173,6 +173,19 @@ export function BottomNav() {
             >
               <ClipboardList className="h-5 w-5" />
               <span>{t('nav.orders')}</span>
+            </NavLink>
+          ) : PRODUCT === 'workshop' ? (
+            <NavLink
+              to="/orders"
+              className={({ isActive }) =>
+                cn(
+                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                )
+              }
+            >
+              <Wrench className="h-5 w-5" />
+              <span>{t('workshop.nav.orders', 'Ремонт')}</span>
             </NavLink>
           ) : (
             <NavLink

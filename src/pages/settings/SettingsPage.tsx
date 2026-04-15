@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout, FileText, Layers, FlaskConical, BedDouble, Syringe, UtensilsCrossed, DoorOpen,
+  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout, FileText, Layers, FlaskConical, BedDouble, Syringe, UtensilsCrossed, DoorOpen, Wrench,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '@/contexts/AuthContext'
@@ -26,6 +26,7 @@ import { WardsSettingsTab } from './WardsSettingsTab'
 import { OperatingRoomsSettingsTab } from './OperatingRoomsSettingsTab'
 import { DietTablesSettingsTab } from './DietTablesSettingsTab'
 import { ExamRoomsSettingsTab } from './ExamRoomsSettingsTab'
+import { WorkshopItemTypesSettingsTab } from './WorkshopItemTypesSettingsTab'
 import { PRODUCT } from '@/lib/config'
 
 const LANGUAGES = [
@@ -70,7 +71,7 @@ const TIMEZONES = [
   { value: 'UTC', label: 'UTC (UTC+0)' },
 ]
 
-type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config' | 'exam_rooms'
+type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config' | 'exam_rooms' | 'workshop_types'
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -170,6 +171,9 @@ export function SettingsPage() {
       { id: 'receipt' as Tab,     label: 'Квитанция',   icon: FileText },
       { id: 'order_types' as Tab, label: 'Типы',        icon: Layers   },
     ] : []),
+    ...(PRODUCT === 'workshop' ? [
+      { id: 'workshop_types' as Tab, label: 'Типы устройств', icon: Wrench },
+    ] : []),
     ...(PRODUCT === 'clinic' ? [
       { id: 'visit_templates' as Tab, label: t('clinic.settings.visitTemplates'), icon: FileText },
       { id: 'lab_catalog' as Tab, label: t('clinic.lab.testCatalog'), icon: FlaskConical },
@@ -265,6 +269,9 @@ export function SettingsPage() {
 
       {/* ── Типы заказов (только cleaning) ── */}
       {tab === 'order_types' && <OrderTypesSettingsTab />}
+
+      {/* ── Типы устройств (только workshop) ── */}
+      {tab === 'workshop_types' && <WorkshopItemTypesSettingsTab />}
 
       {/* ── Шаблоны приёмов (только clinic) ── */}
       {tab === 'visit_templates' && <VisitTemplatesSettingsTab />}

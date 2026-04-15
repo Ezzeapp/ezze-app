@@ -2,9 +2,10 @@ import { Suspense, lazy, useEffect } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { PRODUCT } from '@/lib/config'
 
-/** Для cleaning → Заказы, для farm → ферма, для остальных → Календарь */
+/** Для cleaning/workshop → Заказы, для farm → ферма, для остальных → Календарь */
 function DefaultRedirect() {
   if (PRODUCT === 'cleaning') return <Navigate to="/orders" replace />
+  if (PRODUCT === 'workshop') return <Navigate to="/orders" replace />
   if (PRODUCT === 'farm')     return <Navigate to="/farm" replace />
   return <Navigate to="/calendar" replace />
 }
@@ -57,6 +58,9 @@ const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage').then
 const POSPage = lazy(() => import('@/pages/orders/POSPage').then(m => ({ default: m.POSPage })))
 const CleaningStatsPage = lazy(() => import('@/pages/cleaning/CleaningStatsPage').then(m => ({ default: m.CleaningStatsPage })))
 const CleaningReportsPage = lazy(() => import('@/pages/cleaning/CleaningReportsPage').then(m => ({ default: m.CleaningReportsPage })))
+const WorkshopOrdersListPage = lazy(() => import('@/pages/workshop/WorkshopOrdersListPage').then(m => ({ default: m.WorkshopOrdersListPage })))
+const WorkshopOrderFormPage  = lazy(() => import('@/pages/workshop/WorkshopOrderFormPage').then(m => ({ default: m.WorkshopOrderFormPage })))
+const WorkshopOrderDetailPage = lazy(() => import('@/pages/workshop/WorkshopOrderDetailPage').then(m => ({ default: m.WorkshopOrderDetailPage })))
 const ClinicLabPage       = lazy(() => import('@/pages/clinic/LabPage').then(m => ({ default: m.LabPage })))
 const ClinicPharmacyPage  = lazy(() => import('@/pages/clinic/PharmacyPage').then(m => ({ default: m.PharmacyPage })))
 const ClinicWardPage      = lazy(() => import('@/pages/clinic/WardPage').then(m => ({ default: m.WardPage })))
@@ -142,10 +146,10 @@ const router = createBrowserRouter([
       { path: 'support', element: <SupportPage /> },
       { path: 'loyalty', element: <Navigate to="/marketing?tab=loyalty" replace /> },
       { path: 'ai', element: <AIAssistantPage /> },
-      { path: 'orders', element: <OrdersListPage /> },
-      { path: 'orders/new', element: <OrderFormPage /> },
+      { path: 'orders',     element: PRODUCT === 'workshop' ? <WorkshopOrdersListPage /> : <OrdersListPage /> },
+      { path: 'orders/new', element: PRODUCT === 'workshop' ? <WorkshopOrderFormPage /> : <OrderFormPage /> },
       { path: 'orders/pos', element: <POSPage /> },
-      { path: 'orders/:id', element: <OrderDetailPage /> },
+      { path: 'orders/:id', element: PRODUCT === 'workshop' ? <WorkshopOrderDetailPage /> : <OrderDetailPage /> },
       ...(PRODUCT === 'cleaning' ? [
         { path: 'stats', element: <CleaningStatsPage /> },
         { path: 'reports', element: <CleaningReportsPage /> },

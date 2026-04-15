@@ -19,6 +19,7 @@ import { PRODUCT } from '@/lib/config'
 
 function getDefaultPath(): string {
   if (PRODUCT === 'cleaning') return '/orders'
+  if (PRODUCT === 'workshop') return '/orders'
   if (PRODUCT === 'farm')     return '/farm'
   return window.innerWidth < 1024 ? '/calendar' : '/dashboard'
 }
