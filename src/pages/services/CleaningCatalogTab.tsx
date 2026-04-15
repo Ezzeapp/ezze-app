@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
-import { Plus, Trash2, Loader2, X, Download, Search, Check, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, Loader2, X, Download, Search, Check, ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react'
 import { useCleaningItemTypes, useUpsertItemType, useDeleteItemType } from '@/hooks/useCleaningItemTypes'
 import type { CleaningItemType } from '@/hooks/useCleaningItemTypes'
 import { ORDER_TYPE_LABELS, useCleaningOrderTypesConfig } from '@/hooks/useCleaningOrders'
@@ -460,12 +460,16 @@ export function CleaningCatalogTab() {
   const currencySymbol = useCurrencySymbol()
 
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [search, setSearch] = useState('')
+  const [sortKey, setSortKey] = useState<'sort_order' | 'name' | 'price' | 'days'>('sort_order')
+  const [sortAsc, setSortAsc] = useState(true)
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingCell, setEditingCell] = useState<{ id: string; field: 'name' | 'price' | 'days' } | null>(null)
   const [editingValue, setEditingValue] = useState('')
   const [savingId, setSavingId] = useState<string | null>(null)
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
 
   // Category counts based on stored category field
   const categoryCounts = useMemo(() => {
@@ -485,13 +489,24 @@ export function CleaningCatalogTab() {
     [orderTypesConfig, categoryCounts]
   )
 
-  // Filtered items by selected category
-  const filteredItems = useMemo(() =>
-    categoryFilter === 'all'
-      ? items
-      : items.filter(item => (item.category || 'clothing') === categoryFilter),
-    [items, categoryFilter]
-  )
+  // Filtered + searched + sorted items
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    let result = items.filter(item => {
+      const matchesCat = categoryFilter === 'all' || (item.category || 'clothing') === categoryFilter
+      const matchesSearch = !q || item.name.toLowerCase().includes(q)
+      return matchesCat && matchesSearch
+    })
+    result = [...result].sort((a, b) => {
+      let cmp = 0
+      if (sortKey === 'name') cmp = a.name.localeCompare(b.name, 'ru')
+      else if (sortKey === 'price') cmp = a.default_price - b.default_price
+      else if (sortKey === 'days') cmp = a.default_days - b.default_days
+      else cmp = a.sort_order - b.sort_order
+      return sortAsc ? cmp : -cmp
+    })
+    return result
+  }, [items, categoryFilter, search, sortKey, sortAsc])
 
   const maxSortOrder = useMemo(() =>
     items.reduce((max, item) => Math.max(max, item.sort_order), 0),
@@ -556,6 +571,27 @@ export function CleaningCatalogTab() {
     }
   }
 
+  const saveCategory = async (item: CleaningItemType, newCategory: string) => {
+    setEditingCategoryId(null)
+    if (newCategory === (item.category || 'clothing')) return
+    setSavingId(item.id)
+    try {
+      await upsert.mutateAsync({
+        id: item.id,
+        name: item.name,
+        category: newCategory,
+        default_price: item.default_price,
+        default_days: item.default_days,
+        sort_order: item.sort_order,
+        product: item.product,
+      })
+    } catch {
+      toast.error('Ошибка сохранения')
+    } finally {
+      setSavingId(null)
+    }
+  }
+
   const handleDelete = async (id: string) => {
     setDeletingId(id)
     try {
@@ -576,14 +612,43 @@ export function CleaningCatalogTab() {
     )
   }
 
+  const toggleSort = (key: typeof sortKey) => {
+    if (sortKey === key) setSortAsc(a => !a)
+    else { setSortKey(key); setSortAsc(true) }
+  }
+
+  const SortIcon = ({ col }: { col: typeof sortKey }) => {
+    if (sortKey !== col) return <ChevronsUpDown className="h-3 w-3 ml-1 text-muted-foreground/50" />
+    return sortAsc
+      ? <ChevronUp className="h-3 w-3 ml-1 text-primary" />
+      : <ChevronDown className="h-3 w-3 ml-1 text-primary" />
+  }
+
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">{items.length} позиций в каталоге</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Поиск..."
+            className="w-full h-9 pl-8 pr-3 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        <p className="text-sm text-muted-foreground hidden sm:block shrink-0">
+          {filteredItems.length === items.length ? `${items.length} позиций` : `${filteredItems.length} из ${items.length}`}
+        </p>
+        <div className="flex items-center gap-2 shrink-0">
           <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
             <Download className="h-3.5 w-3.5 mr-1.5" />
             <span className="hidden sm:inline">Из справочника</span>
@@ -631,12 +696,14 @@ export function CleaningCatalogTab() {
       {/* Table */}
       {filteredItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed">
-          <p className="text-sm text-muted-foreground">Нет позиций в этой категории</p>
+          <p className="text-sm text-muted-foreground">
+            {search ? `Ничего не найдено по «${search}»` : 'Нет позиций в этой категории'}
+          </p>
           <button
             className="mt-2 text-xs text-primary hover:underline"
-            onClick={() => setCategoryFilter('all')}
+            onClick={() => { setCategoryFilter('all'); setSearch('') }}
           >
-            Показать все
+            Сбросить фильтры
           </button>
         </div>
       ) : (
@@ -644,10 +711,22 @@ export function CleaningCatalogTab() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
-                <th className="text-left p-3 font-medium">Название</th>
+                <th className="text-left p-3 font-medium">
+                  <button onClick={() => toggleSort('name')} className="flex items-center hover:text-foreground">
+                    Название<SortIcon col="name" />
+                  </button>
+                </th>
                 <th className="text-left p-3 font-medium hidden sm:table-cell">Категория</th>
-                <th className="text-left p-3 font-medium">Цена ({currencySymbol})</th>
-                <th className="text-left p-3 font-medium hidden sm:table-cell">Дней</th>
+                <th className="text-left p-3 font-medium">
+                  <button onClick={() => toggleSort('price')} className="flex items-center hover:text-foreground">
+                    Цена ({currencySymbol})<SortIcon col="price" />
+                  </button>
+                </th>
+                <th className="text-left p-3 font-medium hidden sm:table-cell">
+                  <button onClick={() => toggleSort('days')} className="flex items-center hover:text-foreground">
+                    Дней<SortIcon col="days" />
+                  </button>
+                </th>
                 <th className="w-10 p-3"></th>
               </tr>
             </thead>
@@ -680,9 +759,32 @@ export function CleaningCatalogTab() {
                       />
                     </td>
 
-                    {/* Category badge */}
+                    {/* Category badge - click to edit */}
                     <td className="p-3 hidden sm:table-cell">
-                      <CategoryBadge category={item.category || 'clothing'} label={cfg?.label} />
+                      {editingCategoryId === item.id ? (
+                        <div className="relative">
+                          <select
+                            autoFocus
+                            value={item.category || 'clothing'}
+                            onChange={e => saveCategory(item, e.target.value)}
+                            onBlur={() => setEditingCategoryId(null)}
+                            className="h-7 text-xs appearance-none rounded border border-primary bg-background px-2 pr-6 focus:outline-none focus:ring-1 focus:ring-primary"
+                          >
+                            {orderTypesConfig.map(t => (
+                              <option key={t.slug} value={t.slug}>{t.label}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => !isSaving && !deletingId && setEditingCategoryId(item.id)}
+                          title="Изменить категорию"
+                          className="hover:opacity-80 transition-opacity"
+                        >
+                          <CategoryBadge category={item.category || 'clothing'} label={cfg?.label} />
+                        </button>
+                      )}
                     </td>
 
                     {/* Price */}
