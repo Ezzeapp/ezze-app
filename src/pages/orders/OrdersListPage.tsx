@@ -714,21 +714,18 @@ export function OrdersListPage() {
             action={{ label: t('orders.newOrder'), onClick: () => navigate('/orders/new') }}
           />
         ) : isKanban ? (
-          /* Канбан — растянут по ширине */
-          <div className="-mx-4">
-            <KanbanView
-              orders={orders}
-              symbol={symbol}
-              onNavigate={id => navigate(`/orders/${id}`)}
-              isOverdueMap={isOverdueMap}
-              isDueTodayMap={isDueTodayMap}
-              t={t as (key: string, opts?: Record<string, unknown>) => string}
-            />
-          </div>
+          <KanbanView
+            orders={orders}
+            symbol={symbol}
+            onNavigate={id => navigate(`/orders/${id}`)}
+            isOverdueMap={isOverdueMap}
+            isDueTodayMap={isDueTodayMap}
+            t={t as (key: string, opts?: Record<string, unknown>) => string}
+          />
         ) : (
           <>
-            {/* Десктоп — таблица (растянута по ширине) */}
-            <div className="hidden lg:block -mx-4">
+            {/* Десктоп — таблица */}
+            <div className="hidden lg:block">
               <OrdersTable
                 orders={orders}
                 symbol={symbol}
