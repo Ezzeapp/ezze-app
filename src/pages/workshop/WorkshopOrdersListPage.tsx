@@ -68,7 +68,7 @@ export function WorkshopOrdersListPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+    <div className={cn('p-4 sm:p-6 mx-auto', view === 'board' ? 'max-w-none' : 'max-w-7xl')}>
       <PageHeader
         title={t('workshop.list.title')}
         description={t('workshop.list.subtitle')}
