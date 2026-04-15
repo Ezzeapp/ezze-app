@@ -478,25 +478,7 @@ export function ServicesPage() {
         {/* Row 1: title + segmented control */}
         <div className="flex items-center gap-4 flex-wrap">
           <h1 className="text-2xl font-semibold text-foreground">{t('nav.services')}</h1>
-          {PRODUCT === 'cleaning' && (
-            <div className="flex rounded-lg border overflow-hidden w-fit">
-              <button
-                onClick={() => setServicesView('services')}
-                className={cn('px-4 py-1.5 text-sm font-medium transition-colors',
-                  servicesView === 'services' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
-              >
-                Услуги
-              </button>
-              <button
-                onClick={() => setServicesView('catalog')}
-                className={cn('px-4 py-1.5 text-sm font-medium transition-colors flex items-center gap-1.5',
-                  servicesView === 'catalog' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
-              >
-                <BookOpen className="h-3.5 w-3.5" />
-                Каталог
-              </button>
-            </div>
-          )}
+          {/* cleaning uses only catalog — no tabs needed */}
         </div>
 
         {/* Bulk action bar */}
