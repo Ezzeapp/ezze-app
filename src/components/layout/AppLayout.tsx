@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { BottomNav } from './BottomNav'
@@ -15,8 +15,13 @@ import { supabase } from '@/lib/supabase'
 
 const inTelegram = isTelegramMiniApp()
 
+// Маршруты, которые занимают весь экран без padding-контейнера
+const FULLSCREEN_ROUTES = ['/orders/pos']
+
 export function AppLayout() {
   const { user } = useAuth()
+  const location = useLocation()
+  const isFullscreen = FULLSCREEN_ROUTES.includes(location.pathname)
   const queryClient = useQueryClient()
   const { data: existingProfile } = useProfile()
 
@@ -98,11 +103,15 @@ export function AppLayout() {
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden lg:pl-60">
         <TopBar />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden">
-          {/* pb-20 на мобиле — отступ под нижнюю панель; pt-safe в Telegram — под нотч */}
-          <div className="container max-w-6xl mx-auto px-3 py-4 pb-20 lg:px-6 lg:py-6 lg:pb-6">
+        <main className={isFullscreen ? 'flex-1 overflow-hidden flex flex-col' : 'flex-1 overflow-y-auto overflow-x-hidden'}>
+          {isFullscreen ? (
             <Outlet />
-          </div>
+          ) : (
+            /* pb-20 на мобиле — отступ под нижнюю панель; pt-safe в Telegram — под нотч */
+            <div className="container max-w-6xl mx-auto px-3 py-4 pb-20 lg:px-6 lg:py-6 lg:pb-6">
+              <Outlet />
+            </div>
+          )}
         </main>
       </div>
 
