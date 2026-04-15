@@ -79,17 +79,29 @@ interface AddDialogProps {
   onClose: () => void
   maxSortOrder: number
   orderTypes: CleaningOrderTypeConfig[]
+  existingSubcategories: string[]
 }
 
-function AddItemDialog({ open, onClose, maxSortOrder, orderTypes }: AddDialogProps) {
+function AddItemDialog({ open, onClose, maxSortOrder, orderTypes, existingSubcategories }: AddDialogProps) {
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [days, setDays] = useState('3')
   const [category, setCategory] = useState('clothing')
+  const [subcategory, setSubcategory] = useState('')
   const upsert = useUpsertItemType()
 
   // Auto-suggest category from name
   const suggestedCategory = useMemo(() => suggestCategory(name), [name])
+
+  // Subcategory suggestions filtered by selected category
+  const subcategorySuggestions = useMemo(() =>
+    existingSubcategories.filter(s => {
+      // We can't filter by category here since we don't know which items belong to which subcategory
+      // Just show unique subcategories that contain the typed text
+      return !subcategory.trim() || s.toLowerCase().includes(subcategory.toLowerCase())
+    }),
+    [existingSubcategories, subcategory]
+  )
 
   const handleSubmit = async () => {
     if (!name.trim()) return
@@ -100,12 +112,14 @@ function AddItemDialog({ open, onClose, maxSortOrder, orderTypes }: AddDialogPro
         default_days: Number(days) || 3,
         sort_order: maxSortOrder + 1,
         category,
+        subcategory: subcategory.trim() || undefined,
       })
       toast.success('Позиция добавлена')
       setName('')
       setPrice('')
       setDays('3')
       setCategory('clothing')
+      setSubcategory('')
       onClose()
     } catch {
       toast.error('Ошибка сохранения')
@@ -117,6 +131,7 @@ function AddItemDialog({ open, onClose, maxSortOrder, orderTypes }: AddDialogPro
     setPrice('')
     setDays('3')
     setCategory('clothing')
+    setSubcategory('')
     onClose()
   }
 
@@ -171,6 +186,21 @@ function AddItemDialog({ open, onClose, maxSortOrder, orderTypes }: AddDialogPro
                 </button>
               </p>
             )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Подкатегория</Label>
+            <Input
+              value={subcategory}
+              onChange={e => setSubcategory(e.target.value)}
+              placeholder="Например: Верхняя одежда"
+              list="subcategory-suggestions"
+            />
+            <datalist id="subcategory-suggestions">
+              {subcategorySuggestions.map(s => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -270,12 +300,15 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
     for (let i = 0; i < toImport.length; i++) {
       const s = toImport[i]
       try {
+        // Use order_type from global_services if available, otherwise fall back to keyword mapping
+        const categorySlug = (s as any).order_type || mapGlobalCategoryToSlug(s.category || '')
         await upsert.mutateAsync({
           name: s.name,
           default_price: s.price || 0,
           default_days: 3,
           sort_order: maxSortOrder + i + 1,
-          category: mapGlobalCategoryToSlug(s.category || ''),
+          category: categorySlug,
+          subcategory: s.category || undefined,  // preserve subcategory text
         })
         count++
       } catch {
@@ -435,41 +468,53 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
 // ── Inline editable cell ──────────────────────────────────────────────────────
 interface EditCellProps {
   item: CleaningItemType
-  field: 'name' | 'price' | 'days'
-  editingCell: { id: string; field: 'name' | 'price' | 'days' } | null
+  field: 'name' | 'price' | 'days' | 'subcategory'
+  editingCell: { id: string; field: 'name' | 'price' | 'days' | 'subcategory' } | null
   editingValue: string
   savingId: string | null
-  onStartEdit: (item: CleaningItemType, field: 'name' | 'price' | 'days') => void
+  onStartEdit: (item: CleaningItemType, field: 'name' | 'price' | 'days' | 'subcategory') => void
   onChangeValue: (v: string) => void
   onSave: () => void
   onCancel: () => void
+  suggestions?: string[]
 }
 
-function EditCell({ item, field, editingCell, editingValue, savingId, onStartEdit, onChangeValue, onSave, onCancel }: EditCellProps) {
+function EditCell({ item, field, editingCell, editingValue, savingId, onStartEdit, onChangeValue, onSave, onCancel, suggestions }: EditCellProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const isEditing = editingCell?.id === item.id && editingCell?.field === field
   const isSaving = savingId === item.id
+  const listId = suggestions ? `ec-${item.id}-${field}` : undefined
 
   if (isEditing) {
     return (
-      <input
-        ref={inputRef}
-        autoFocus
-        type={field === 'name' ? 'text' : 'number'}
-        className="w-full px-2 py-1 text-sm rounded border border-primary bg-background focus:outline-none focus:ring-1 focus:ring-primary"
-        value={editingValue}
-        onChange={e => onChangeValue(e.target.value)}
-        onBlur={onSave}
-        onKeyDown={e => {
-          if (e.key === 'Enter') { e.preventDefault(); onSave() }
-          if (e.key === 'Escape') onCancel()
-        }}
-      />
+      <>
+        <input
+          ref={inputRef}
+          autoFocus
+          type={field === 'name' || field === 'subcategory' ? 'text' : 'number'}
+          list={listId}
+          className="w-full px-2 py-1 text-sm rounded border border-primary bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+          value={editingValue}
+          onChange={e => onChangeValue(e.target.value)}
+          onBlur={onSave}
+          onKeyDown={e => {
+            if (e.key === 'Enter') { e.preventDefault(); onSave() }
+            if (e.key === 'Escape') onCancel()
+          }}
+        />
+        {listId && suggestions && (
+          <datalist id={listId}>
+            {suggestions.map(s => <option key={s} value={s} />)}
+          </datalist>
+        )}
+      </>
     )
   }
 
   const displayValue = field === 'name'
     ? item.name
+    : field === 'subcategory'
+    ? (item.subcategory || '')
     : field === 'price'
     ? String(item.default_price)
     : String(item.default_days)
@@ -506,7 +551,7 @@ export function CleaningCatalogTab() {
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [editingCell, setEditingCell] = useState<{ id: string; field: 'name' | 'price' | 'days' } | null>(null)
+  const [editingCell, setEditingCell] = useState<{ id: string; field: 'name' | 'price' | 'days' | 'subcategory' } | null>(null)
   const [editingValue, setEditingValue] = useState('')
   const [savingId, setSavingId] = useState<string | null>(null)
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
@@ -553,9 +598,18 @@ export function CleaningCatalogTab() {
     [items]
   )
 
-  const startEdit = (item: CleaningItemType, field: 'name' | 'price' | 'days') => {
+  // Unique subcategory values for autocomplete suggestions
+  const subcategorySuggestions = useMemo(() => {
+    const seen = new Set<string>()
+    items.forEach(item => { if (item.subcategory) seen.add(item.subcategory) })
+    return Array.from(seen).sort((a, b) => a.localeCompare(b, 'ru'))
+  }, [items])
+
+  const startEdit = (item: CleaningItemType, field: 'name' | 'price' | 'days' | 'subcategory') => {
     const value = field === 'name'
       ? item.name
+      : field === 'subcategory'
+      ? (item.subcategory || '')
       : field === 'price'
       ? String(item.default_price)
       : String(item.default_days)
@@ -576,6 +630,8 @@ export function CleaningCatalogTab() {
     const trimmed = editingValue.trim()
     const currentValue = editingCell.field === 'name'
       ? item.name
+      : editingCell.field === 'subcategory'
+      ? (item.subcategory || '')
       : editingCell.field === 'price'
       ? String(item.default_price)
       : String(item.default_days)
@@ -589,6 +645,7 @@ export function CleaningCatalogTab() {
       id: item.id,
       name: item.name,
       category: item.category || 'clothing',
+      subcategory: item.subcategory,
       default_price: item.default_price,
       default_days: item.default_days,
       sort_order: item.sort_order,
@@ -596,6 +653,7 @@ export function CleaningCatalogTab() {
     }
 
     if (editingCell.field === 'name') payload.name = trimmed
+    else if (editingCell.field === 'subcategory') payload.subcategory = trimmed || undefined
     else if (editingCell.field === 'price') payload.default_price = Math.max(0, Number(trimmed) || 0)
     else if (editingCell.field === 'days') payload.default_days = Math.max(1, Number(trimmed) || 1)
 
@@ -757,6 +815,7 @@ export function CleaningCatalogTab() {
                   </button>
                 </th>
                 <th className="text-left p-3 font-medium hidden sm:table-cell">Категория</th>
+                <th className="text-left p-3 font-medium hidden md:table-cell">Подкатегория</th>
                 <th className="text-left p-3 font-medium">
                   <button onClick={() => toggleSort('price')} className="flex items-center hover:text-foreground">
                     Цена ({currencySymbol})<SortIcon col="price" />
@@ -827,6 +886,22 @@ export function CleaningCatalogTab() {
                       )}
                     </td>
 
+                    {/* Subcategory */}
+                    <td className="p-3 hidden md:table-cell">
+                      <EditCell
+                        item={item}
+                        field="subcategory"
+                        editingCell={editingCell}
+                        editingValue={editingValue}
+                        savingId={savingId}
+                        onStartEdit={startEdit}
+                        onChangeValue={setEditingValue}
+                        onSave={saveEdit}
+                        onCancel={cancelEdit}
+                        suggestions={subcategorySuggestions}
+                      />
+                    </td>
+
                     {/* Price */}
                     <td className="p-3 w-28">
                       <EditCell
@@ -885,6 +960,7 @@ export function CleaningCatalogTab() {
         onClose={() => setAddOpen(false)}
         maxSortOrder={maxSortOrder}
         orderTypes={orderTypesConfig}
+        existingSubcategories={subcategorySuggestions}
       />
 
       <ImportCleaningDialog

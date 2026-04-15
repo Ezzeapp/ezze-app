@@ -7,6 +7,7 @@ export interface CleaningItemType {
   product: string
   name: string
   category: string          // order type slug: 'clothing' | 'carpet' | etc.
+  subcategory?: string      // subcategory text: 'Верхняя одежда', 'Детская одежда', etc.
   default_price: number
   default_days: number
   sort_order: number
