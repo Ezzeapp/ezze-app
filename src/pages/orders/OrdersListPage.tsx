@@ -417,7 +417,7 @@ export function OrdersListPage() {
     search,
     assignedToMe: myOnly,
     page:         isKanban ? 1 : page,
-    perPage:      isKanban ? 500 : 20,
+    perPage:      isKanban ? 500 : 25,
     sortBy,
     dateFrom,
     dateTo,
@@ -427,7 +427,7 @@ export function OrdersListPage() {
 
   const orders     = data?.orders ?? []
   const total      = data?.total ?? 0
-  const totalPages = Math.ceil(total / 20)
+  const totalPages = Math.ceil(total / 25)
 
   // Флаги срочности
   const isOverdueMap:  Record<string, boolean> = {}
@@ -714,15 +714,17 @@ export function OrdersListPage() {
             action={{ label: t('orders.newOrder'), onClick: () => navigate('/orders/new') }}
           />
         ) : isKanban ? (
-          /* Канбан */
-          <KanbanView
-            orders={orders}
-            symbol={symbol}
-            onNavigate={id => navigate(`/orders/${id}`)}
-            isOverdueMap={isOverdueMap}
-            isDueTodayMap={isDueTodayMap}
-            t={t as (key: string, opts?: Record<string, unknown>) => string}
-          />
+          /* Канбан — растянут по ширине */
+          <div className="-mx-4">
+            <KanbanView
+              orders={orders}
+              symbol={symbol}
+              onNavigate={id => navigate(`/orders/${id}`)}
+              isOverdueMap={isOverdueMap}
+              isDueTodayMap={isDueTodayMap}
+              t={t as (key: string, opts?: Record<string, unknown>) => string}
+            />
+          </div>
         ) : (
           <>
             {/* Десктоп — таблица (растянута по ширине) */}

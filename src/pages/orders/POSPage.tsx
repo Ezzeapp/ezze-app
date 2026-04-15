@@ -320,6 +320,7 @@ export function POSPage() {
   const [prepaid, setPrepaid] = useState('')
   const [notes, setNotes] = useState('')
   const [globalReadyDate, setGlobalReadyDate] = useState(() => dayjs().add(1, 'day').format('YYYY-MM-DD'))
+  const [dateDisplay,     setDateDisplay]     = useState(() => dayjs().add(1, 'day').format('DD.MM.YYYY'))
   const [discount, setDiscount] = useState('')
   const [isExpress, setIsExpress] = useState(false)
   const [expressCharge, setExpressCharge] = useState('')
@@ -428,6 +429,23 @@ export function POSPage() {
     setDiscount(''); setIsExpress(false); setExpressCharge(''); setExpressChargeIsPercent(true)
     setPaymentMethod('cash'); setSurchargePct(''); setPaymentCash(''); setPaymentCard('')
     setOrderTags([]); setExpandedKey(null); setCreatedOrder(null); setReceiptData(null)
+    const d1 = dayjs().add(1, 'day'); setGlobalReadyDate(d1.format('YYYY-MM-DD')); setDateDisplay(d1.format('DD.MM.YYYY'))
+  }
+
+  function setDateByDays(days: number) {
+    const d = dayjs().add(days, 'day')
+    setGlobalReadyDate(d.format('YYYY-MM-DD'))
+    setDateDisplay(d.format('DD.MM.YYYY'))
+  }
+
+  function handleDateInput(value: string) {
+    setDateDisplay(value)
+    const parts = value.split('.')
+    if (parts.length === 3 && parts[2].length === 4) {
+      const iso = `${parts[2]}-${(parts[1] || '').padStart(2, '0')}-${(parts[0] || '').padStart(2, '0')}`
+      const d = dayjs(iso)
+      if (d.isValid()) setGlobalReadyDate(iso)
+    }
   }
 
   async function handleSubmit() {
@@ -1086,7 +1104,7 @@ export function POSPage() {
                 <button
                   key={label as string}
                   type="button"
-                  onClick={() => setGlobalReadyDate(dayjs().add(days as number, 'day').format('YYYY-MM-DD'))}
+                  onClick={() => setDateByDays(days as number)}
                   className={cn(
                     'px-2 py-1 text-xs rounded-md border leading-none transition-colors shrink-0',
                     globalReadyDate === dayjs().add(days as number, 'day').format('YYYY-MM-DD')
@@ -1099,9 +1117,9 @@ export function POSPage() {
               ))}
               <Input
                 type="text"
-                placeholder="ГГГГ-ММ-ДД"
-                value={globalReadyDate}
-                onChange={e => setGlobalReadyDate(e.target.value)}
+                placeholder="ДД.ММ.ГГГГ"
+                value={dateDisplay}
+                onChange={e => handleDateInput(e.target.value)}
                 className="h-7 text-xs flex-1 min-w-0"
               />
             </div>
