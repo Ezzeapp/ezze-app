@@ -27,6 +27,7 @@ import { OperatingRoomsSettingsTab } from './OperatingRoomsSettingsTab'
 import { DietTablesSettingsTab } from './DietTablesSettingsTab'
 import { ExamRoomsSettingsTab } from './ExamRoomsSettingsTab'
 import { WorkshopItemTypesSettingsTab } from './WorkshopItemTypesSettingsTab'
+import { WorkshopNotificationTemplatesTab } from './WorkshopNotificationTemplatesTab'
 import { PRODUCT } from '@/lib/config'
 
 const LANGUAGES = [
@@ -71,7 +72,7 @@ const TIMEZONES = [
   { value: 'UTC', label: 'UTC (UTC+0)' },
 ]
 
-type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config' | 'exam_rooms' | 'workshop_types'
+type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config' | 'exam_rooms' | 'workshop_types' | 'workshop_notifications'
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -173,6 +174,7 @@ export function SettingsPage() {
     ] : []),
     ...(PRODUCT === 'workshop' ? [
       { id: 'workshop_types' as Tab, label: 'Типы устройств', icon: Wrench },
+      { id: 'workshop_notifications' as Tab, label: 'Уведомления', icon: FileText },
     ] : []),
     ...(PRODUCT === 'clinic' ? [
       { id: 'visit_templates' as Tab, label: t('clinic.settings.visitTemplates'), icon: FileText },
@@ -272,6 +274,9 @@ export function SettingsPage() {
 
       {/* ── Типы устройств (только workshop) ── */}
       {tab === 'workshop_types' && <WorkshopItemTypesSettingsTab />}
+
+      {/* ── Шаблоны уведомлений (только workshop) ── */}
+      {tab === 'workshop_notifications' && <WorkshopNotificationTemplatesTab />}
 
       {/* ── Шаблоны приёмов (только clinic) ── */}
       {tab === 'visit_templates' && <VisitTemplatesSettingsTab />}

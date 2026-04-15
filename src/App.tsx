@@ -61,6 +61,8 @@ const CleaningReportsPage = lazy(() => import('@/pages/cleaning/CleaningReportsP
 const WorkshopOrdersListPage = lazy(() => import('@/pages/workshop/WorkshopOrdersListPage').then(m => ({ default: m.WorkshopOrdersListPage })))
 const WorkshopOrderFormPage  = lazy(() => import('@/pages/workshop/WorkshopOrderFormPage').then(m => ({ default: m.WorkshopOrderFormPage })))
 const WorkshopOrderDetailPage = lazy(() => import('@/pages/workshop/WorkshopOrderDetailPage').then(m => ({ default: m.WorkshopOrderDetailPage })))
+const WorkshopTrackPage       = lazy(() => import('@/pages/workshop/WorkshopTrackPage').then(m => ({ default: m.WorkshopTrackPage })))
+const WorkshopStatsPage       = lazy(() => import('@/pages/workshop/WorkshopStatsPage').then(m => ({ default: m.WorkshopStatsPage })))
 const ClinicLabPage       = lazy(() => import('@/pages/clinic/LabPage').then(m => ({ default: m.LabPage })))
 const ClinicPharmacyPage  = lazy(() => import('@/pages/clinic/PharmacyPage').then(m => ({ default: m.PharmacyPage })))
 const ClinicWardPage      = lazy(() => import('@/pages/clinic/WardPage').then(m => ({ default: m.WardPage })))
@@ -94,6 +96,7 @@ const router = createBrowserRouter([
   { path: '/p/:slug', element: <PublicProfilePage /> },
   { path: '/cancel/:token', element: <CancelBookingPage /> },
   { path: '/join/:code', element: <JoinTeamPage /> },
+  { path: '/track/:number', element: <WorkshopTrackPage /> },
 
   // Client Mini App routes (no auth required)
   {
@@ -153,6 +156,9 @@ const router = createBrowserRouter([
       ...(PRODUCT === 'cleaning' ? [
         { path: 'stats', element: <CleaningStatsPage /> },
         { path: 'reports', element: <CleaningReportsPage /> },
+      ] : []),
+      ...(PRODUCT === 'workshop' ? [
+        { path: 'stats', element: <WorkshopStatsPage /> },
       ] : []),
       ...(PRODUCT === 'clinic' ? [
         { path: 'clinic/lab', element: <ClinicLabPage /> },

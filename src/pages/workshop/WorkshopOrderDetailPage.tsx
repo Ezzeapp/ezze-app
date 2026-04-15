@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowLeft, Loader2, Trash2, Plus, CircleDollarSign, Wrench, Package,
-  History, Phone, User, Calendar, AlertTriangle, Printer,
+  History, Phone, User, Calendar, AlertTriangle, Printer, Link2,
 } from 'lucide-react'
 import { printWorkshopReceipt } from './printReceipt'
 import { useAppSettings } from '@/hooks/useAppSettings'
@@ -19,6 +19,7 @@ import {
   useAddWorkshopWork, useRemoveWorkshopWork, useToggleWorkshopWorkDone,
   useAddWorkshopPart, useRemoveWorkshopPart,
   useAcceptWorkshopPayment, useDeleteWorkshopOrder, useWorkshopOrderHistory,
+  useClientWorkshopOrders,
   type WorkshopOrderStatus,
 } from '@/hooks/useWorkshopOrders'
 import { useInventory } from '@/hooks/useInventory'
@@ -106,6 +107,16 @@ export function WorkshopOrderDetailPage() {
           <ArrowLeft className="h-4 w-4 mr-1" /> {t('workshop.detail.back')}
         </Button>
         <div className="flex items-center gap-1">
+          <Button
+            variant="ghost" size="sm"
+            onClick={() => {
+              const url = `${window.location.origin}/track/${encodeURIComponent(order!.number)}`
+              navigator.clipboard?.writeText(url)
+              toast.success(`Скопировано: ${url}`)
+            }}
+          >
+            <Link2 className="h-4 w-4 mr-1" /> Ссылка клиенту
+          </Button>
           <Button
             variant="ghost" size="sm"
             onClick={() => printWorkshopReceipt(order!, appSettings?.platform_name ?? 'Ezze', t(`workshop.status.${order!.status}`))}
@@ -222,6 +233,8 @@ export function WorkshopOrderDetailPage() {
             )}
           </Card>
 
+          {client && <ClientHistoryCard clientId={client.id} currentOrderId={order.id} onOpen={(id) => navigate(`/orders/${id}`)} />}
+
           <Card title={t('workshop.detail.finance')} icon={CircleDollarSign}>
             <div className="space-y-2 text-sm">
               <Row label={t('workshop.detail.worksAmount')} value={formatCurrency(order.works_amount)} />
@@ -233,6 +246,23 @@ export function WorkshopOrderDetailPage() {
               <Row label={t('workshop.detail.paid')} value={formatCurrency(order.paid_amount)} />
               {remaining > 0 && (
                 <Row label={t('workshop.detail.remaining')} value={formatCurrency(remaining)} bold accent />
+              )}
+              {order.assigned_to_profile?.commission_rate && order.assigned_to_profile.commission_rate > 0 && order.works_amount > 0 && (
+                <div className="border-t pt-2">
+                  <Row
+                    label={`Выплата мастеру (${order.assigned_to_profile.commission_rate}%)`}
+                    value={formatCurrency(Math.round(order.works_amount * order.assigned_to_profile.commission_rate / 100))}
+                  />
+                </div>
+              )}
+              {(order.parts ?? []).some((p: any) => p.cost_price > 0) && (
+                <Row
+                  label="Прибыль по запчастям"
+                  value={formatCurrency(
+                    (order.parts ?? []).reduce((s: number, p: any) =>
+                      s + ((p.sell_price - (p.cost_price ?? 0)) * (p.quantity ?? 1)), 0)
+                  )}
+                />
               )}
             </div>
             {remaining > 0 && (
@@ -470,6 +500,38 @@ function PartsCard({ orderId, parts }: { orderId: string; parts: any[] }) {
           <Plus className="h-3.5 w-3.5 mr-1" /> {t('workshop.detail.addPart')}
         </Button>
       )}
+    </Card>
+  )
+}
+
+// ── История заказов клиента ─────────────────────────────────────────────────
+function ClientHistoryCard({ clientId, currentOrderId, onOpen }: {
+  clientId: string; currentOrderId: string; onOpen: (id: string) => void
+}) {
+  const { data: orders } = useClientWorkshopOrders(clientId, currentOrderId)
+  if (!orders || orders.length === 0) return null
+  return (
+    <Card title={`История ремонтов (${orders.length})`} icon={History}>
+      <div className="space-y-1.5">
+        {orders.slice(0, 5).map((o: any) => (
+          <button
+            key={o.id}
+            onClick={() => onOpen(o.id)}
+            className="w-full text-left flex items-center justify-between gap-2 text-xs hover:bg-accent/60 rounded px-2 py-1.5 transition-colors"
+          >
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">{o.number}</span>
+                <span className="text-muted-foreground">{dayjs(o.created_at).format('DD.MM.YY')}</span>
+              </div>
+              <div className="text-muted-foreground truncate">
+                {[o.item_type_name, o.brand, o.model].filter(Boolean).join(' ')}
+              </div>
+            </div>
+            <span className="font-mono text-xs">{formatCurrency(o.total_amount)}</span>
+          </button>
+        ))}
+      </div>
     </Card>
   )
 }

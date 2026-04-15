@@ -85,6 +85,8 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
         <SidebarGroupLabel label={t('nav.groupMain')} />
         {PRODUCT === 'cleaning' ? (
           <SidebarNavItem icon={BarChart3} iconColor="dark:text-blue-400" label={t('nav.stats')} to="/stats" onClick={onClose} />
+        ) : PRODUCT === 'workshop' ? (
+          <SidebarNavItem icon={BarChart3} iconColor="dark:text-blue-400" label={t('nav.stats')} to="/stats" onClick={onClose} />
         ) : PRODUCT === 'farm' ? (
           <SidebarNavItem icon={LayoutDashboard} iconColor="dark:text-blue-400" label={t('farm.nav.dashboard')} to="/farm" end onClick={onClose} />
         ) : (

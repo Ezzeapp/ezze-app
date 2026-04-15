@@ -107,7 +107,7 @@ export interface WorkshopOrder {
   // joined
   client?: { id: string; first_name: string; last_name?: string | null; phone: string | null; tg_chat_id: string | null } | null
   accepted_by_profile?: { id: string; display_name: string } | null
-  assigned_to_profile?: { id: string; display_name: string } | null
+  assigned_to_profile?: { id: string; display_name: string; commission_rate?: number } | null
   works?: WorkshopOrderWork[]
   parts?: WorkshopOrderPart[]
 }
@@ -249,7 +249,7 @@ export function useWorkshopOrder(id: string | undefined) {
           *,
           client:clients(id, first_name, last_name, phone, tg_chat_id),
           accepted_by_profile:master_profiles!workshop_orders_accepted_by_fkey(id, display_name),
-          assigned_to_profile:master_profiles!workshop_orders_assigned_to_fkey(id, display_name),
+          assigned_to_profile:master_profiles!workshop_orders_assigned_to_fkey(id, display_name, commission_rate),
           works:workshop_order_works(*),
           parts:workshop_order_parts(*)
         `)
@@ -379,7 +379,7 @@ export function useDeleteWorkshopOrder() {
   })
 }
 
-// ── Смена статуса с записью в историю ──────────────────────────────────────
+// ── Смена статуса с записью в историю + уведомление клиенту ────────────────
 export function useUpdateWorkshopStatus() {
   const qc = useQueryClient()
   return useMutation({
@@ -399,6 +399,11 @@ export function useUpdateWorkshopStatus() {
         new_status: status,
         note: note ?? null,
       })
+
+      // Fire-and-forget уведомление клиенту (не блокирует UI при сбое)
+      supabase.functions.invoke('workshop-notify-status', {
+        body: { order_id: id, status },
+      }).catch(err => console.warn('workshop-notify-status failed:', err))
     },
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: [WORKSHOP_ORDERS_KEY, 'detail', id] })
@@ -555,6 +560,28 @@ export function useAcceptWorkshopPayment() {
       qc.invalidateQueries({ queryKey: [WORKSHOP_ORDERS_KEY, 'list'] })
       qc.invalidateQueries({ queryKey: [WORKSHOP_ORDERS_KEY, 'stats'] })
     },
+  })
+}
+
+// ── Предыдущие заказы клиента ───────────────────────────────────────────────
+export function useClientWorkshopOrders(clientId: string | undefined, excludeOrderId?: string) {
+  return useQuery({
+    queryKey: [WORKSHOP_ORDERS_KEY, 'by-client', clientId, excludeOrderId],
+    queryFn: async () => {
+      let q = supabase
+        .from('workshop_orders')
+        .select('id, number, status, item_type_name, brand, model, total_amount, created_at')
+        .eq('product', PRODUCT)
+        .eq('client_id', clientId!)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      if (excludeOrderId) q = q.neq('id', excludeOrderId)
+      const { data, error } = await q
+      if (error) throw error
+      return data ?? []
+    },
+    enabled: !!clientId,
+    staleTime: 60_000,
   })
 }
 

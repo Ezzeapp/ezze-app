@@ -13,6 +13,7 @@ import { toast } from '@/components/shared/Toaster'
 import {
   useCreateWorkshopOrder,
   useWorkshopItemTypes,
+  useClientWorkshopDevices,
 } from '@/hooks/useWorkshopOrders'
 import { useClients, useCreateClient } from '@/hooks/useClients'
 import dayjs from 'dayjs'
@@ -97,6 +98,19 @@ export function WorkshopOrderFormPage() {
       <div className="space-y-6">
         <Section title={t('workshop.form.sectionClient')}>
           <ClientPicker clients={clients ?? []} value={clientId} onChange={setClientId} />
+          {clientId && (
+            <ClientDevicesList
+              clientId={clientId}
+              onPickDevice={(d) => {
+                const tm = itemTypes?.find(x => x.id === d.item_type_id)
+                if (tm) onTypeChange(tm.id)
+                setBrand(d.brand ?? '')
+                setModel(d.model ?? '')
+                setSerial(d.serial_number ?? '')
+                setImei(d.imei ?? '')
+              }}
+            />
+          )}
         </Section>
 
         <Section title={t('workshop.form.sectionDevice')}>
@@ -194,6 +208,40 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     <div className="rounded-lg border bg-card p-4 space-y-3">
       <h3 className="font-semibold text-sm">{title}</h3>
       {children}
+    </div>
+  )
+}
+
+// ── История устройств клиента ───────────────────────────────────────────────
+function ClientDevicesList({ clientId, onPickDevice }: {
+  clientId: string
+  onPickDevice: (d: any) => void
+}) {
+  const { data: devices } = useClientWorkshopDevices(clientId)
+  if (!devices || devices.length === 0) return null
+
+  return (
+    <div className="rounded-md bg-muted/30 p-3 mt-2 text-sm">
+      <div className="text-xs font-semibold text-muted-foreground mb-2">
+        Клиент уже приносил ({devices.length}):
+      </div>
+      <div className="space-y-1">
+        {devices.slice(0, 5).map(d => (
+          <button
+            key={d.id}
+            type="button"
+            onClick={() => onPickDevice(d)}
+            className="w-full text-left flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-background transition-colors text-xs"
+          >
+            <span>
+              <span className="font-medium">{d.item_type_name}</span>
+              {(d.brand || d.model) && <span className="text-muted-foreground"> · {[d.brand, d.model].filter(Boolean).join(' ')}</span>}
+              {d.serial_number && <span className="text-muted-foreground"> · S/N {d.serial_number}</span>}
+            </span>
+            <span className="text-muted-foreground shrink-0">{dayjs(d.created_at).format('DD.MM.YY')}</span>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
