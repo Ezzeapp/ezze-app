@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  Plus, Search, ClipboardList, Loader2, Filter,
+  Plus, Search, ClipboardList, Loader2,
   AlertTriangle, Trash2, Download, CalendarRange, X,
+  ArrowUpDown, ArrowUp, ArrowDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { toast } from '@/components/shared/Toaster'
@@ -87,8 +87,16 @@ function DeleteConfirmDialog({ label, onConfirm, onClose, danger = false, confir
   )
 }
 
+// ── Иконка сортировки ─────────────────────────────────────────────────────────
+function SortIndicator({ active, asc }: { active: boolean; asc: boolean }) {
+  if (!active) return <ArrowUpDown className="h-3 w-3 opacity-30 ml-1" />
+  return asc
+    ? <ArrowUp   className="h-3 w-3 text-primary ml-1" />
+    : <ArrowDown className="h-3 w-3 text-primary ml-1" />
+}
+
 // ── Таблица-вид ────────────────────────────────────────────────────────────────
-function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDueTodayMap, t }: {
+function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDueTodayMap, t, sortBy, onSort }: {
   orders: CleaningOrder[]
   symbol: string
   onNavigate: (id: string) => void
@@ -96,9 +104,17 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
   isOverdueMap: Record<string, boolean>
   isDueTodayMap: Record<string, boolean>
   t: (key: string, opts?: Record<string, unknown>) => string
+  sortBy: SortBy
+  onSort: (col: 'date' | 'amount' | 'deadline') => void
 }) {
   const totalAmount = orders.reduce((s, o) => s + (o.total_amount ?? 0), 0)
   const totalPaid   = orders.reduce((s, o) => s + (o.paid_amount  ?? 0), 0)
+
+  const dateActive     = sortBy === 'newest' || sortBy === 'oldest'
+  const amountActive   = sortBy === 'amount_desc' || sortBy === 'amount_asc'
+  const deadlineActive = sortBy === 'deadline_asc' || sortBy === 'deadline_desc'
+
+  const thBtn = "flex items-center whitespace-nowrap hover:text-foreground transition-colors cursor-pointer select-none"
 
   return (
     <div className="border rounded-xl overflow-hidden">
@@ -106,14 +122,29 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.number')}</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">
+                <button className={thBtn} onClick={() => onSort('date')}>
+                  {t('orders.col.number')}
+                  <SortIndicator active={dateActive} asc={sortBy === 'oldest'} />
+                </button>
+              </th>
               <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.type')}</th>
               <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.client')}</th>
               <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.status')}</th>
               <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.payment')}</th>
-              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.amount')}</th>
+              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground">
+                <button className={cn(thBtn, 'ml-auto')} onClick={() => onSort('amount')}>
+                  {t('orders.col.amount')}
+                  <SortIndicator active={amountActive} asc={sortBy === 'amount_asc'} />
+                </button>
+              </th>
               <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.paid')}</th>
-              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.date')}</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">
+                <button className={thBtn} onClick={() => onSort('deadline')}>
+                  {t('orders.col.date')}
+                  <SortIndicator active={deadlineActive || dateActive} asc={sortBy === 'oldest' || sortBy === 'deadline_asc'} />
+                </button>
+              </th>
               <th className="px-2 py-2.5 w-8" />
             </tr>
           </thead>
@@ -312,6 +343,16 @@ export function OrdersListPage() {
     setPage(1)
   }
 
+  function handleSort(col: 'date' | 'amount' | 'deadline') {
+    setSortBy(prev => {
+      if (col === 'date')     return prev === 'newest'      ? 'oldest'       : 'newest'
+      if (col === 'amount')   return prev === 'amount_desc' ? 'amount_asc'   : 'amount_desc'
+      if (col === 'deadline') return prev === 'deadline_asc'? 'deadline_desc': 'deadline_asc'
+      return prev
+    })
+    setPage(1)
+  }
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -479,48 +520,15 @@ export function OrdersListPage() {
           </div>
         )}
 
-        {/* Основные фильтры */}
-        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
-          <div className="relative flex-1 min-w-[160px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t('orders.search')}
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1) }}
-              className="pl-9"
-            />
-          </div>
-          <Select value={sortBy} onValueChange={v => { setSortBy(v as SortBy); setPage(1) }}>
-            <SelectTrigger className="w-[130px] shrink-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">{t('orders.sortNewest')}</SelectItem>
-              <SelectItem value="oldest">{t('orders.sortOldest')}</SelectItem>
-              <SelectItem value="amount_desc">{t('orders.sortAmountDesc')}</SelectItem>
-              <SelectItem value="deadline_asc">{t('orders.sortDeadlineAsc')}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={orderType} onValueChange={v => { setOrderType(v as OrderType | 'all'); setPage(1) }}>
-            <SelectTrigger className="w-[130px] shrink-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('orders.allTypes')}</SelectItem>
-              <SelectItem value="clothing">{ORDER_TYPE_LABELS.clothing}</SelectItem>
-              <SelectItem value="carpet">{ORDER_TYPE_LABELS.carpet}</SelectItem>
-              <SelectItem value="furniture">{ORDER_TYPE_LABELS.furniture}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant={myOnly ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => { setMyOnly(v => !v); setPage(1) }}
-            className="shrink-0 h-10"
-          >
-            <Filter className="h-4 w-4 mr-1" />
-            {t('orders.mine')}
-          </Button>
+        {/* Поиск */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t('orders.search')}
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1) }}
+            className="pl-9"
+          />
         </div>
 
         {/* Статусы */}
@@ -565,6 +573,8 @@ export function OrdersListPage() {
                 isOverdueMap={isOverdueMap}
                 isDueTodayMap={isDueTodayMap}
                 t={t as (key: string, opts?: Record<string, unknown>) => string}
+                sortBy={sortBy}
+                onSort={handleSort}
               />
             </div>
             {/* Мобиль — карточки */}

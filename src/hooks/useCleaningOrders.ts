@@ -52,7 +52,7 @@ const DEFAULT_ORDER_TYPES: CleaningOrderTypeConfig[] = [
 export type OrderStatus = 'received' | 'in_progress' | 'ready' | 'issued' | 'paid' | 'cancelled'
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid'
 export type ItemStatus = 'pending' | 'ready' | 'issued'
-export type SortBy = 'newest' | 'oldest' | 'amount_desc' | 'deadline_asc'
+export type SortBy = 'newest' | 'oldest' | 'amount_desc' | 'amount_asc' | 'deadline_asc' | 'deadline_desc'
 
 export interface CleaningOrderItem {
   id: string
@@ -240,8 +240,12 @@ export function useCleaningOrders(opts: {
         q = q.order('created_at', { ascending: true })
       } else if (sortBy === 'amount_desc') {
         q = q.order('total_amount', { ascending: false })
+      } else if (sortBy === 'amount_asc') {
+        q = q.order('total_amount', { ascending: true })
       } else if (sortBy === 'deadline_asc') {
         q = q.order('ready_date', { ascending: true, nullsFirst: false })
+      } else if (sortBy === 'deadline_desc') {
+        q = q.order('ready_date', { ascending: false, nullsFirst: false })
       } else {
         q = q.order('created_at', { ascending: false })
       }
