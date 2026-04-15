@@ -249,16 +249,32 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)
+  const [slugFilter, setSlugFilter] = useState<string>('all')
   // expanded categories — по умолчанию пусто = все свёрнуты
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const { data: globalServices = [], isLoading } = useGlobalServices()
   const upsert = useUpsertItemType()
 
+  // Unique order-type slugs present in the catalog
+  const availableSlugCats = useMemo(() => {
+    const seen = new Set<string>()
+    globalServices.forEach(s => {
+      const slug = (s as any).order_type || mapGlobalCategoryToSlug(s.category || '')
+      seen.add(slug)
+    })
+    return Array.from(seen)
+  }, [globalServices])
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return q ? globalServices.filter(s => s.name.toLowerCase().includes(q)) : globalServices
-  }, [globalServices, search])
+    return globalServices.filter(s => {
+      const matchesSearch = !q || s.name.toLowerCase().includes(q)
+      const slug = (s as any).order_type || mapGlobalCategoryToSlug(s.category || '')
+      const matchesSlug = slugFilter === 'all' || slug === slugFilter
+      return matchesSearch && matchesSlug
+    })
+  }, [globalServices, search, slugFilter])
 
   const grouped = useMemo(() =>
     filtered.reduce<Record<string, typeof filtered>>((acc, s) => {
@@ -270,8 +286,8 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
     [filtered]
   )
 
-  const allSelected = filtered.length > 0 && selected.size === filtered.length
-  const isSearching = search.trim().length > 0
+  const allSelected = filtered.length > 0 && filtered.every(s => selected.has(s.id))
+  const isSearching = search.trim().length > 0 || slugFilter !== 'all'
 
   const toggleExpanded = (cat: string) => {
     setExpanded(prev => {
@@ -295,26 +311,21 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
     if (selected.size === 0) return
     setImporting(true)
     const toImport = globalServices.filter(s => selected.has(s.id))
-    let count = 0
-    let errors = 0
-    for (let i = 0; i < toImport.length; i++) {
-      const s = toImport[i]
-      try {
-        // Use order_type from global_services if available, otherwise fall back to keyword mapping
+    const results = await Promise.allSettled(
+      toImport.map((s, i) => {
         const categorySlug = (s as any).order_type || mapGlobalCategoryToSlug(s.category || '')
-        await upsert.mutateAsync({
+        return upsert.mutateAsync({
           name: s.name,
           default_price: s.price || 0,
           default_days: 3,
           sort_order: maxSortOrder + i + 1,
           category: categorySlug,
-          subcategory: s.category || undefined,  // preserve subcategory text
+          subcategory: s.category || undefined,
         })
-        count++
-      } catch {
-        errors++
-      }
-    }
+      })
+    )
+    const count = results.filter(r => r.status === 'fulfilled').length
+    const errors = results.filter(r => r.status === 'rejected').length
     setImporting(false)
     if (count > 0) toast.success(`Добавлено позиций: ${count}`)
     if (errors > 0) toast.error('Некоторые позиции не добавились')
@@ -326,6 +337,7 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
     setSearch('')
     setSelected(new Set())
     setExpanded(new Set())
+    setSlugFilter('all')
     onClose()
   }
 
@@ -340,7 +352,7 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
         </DialogHeader>
 
         {/* Search */}
-        <div className="px-6 pb-3 shrink-0">
+        <div className="px-6 pb-2 shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -351,6 +363,43 @@ function ImportCleaningDialog({ open, onClose, maxSortOrder }: ImportCleaningDia
             />
           </div>
         </div>
+
+        {/* Category filter */}
+        {availableSlugCats.length > 1 && (
+          <div className="px-6 pb-2 shrink-0 flex gap-1.5 overflow-x-auto scrollbar-none">
+            <button
+              type="button"
+              onClick={() => { setSlugFilter('all'); setSelected(new Set()) }}
+              className={cn(
+                'shrink-0 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                slugFilter === 'all'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background text-muted-foreground border-border hover:bg-muted'
+              )}
+            >
+              Все
+            </button>
+            {availableSlugCats.map(slug => {
+              const cfg = DEFAULT_CAT_OPTIONS.find(c => c.slug === slug)
+              const label = cfg?.label ?? ORDER_TYPE_LABELS[slug] ?? slug
+              return (
+                <button
+                  key={slug}
+                  type="button"
+                  onClick={() => { setSlugFilter(slug); setSelected(new Set()) }}
+                  className={cn(
+                    'shrink-0 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                    slugFilter === slug
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                  )}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+        )}
 
         {/* Select all */}
         {filtered.length > 0 && (
