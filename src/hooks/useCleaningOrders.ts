@@ -69,6 +69,10 @@ export interface CleaningOrderItem {
   width_m: number | null
   length_m: number | null
   area_m2: number | null
+  // прачечная
+  weight_kg: number | null
+  // фото дефектов
+  photos: string[]
   created_at: string
 }
 
@@ -93,6 +97,8 @@ export interface CleaningOrder {
   // мебель
   visit_address: string | null
   visit_date: string | null
+  // теги
+  tags: string[]
   created_at: string
   updated_at: string
   // joined
@@ -313,6 +319,7 @@ export interface CreateOrderPayload {
   total_amount?: number
   ready_date?: string | null
   notes?: string | null
+  tags?: string[]
   // оплата
   is_express?: boolean
   payment_method?: string
@@ -338,6 +345,10 @@ export interface CreateOrderPayload {
     width_m?: number | null
     length_m?: number | null
     area_m2?: number | null
+    // прачечная
+    weight_kg?: number | null
+    // фото
+    photos?: string[]
   }[]
 }
 
@@ -363,6 +374,7 @@ export function useCreateOrder() {
           total_amount:   payload.total_amount ?? 0,
           ready_date:     payload.ready_date ?? null,
           notes:             payload.notes ?? null,
+          tags:              payload.tags ?? [],
           is_express:        payload.is_express ?? false,
           payment_method:    payload.payment_method ?? 'cash',
           surcharge_percent: payload.surcharge_percent ?? 0,

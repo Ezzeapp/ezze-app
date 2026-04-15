@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Tag, Zap, CreditCard, ChevronDown } from 'lucide-react'
+import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Tag, Zap, CreditCard, ChevronDown, Camera, Weight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -49,6 +49,8 @@ const DEFECTS_LIST = [
   "Выцветший", "Засаленный", "Молния", "Пуговица", "Подкладка",
 ]
 
+const ORDER_TAGS = ['Срочно', 'VIP', 'Повторная', 'Самовывоз', 'Доставка']
+
 interface CartItem {
   key: number
   item_type_id: string | null
@@ -61,6 +63,8 @@ interface CartItem {
   width_m: string
   length_m: string
   area_m2: number | null
+  weight_kg: string
+  photos: string[]
 }
 
 let keySeq = 0
@@ -73,6 +77,7 @@ function makeCartItem(name: string, price: number, days: number, typeId: string 
     ready_date: dayjs().add(days, 'day').format('YYYY-MM-DD'),
     color: '', brand: '', defects: '',
     width_m: '', length_m: '', area_m2: null,
+    weight_kg: '', photos: [],
   }
 }
 
@@ -321,6 +326,9 @@ export function POSPage() {
   const [surchargePct, setSurchargePct] = useState('')
   const [paymentCash, setPaymentCash] = useState('')
   const [paymentCard, setPaymentCard] = useState('')
+  const [orderTags, setOrderTags] = useState<string[]>([])
+  const [photoUploading, setPhotoUploading] = useState<number | null>(null)
+  const photoInputRef = useRef<HTMLInputElement>(null)
 
   const subtotal = cart.reduce((s, i) => s + i.price, 0)
   const surchargeAmt = subtotal * (parseFloat(surchargePct) || 0) / 100
@@ -373,7 +381,7 @@ export function POSPage() {
     if (expandedKey === key) setExpandedKey(null)
   }
 
-  function updateItem(key: number, field: keyof CartItem, value: string) {
+  function updateItem(key: number, field: keyof CartItem, value: any) {
     setCart(prev => prev.map(i => i.key === key ? { ...i, [field]: value } : i))
   }
 
@@ -391,7 +399,7 @@ export function POSPage() {
     setAssignedTo(null); setPrepaid(''); setNotes(''); setGlobalReadyDate('')
     setDiscount(''); setIsExpress(false); setPaymentMethod('cash')
     setSurchargePct(''); setPaymentCash(''); setPaymentCard('')
-    setExpandedKey(null); setCreatedOrder(null); setReceiptData(null)
+    setOrderTags([]); setExpandedKey(null); setCreatedOrder(null); setReceiptData(null)
   }
 
   async function handleSubmit() {
@@ -411,6 +419,7 @@ export function POSPage() {
         surcharge_amount:  surchargeAmt,
         payment_cash:      parseFloat(paymentCash) || 0,
         payment_card:      parseFloat(paymentCard) || 0,
+        tags:              orderTags,
         items: cart.map(i => ({
           item_type_id:   i.item_type_id,
           item_type_name: i.item_type_name,
@@ -422,6 +431,8 @@ export function POSPage() {
           width_m:        i.area_m2 ? parseFloat(i.width_m) : null,
           length_m:       i.area_m2 ? parseFloat(i.length_m) : null,
           area_m2:        i.area_m2,
+          weight_kg:      i.weight_kg ? parseFloat(i.weight_kg) : null,
+          photos:         i.photos,
         })),
       })
 
@@ -474,6 +485,34 @@ export function POSPage() {
     const item = makeCartItem('', 0, 3)
     setCart(prev => [...prev, item])
     setExpandedKey(item.key)
+  }
+
+  async function handlePhotoUpload(itemKey: number, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setPhotoUploading(itemKey)
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+      const path = `${PRODUCT}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+      const { error } = await supabase.storage.from('cleaning-photos').upload(path, file, {
+        contentType: file.type, upsert: false,
+      })
+      if (error) throw error
+      const { data: { publicUrl } } = supabase.storage.from('cleaning-photos').getPublicUrl(path)
+      setCart(prev => prev.map(i => i.key === itemKey
+        ? { ...i, photos: [...i.photos, publicUrl] }
+        : i
+      ))
+    } catch {
+      toast.error('Ошибка загрузки фото')
+    } finally {
+      setPhotoUploading(null)
+    }
+  }
+
+  function toggleTag(tag: string) {
+    setOrderTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])
   }
 
   // Список: показываем первые listPage*20 позиций
@@ -849,12 +888,62 @@ export function POSPage() {
                             <p className="text-xs text-muted-foreground mt-0.5 truncate">{item.defects}</p>
                           )}
                         </div>
-                        {/* Цена — только в развёрнутом виде */}
-                        <div className="col-span-2">
+                        {/* Вес + Цена */}
+                        <div>
+                          <Label className="text-xs flex items-center gap-1">
+                            <Weight className="h-3 w-3" />
+                            Вес (кг)
+                          </Label>
+                          <Input type="number" min={0} step={0.1} placeholder="0.0"
+                            value={item.weight_kg}
+                            onChange={e => updateItem(item.key, 'weight_kg', e.target.value)}
+                            className="h-7 text-xs mt-0.5" />
+                        </div>
+                        <div>
                           <Label className="text-xs">Цена ({symbol})</Label>
                           <Input type="number" value={item.price}
                             onChange={e => updateItem(item.key, 'price', e.target.value as any)}
                             className="h-7 text-xs mt-0.5" />
+                        </div>
+
+                        {/* Фото при приёмке */}
+                        <div className="col-span-2">
+                          <Label className="text-xs mb-1.5 flex items-center gap-1">
+                            <Camera className="h-3 w-3" />
+                            Фото при приёмке
+                          </Label>
+                          <div className="flex flex-wrap gap-1.5">
+                            {item.photos.map((url, pi) => (
+                              <div key={pi} className="relative group">
+                                <img src={url} alt="" className="h-12 w-12 rounded-lg object-cover border" />
+                                <button
+                                  type="button"
+                                  onClick={() => updateItem(item.key, 'photos', item.photos.filter((_, j) => j !== pi))}
+                                  className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full h-4 w-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="h-2.5 w-2.5" />
+                                </button>
+                              </div>
+                            ))}
+                            {item.photos.length < 5 && (
+                              <label className={cn(
+                                'h-12 w-12 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer hover:border-primary transition-colors',
+                                photoUploading === item.key && 'opacity-50 pointer-events-none'
+                              )}>
+                                {photoUploading === item.key
+                                  ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                  : <Camera className="h-4 w-4 text-muted-foreground" />
+                                }
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  capture="environment"
+                                  className="hidden"
+                                  onChange={e => handlePhotoUpload(item.key, e)}
+                                />
+                              </label>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -866,6 +955,29 @@ export function POSPage() {
 
           {/* Нижняя панель: итоги + оплата + кнопка */}
           <div className="border-t bg-background shrink-0 p-3 space-y-2">
+
+            {/* Теги заказа */}
+            <div className="flex flex-wrap gap-1">
+              {ORDER_TAGS.map(tag => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className={cn(
+                    'px-2 py-0.5 rounded-full text-xs font-medium border transition-colors',
+                    orderTags.includes(tag)
+                      ? tag === 'Срочно'
+                        ? 'bg-red-500 text-white border-red-500'
+                        : tag === 'VIP'
+                          ? 'bg-amber-500 text-white border-amber-500'
+                          : 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-muted text-muted-foreground border-transparent hover:border-border hover:text-foreground'
+                  )}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
 
             {/* Примечание + Срок */}
             <div className="flex items-center gap-2">
@@ -879,13 +991,29 @@ export function POSPage() {
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Label className="text-xs text-muted-foreground w-[4.5rem] shrink-0">Срок для всех</Label>
+              <Label className="text-xs text-muted-foreground shrink-0">Срок</Label>
+              <div className="flex gap-1 shrink-0">
+                {[['Сег.', 0], ['+1', 1], ['+2', 2], ['+3', 3]].map(([label, days]) => (
+                  <button
+                    key={label as string}
+                    type="button"
+                    onClick={() => setGlobalReadyDate(dayjs().add(days as number, 'day').format('YYYY-MM-DD'))}
+                    className={cn(
+                      'px-1.5 py-0.5 text-xs rounded border transition-colors',
+                      globalReadyDate === dayjs().add(days as number, 'day').format('YYYY-MM-DD')
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-muted-foreground hover:bg-accent hover:text-foreground'
+                    )}
+                  >
+                    {label as string}
+                  </button>
+                ))}
+              </div>
               <Input
                 type="date"
-                placeholder="01.01.2000"
                 value={globalReadyDate}
                 onChange={e => setGlobalReadyDate(e.target.value)}
-                className="flex-1 h-7 text-xs"
+                className="flex-1 h-7 text-xs min-w-0"
               />
             </div>
 
