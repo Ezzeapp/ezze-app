@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Plus, Search, ClipboardList, Loader2,
   AlertTriangle, Trash2, Download, CalendarRange, X,
-  ArrowUpDown, ArrowUp, ArrowDown,
+  ArrowUpDown, ArrowUp, ArrowDown, List, Columns3,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,12 +18,15 @@ import {
   useDeleteOrder,
   ORDER_TYPE_ICONS,
   ORDER_TYPE_LABELS,
+  ORDERS_KEY,
   type SortBy,
 } from '@/hooks/useCleaningOrders'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/orders/OrderStatusBadge'
 import type { OrderStatus, OrderType, PaymentStatus, CleaningOrder } from '@/hooks/useCleaningOrders'
 import { formatCurrency } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
+import { useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
 import dayjs from 'dayjs'
 import { cn } from '@/lib/utils'
 
@@ -93,6 +96,136 @@ function SortIndicator({ active, asc }: { active: boolean; asc: boolean }) {
   return asc
     ? <ArrowUp   className="h-3 w-3 text-primary ml-1" />
     : <ArrowDown className="h-3 w-3 text-primary ml-1" />
+}
+
+// ── Канбан-вид ─────────────────────────────────────────────────────────────────
+
+const KANBAN_COLS: { value: OrderStatus; label: string; accent: string; header: string }[] = [
+  { value: 'received',    label: 'Получен',    accent: 'border-t-blue-400',    header: 'bg-blue-50 dark:bg-blue-950/30' },
+  { value: 'in_progress', label: 'В работе',   accent: 'border-t-yellow-400',  header: 'bg-yellow-50 dark:bg-yellow-950/30' },
+  { value: 'ready',       label: 'Готов',      accent: 'border-t-green-400',   header: 'bg-green-50 dark:bg-green-950/30' },
+  { value: 'issued',      label: 'Выдан',      accent: 'border-t-purple-400',  header: 'bg-purple-50 dark:bg-purple-950/30' },
+  { value: 'paid',        label: 'Оплачен',    accent: 'border-t-emerald-400', header: 'bg-emerald-50 dark:bg-emerald-950/30' },
+  { value: 'cancelled',   label: 'Отменён',    accent: 'border-t-gray-400',    header: 'bg-gray-50 dark:bg-gray-950/30' },
+]
+
+function KanbanView({ orders, symbol, onNavigate, isOverdueMap, isDueTodayMap, t }: {
+  orders: CleaningOrder[]
+  symbol: string
+  onNavigate: (id: string) => void
+  isOverdueMap: Record<string, boolean>
+  isDueTodayMap: Record<string, boolean>
+  t: (key: string, opts?: Record<string, unknown>) => string
+}) {
+  const qc = useQueryClient()
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [overCol, setOverCol] = useState<string | null>(null)
+  const dragCounter = useRef<Record<string, number>>({})
+
+  const grouped = KANBAN_COLS.reduce((acc, col) => {
+    acc[col.value] = orders.filter(o => o.status === col.value)
+    return acc
+  }, {} as Record<string, CleaningOrder[]>)
+
+  async function handleDrop(newStatus: OrderStatus) {
+    if (!dragId) return
+    const order = orders.find(o => o.id === dragId)
+    if (!order || order.status === newStatus) { setDragId(null); setOverCol(null); return }
+    try {
+      await supabase.from('cleaning_orders').update({ status: newStatus }).eq('id', dragId)
+      qc.invalidateQueries({ queryKey: [ORDERS_KEY, 'list'] })
+      qc.invalidateQueries({ queryKey: [ORDERS_KEY, 'stats'] })
+    } catch { /* ignore */ }
+    setDragId(null); setOverCol(null)
+    dragCounter.current = {}
+  }
+
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-2 min-h-[400px]">
+      {KANBAN_COLS.map(col => {
+        const colOrders = grouped[col.value] ?? []
+        return (
+          <div
+            key={col.value}
+            className={cn(
+              'flex flex-col rounded-xl border-2 border-t-4 min-w-[200px] flex-shrink-0 transition-colors',
+              col.accent,
+              overCol === col.value ? 'bg-accent/60 border-primary/40' : 'border-border/60 bg-background'
+            )}
+            onDragOver={e => { e.preventDefault() }}
+            onDragEnter={e => {
+              e.preventDefault()
+              dragCounter.current[col.value] = (dragCounter.current[col.value] || 0) + 1
+              setOverCol(col.value)
+            }}
+            onDragLeave={() => {
+              dragCounter.current[col.value] = (dragCounter.current[col.value] || 1) - 1
+              if (dragCounter.current[col.value] <= 0) {
+                dragCounter.current[col.value] = 0
+                setOverCol(prev => prev === col.value ? null : prev)
+              }
+            }}
+            onDrop={() => handleDrop(col.value)}
+          >
+            {/* Заголовок колонки */}
+            <div className={cn('px-3 py-2 rounded-t-lg flex items-center justify-between', col.header)}>
+              <span className="text-xs font-semibold text-foreground">{col.label}</span>
+              <span className="text-xs text-muted-foreground font-medium">{colOrders.length}</span>
+            </div>
+
+            {/* Карточки */}
+            <div className="flex-1 p-2 space-y-1.5 min-h-[60px]">
+              {colOrders.map(order => {
+                const TypeIcon  = ORDER_TYPE_ICONS[order.order_type as OrderType]
+                const overdue   = isOverdueMap[order.id]
+                const dueToday  = isDueTodayMap[order.id]
+                const clientName = order.client
+                  ? `${order.client.first_name} ${order.client.last_name || ''}`.trim()
+                  : null
+                return (
+                  <div
+                    key={order.id}
+                    draggable
+                    onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; setDragId(order.id) }}
+                    onDragEnd={() => { setDragId(null); setOverCol(null); dragCounter.current = {} }}
+                    onClick={() => onNavigate(order.id)}
+                    className={cn(
+                      'p-2 rounded-lg border bg-card cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all select-none',
+                      overdue   && 'border-l-2 border-l-red-500',
+                      dueToday  && !overdue && 'border-l-2 border-l-orange-400',
+                      dragId === order.id && 'opacity-40 scale-95',
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      {TypeIcon && <TypeIcon className="h-3 w-3 text-muted-foreground shrink-0" />}
+                      <span className="text-xs font-mono text-muted-foreground">{order.number}</span>
+                      {overdue && <AlertTriangle className="h-3 w-3 text-red-500 shrink-0 ml-auto" />}
+                    </div>
+                    {clientName && (
+                      <p className="text-xs font-medium truncate">{clientName}</p>
+                    )}
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs font-semibold tabular-nums">{formatCurrency(order.total_amount)} {symbol}</span>
+                      {order.ready_date && (
+                        <span className={cn(
+                          'text-xs',
+                          overdue   ? 'text-red-500 font-medium'    : '',
+                          dueToday  ? 'text-orange-500 font-medium' : 'text-muted-foreground',
+                        )}>
+                          {dayjs(order.ready_date).format('DD.MM')}
+                        </span>
+                      )}
+                    </div>
+                    <PaymentStatusBadge status={order.payment_status} />
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 // ── Таблица-вид ────────────────────────────────────────────────────────────────
@@ -271,18 +404,20 @@ export function OrdersListPage() {
 
   const [deleteId,       setDeleteId]       = useState<string | null>(null)
   const [deleteAllOpen,  setDeleteAllOpen]  = useState(false)
+  const [viewMode,       setViewMode]       = useState<'table' | 'kanban'>('table')
   const { mutateAsync: deleteOrder } = useDeleteOrder()
 
   const hasDateFilter = !!dateFrom || !!dateTo
+  const isKanban = viewMode === 'kanban'
 
   const { data, isLoading } = useCleaningOrders({
-    status,
+    status:        isKanban ? 'all' : status,
     orderType,
-    paymentStatus: paymentFilter,
+    paymentStatus: isKanban ? 'all' : paymentFilter,
     search,
     assignedToMe: myOnly,
-    page,
-    perPage: 20,
+    page:         isKanban ? 1 : page,
+    perPage:      isKanban ? 500 : 20,
     sortBy,
     dateFrom,
     dateTo,
@@ -360,6 +495,23 @@ export function OrdersListPage() {
         description={total > 0 ? `${total} ${t('orders.shortOrders')}` : undefined}
       >
         <div className="flex items-center gap-1.5">
+          {/* Вид: таблица / канбан */}
+          <div className="flex rounded-lg border overflow-hidden">
+            <button
+              onClick={() => setViewMode('table')}
+              className={cn('p-1.5 transition-colors', viewMode === 'table' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
+              title="Таблица"
+            >
+              <List className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={cn('p-1.5 transition-colors', viewMode === 'kanban' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
+              title="Канбан"
+            >
+              <Columns3 className="h-4 w-4" />
+            </button>
+          </div>
           {/* Период */}
           <Button
             variant="ghost" size="icon"
@@ -549,7 +701,7 @@ export function OrdersListPage() {
           ))}
         </div>
 
-        {/* Список / Таблица */}
+        {/* Список / Таблица / Канбан */}
         {isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -561,10 +713,20 @@ export function OrdersListPage() {
             description={t('orders.emptyDesc')}
             action={{ label: t('orders.newOrder'), onClick: () => navigate('/orders/new') }}
           />
+        ) : isKanban ? (
+          /* Канбан */
+          <KanbanView
+            orders={orders}
+            symbol={symbol}
+            onNavigate={id => navigate(`/orders/${id}`)}
+            isOverdueMap={isOverdueMap}
+            isDueTodayMap={isDueTodayMap}
+            t={t as (key: string, opts?: Record<string, unknown>) => string}
+          />
         ) : (
           <>
-            {/* Десктоп — таблица */}
-            <div className="hidden lg:block">
+            {/* Десктоп — таблица (растянута по ширине) */}
+            <div className="hidden lg:block -mx-4">
               <OrdersTable
                 orders={orders}
                 symbol={symbol}

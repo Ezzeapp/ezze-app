@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Zap, CreditCard, ChevronDown, Camera, Weight, TrendingUp, TrendingDown, MessageSquare } from 'lucide-react'
+import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Zap, Camera, Weight, TrendingUp, TrendingDown, MessageSquare, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -322,6 +322,8 @@ export function POSPage() {
   const [globalReadyDate, setGlobalReadyDate] = useState(() => dayjs().add(1, 'day').format('YYYY-MM-DD'))
   const [discount, setDiscount] = useState('')
   const [isExpress, setIsExpress] = useState(false)
+  const [expressCharge, setExpressCharge] = useState('')
+  const [expressChargeIsPercent, setExpressChargeIsPercent] = useState(true)
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [surchargePct, setSurchargePct] = useState('')
   const [paymentCash, setPaymentCash] = useState('')
@@ -330,10 +332,36 @@ export function POSPage() {
   const [photoUploading, setPhotoUploading] = useState<number | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
 
+  // Избранное — сохраняется в localStorage
+  const [showFavourites, setShowFavourites] = useState(false)
+  const [favourites, setFavourites] = useState<Set<string>>(() => {
+    try {
+      const s = localStorage.getItem('pos_favourites')
+      return new Set(s ? JSON.parse(s) : [])
+    } catch { return new Set() }
+  })
+
+  function toggleFavourite(e: React.MouseEvent, id: string) {
+    e.stopPropagation()
+    setFavourites(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      localStorage.setItem('pos_favourites', JSON.stringify([...next]))
+      return next
+    })
+  }
+
+  const favouriteTypes = allTypes.filter(t => favourites.has(t.id))
+
   const subtotal = cart.reduce((s, i) => s + i.price, 0)
   const surchargeAmt = subtotal * (parseFloat(surchargePct) || 0) / 100
   const discountAmt  = subtotal * (parseFloat(discount) || 0) / 100
-  const finalTotal   = subtotal + surchargeAmt - discountAmt
+  const expressChargeAmt = isExpress
+    ? expressChargeIsPercent
+      ? subtotal * (parseFloat(expressCharge) || 0) / 100
+      : (parseFloat(expressCharge) || 0)
+    : 0
+  const finalTotal = subtotal + surchargeAmt + expressChargeAmt - discountAmt
 
   const isMixed = paymentMethod === 'mixed'
   const mixedPrepaid = (parseFloat(paymentCash) || 0) + (parseFloat(paymentCard) || 0)
@@ -397,8 +425,8 @@ export function POSPage() {
   function resetForm() {
     setCart([]); setClientId(null); setClientName(''); setClientSearch('')
     setAssignedTo(null); setPrepaid(''); setNotes(''); setGlobalReadyDate(dayjs().add(1, 'day').format('YYYY-MM-DD'))
-    setDiscount(''); setIsExpress(false); setPaymentMethod('cash')
-    setSurchargePct(''); setPaymentCash(''); setPaymentCard('')
+    setDiscount(''); setIsExpress(false); setExpressCharge(''); setExpressChargeIsPercent(true)
+    setPaymentMethod('cash'); setSurchargePct(''); setPaymentCash(''); setPaymentCard('')
     setOrderTags([]); setExpandedKey(null); setCreatedOrder(null); setReceiptData(null)
   }
 
@@ -590,17 +618,17 @@ export function POSPage() {
         {/* ── Каталог ── */}
         <div className={cn("flex-1 border-r flex flex-col overflow-hidden min-h-0", CATALOG_BG[orderType])}>
 
-          {/* Тип заказа — горизонтальные табы */}
+          {/* Тип заказа — горизонтальные табы + Избранное */}
           <div className="flex items-center gap-1 px-3 pt-2 pb-1 shrink-0 flex-wrap">
             {enabledOrderTypes.map((cfg: CleaningOrderTypeConfig) => {
               const Icon = getOrderTypeIcon(cfg.icon)
               return (
                 <button
                   key={cfg.slug}
-                  onClick={() => handleSetOrderType(cfg.slug)}
+                  onClick={() => { handleSetOrderType(cfg.slug); setShowFavourites(false) }}
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border',
-                    orderType === cfg.slug
+                    !showFavourites && orderType === cfg.slug
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-background/80 text-muted-foreground border-transparent hover:border-border hover:text-foreground'
                   )}
@@ -610,6 +638,19 @@ export function POSPage() {
                 </button>
               )
             })}
+            <button
+              onClick={() => setShowFavourites(v => !v)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border',
+                showFavourites
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'bg-background/80 text-muted-foreground border-transparent hover:border-border hover:text-amber-500'
+              )}
+            >
+              <Star className="h-3.5 w-3.5" />
+              Избранное
+              {favourites.size > 0 && <span className="ml-0.5 text-xs opacity-80">({favourites.size})</span>}
+            </button>
           </div>
 
           {/* Поиск + вид */}
@@ -642,9 +683,45 @@ export function POSPage() {
           {/* Каталог: категории → позиции */}
           <div className="flex-1 overflow-y-auto px-3 pb-3 min-h-0">
 
-            {!catalogSearch && !selectedSubcategory ? (
+            {showFavourites ? (
+              /* Избранные */
+              <>
+                {favouriteTypes.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-40 gap-2 text-muted-foreground">
+                    <Star className="h-8 w-8 opacity-30" />
+                    <p className="text-sm">Нет избранных</p>
+                    <p className="text-xs opacity-60">Нажмите ★ на карточке в каталоге</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-2">
+                    {favouriteTypes.map(type => (
+                      <button
+                        key={type.id}
+                        onClick={() => addFromCatalog(type)}
+                        className={cn(
+                          "relative flex flex-col items-start gap-1 p-2.5 rounded-xl border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95",
+                          flashTypeId === type.id && "ring-2 ring-primary scale-95"
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={e => toggleFavourite(e, type.id)}
+                          className="absolute top-1.5 right-1.5 text-amber-400 hover:text-amber-500"
+                        >
+                          <Star className="h-3 w-3 fill-current" />
+                        </button>
+                        <span className="text-xs font-medium leading-tight group-hover:text-primary transition-colors line-clamp-2 pr-4">{type.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {(type.category || 'clothing') === 'carpet' ? `${formatCurrency(type.default_price)} ${symbol}/м²` : `${formatCurrency(type.default_price)} ${symbol}`}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : !catalogSearch && !selectedSubcategory ? (
               /* Карточки категорий */
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {subcategories.map(sub => (
                   <button
                     key={sub.name}
@@ -678,17 +755,29 @@ export function POSPage() {
                 )}
 
                 {catalogView === 'grid' ? (
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-2">
                     {visibleTypes.map(type => (
                       <button
                         key={type.id}
                         onClick={() => addFromCatalog(type)}
                         className={cn(
-                          "flex flex-col items-start gap-1 p-3 rounded-xl border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95",
+                          "relative flex flex-col items-start gap-1 p-2.5 rounded-xl border bg-background hover:bg-accent hover:border-primary/40 transition-all text-left group active:scale-95",
                           flashTypeId === type.id && "ring-2 ring-primary scale-95"
                         )}
                       >
-                        <span className="text-sm font-medium leading-tight group-hover:text-primary transition-colors line-clamp-2">{type.name}</span>
+                        <button
+                          type="button"
+                          onClick={e => toggleFavourite(e, type.id)}
+                          className={cn(
+                            'absolute top-1.5 right-1.5 transition-colors',
+                            favourites.has(type.id)
+                              ? 'text-amber-400 hover:text-amber-500'
+                              : 'text-muted-foreground/30 hover:text-amber-400 opacity-0 group-hover:opacity-100'
+                          )}
+                        >
+                          <Star className={cn('h-3 w-3', favourites.has(type.id) && 'fill-current')} />
+                        </button>
+                        <span className="text-xs font-medium leading-tight group-hover:text-primary transition-colors line-clamp-2 pr-4">{type.name}</span>
                         <span className="text-xs text-muted-foreground">
                           {orderType === 'carpet' ? `${formatCurrency(type.default_price)} ${symbol}/м²` : `${formatCurrency(type.default_price)} ${symbol}`}
                         </span>
@@ -749,7 +838,7 @@ export function POSPage() {
         </div>
 
         {/* ── Правая панель: чек ── */}
-        <div className="w-[40%] flex flex-col overflow-hidden min-h-0">
+        <div className="w-[30%] flex flex-col overflow-hidden min-h-0">
 
           {/* Список позиций */}
           <div className="flex-1 overflow-y-auto min-h-0">
@@ -990,10 +1079,10 @@ export function POSPage() {
               />
             </div>
 
-            {/* Зона 3: Срок — иконка + чипсы + дата (одна строка) */}
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              {[['Сег', 0], ['+1', 1], ['+2', 2], ['+3', 3]].map(([label, days]) => (
+            {/* Зона 3: Срок — иконка + чипсы + ручной ввод */}
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0 mr-0.5" />
+              {[['сегодня', 0], ['+1', 1], ['+2', 2], ['+3', 3], ['+4', 4], ['+5', 5]].map(([label, days]) => (
                 <button
                   key={label as string}
                   type="button"
@@ -1009,14 +1098,34 @@ export function POSPage() {
                 </button>
               ))}
               <Input
-                type="date"
+                type="text"
+                placeholder="ГГГГ-ММ-ДД"
                 value={globalReadyDate}
                 onChange={e => setGlobalReadyDate(e.target.value)}
                 className="h-7 text-xs flex-1 min-w-0"
               />
             </div>
 
-            {/* Зона 4: Экспресс + Оплата + Надбавка + Скидка (одна строка) */}
+            {/* Зона 4а: Оплата — чипсы в один ряд */}
+            <div className="flex gap-1">
+              {PAYMENT_METHODS.map(m => (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => setPaymentMethod(m.value)}
+                  className={cn(
+                    'flex-1 px-2 py-1 rounded-md border text-xs font-medium transition-colors leading-none',
+                    paymentMethod === m.value
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-muted text-muted-foreground border-transparent hover:bg-accent hover:text-foreground'
+                  )}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Зона 4б: Экспресс + Надбавка + Скидка */}
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setIsExpress(v => !v)}
@@ -1030,19 +1139,23 @@ export function POSPage() {
                 <Zap className="h-3 w-3" />
                 Экспресс
               </button>
-              <div className="relative flex-1 min-w-0">
-                <CreditCard className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
-                <select
-                  value={paymentMethod}
-                  onChange={e => setPaymentMethod(e.target.value)}
-                  className="w-full h-7 appearance-none rounded-md border border-input bg-background pl-6 pr-5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  {PAYMENT_METHODS.map(m => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
-              </div>
+              {isExpress && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setExpressChargeIsPercent(v => !v)}
+                    className="px-2 py-1 rounded-md border text-xs font-medium text-orange-500 border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950/20 shrink-0 transition-colors"
+                  >
+                    {expressChargeIsPercent ? '%' : symbol}
+                  </button>
+                  <Input
+                    type="number" min={0} placeholder="0"
+                    value={expressCharge}
+                    onChange={e => setExpressCharge(e.target.value)}
+                    className="w-16 h-7 text-xs text-center px-1 border-orange-300 focus-visible:ring-orange-400"
+                  />
+                </>
+              )}
               <TrendingUp className="h-3 w-3 text-orange-500 shrink-0" />
               <Input
                 type="number" min={0} max={200} placeholder="0"
@@ -1066,6 +1179,7 @@ export function POSPage() {
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">
                   Позиций: {cart.length}
+                  {expressChargeAmt > 0 && <span className="ml-2 text-orange-500 font-medium"><Zap className="inline h-2.5 w-2.5 mb-0.5" />+{formatCurrency(expressChargeAmt)}</span>}
                   {surchargeAmt > 0 && <span className="ml-2 text-orange-500">+{formatCurrency(surchargeAmt)}</span>}
                   {discountAmt > 0 && <span className="ml-1 text-green-600">−{formatCurrency(discountAmt)}</span>}
                 </span>
