@@ -555,6 +555,8 @@ export function CleaningCatalogTab() {
   const [editingValue, setEditingValue] = useState('')
   const [savingId, setSavingId] = useState<string | null>(null)
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [deletingSelected, setDeletingSelected] = useState(false)
 
   // Category counts based on stored category field
   const categoryCounts = useMemo(() => {
@@ -702,6 +704,45 @@ export function CleaningCatalogTab() {
     }
   }
 
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return
+    setDeletingSelected(true)
+    let deleted = 0
+    for (const id of selectedIds) {
+      try { await deleteItem.mutateAsync(id); deleted++ } catch { /* skip */ }
+    }
+    setSelectedIds(new Set())
+    setDeletingSelected(false)
+    toast.success(`Удалено позиций: ${deleted}`)
+  }
+
+  const allVisibleSelected = filteredItems.length > 0 && filteredItems.every(i => selectedIds.has(i.id))
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedIds(prev => {
+        const next = new Set(prev)
+        filteredItems.forEach(i => next.delete(i.id))
+        return next
+      })
+    } else {
+      setSelectedIds(prev => {
+        const next = new Set(prev)
+        filteredItems.forEach(i => next.add(i.id))
+        return next
+      })
+    }
+  }
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -747,6 +788,19 @@ export function CleaningCatalogTab() {
           {filteredItems.length === items.length ? `${items.length} позиций` : `${filteredItems.length} из ${items.length}`}
         </p>
         <div className="flex items-center gap-2 shrink-0">
+          {selectedIds.size > 0 && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleDeleteSelected}
+              disabled={deletingSelected}
+            >
+              {deletingSelected
+                ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
+              Удалить ({selectedIds.size})
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
             <Download className="h-3.5 w-3.5 mr-1.5" />
             <span className="hidden sm:inline">Из справочника</span>
@@ -809,6 +863,17 @@ export function CleaningCatalogTab() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
+                <th className="w-10 p-3">
+                  <button
+                    onClick={toggleSelectAll}
+                    className={cn(
+                      'h-4 w-4 rounded border flex items-center justify-center transition-colors mx-auto',
+                      allVisibleSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40 hover:border-primary'
+                    )}
+                  >
+                    {allVisibleSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                  </button>
+                </th>
                 <th className="text-left p-3 font-medium">
                   <button onClick={() => toggleSort('name')} className="flex items-center hover:text-foreground">
                     Название<SortIcon col="name" />
@@ -843,6 +908,19 @@ export function CleaningCatalogTab() {
                       isSaving && 'bg-muted/30'
                     )}
                   >
+                    {/* Checkbox */}
+                    <td className="p-3 w-10">
+                      <button
+                        onClick={e => { e.stopPropagation(); toggleSelectOne(item.id) }}
+                        className={cn(
+                          'h-4 w-4 rounded border flex items-center justify-center transition-colors mx-auto',
+                          selectedIds.has(item.id) ? 'bg-primary border-primary' : 'border-muted-foreground/40 hover:border-primary'
+                        )}
+                      >
+                        {selectedIds.has(item.id) && <Check className="h-3 w-3 text-primary-foreground" />}
+                      </button>
+                    </td>
+
                     {/* Name */}
                     <td className="p-3 max-w-[200px]">
                       <EditCell
