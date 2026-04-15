@@ -707,10 +707,10 @@ export function CleaningCatalogTab() {
   const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) return
     setDeletingSelected(true)
-    let deleted = 0
-    for (const id of selectedIds) {
-      try { await deleteItem.mutateAsync(id); deleted++ } catch { /* skip */ }
-    }
+    const results = await Promise.allSettled(
+      Array.from(selectedIds).map(id => deleteItem.mutateAsync(id))
+    )
+    const deleted = results.filter(r => r.status === 'fulfilled').length
     setSelectedIds(new Set())
     setDeletingSelected(false)
     toast.success(`Удалено позиций: ${deleted}`)
