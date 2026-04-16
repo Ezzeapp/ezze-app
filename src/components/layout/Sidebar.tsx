@@ -137,7 +137,9 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
             {/* ── Каталог ── */}
             <SidebarGroupLabel label={t('nav.groupCatalog')} />
             <NavItemGated icon={ServiceIcon} iconColor="dark:text-purple-400"  label={t('nav.services')}  to="/services"  feature={null}       onClick={onClose} />
-            <NavItemGated icon={Package}     iconColor="dark:text-orange-400"  label={t('nav.inventory')} to="/inventory" feature="inventory"  onClick={onClose} />
+            {PRODUCT !== 'cleaning' && (
+              <NavItemGated icon={Package}     iconColor="dark:text-orange-400"  label={t('nav.inventory')} to="/inventory" feature="inventory"  onClick={onClose} />
+            )}
           </>
         )}
 
