@@ -117,7 +117,7 @@ export function AppLayout() {
           {isFullscreen ? (
             <Outlet />
           ) : isWide ? (
-            <div className="px-[18px] py-4 pb-20 lg:py-6 lg:pb-6">
+            <div className="max-w-[1400px] mx-auto w-full px-[18px] py-4 pb-20 lg:py-6 lg:pb-6">
               <Outlet />
             </div>
           ) : (
