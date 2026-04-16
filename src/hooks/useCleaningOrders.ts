@@ -184,12 +184,9 @@ export function useUpdateCleaningOrderTypesConfig() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (config: CleaningOrderTypeConfig[]) => {
-      const { error } = await supabase
-        .from('app_settings')
-        .upsert(
-          { product: PRODUCT, key: ORDER_TYPES_CONFIG_KEY, value: JSON.stringify(config) },
-          { onConflict: 'product,key' }
-        )
+      const { error } = await supabase.rpc('save_order_types_config', {
+        p_config: JSON.stringify(config),
+      })
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [ORDER_TYPES_CONFIG_KEY, PRODUCT] }),
