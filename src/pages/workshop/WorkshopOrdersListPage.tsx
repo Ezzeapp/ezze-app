@@ -220,11 +220,18 @@ export function WorkshopOrdersListPage() {
             })()}
           </>
         ) : (
-          <div className="space-y-2 pb-4">
-            {orders.map(o => (
-              <OrderRow key={o.id} order={o} onClick={() => navigate(`/orders/${o.id}`)} />
-            ))}
-          </div>
+          <>
+            {/* Desktop — таблица */}
+            <div className="hidden lg:block pb-4">
+              <OrdersTable orders={orders} onOpen={(id) => navigate(`/orders/${id}`)} />
+            </div>
+            {/* Mobile — карточки */}
+            <div className="lg:hidden space-y-2 pb-4">
+              {orders.map(o => (
+                <OrderRow key={o.id} order={o} onClick={() => navigate(`/orders/${o.id}`)} />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -263,14 +270,14 @@ function KanbanBoard({ orders, onOpen, onAdd }: {
   }
 
   return (
-    <div className="flex gap-3 overflow-x-auto flex-1 min-h-0 pb-2">
+    <div className="flex gap-2 overflow-x-auto flex-1 min-h-0 pb-2">
       {grouped.map(col => {
         const isOver = dragOver === col.status
         const sum = col.orders.reduce((s, o) => s + (o.total_amount ?? 0), 0)
         return (
           <div
             key={col.status}
-            className="flex-shrink-0 w-72 flex flex-col min-h-0"
+            className="flex-shrink-0 w-60 flex flex-col min-h-0"
             onDragOver={(e) => {
               if (!dragId) return
               e.preventDefault()
@@ -288,25 +295,25 @@ function KanbanBoard({ orders, onOpen, onAdd }: {
             }}
           >
             <div className={cn(
-              'rounded-t-lg border border-b-0 px-3 py-2 text-sm font-semibold flex items-center gap-2 shrink-0',
+              'rounded-t-lg border border-b-0 px-2.5 py-1.5 text-xs font-semibold flex items-center gap-1.5 shrink-0',
               STATUS_COLORS[col.status],
             )}>
               <span className="flex-1 truncate">{t(`workshop.status.${col.status}`)}</span>
-              <span className="text-xs opacity-75 tabular-nums">{col.orders.length}</span>
+              <span className="text-[11px] opacity-75 tabular-nums">{col.orders.length}</span>
               {col.status === 'received' && (
                 <button
                   type="button"
                   onClick={onAdd}
-                  className="p-1 -m-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                  className="p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
                   title={t('workshop.list.newOrder')}
                   aria-label={t('workshop.list.newOrder')}
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
             <div className={cn(
-              'rounded-b-lg border bg-muted/20 p-2 flex-1 min-h-0 overflow-y-auto space-y-2 transition-colors',
+              'rounded-b-lg border bg-muted/20 p-1.5 flex-1 min-h-0 overflow-y-auto space-y-1.5 transition-colors',
               isOver && 'bg-primary/10 border-primary ring-2 ring-primary/40',
             )}>
               {col.orders.map(o => (
@@ -402,32 +409,34 @@ function KanbanCard({ order, dragging, onOpen, onDragStart, onDragEnd }: {
       onDragEnd={onDragEnd}
       onClick={() => { if (!dragging) onOpen() }}
       className={cn(
-        'relative rounded-md border bg-card p-2.5 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-primary/40 transition-all text-sm select-none',
+        'relative rounded-md border bg-card px-2 py-1.5 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-primary/40 transition-all select-none',
         dragging && 'opacity-40 scale-95',
-        overdue && 'border-l-4 border-l-red-500',
-        !overdue && urgent && 'border-l-4 border-l-amber-500',
+        overdue && 'border-l-[3px] border-l-red-500',
+        !overdue && urgent && 'border-l-[3px] border-l-amber-500',
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-semibold text-xs text-foreground">{order.number}</span>
-        <span className="text-xs font-mono tabular-nums text-foreground">{formatCurrency(order.total_amount)}</span>
+        <span className="font-semibold text-[11px]">{order.number}</span>
+        {(order.total_amount ?? 0) > 0 && (
+          <span className="text-[11px] font-mono tabular-nums">{formatCurrency(order.total_amount)}</span>
+        )}
       </div>
 
-      <div className="text-xs mt-1 line-clamp-1 font-medium">{device || '—'}</div>
-      <div className="text-xs text-muted-foreground line-clamp-1">{clientName}</div>
+      <div className="text-xs mt-0.5 line-clamp-1 font-medium">{device || '—'}</div>
+      <div className="text-[11px] text-muted-foreground line-clamp-1">{clientName}</div>
 
       {(payChip || photoCount > 0 || masterName) && (
-        <div className="flex items-center gap-1 mt-2 flex-wrap">
+        <div className="flex items-center gap-1 mt-1 flex-wrap">
           {payChip && (
-            <span className={cn('text-[10px] px-1.5 py-0.5 rounded', payChip.cls)}>{payChip.label}</span>
+            <span className={cn('text-[10px] px-1 py-px rounded', payChip.cls)}>{payChip.label}</span>
           )}
           {photoCount > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground inline-flex items-center gap-0.5">
+            <span className="text-[10px] px-1 py-px rounded bg-muted text-muted-foreground inline-flex items-center gap-0.5">
               <Camera className="h-2.5 w-2.5" />{photoCount}
             </span>
           )}
           {masterName && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground inline-flex items-center gap-0.5 max-w-[100px]">
+            <span className="text-[10px] px-1 py-px rounded bg-muted text-muted-foreground inline-flex items-center gap-0.5 max-w-[90px]">
               <User className="h-2.5 w-2.5 shrink-0" />
               <span className="truncate">{masterName}</span>
             </span>
@@ -436,7 +445,7 @@ function KanbanCard({ order, dragging, onOpen, onDragStart, onDragEnd }: {
       )}
 
       {deadlineLabel && (
-        <div className={cn('text-[11px] mt-1.5 flex items-center gap-1', deadlineCls)}>
+        <div className={cn('text-[11px] mt-1 flex items-center gap-1', deadlineCls)}>
           {overdue && <AlertTriangle className="h-3 w-3" />}
           {deadlineLabel}
         </div>
@@ -463,6 +472,110 @@ function StatCard({ icon: Icon, label, value, sub, color }: {
       </div>
       <div className="text-xl font-bold truncate">{value}</div>
       {sub && <div className="text-xs text-muted-foreground truncate">{sub}</div>}
+    </div>
+  )
+}
+
+function OrdersTable({ orders, onOpen }: { orders: WorkshopOrder[]; onOpen: (id: string) => void }) {
+  const { t } = useTranslation()
+  return (
+    <div className="rounded-lg border bg-card overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-muted/40 text-xs text-muted-foreground">
+          <tr>
+            <th className="text-left font-medium px-3 py-2 w-24">№</th>
+            <th className="text-left font-medium px-3 py-2 w-36">Статус</th>
+            <th className="text-left font-medium px-3 py-2">Устройство</th>
+            <th className="text-left font-medium px-3 py-2">Клиент</th>
+            <th className="text-left font-medium px-3 py-2 hidden xl:table-cell">S/N</th>
+            <th className="text-left font-medium px-3 py-2 hidden xl:table-cell">Мастер</th>
+            <th className="text-left font-medium px-3 py-2 w-32">Срок</th>
+            <th className="text-right font-medium px-3 py-2 w-32">Оплата</th>
+            <th className="text-right font-medium px-3 py-2 w-32">Сумма</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orders.map((o, idx) => {
+            const isArchived = ['issued', 'paid', 'cancelled', 'refused'].includes(o.status)
+            const overdue = !!o.ready_date && !isArchived && dayjs(o.ready_date).isBefore(dayjs(), 'day')
+            const daysLeft = o.ready_date ? dayjs(o.ready_date).endOf('day').diff(dayjs(), 'day') : null
+            const device = [o.item_type_name, o.brand, o.model].filter(Boolean).join(' · ') || '—'
+            const clientName = o.client ? `${o.client.first_name} ${o.client.last_name ?? ''}`.trim() : '—'
+            const remaining = Math.max(0, (o.total_amount ?? 0) - (o.paid_amount ?? 0))
+
+            let deadlineLabel = '—'
+            let deadlineCls = 'text-muted-foreground'
+            if (o.ready_date) {
+              const dateStr = dayjs(o.ready_date).format('DD.MM')
+              if (overdue) {
+                deadlineLabel = `${dateStr} · просрочен`
+                deadlineCls = 'text-red-600 dark:text-red-400 font-medium'
+              } else if (daysLeft === 0) {
+                deadlineLabel = `${dateStr} · сегодня`
+                deadlineCls = 'text-amber-600 dark:text-amber-400'
+              } else if (daysLeft === 1) {
+                deadlineLabel = `${dateStr} · завтра`
+                deadlineCls = 'text-amber-600 dark:text-amber-400'
+              } else {
+                deadlineLabel = dateStr
+              }
+            }
+
+            let payLabel = '—'
+            let payCls = 'text-muted-foreground'
+            if (o.payment_status === 'paid') {
+              payLabel = 'Оплачен'
+              payCls = 'text-green-600 dark:text-green-400'
+            } else if (o.payment_status === 'partial') {
+              payLabel = `−${formatCurrency(remaining)}`
+              payCls = 'text-amber-600 dark:text-amber-400'
+            } else if ((o.prepaid_amount ?? 0) > 0) {
+              payLabel = `предоплата ${formatCurrency(o.prepaid_amount)}`
+              payCls = 'text-sky-600 dark:text-sky-400'
+            } else if ((o.total_amount ?? 0) > 0) {
+              payLabel = 'Не оплачен'
+              payCls = 'text-muted-foreground'
+            }
+
+            return (
+              <tr
+                key={o.id}
+                onClick={() => onOpen(o.id)}
+                className={cn(
+                  'cursor-pointer hover:bg-accent/40 transition-colors',
+                  idx > 0 && 'border-t',
+                )}
+              >
+                <td className="px-3 py-2 font-semibold tabular-nums">{o.number}</td>
+                <td className="px-3 py-2">
+                  <span className={cn('text-xs px-2 py-0.5 rounded-full inline-block', STATUS_COLORS[o.status])}>
+                    {t(`workshop.status.${o.status}`)}
+                  </span>
+                </td>
+                <td className="px-3 py-2 max-w-[240px]">
+                  <div className="truncate">{device}</div>
+                  {o.defect_description && (
+                    <div className="text-xs text-muted-foreground truncate">{o.defect_description}</div>
+                  )}
+                </td>
+                <td className="px-3 py-2 max-w-[180px] truncate">{clientName}</td>
+                <td className="px-3 py-2 text-xs text-muted-foreground hidden xl:table-cell font-mono">
+                  {o.serial_number || '—'}
+                </td>
+                <td className="px-3 py-2 text-xs hidden xl:table-cell">
+                  {o.assigned_to_profile?.display_name || <span className="text-muted-foreground">—</span>}
+                </td>
+                <td className={cn('px-3 py-2 text-xs whitespace-nowrap', deadlineCls)}>
+                  {overdue && <AlertTriangle className="inline h-3 w-3 mr-0.5 -mt-0.5" />}
+                  {deadlineLabel}
+                </td>
+                <td className={cn('px-3 py-2 text-right text-xs whitespace-nowrap', payCls)}>{payLabel}</td>
+                <td className="px-3 py-2 text-right font-semibold tabular-nums">{formatCurrency(o.total_amount)}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </div>
   )
 }
