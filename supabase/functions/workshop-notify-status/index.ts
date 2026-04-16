@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
       .select(`
         id, number, status, product,
         item_type_name, brand, model,
-        total_amount, paid_amount, ready_date, estimated_cost, approval_token,
+        total_amount, paid_amount, ready_date, estimated_cost, approval_token, public_token,
         client:clients(id, first_name, last_name, tg_chat_id)
       `)
       .eq('id', order_id)
@@ -118,7 +118,8 @@ Deno.serve(async (req) => {
     // Build substitutions
     const device = [order.item_type_name, order.brand, order.model].filter(Boolean).join(' ')
     const remaining = Math.max(0, (order.total_amount ?? 0) - (order.paid_amount ?? 0))
-    const trackUrl = `${APP_URL_WORKSHOP}/track/${encodeURIComponent(order.number)}`
+    const trackSlug = order.public_token || encodeURIComponent(order.number)
+    const trackUrl = `${APP_URL_WORKSHOP}/track/${trackSlug}`
     const approveUrl = order.approval_token
       ? `${APP_URL_WORKSHOP}/approve/${order.approval_token}`
       : ''

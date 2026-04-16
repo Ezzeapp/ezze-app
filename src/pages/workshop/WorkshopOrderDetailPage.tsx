@@ -111,7 +111,8 @@ export function WorkshopOrderDetailPage() {
           <Button
             variant="ghost" size="sm"
             onClick={() => {
-              const url = `${window.location.origin}/track/${encodeURIComponent(order!.number)}`
+              const slug = order!.public_token || encodeURIComponent(order!.number)
+              const url = `${window.location.origin}/track/${slug}`
               navigator.clipboard?.writeText(url)
               toast.success(`Скопировано: ${url}`)
             }}
@@ -122,7 +123,8 @@ export function WorkshopOrderDetailPage() {
             variant="ghost" size="sm"
             onClick={() => {
               if (!receiptTpl) return
-              const trackUrl = `${window.location.origin}/track/${encodeURIComponent(order!.number)}`
+              const slug = order!.public_token || encodeURIComponent(order!.number)
+              const trackUrl = `${window.location.origin}/track/${slug}`
               printWorkshopReceipt({
                 order: order!,
                 template: receiptTpl,

@@ -92,6 +92,7 @@ export interface WorkshopOrder {
   client_approved: boolean
   client_approved_at: string | null
   approval_token: string | null
+  public_token: string | null
   status: WorkshopOrderStatus
   payment_status: WorkshopPaymentStatus
   prepaid_amount: number

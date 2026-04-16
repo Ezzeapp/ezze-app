@@ -45,19 +45,40 @@ export function WorkshopTrackPage() {
   const [order, setOrder] = useState<WorkshopOrder | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  // Когда ссылка пришла с номером заказа (РМ-0001), а не с токеном —
+  // прячем финансовую информацию (кто угодно может угадать номер).
+  const [withToken, setWithToken] = useState(false)
 
   useEffect(() => {
     if (!number) return
     ;(async () => {
+      const param = decodeURIComponent(number)
+      // Сначала пробуем как public_token (uuid hex без дефисов, 32 символа)
+      if (/^[a-f0-9]{32,}$/i.test(param)) {
+        const { data } = await supabase
+          .from('workshop_orders')
+          .select('id, number, status, item_type_name, brand, model, ready_date, total_amount, paid_amount, warranty_days, issued_at, created_at, updated_at')
+          .eq('public_token', param)
+          .maybeSingle()
+        if (data) {
+          setOrder(data as WorkshopOrder)
+          setWithToken(true)
+          setLoading(false)
+          return
+        }
+      }
+
+      // Fallback: по номеру квитанции (backward compat, без финансов)
       const { data, error } = await supabase
         .from('workshop_orders')
-        .select('id, number, status, item_type_name, brand, model, ready_date, total_amount, paid_amount, warranty_days, issued_at, created_at, updated_at')
-        .eq('number', decodeURIComponent(number))
+        .select('id, number, status, item_type_name, brand, model, ready_date, warranty_days, issued_at, created_at, updated_at')
+        .eq('number', param)
         .maybeSingle()
       if (error || !data) {
         setNotFound(true)
       } else {
         setOrder(data as WorkshopOrder)
+        setWithToken(false)
       }
       setLoading(false)
     })()
@@ -147,10 +168,10 @@ export function WorkshopTrackPage() {
           {order.issued_at && (
             <Row label="Выдано" value={dayjs(order.issued_at).format('DD.MM.YYYY')} />
           )}
-          {order.total_amount > 0 && (
+          {withToken && order.total_amount > 0 && (
             <Row label="Итого к оплате" value={formatCurrency(order.total_amount)} bold />
           )}
-          {order.paid_amount > 0 && order.paid_amount < order.total_amount && (
+          {withToken && order.paid_amount > 0 && order.paid_amount < order.total_amount && (
             <Row label="Осталось доплатить" value={formatCurrency(order.total_amount - order.paid_amount)} accent />
           )}
           {order.warranty_days > 0 && order.issued_at && (
