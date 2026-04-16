@@ -4,7 +4,7 @@ import {
   ArrowLeft, CheckCircle2, Loader2, Package, User, Calendar,
   AlertCircle, Printer, Phone, MessageCircle, AlertTriangle,
   Clock, Banknote, X, Trash2, Pencil, Plus, Check, Search,
-  Bell, MapPin,
+  Bell, MapPin, Copy,
 } from 'lucide-react'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 import { Button } from '@/components/ui/button'
@@ -382,6 +382,14 @@ export function OrderDetailPage() {
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          <Button
+            variant="outline" size="sm"
+            onClick={() => navigate(`/orders/new?repeat=${order.id}`)}
+            title="Создать похожий заказ"
+          >
+            <Copy className="h-4 w-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">Повторить</span>
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setShowReceipt(true)}>
             <Printer className="h-4 w-4 sm:mr-1.5" />
             <span className="hidden sm:inline">Квитанция</span>

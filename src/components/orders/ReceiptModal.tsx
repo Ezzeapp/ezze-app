@@ -1,10 +1,15 @@
 import { useState } from 'react'
 import { X, Printer, FileText, Layers } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { useReceiptConfig, DEFAULT_RECEIPT_CONFIG, type ReceiptConfig } from '@/hooks/useReceiptConfig'
 import dayjs from 'dayjs'
+
+function getTrackUrl(orderNumber: string): string {
+  return `https://cleaning.ezze.site/track/${encodeURIComponent(orderNumber)}`
+}
 
 // ── Типы данных для квитанции ─────────────────────────────────────────────────
 
@@ -130,6 +135,12 @@ function buildReceiptCopyHtml(
 
       <!-- Метка копии -->
       ${copyLabel ? `<div style="text-align:center;color:#666;font-size:10px;margin-bottom:4px;">${copyLabel}</div>` : ''}
+
+      <!-- QR-код для отслеживания -->
+      <div style="text-align:center;margin:8px 0 4px;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(getTrackUrl(data.number))}" width="80" height="80" style="image-rendering:pixelated;" />
+        <div style="font-size:9px;color:#888;margin-top:2px;">Отслеживание заказа</div>
+      </div>
 
       <!-- Нижний колонтитул -->
       ${config.footer_text
@@ -285,6 +296,12 @@ function ReceiptPreview({ data, config, symbol, format }: {
           {copyLabel && (
             <div className="text-center text-gray-500 text-[10px] mb-1">{copyLabel}</div>
           )}
+
+          {/* QR-код для отслеживания */}
+          <div className="text-center my-2">
+            <QRCodeSVG value={getTrackUrl(data.number)} size={72} level="L" />
+            <div className="text-[9px] text-gray-400 mt-1">Отслеживание заказа</div>
+          </div>
 
           {/* Нижний колонтитул */}
           {config.footer_text && (

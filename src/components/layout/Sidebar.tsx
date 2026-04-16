@@ -6,7 +6,7 @@ import {
   Settings, Zap, X, ShieldCheck, UsersRound, Megaphone, CreditCard, LifeBuoy,
   ClipboardList, BarChart3, Beef, Wheat, Milk, Wallet, ShoppingCart,
   FlaskConical, Pill, Tractor, TreePine, Egg, Syringe, Sparkles, QrCode,
-  BedDouble, UtensilsCrossed, Heart, Wrench,
+  BedDouble, UtensilsCrossed, Heart, Wrench, Droplets, Truck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -92,9 +92,11 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
         ) : (
           <NavItemGated icon={LayoutDashboard} iconColor="dark:text-blue-400" label={t('nav.dashboard')} to="/dashboard" feature={null} onClick={onClose} />
         )}
-        {PRODUCT === 'cleaning' ? (
+        {PRODUCT === 'cleaning' ? (<>
           <SidebarNavItem icon={ClipboardList} iconColor="dark:text-indigo-400" label={t('nav.orders')} to="/orders" onClick={onClose} />
-        ) : PRODUCT === 'workshop' ? (
+          <SidebarNavItem icon={Truck} iconColor="dark:text-cyan-400" label="Доставка" to="/delivery" onClick={onClose} />
+          <SidebarNavItem icon={Droplets} iconColor="dark:text-teal-400" label="Расходники" to="/supplies" onClick={onClose} />
+        </>) : PRODUCT === 'workshop' ? (
           <SidebarNavItem icon={Wrench} iconColor="dark:text-indigo-400" label={t('workshop.nav.orders', 'Заказы в ремонт')} to="/orders" onClick={onClose} />
         ) : PRODUCT === 'farm' ? null : (
           <NavItemGated icon={CalendarDays} iconColor="dark:text-indigo-400" label={PRODUCT === 'clinic' ? t('clinic.nav.appointments') : t('nav.calendar')} to="/calendar" feature="calendar" onClick={onClose} />

@@ -557,6 +557,13 @@ export function useUpdateOrderStatus() {
         new_status: status,
         note:       note ?? null,
       })
+
+      // Send Telegram notification (fire-and-forget)
+      if (['ready', 'issued', 'paid'].includes(status)) {
+        supabase.functions.invoke('cleaning-notify-status', {
+          body: { order_id: id, new_status: status },
+        }).catch(() => {})
+      }
     },
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: [ORDERS_KEY, 'detail', id] })
