@@ -19,7 +19,7 @@ const inTelegram = isTelegramMiniApp()
 // Маршруты, которые занимают весь экран без padding-контейнера
 const FULLSCREEN_ROUTES = [
   '/orders/pos',
-  ...(PRODUCT === 'cleaning' ? ['/orders'] : []),
+  ...(PRODUCT === 'cleaning' || PRODUCT === 'workshop' ? ['/orders'] : []),
 ]
 
 // Маршруты с full-width таблицей (только px-[18px], без max-w-6xl)
