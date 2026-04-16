@@ -91,6 +91,7 @@ export interface WorkshopOrder {
   estimated_cost: number | null
   client_approved: boolean
   client_approved_at: string | null
+  approval_token: string | null
   status: WorkshopOrderStatus
   payment_status: WorkshopPaymentStatus
   prepaid_amount: number
@@ -539,6 +540,40 @@ export function useRemoveWorkshopPart() {
     },
     onSuccess: (_, { orderId }) => {
       qc.invalidateQueries({ queryKey: [WORKSHOP_ORDERS_KEY, 'detail', orderId] })
+    },
+  })
+}
+
+// ── Отправка сметы клиенту на согласование ─────────────────────────────────
+export function useSendApprovalLink() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id }: { id: string }): Promise<string> => {
+      // Генерируем криптостойкий токен
+      const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
+
+      const { error } = await supabase
+        .from('workshop_orders')
+        .update({ approval_token: token, status: 'waiting_approval', client_approved: false })
+        .eq('id', id)
+      if (error) throw error
+
+      await supabase.from('workshop_order_history').insert({
+        order_id: id,
+        new_status: 'waiting_approval',
+        note: 'Отправлено клиенту на согласование',
+      })
+
+      // Уведомление (fire-and-forget) — шаблон waiting_approval получит {approve_url}
+      supabase.functions.invoke('workshop-notify-status', {
+        body: { order_id: id, status: 'waiting_approval' },
+      }).catch(err => console.warn('notify-status failed:', err))
+
+      return token
+    },
+    onSuccess: (_t, { id }) => {
+      qc.invalidateQueries({ queryKey: [WORKSHOP_ORDERS_KEY, 'detail', id] })
+      qc.invalidateQueries({ queryKey: [WORKSHOP_ORDERS_KEY, 'list'] })
     },
   })
 }

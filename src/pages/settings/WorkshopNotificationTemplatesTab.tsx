@@ -30,7 +30,7 @@ const STATUS_LABELS: Record<Status, string> = {
 const DEFAULT_TEMPLATES: NotificationTemplate[] = [
   { status: 'received',         enabled: true,  text: 'Ваш заказ {number} принят в работу. Отследить статус: {track_url}' },
   { status: 'diagnosing',       enabled: false, text: 'Мастер начал диагностику по заказу {number}.' },
-  { status: 'waiting_approval', enabled: true,  text: 'Диагностика по {number} завершена. Стоимость ремонта: {total}. Свяжитесь с нами для подтверждения.' },
+  { status: 'waiting_approval', enabled: true,  text: 'Диагностика по {number} завершена. Стоимость ремонта: {estimated}. Утвердить или отказаться: {approve_url}' },
   { status: 'waiting_parts',    enabled: false, text: 'По заказу {number} заказаны запчасти. Ожидаемая готовность: {ready_date}.' },
   { status: 'in_progress',      enabled: false, text: 'Начат ремонт по заказу {number}.' },
   { status: 'ready',            enabled: true,  text: '{device} по заказу {number} готов к выдаче. Сумма к оплате: {remaining}.' },
@@ -123,6 +123,8 @@ export function WorkshopNotificationTemplatesTab() {
           <div><code>{'{total}'}</code> — итого к оплате</div>
           <div><code>{'{remaining}'}</code> — остаток долга</div>
           <div><code>{'{track_url}'}</code> — ссылка на /track</div>
+          <div><code>{'{estimated}'}</code> — оценка стоимости ремонта</div>
+          <div><code>{'{approve_url}'}</code> — одноразовая ссылка для согласования сметы</div>
         </div>
       </div>
 

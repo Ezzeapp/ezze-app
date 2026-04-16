@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowLeft, Loader2, Trash2, Plus, CircleDollarSign, Wrench, Package,
-  History, Phone, User, Calendar, AlertTriangle, Printer, Link2,
+  History, Phone, User, Calendar, AlertTriangle, Printer, Link2, Send, CheckCircle2,
 } from 'lucide-react'
 import { printWorkshopReceipt } from './printReceipt'
 import { WorkshopPhotosUploader } from './WorkshopPhotosUploader'
@@ -20,7 +20,7 @@ import {
   useAddWorkshopWork, useRemoveWorkshopWork, useToggleWorkshopWorkDone,
   useAddWorkshopPart, useRemoveWorkshopPart,
   useAcceptWorkshopPayment, useDeleteWorkshopOrder, useWorkshopOrderHistory,
-  useClientWorkshopOrders,
+  useClientWorkshopOrders, useSendApprovalLink,
   type WorkshopOrderStatus,
 } from '@/hooks/useWorkshopOrders'
 import { useInventory } from '@/hooks/useInventory'
@@ -345,6 +345,7 @@ export function WorkshopOrderDetailPage() {
 // ── Diagnostic section ───────────────────────────────────────────────────────
 function DiagnosticCard({ order, onUpdate }: { order: any; onUpdate: (data: any) => void }) {
   const { t } = useTranslation()
+  const sendApproval = useSendApprovalLink()
   const [editing, setEditing] = useState(false)
   const [notes, setNotes] = useState(order.diagnostic_notes ?? '')
   const [estimated, setEstimated] = useState<number | ''>(order.estimated_cost ?? '')
@@ -353,6 +354,22 @@ function DiagnosticCard({ order, onUpdate }: { order: any; onUpdate: (data: any)
     onUpdate({ diagnostic_notes: notes || null, estimated_cost: estimated === '' ? null : Number(estimated) })
     setEditing(false)
   }
+
+  async function handleSendApproval() {
+    try {
+      const token = await sendApproval.mutateAsync({ id: order.id })
+      const url = `${window.location.origin}/approve/${token}`
+      try { await navigator.clipboard?.writeText(url) } catch {}
+      toast.success('Ссылка скопирована и отправлена клиенту в TG')
+    } catch (e: any) {
+      toast.error(e.message ?? 'Ошибка')
+    }
+  }
+
+  const canSendApproval =
+    !!order.estimated_cost &&
+    order.estimated_cost > 0 &&
+    ['diagnosing', 'waiting_approval', 'received'].includes(order.status)
 
   return (
     <Card title={t('workshop.detail.diagnostics')} icon={AlertTriangle}>
@@ -379,9 +396,28 @@ function DiagnosticCard({ order, onUpdate }: { order: any; onUpdate: (data: any)
           {order.estimated_cost != null && (
             <div className="mt-2 text-sm">{t('workshop.detail.estimatedCost')}: <span className="font-semibold">{formatCurrency(order.estimated_cost)}</span></div>
           )}
-          <Button size="sm" variant="outline" className="mt-2" onClick={() => setEditing(true)}>
-            {t('workshop.detail.edit')}
-          </Button>
+          {order.client_approved && (
+            <div className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Согласовано клиентом
+              {order.client_approved_at && ` · ${dayjs(order.client_approved_at).format('DD.MM HH:mm')}`}
+            </div>
+          )}
+          <div className="flex gap-2 mt-3 flex-wrap">
+            <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+              {t('workshop.detail.edit')}
+            </Button>
+            {canSendApproval && !order.client_approved && (
+              <Button
+                size="sm"
+                onClick={handleSendApproval}
+                disabled={sendApproval.isPending}
+              >
+                <Send className="h-3.5 w-3.5 mr-1" />
+                {order.approval_token ? 'Отправить ссылку повторно' : 'Отправить клиенту на согласование'}
+              </Button>
+            )}
+          </div>
         </>
       )}
     </Card>

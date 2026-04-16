@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
       .select(`
         id, number, status, product,
         item_type_name, brand, model,
-        total_amount, paid_amount, ready_date,
+        total_amount, paid_amount, ready_date, estimated_cost, approval_token,
         client:clients(id, first_name, last_name, tg_chat_id)
       `)
       .eq('id', order_id)
@@ -119,6 +119,9 @@ Deno.serve(async (req) => {
     const device = [order.item_type_name, order.brand, order.model].filter(Boolean).join(' ')
     const remaining = Math.max(0, (order.total_amount ?? 0) - (order.paid_amount ?? 0))
     const trackUrl = `${APP_URL_WORKSHOP}/track/${encodeURIComponent(order.number)}`
+    const approveUrl = order.approval_token
+      ? `${APP_URL_WORKSHOP}/approve/${order.approval_token}`
+      : ''
 
     const text = substitute(tpl.text, {
       number: order.number,
@@ -127,7 +130,9 @@ Deno.serve(async (req) => {
       ready_date: order.ready_date ?? '—',
       total: fmt(order.total_amount ?? 0),
       remaining: fmt(remaining),
+      estimated: fmt(order.estimated_cost ?? 0),
       track_url: trackUrl,
+      approve_url: approveUrl,
     })
 
     await sendTg(String(client.tg_chat_id), text)
