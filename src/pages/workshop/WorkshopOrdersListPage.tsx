@@ -270,14 +270,20 @@ function KanbanBoard({ orders, onOpen, onAdd }: {
   }
 
   return (
-    <div className="flex gap-2 overflow-x-auto flex-1 min-h-0 pb-2">
+    <div
+      className="grid gap-2 overflow-x-auto flex-1 min-h-0 pb-2"
+      style={{
+        gridAutoFlow: 'column',
+        gridAutoColumns: 'minmax(200px, 1fr)',
+      }}
+    >
       {grouped.map(col => {
         const isOver = dragOver === col.status
         const sum = col.orders.reduce((s, o) => s + (o.total_amount ?? 0), 0)
         return (
           <div
             key={col.status}
-            className="flex-shrink-0 w-60 flex flex-col min-h-0"
+            className="flex flex-col min-h-0 min-w-0"
             onDragOver={(e) => {
               if (!dragId) return
               e.preventDefault()
