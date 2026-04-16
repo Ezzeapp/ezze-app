@@ -225,7 +225,7 @@ function OrdersTab({ orders: allOrders, symbol }: { orders: OrderRow[]; symbol: 
                       <td className="px-4 py-3 whitespace-nowrap">{ORDER_TYPE_LABELS[order.order_type as OrderType] ?? order.order_type}</td>
                       <td className="px-4 py-3 max-w-[160px] truncate">{clientName}</td>
                       <td className="px-4 py-3"><OrderStatusBadge status={order.status as OrderStatus} /></td>
-                      <td className="px-4 py-3"><PaymentStatusBadge status={order.payment_status} /></td>
+                      <td className="px-4 py-3"><PaymentStatusBadge status={order.payment_status as any} /></td>
                       <td className="px-4 py-3 text-right font-medium whitespace-nowrap">{formatCurrency(order.total_amount)} {symbol}</td>
                       <td className="px-4 py-3 text-right whitespace-nowrap text-muted-foreground">{formatCurrency(order.paid_amount)} {symbol}</td>
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{dayjs(order.created_at).format('DD.MM.YYYY')}</td>
@@ -314,7 +314,7 @@ export function CleaningStatsPage() {
         .lte('created_at', until)
         .order('created_at', { ascending: false })
       if (error) throw error
-      return (data ?? []) as OrderRow[]
+      return (data ?? []) as unknown as OrderRow[]
     },
     staleTime: 60_000,
   })
@@ -794,7 +794,7 @@ export function CleaningStatsPage() {
                             {methodData.map((entry, idx) => <Cell key={idx} fill={entry.color} />)}
                           </Pie>
                           <Legend />
-                          <Tooltip formatter={(value: number) => [`${formatCurrency(value)} ${symbol}`, 'Выручка']} />
+                          <Tooltip formatter={(value: any) => [`${formatCurrency(Number(value) || 0)} ${symbol}`, 'Выручка']} />
                         </PieChart>
                       </ResponsiveContainer>
                     )}
