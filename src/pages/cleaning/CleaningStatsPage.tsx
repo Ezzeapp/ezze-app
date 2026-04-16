@@ -68,10 +68,11 @@ const ALL_STATUSES = [
   { value: 'cancelled',   label: 'Отменён' },
 ]
 
-type StatTab = 'overview' | 'orders' | 'clients' | 'services' | 'finance'
+type StatTab = 'overview' | 'debts' | 'orders' | 'clients' | 'services' | 'finance'
 
 const TABS: { id: StatTab; label: string }[] = [
-  { id: 'overview',  label: 'Обзор' },
+  { id: 'overview',  label: 'Сводка' },
+  { id: 'debts',     label: 'Задолженности' },
   { id: 'orders',    label: 'Заказы' },
   { id: 'clients',   label: 'Клиенты' },
   { id: 'services',  label: 'Услуги' },
@@ -414,7 +415,7 @@ export function CleaningStatsPage() {
     }))
 
   // Client aggregation
-  const clientMap: Record<string, { name: string; phone: string | null; count: number; revenue: number; debt: number }> = {}
+  const clientMap: Record<string, { name: string; phone: string | null; count: number; revenue: number; debt: number; lastOrder: string }> = {}
   nonCancelled.forEach(o => {
     if (!o.client_id || !o.client) return
     const id = o.client_id
@@ -423,6 +424,7 @@ export function CleaningStatsPage() {
         name: `${o.client.first_name} ${o.client.last_name || ''}`.trim(),
         phone: o.client.phone ?? null,
         count: 0, revenue: 0, debt: 0,
+        lastOrder: dayjs(o.created_at).format('DD.MM.YYYY'),
       }
     }
     clientMap[id].count++
@@ -553,48 +555,157 @@ export function CleaningStatsPage() {
               </Card>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Топ услуг — компактная таблица */}
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">{t('cleaning.stats.topServices')}</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-0">
                     {topServices.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-8">{t('cleaning.stats.noData')}</p>
                     ) : (
-                      <ResponsiveContainer width="100%" height={260}>
-                        <BarChart data={topServices} layout="vertical" margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                          <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} allowDecimals={false} />
-                          <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} />
-                          <Tooltip content={<GenericTooltip />} />
-                          <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/50">
+                            <th className="text-left px-4 py-2 font-medium text-muted-foreground">Позиция</th>
+                            <th className="text-right px-4 py-2 font-medium text-muted-foreground">Кол-во</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {topServices.slice(0, 6).map((row, i) => (
+                            <tr key={i} className="border-b last:border-0">
+                              <td className="px-4 py-2">{row.name}</td>
+                              <td className="px-4 py-2 text-right font-medium">{row.count}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     )}
                   </CardContent>
                 </Card>
 
+                {/* Статусы заказов — компактная таблица */}
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">{t('cleaning.stats.orderStatuses')}</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-0">
                     {statusData.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-8">{t('cleaning.stats.noData')}</p>
                     ) : (
-                      <ResponsiveContainer width="100%" height={260}>
-                        <PieChart>
-                          <Pie data={statusData} cx="50%" cy="50%" outerRadius={90} dataKey="value" labelLine={false}>
-                            {statusData.map((entry, idx) => <Cell key={idx} fill={entry.color} />)}
-                          </Pie>
-                          <Legend formatter={(value: string) => statusData.find(d => d.name === value)?.label ?? value} />
-                          <Tooltip content={<GenericTooltip />} />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/50">
+                            <th className="text-left px-4 py-2 font-medium text-muted-foreground">Статус</th>
+                            <th className="text-right px-4 py-2 font-medium text-muted-foreground">Заказов</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {statusData.map((row, i) => (
+                            <tr key={i} className="border-b last:border-0">
+                              <td className="px-4 py-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: row.color }} />
+                                  {row.label}
+                                </div>
+                              </td>
+                              <td className="px-4 py-2 text-right font-medium">{row.value}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     )}
                   </CardContent>
                 </Card>
               </div>
+            </div>
+          )}
+
+          {/* ── Задолженности ── */}
+          {activeTab === 'debts' && (
+            <div className="space-y-4">
+              {/* Итоговые карточки */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                <SummaryCard
+                  title="Общий долг"
+                  value={`${formatCurrency(unpaidAmount)} ${symbol}`}
+                />
+                <SummaryCard
+                  title="Клиентов с долгом"
+                  value={String(clientsWithDebt.length)}
+                />
+                <SummaryCard
+                  title="Заказов не оплачено"
+                  value={String(nonCancelled.filter(o => o.payment_status !== 'paid').length)}
+                />
+              </div>
+
+              {clientsWithDebt.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
+                  <p className="text-base font-medium">Долгов нет</p>
+                  <p className="text-sm mt-1">Все заказы за выбранный период оплачены</p>
+                </div>
+              ) : (
+                <Card>
+                  <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                    <CardTitle className="text-base">Клиенты с задолженностью</CardTitle>
+                    <button
+                      onClick={() => {
+                        const rows = clientsWithDebt.map(c => [c.name, c.phone ?? '—', c.debt].join(','))
+                        const csv = [`Клиент,Телефон,Долг (${symbol})`, ...rows].join('\n')
+                        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url; a.download = 'debts.csv'; a.click()
+                        URL.revokeObjectURL(url)
+                      }}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      CSV
+                    </button>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/50">
+                            <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">#</th>
+                            <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Клиент</th>
+                            <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Телефон</th>
+                            <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Заказов</th>
+                            <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Сумма долга</th>
+                            <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Последний заказ</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {clientsWithDebt.map((c, i) => (
+                            <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
+                              <td className="px-4 py-2.5 text-muted-foreground text-xs">{i + 1}</td>
+                              <td className="px-4 py-2.5 font-medium">{c.name}</td>
+                              <td className="px-4 py-2.5 text-muted-foreground">{c.phone ?? '—'}</td>
+                              <td className="px-4 py-2.5 text-right">{c.count}</td>
+                              <td className="px-4 py-2.5 text-right text-destructive font-semibold whitespace-nowrap">
+                                {formatCurrency(c.debt)} {symbol}
+                              </td>
+                              <td className="px-4 py-2.5 text-right text-muted-foreground whitespace-nowrap">{c.lastOrder}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="border-t bg-muted/50 font-medium">
+                            <td colSpan={4} className="px-4 py-2.5 text-sm">{clientsWithDebt.length} клиентов</td>
+                            <td className="px-4 py-2.5 text-right text-destructive whitespace-nowrap">
+                              {formatCurrency(unpaidAmount)} {symbol}
+                            </td>
+                            <td />
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
 
@@ -802,39 +913,6 @@ export function CleaningStatsPage() {
                 </Card>
               </div>
 
-              {/* Clients with debt */}
-              {clientsWithDebt.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Клиенты с долгом</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b bg-muted/50">
-                            <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Клиент</th>
-                            <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Долг</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {clientsWithDebt.map((c, i) => (
-                            <tr key={i} className="border-b last:border-0">
-                              <td className="px-4 py-2.5">
-                                <p className="font-medium">{c.name}</p>
-                                {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
-                              </td>
-                              <td className="px-4 py-2.5 text-right text-destructive font-medium whitespace-nowrap">
-                                {formatCurrency(c.debt)} {symbol}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
             </div>
           )}
         </>
