@@ -45,14 +45,14 @@ export function MarketingPage() {
       />
 
       {/* Горизонтальные табы */}
-      <div className="grid grid-cols-5 gap-1 mb-8 pb-2 border-b border-border">
+      <div className="flex gap-1 mb-8 pb-2 border-b border-border overflow-x-auto scrollbar-none">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"
             onClick={() => setSearchParams({ tab: id })}
             className={cn(
-              'flex flex-col items-center gap-1 px-2 py-2 rounded-lg text-xs font-medium transition-colors',
+              'flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors shrink-0 min-w-[56px]',
               activeTab === id
                 ? 'bg-primary/10 text-primary'
                 : 'bg-muted/40 text-muted-foreground hover:text-foreground'

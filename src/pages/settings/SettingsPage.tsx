@@ -191,14 +191,14 @@ export function SettingsPage() {
       <PageHeader title={t('nav.settings')} />
 
       {/* Tabs */}
-      <div className={cn('grid gap-1 mb-6', tabs.length >= 6 ? 'grid-cols-6' : tabs.length === 5 ? 'grid-cols-5' : 'grid-cols-4')}>
+      <div className="flex gap-1 mb-6 overflow-x-auto pb-1 scrollbar-none">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"
             onClick={() => setTab(id)}
             className={cn(
-              'flex flex-col items-center gap-1 px-2 py-2 rounded-lg text-xs font-medium transition-colors',
+              'flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors shrink-0 min-w-[64px]',
               tab === id
                 ? 'bg-primary/10 text-primary'
                 : 'bg-muted/40 text-muted-foreground hover:text-foreground'

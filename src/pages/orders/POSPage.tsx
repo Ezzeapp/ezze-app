@@ -565,21 +565,26 @@ export function POSPage() {
   const pagedListTypes = visibleTypes.slice(0, listPage * LIST_PAGE_SIZE)
   const hasMoreList = pagedListTypes.length < visibleTypes.length
 
+  // Redirect mobile to simplified form
+  useEffect(() => {
+    if (window.innerWidth < 1024) navigate('/orders/new', { replace: true })
+  }, [navigate])
+
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden">
 
       {/* ── Шапка ── */}
-      <div className="flex items-center gap-3 px-4 h-14 border-b shrink-0 bg-background">
+      <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-14 border-b shrink-0 bg-background">
         <Button variant="ghost" size="icon" onClick={() => navigate('/orders')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <span className="font-semibold text-base">Приём заказа</span>
+        <span className="font-semibold text-base shrink-0">Приём заказа</span>
 
         {members.length > 0 && (
           <select
             value={assignedTo ?? ""}
             onChange={e => setAssignedTo(e.target.value || null)}
-            className="h-8 text-xs rounded-lg border bg-background px-2 ml-2"
+            className="h-8 text-xs rounded-lg border bg-background px-2 ml-2 hidden sm:block"
           >
             <option value="">Исполнитель...</option>
             {members.map((m: any) => (
@@ -588,7 +593,7 @@ export function POSPage() {
           </select>
         )}
 
-        <div className="relative ml-auto w-72" data-client-search>
+        <div className="relative ml-auto w-48 sm:w-72" data-client-search>
           {clientId ? (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-primary/5 border-primary/30 text-sm">
               <Phone className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -719,7 +724,7 @@ export function POSPage() {
                     <p className="text-xs opacity-60">Нажмите ★ на карточке в каталоге</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                     {favouriteTypes.map(type => (
                       <button
                         key={type.id}
@@ -747,7 +752,7 @@ export function POSPage() {
               </>
             ) : !catalogSearch && !selectedSubcategory ? (
               /* Карточки категорий */
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {subcategories.map(sub => (
                   <button
                     key={sub.name}
@@ -774,7 +779,7 @@ export function POSPage() {
                 )}
 
                 {catalogView === 'grid' ? (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                     {visibleTypes.map(type => (
                       <button
                         key={type.id}
@@ -850,7 +855,7 @@ export function POSPage() {
         </div>
 
         {/* ── Правая панель: чек ── */}
-        <div className="w-[30%] flex flex-col overflow-hidden min-h-0">
+        <div className="w-[340px] xl:w-[30%] flex flex-col overflow-hidden min-h-0 shrink-0">
 
           {/* Список позиций */}
           <div className="flex-1 overflow-y-auto min-h-0">

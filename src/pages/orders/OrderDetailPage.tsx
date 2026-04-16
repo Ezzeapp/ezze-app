@@ -381,10 +381,10 @@ export function OrderDetailPage() {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <Button variant="outline" size="sm" onClick={() => setShowReceipt(true)}>
-            <Printer className="h-4 w-4 mr-1.5" />
-            Квитанция
+            <Printer className="h-4 w-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">Квитанция</span>
           </Button>
           <Button
             variant="ghost"
