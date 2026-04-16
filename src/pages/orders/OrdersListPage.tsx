@@ -490,6 +490,7 @@ export function OrdersListPage() {
 
   return (
     <div className="flex flex-col h-full">
+      <div className="px-4 lg:px-[18px] pt-4 lg:pt-6">
       <PageHeader
         title={t('nav.orders')}
         description={total > 0 ? `${total} ${t('orders.shortOrders')}` : undefined}
@@ -556,8 +557,9 @@ export function OrdersListPage() {
           </Button>
         </div>
       </PageHeader>
+      </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-20 lg:pb-4 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 lg:px-[18px] pb-20 lg:pb-4 space-y-3">
 
         {/* Статистика */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">

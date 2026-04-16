@@ -22,10 +22,16 @@ const FULLSCREEN_ROUTES = [
   ...(PRODUCT === 'cleaning' ? ['/orders'] : []),
 ]
 
+// Маршруты с full-width таблицей (только px-[18px], без max-w-6xl)
+const WIDE_ROUTES = PRODUCT === 'cleaning'
+  ? ['/services', '/inventory', '/clients']
+  : []
+
 export function AppLayout() {
   const { user } = useAuth()
   const location = useLocation()
   const isFullscreen = FULLSCREEN_ROUTES.includes(location.pathname)
+  const isWide = WIDE_ROUTES.includes(location.pathname)
   const queryClient = useQueryClient()
   const { data: existingProfile } = useProfile()
 
@@ -110,6 +116,10 @@ export function AppLayout() {
         <main className={isFullscreen ? 'flex-1 overflow-hidden flex flex-col' : 'flex-1 overflow-y-auto overflow-x-hidden'}>
           {isFullscreen ? (
             <Outlet />
+          ) : isWide ? (
+            <div className="px-[18px] py-4 pb-20 lg:py-6 lg:pb-6">
+              <Outlet />
+            </div>
           ) : (
             /* pb-20 на мобиле — отступ под нижнюю панель; pt-safe в Telegram — под нотч */
             <div className="container max-w-6xl mx-auto px-3 py-4 pb-20 lg:px-6 lg:py-6 lg:pb-6">

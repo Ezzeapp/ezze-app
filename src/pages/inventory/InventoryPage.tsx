@@ -23,6 +23,7 @@ import { BulkActionBar } from '@/components/shared/BulkActionBar'
 import { toast } from '@/components/shared/Toaster'
 import { ImportProductsDialog } from '@/components/inventory/ImportProductsDialog'
 import { formatCurrency } from '@/lib/utils'
+import { PRODUCT } from '@/lib/config'
 import { useCurrency } from '@/hooks/useCurrency'
 import { useFeature } from '@/hooks/useFeatureFlags'
 import type { InventoryItem } from '@/types'
@@ -343,7 +344,7 @@ export function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2 sticky top-0 z-10 bg-background -mx-3 px-3 lg:-mx-6 lg:px-6 -mt-4 pt-4 lg:-mt-6 lg:pt-6 pb-3 shadow-sm">
+      <div className={`space-y-2 sticky top-0 z-10 bg-background -mt-4 pt-4 lg:-mt-6 lg:pt-6 pb-3 shadow-sm ${PRODUCT === 'cleaning' ? '-mx-[18px] px-[18px]' : '-mx-3 px-3 lg:-mx-6 lg:px-6'}`}>
         {/* Row 1: title */}
         <h1 className="text-2xl font-semibold text-foreground">{t('nav.inventory')}</h1>
 

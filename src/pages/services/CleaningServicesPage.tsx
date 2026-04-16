@@ -48,7 +48,7 @@ export function CleaningServicesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="space-y-2 sticky top-0 z-10 bg-background -mx-3 px-3 lg:-mx-6 lg:px-6 -mt-4 pt-4 lg:-mt-6 lg:pt-6 pb-3 shadow-sm">
+      <div className="space-y-2 sticky top-0 z-10 bg-background -mx-[18px] px-[18px] -mt-4 pt-4 lg:-mt-6 lg:pt-6 pb-3 shadow-sm">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-semibold text-foreground flex-1">{t('nav.services')}</h1>
           <Button variant="outline" size="icon" className="sm:hidden" onClick={() => setPriceModalOpen(true)}>
