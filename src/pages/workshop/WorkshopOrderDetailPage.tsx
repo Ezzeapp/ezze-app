@@ -498,17 +498,27 @@ function PartsCard({ orderId, parts }: { orderId: string; parts: any[] }) {
 
   async function onAdd() {
     if (!name || sellPrice <= 0) return
-    await add.mutateAsync({
-      orderId,
-      part: {
-        name, sku,
-        sell_price: sellPrice, cost_price: costPrice,
-        quantity: qty, warranty_days: warranty,
-        inventory_item_id: inventoryItemId,
-      },
-    })
-    setName(''); setSellPrice(0); setCostPrice(0); setQty(1); setWarranty(30)
-    setInventoryItemId(null); setSku(null); setAdding(false)
+    try {
+      const res = await add.mutateAsync({
+        orderId,
+        part: {
+          name, sku,
+          sell_price: sellPrice, cost_price: costPrice,
+          quantity: qty, warranty_days: warranty,
+          inventory_item_id: inventoryItemId,
+        },
+      })
+      if (res.lowStock) {
+        toast.error(
+          `Низкий остаток: «${name}»`,
+          `На складе осталось ${res.newQuantity ?? 0} (порог ${res.minQuantity ?? 0}). Закажите пополнение.`
+        )
+      }
+      setName(''); setSellPrice(0); setCostPrice(0); setQty(1); setWarranty(30)
+      setInventoryItemId(null); setSku(null); setAdding(false)
+    } catch (e: any) {
+      toast.error(e.message ?? 'Ошибка добавления запчасти')
+    }
   }
 
   return (
@@ -671,33 +681,54 @@ function InventoryPartPicker({ onPick }: {
             autoFocus placeholder="Поиск по названию, SKU..." value={q} onChange={e => setQ(e.target.value)}
             className="m-2 w-[calc(100%-16px)]"
           />
-          {filtered.slice(0, 30).map((i: any) => (
-            <button
-              key={i.id}
-              type="button"
-              disabled={i.quantity <= 0}
-              onClick={() => {
-                onPick({
-                  id: i.id, name: i.name, sku: i.sku,
-                  cost_price: i.cost_price ?? 0,
-                  sell_price: i.sell_price ?? i.cost_price ?? 0,
-                })
-                setOpen(false); setQ('')
-              }}
-              className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-accent text-left disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <div>
-                <div>{i.name}</div>
-                {i.sku && <div className="text-xs text-muted-foreground">SKU {i.sku}</div>}
-              </div>
-              <div className="text-right">
-                <div className="text-xs">{formatCurrency(i.sell_price ?? 0)}</div>
-                <div className={cn('text-xs', i.quantity <= 0 ? 'text-red-600' : 'text-muted-foreground')}>
-                  ост. {i.quantity}
+          {filtered.slice(0, 30).map((i: any) => {
+            const out = i.quantity <= 0
+            const low = !out && (i.min_quantity ?? 0) > 0 && i.quantity <= (i.min_quantity ?? 0)
+            return (
+              <button
+                key={i.id}
+                type="button"
+                disabled={out}
+                onClick={() => {
+                  onPick({
+                    id: i.id, name: i.name, sku: i.sku,
+                    cost_price: i.cost_price ?? 0,
+                    sell_price: i.sell_price ?? i.cost_price ?? 0,
+                  })
+                  setOpen(false); setQ('')
+                }}
+                className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-accent text-left disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span>{i.name}</span>
+                    {low && (
+                      <span className="text-[10px] px-1 py-px rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                        низкий
+                      </span>
+                    )}
+                    {out && (
+                      <span className="text-[10px] px-1 py-px rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                        нет
+                      </span>
+                    )}
+                  </div>
+                  {i.sku && <div className="text-xs text-muted-foreground">SKU {i.sku}</div>}
                 </div>
-              </div>
-            </button>
-          ))}
+                <div className="text-right">
+                  <div className="text-xs">{formatCurrency(i.sell_price ?? 0)}</div>
+                  <div className={cn(
+                    'text-xs tabular-nums',
+                    out ? 'text-red-600 dark:text-red-400 font-medium' :
+                    low ? 'text-amber-600 dark:text-amber-400 font-medium' :
+                    'text-muted-foreground',
+                  )}>
+                    ост. {i.quantity}{i.min_quantity ? ` / ${i.min_quantity}` : ''}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
           {filtered.length === 0 && (
             <div className="px-3 py-4 text-center text-xs text-muted-foreground">—</div>
           )}

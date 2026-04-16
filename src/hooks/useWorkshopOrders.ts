@@ -484,49 +484,83 @@ export function useToggleWorkshopWorkDone() {
 }
 
 // ── Запчасти в заказе ───────────────────────────────────────────────────────
+export interface AddWorkshopPartResult {
+  lowStock: boolean
+  newQuantity?: number
+  minQuantity?: number
+}
+
 export function useAddWorkshopPart() {
   const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async ({ orderId, part }: {
-      orderId: string
-      part: {
-        name: string
-        sku?: string | null
-        quantity?: number
-        cost_price?: number
-        sell_price: number
-        warranty_days?: number
-        inventory_item_id?: string | null
+  return useMutation<AddWorkshopPartResult, Error, {
+    orderId: string
+    part: {
+      name: string
+      sku?: string | null
+      quantity?: number
+      cost_price?: number
+      sell_price: number
+      warranty_days?: number
+      inventory_item_id?: string | null
+    }
+  }>({
+    mutationFn: async ({ orderId, part }) => {
+      const qty = part.quantity ?? 1
+
+      // Атомарное списание через RPC (защита от отрицательного остатка и гонок)
+      let lowStock = false
+      let newQuantity: number | undefined
+      let minQuantity: number | undefined
+      if (part.inventory_item_id) {
+        const { data, error } = await supabase.rpc('workshop_deduct_inventory', {
+          p_item_id: part.inventory_item_id,
+          p_qty: qty,
+        })
+        if (error) {
+          if (error.message.includes('insufficient_stock')) {
+            throw new Error('Недостаточно остатка на складе для списания')
+          }
+          if (error.message.includes('inventory_item_not_found')) {
+            throw new Error('Товар не найден на складе')
+          }
+          throw error
+        }
+        const row = Array.isArray(data) ? data[0] : data
+        newQuantity = Number(row?.new_quantity ?? 0)
+        minQuantity = Number(row?.min_quantity ?? 0)
+        lowStock = (minQuantity ?? 0) > 0 && (newQuantity ?? 0) <= (minQuantity ?? 0)
       }
-    }) => {
-      const { error } = await supabase.from('workshop_order_parts').insert({
+
+      const { error: insErr } = await supabase.from('workshop_order_parts').insert({
         order_id: orderId,
         name: part.name,
         sku: part.sku ?? null,
-        quantity: part.quantity ?? 1,
+        quantity: qty,
         cost_price: part.cost_price ?? 0,
         sell_price: part.sell_price,
         warranty_days: part.warranty_days ?? 0,
         inventory_item_id: part.inventory_item_id ?? null,
       })
-      if (error) throw error
-
-      // Списание со склада
-      if (part.inventory_item_id) {
-        const qty = part.quantity ?? 1
-        const { data: inv } = await supabase
-          .from('inventory_items').select('quantity').eq('id', part.inventory_item_id).single()
-        if (inv) {
-          await supabase.from('inventory_items')
-            .update({ quantity: Math.max(0, (inv.quantity ?? 0) - qty) })
-            .eq('id', part.inventory_item_id)
+      if (insErr) {
+        // Откат: вернём списание обратно. Лучше чем тихо расходиться.
+        if (part.inventory_item_id) {
+          await supabase.rpc('workshop_deduct_inventory', {
+            p_item_id: part.inventory_item_id,
+            p_qty: -qty,
+          }).then(() => {}, () => {
+            console.warn('rollback deduct failed — inventory may be out of sync')
+          })
         }
+        throw insErr
       }
+
       await recalcTotals(orderId)
+      return { lowStock, newQuantity, minQuantity }
     },
     onSuccess: (_, { orderId }) => {
       qc.invalidateQueries({ queryKey: [WORKSHOP_ORDERS_KEY, 'detail', orderId] })
       qc.invalidateQueries({ queryKey: ['inventory_items'] })
+      qc.invalidateQueries({ queryKey: ['inventory'] })
     },
   })
 }
