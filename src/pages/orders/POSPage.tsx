@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Zap, Camera, Weight, TrendingUp, TrendingDown, MessageSquare, Star } from 'lucide-react'
+import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Zap, Camera, Weight, TrendingUp, TrendingDown, MessageSquare, Star, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -330,6 +330,9 @@ export function POSPage() {
   const [paymentCash, setPaymentCash] = useState('')
   const [paymentCard, setPaymentCard] = useState('')
   const [orderTags, setOrderTags] = useState<string[]>([])
+  const [pickupDate, setPickupDate] = useState<string>('')
+  const [deliveryDate, setDeliveryDate] = useState<string>('')
+  const [visitAddress, setVisitAddress] = useState<string>('')
   const [photoUploading, setPhotoUploading] = useState<number | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
 
@@ -428,7 +431,7 @@ export function POSPage() {
     setAssignedTo(null); setPrepaid(''); setNotes(''); setGlobalReadyDate(dayjs().add(1, 'day').format('YYYY-MM-DD'))
     setDiscount(''); setIsExpress(false); setExpressCharge(''); setExpressChargeIsPercent(true)
     setPaymentMethod('cash'); setSurchargePct(''); setPaymentCash(''); setPaymentCard('')
-    setOrderTags([]); setExpandedKey(null); setCreatedOrder(null); setReceiptData(null)
+    setOrderTags([]); setPickupDate(''); setDeliveryDate(''); setVisitAddress(''); setExpandedKey(null); setCreatedOrder(null); setReceiptData(null)
     const d1 = dayjs().add(1, 'day'); setGlobalReadyDate(d1.format('YYYY-MM-DD')); setDateDisplay(d1.format('DD.MM.YYYY'))
   }
 
@@ -466,6 +469,9 @@ export function POSPage() {
         payment_cash:      parseFloat(paymentCash) || 0,
         payment_card:      parseFloat(paymentCard) || 0,
         tags:              orderTags,
+        pickup_date:       orderTags.includes('Доставка') ? pickupDate || null : null,
+        delivery_date:     orderTags.includes('Доставка') ? deliveryDate || null : null,
+        visit_address:     orderTags.includes('Доставка') ? visitAddress || null : null,
         items: cart.map(i => ({
           item_type_id:   i.item_type_id,
           item_type_name: i.item_type_name,
@@ -1080,6 +1086,33 @@ export function POSPage() {
                 </button>
               ))}
             </div>
+
+            {/* Доставка: дата забора, доставки, адрес */}
+            {orderTags.includes('Доставка') && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Truck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <Input
+                  type="date"
+                  value={pickupDate}
+                  onChange={e => setPickupDate(e.target.value)}
+                  className="h-7 text-xs w-32"
+                  title="Дата забора"
+                />
+                <Input
+                  type="date"
+                  value={deliveryDate}
+                  onChange={e => setDeliveryDate(e.target.value)}
+                  className="h-7 text-xs w-32"
+                  title="Дата доставки"
+                />
+                <Input
+                  placeholder="Адрес..."
+                  value={visitAddress}
+                  onChange={e => setVisitAddress(e.target.value)}
+                  className="h-7 text-xs flex-1 min-w-[120px]"
+                />
+              </div>
+            )}
 
             {/* Зона 2: Примечание — иконка + input */}
             <div className="flex items-center gap-2">
