@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { LogOut, User, ExternalLink, Search, ChevronLeft } from 'lucide-react'
+import { LogOut, User, ExternalLink, Search, ChevronLeft, Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
@@ -21,7 +21,8 @@ export function TopBar() {
   const location = useLocation()
   const [searchOpen, setSearchOpen] = useState(false)
   const { data: homeScreenConfig } = useHomeScreenConfig()
-  const showHomeButton = homeScreenConfig?.mode === 'tiles' && location.pathname !== '/'
+  const isTilesMode = homeScreenConfig?.mode === 'tiles'
+  const showHomeButton = isTilesMode && location.pathname !== '/'
 
   // Cmd+K / Ctrl+K shortcut
   useEffect(() => {
@@ -106,6 +107,15 @@ export function TopBar() {
                 <ExternalLink className="mr-2 h-4 w-4" />
                 {t('nav.settings')}
               </DropdownMenuItem>
+              {isTilesMode && user?.is_admin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/admin')}>
+                    <Shield className="mr-2 h-4 w-4" />
+                    {t('nav.admin')}
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
