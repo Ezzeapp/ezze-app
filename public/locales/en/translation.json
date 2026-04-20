@@ -2317,15 +2317,42 @@
       "defect": "Defect (per client)",
       "visible": "Visible condition / defects",
       "completeness": "Completeness",
+      "completenessChecklist": "Completeness",
+      "completenessExtra": "Other (free text)",
+      "completenessOptions": {
+        "charger": "Charger",
+        "cable": "Cable",
+        "box": "Box",
+        "case": "Case",
+        "glass": "Glass",
+        "sim": "SIM card",
+        "sdcard": "SD card",
+        "stylus": "Stylus",
+        "remote": "Remote"
+      },
+      "unlockCode": "Unlock code / pattern",
+      "unlockCodePlaceholder": "e.g. 1234 or L-shape",
+      "unlockCodeHint": "Stored on the order. Not printed on the receipt.",
+      "priority": "Priority",
+      "priorityNormal": "Normal",
+      "priorityUrgent": "Urgent",
+      "priorityExpress": "Express",
       "diagnosticPrice": "Diagnostic fee",
       "estimated": "Estimated cost",
       "prepaid": "Prepayment",
       "readyDate": "Ready date",
+      "preset1d": "+1 day",
+      "preset3d": "+3 days",
+      "preset7d": "+7 days",
       "warrantyDays": "Warranty (days)",
       "notes": "Internal notes",
       "cancel": "Cancel",
       "create": "Create order",
-      "created": "Order {{number}} created"
+      "created": "Order {{number}} created",
+      "clientConsent": "Client agreed to repair intake terms",
+      "nextNumber": "Next №",
+      "searchTypesPlaceholder": "Search device type…",
+      "photos": "Device photos"
     },
     "detail": {
       "back": "Back",
@@ -2367,7 +2394,8 @@
       "cancel": "Cancel",
       "confirmDelete": "Delete order {{number}}?",
       "confirmDeleteHint": "This cannot be undone. Works, parts and history will be deleted.",
-      "deleted": "Order deleted"
+      "deleted": "Order deleted",
+      "consentedAt": "Client signed:"
     }
   },
   "homeScreen": {

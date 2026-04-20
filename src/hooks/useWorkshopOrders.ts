@@ -18,6 +18,7 @@ export type WorkshopOrderStatus =
 
 export type WorkshopPaymentStatus = 'unpaid' | 'partial' | 'paid'
 export type WorkshopSortBy = 'newest' | 'oldest' | 'amount_desc' | 'deadline_asc'
+export type WorkshopPriority = 'normal' | 'urgent' | 'express'
 
 export interface WorkshopItemType {
   id: string
@@ -105,6 +106,11 @@ export interface WorkshopOrder {
   warranty_days: number
   notes: string | null
   photos: string[]
+  // ── доп. поля приёмки ─────────────────────────────
+  device_unlock_code: string | null
+  completeness_items: string[]
+  priority: WorkshopPriority
+  client_consent_at: string | null
   created_at: string
   updated_at: string
   // joined
@@ -168,6 +174,19 @@ export function useDeleteWorkshopItemType() {
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['workshop_item_types'] }),
+  })
+}
+
+// ── Превью следующего номера заказа (без расхода sequence) ─────────────────
+export function usePeekWorkshopOrderNumber() {
+  return useQuery({
+    queryKey: ['workshop_peek_next_number', PRODUCT],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('peek_next_workshop_order_number', { p_product: PRODUCT })
+      if (error) throw error
+      return (data ?? '') as string
+    },
+    staleTime: 5_000,
   })
 }
 
@@ -288,6 +307,10 @@ export interface CreateWorkshopOrderPayload {
   warranty_days?: number
   notes?: string | null
   photos?: string[]
+  device_unlock_code?: string | null
+  completeness_items?: string[]
+  priority?: WorkshopPriority
+  client_consent_at?: string | null
 }
 
 export function useCreateWorkshopOrder() {
@@ -323,6 +346,10 @@ export function useCreateWorkshopOrder() {
           warranty_days:      payload.warranty_days ?? 0,
           notes:              payload.notes ?? null,
           photos:             payload.photos ?? [],
+          device_unlock_code: payload.device_unlock_code ?? null,
+          completeness_items: payload.completeness_items ?? [],
+          priority:           payload.priority ?? 'normal',
+          client_consent_at:  payload.client_consent_at ?? null,
         })
         .select()
         .single()

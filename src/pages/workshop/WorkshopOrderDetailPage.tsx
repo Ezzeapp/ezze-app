@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import {
   ArrowLeft, Loader2, Trash2, Plus, CircleDollarSign, Wrench, Package,
   History, Phone, User, Calendar, AlertTriangle, Printer, Link2, Send, CheckCircle2,
+  Eye, EyeOff, Zap, AlarmClock, ShieldCheck,
 } from 'lucide-react'
 import { printWorkshopReceipt } from './printReceipt'
 import { WorkshopPhotosUploader } from './WorkshopPhotosUploader'
@@ -157,6 +158,17 @@ export function WorkshopOrderDetailPage() {
               {t(order.payment_status === 'paid' ? 'workshop.status.paid' : 'workshop.detail.paid')}
             </span>
           )}
+          {order.priority && order.priority !== 'normal' && (
+            <span className={cn(
+              'text-xs px-2 py-0.5 rounded-full flex items-center gap-1',
+              order.priority === 'express'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+            )}>
+              {order.priority === 'express' ? <Zap className="h-3 w-3" /> : <AlarmClock className="h-3 w-3" />}
+              {t(`workshop.form.priority${order.priority.charAt(0).toUpperCase() + order.priority.slice(1)}`)}
+            </span>
+          )}
         </div>
         <div className="text-sm text-muted-foreground mt-1">
           {dayjs(order.created_at).format('DD.MM.YYYY HH:mm')}
@@ -183,6 +195,12 @@ export function WorkshopOrderDetailPage() {
               <Info label={t('workshop.form.serial')} value={order.serial_number || '—'} />
               <Info label={t('workshop.form.imei')} value={order.imei || '—'} />
             </div>
+            {order.device_unlock_code && (
+              <div className="mt-3 pt-3 border-t text-sm">
+                <div className="font-semibold mb-1">{t('workshop.form.unlockCode')}</div>
+                <UnlockCodeRow code={order.device_unlock_code} />
+              </div>
+            )}
             {order.defect_description && (
               <div className="mt-3 pt-3 border-t text-sm">
                 <div className="font-semibold mb-1">{t('workshop.form.defect')}</div>
@@ -195,10 +213,21 @@ export function WorkshopOrderDetailPage() {
                 <div className="text-muted-foreground">{order.visible_defects}</div>
               </div>
             )}
-            {order.completeness && (
+            {((order.completeness_items && order.completeness_items.length > 0) || order.completeness) && (
               <div className="mt-3 pt-3 border-t text-sm">
-                <div className="font-semibold mb-1">{t('workshop.form.completeness')}</div>
-                <div className="text-muted-foreground">{order.completeness}</div>
+                <div className="font-semibold mb-1">{t('workshop.form.completenessChecklist')}</div>
+                {order.completeness_items && order.completeness_items.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-1">
+                    {order.completeness_items.map(k => (
+                      <span key={k} className="text-xs rounded-full bg-muted px-2 py-0.5">
+                        {t(`workshop.form.completenessOptions.${k}`, { defaultValue: k })}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {order.completeness && (
+                  <div className="text-muted-foreground text-xs">{order.completeness}</div>
+                )}
               </div>
             )}
             <div className="mt-3 pt-3 border-t">
@@ -306,6 +335,12 @@ export function WorkshopOrderDetailPage() {
                 <Row label={t('workshop.detail.issuedAt')} value={dayjs(order.issued_at).format('DD.MM.YYYY')} />
               )}
               <Row label={t('workshop.detail.warranty')} value={t('workshop.detail.warrantyDays', { n: order.warranty_days })} />
+              {order.client_consent_at && (
+                <div className="flex items-center gap-1 text-xs text-green-700 dark:text-green-400 pt-1">
+                  <ShieldCheck className="h-3 w-3" />
+                  {t('workshop.detail.consentedAt')} {dayjs(order.client_consent_at).format('DD.MM.YYYY HH:mm')}
+                </div>
+              )}
             </div>
           </Card>
         </div>
@@ -765,6 +800,24 @@ function Row({ label, value, bold, accent }: { label: string; value: string; bol
     <div className="flex justify-between">
       <span className="text-muted-foreground">{label}</span>
       <span className={cn(bold && 'font-semibold', accent && 'text-red-600 dark:text-red-400')}>{value}</span>
+    </div>
+  )
+}
+
+function UnlockCodeRow({ code }: { code: string }) {
+  const [shown, setShown] = useState(false)
+  return (
+    <div className="flex items-center gap-2">
+      <code className="font-mono text-sm bg-muted px-2 py-1 rounded select-all">
+        {shown ? code : '•'.repeat(Math.max(4, code.length))}
+      </code>
+      <button
+        type="button"
+        onClick={() => setShown(v => !v)}
+        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+      >
+        {shown ? <><EyeOff className="h-3 w-3" /> скрыть</> : <><Eye className="h-3 w-3" /> показать</>}
+      </button>
     </div>
   )
 }

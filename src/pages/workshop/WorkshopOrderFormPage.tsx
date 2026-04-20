@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowLeft, Loader2, Save, Search, UserPlus, X,
+  ArrowLeft, Loader2, Save, Search, UserPlus, X, Eye, EyeOff, Zap, AlarmClock,
   Smartphone, Tablet, Laptop, Monitor, Tv, Headphones, Watch,
   WashingMachine, Refrigerator, Microwave, Wind, AirVent,
   Footprints, Bike, Sofa, Package, type LucideIcon,
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { toast } from '@/components/shared/Toaster'
@@ -18,11 +19,14 @@ import {
   useCreateWorkshopOrder,
   useWorkshopItemTypes,
   useClientWorkshopDevices,
+  usePeekWorkshopOrderNumber,
   type WorkshopItemType,
+  type WorkshopPriority,
 } from '@/hooks/useWorkshopOrders'
 import { useClients, useCreateClient } from '@/hooks/useClients'
+import { useAppSettings } from '@/hooks/useAppSettings'
 import { WorkshopPhotosUploader } from './WorkshopPhotosUploader'
-import { cn } from '@/lib/utils'
+import { cn, getCurrencySymbol } from '@/lib/utils'
 import dayjs from 'dayjs'
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -36,12 +40,19 @@ function iconFor(name: string | null): LucideIcon {
   return ICON_MAP[name] ?? Package
 }
 
+const COMPLETENESS_KEYS = ['charger','cable','box','case','glass','sim','sdcard','stylus','remote'] as const
+type CompletenessKey = typeof COMPLETENESS_KEYS[number]
+
 export function WorkshopOrderFormPage() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { data: itemTypes } = useWorkshopItemTypes()
   const { data: clients } = useClients()
+  const { data: appSettings } = useAppSettings()
+  const { data: nextNumber } = usePeekWorkshopOrderNumber()
   const createOrder = useCreateWorkshopOrder()
+
+  const currencySymbol = getCurrencySymbol(appSettings?.default_currency ?? 'RUB')
 
   const [clientId, setClientId] = useState<string>('')
   const [itemTypeId, setItemTypeId] = useState<string>('')
@@ -49,9 +60,13 @@ export function WorkshopOrderFormPage() {
   const [model, setModel] = useState('')
   const [serial, setSerial] = useState('')
   const [imei, setImei] = useState('')
+  const [unlockCode, setUnlockCode] = useState('')
+  const [showUnlock, setShowUnlock] = useState(false)
   const [defect, setDefect] = useState('')
   const [visible, setVisible] = useState('')
-  const [completeness, setCompleteness] = useState('')
+  const [completenessItems, setCompletenessItems] = useState<CompletenessKey[]>([])
+  const [completenessExtra, setCompletenessExtra] = useState('')
+  const [priority, setPriority] = useState<WorkshopPriority>('normal')
   const [diagnosticPrice, setDiagnosticPrice] = useState<number>(0)
   const [estimated, setEstimated] = useState<number | ''>('')
   const [prepaid, setPrepaid] = useState<number>(0)
@@ -59,6 +74,7 @@ export function WorkshopOrderFormPage() {
   const [warrantyDays, setWarrantyDays] = useState<number>(30)
   const [notes, setNotes] = useState('')
   const [photos, setPhotos] = useState<string[]>([])
+  const [consent, setConsent] = useState(false)
 
   const selectedType = itemTypes?.find(t => t.id === itemTypeId)
 
@@ -72,6 +88,14 @@ export function WorkshopOrderFormPage() {
         setReadyDate(dayjs().add(t.default_days, 'day').format('YYYY-MM-DD'))
       }
     }
+  }
+
+  function toggleCompleteness(k: CompletenessKey) {
+    setCompletenessItems(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])
+  }
+
+  function presetReady(days: number) {
+    setReadyDate(dayjs().add(days, 'day').format('YYYY-MM-DD'))
   }
 
   async function onSubmit() {
@@ -88,9 +112,12 @@ export function WorkshopOrderFormPage() {
         model: model || null,
         serial_number: serial || null,
         imei: imei || null,
+        device_unlock_code: unlockCode.trim() || null,
         defect_description: defect || null,
         visible_defects: visible || null,
-        completeness: completeness || null,
+        completeness: completenessExtra.trim() || null,
+        completeness_items: completenessItems,
+        priority,
         diagnostic_price: diagnosticPrice,
         estimated_cost: estimated === '' ? null : Number(estimated),
         prepaid_amount: prepaid,
@@ -98,6 +125,7 @@ export function WorkshopOrderFormPage() {
         warranty_days: warrantyDays,
         notes: notes || null,
         photos,
+        client_consent_at: consent ? new Date().toISOString() : null,
       })
       toast.success(t('workshop.form.created', { number: order.number }))
       navigate(`/orders/${order.id}`)
@@ -115,10 +143,15 @@ export function WorkshopOrderFormPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto pb-24 lg:pb-6">
-      <div className="mb-4">
+      <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
         <Button variant="ghost" size="sm" onClick={() => navigate('/orders')}>
           <ArrowLeft className="h-4 w-4 mr-1" /> {t('workshop.detail.back')}
         </Button>
+        {nextNumber && (
+          <div className="text-xs text-muted-foreground">
+            {t('workshop.form.nextNumber')}: <span className="font-mono font-semibold text-foreground">{nextNumber}</span>
+          </div>
+        )}
       </div>
       <PageHeader title={t('workshop.form.title')} description={t('workshop.form.subtitle')} />
 
@@ -150,6 +183,28 @@ export function WorkshopOrderFormPage() {
                 <Label>{t('workshop.form.imei')}</Label>
                 <Input value={imei} onChange={e => setImei(e.target.value)} />
               </div>
+              <div className="sm:col-span-2">
+                <Label>{t('workshop.form.unlockCode')}</Label>
+                <div className="relative">
+                  <Input
+                    type={showUnlock ? 'text' : 'password'}
+                    value={unlockCode}
+                    onChange={e => setUnlockCode(e.target.value)}
+                    placeholder={t('workshop.form.unlockCodePlaceholder')}
+                    autoComplete="off"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowUnlock(v => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label={showUnlock ? 'hide' : 'show'}
+                  >
+                    {showUnlock ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">{t('workshop.form.unlockCodeHint')}</p>
+              </div>
             </div>
           </Section>
 
@@ -165,11 +220,36 @@ export function WorkshopOrderFormPage() {
               </div>
             </div>
             <div>
-              <Label>{t('workshop.form.completeness')}</Label>
-              <Input value={completeness} onChange={e => setCompleteness(e.target.value)} />
+              <Label>{t('workshop.form.completenessChecklist')}</Label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {COMPLETENESS_KEYS.map(k => {
+                  const on = completenessItems.includes(k)
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => toggleCompleteness(k)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full border text-xs transition-all',
+                        on
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border text-foreground hover:bg-accent'
+                      )}
+                    >
+                      {t(`workshop.form.completenessOptions.${k}`)}
+                    </button>
+                  )
+                })}
+              </div>
+              <Input
+                className="mt-2"
+                placeholder={t('workshop.form.completenessExtra')}
+                value={completenessExtra}
+                onChange={e => setCompletenessExtra(e.target.value)}
+              />
             </div>
             <div>
-              <Label>Фото устройства</Label>
+              <Label>{t('workshop.form.photos')}</Label>
               <WorkshopPhotosUploader photos={photos} onChange={setPhotos} />
             </div>
           </Section>
@@ -195,22 +275,42 @@ export function WorkshopOrderFormPage() {
           </Section>
 
           <Section title={t('workshop.form.sectionCost')}>
+            <div>
+              <Label className="text-xs">{t('workshop.form.priority')}</Label>
+              <PrioritySelector value={priority} onChange={setPriority} />
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-xs">{t('workshop.form.diagnosticPrice')}</Label>
-                <Input className="h-9" type="number" value={diagnosticPrice} onChange={e => setDiagnosticPrice(Number(e.target.value))} />
+                <MoneyInput value={diagnosticPrice} onChange={v => setDiagnosticPrice(v ?? 0)} symbol={currencySymbol} />
               </div>
               <div>
                 <Label className="text-xs">{t('workshop.form.estimated')}</Label>
-                <Input className="h-9" type="number" value={estimated} onChange={e => setEstimated(e.target.value === '' ? '' : Number(e.target.value))} />
+                <MoneyInput
+                  value={estimated === '' ? null : estimated}
+                  onChange={v => setEstimated(v === null ? '' : v)}
+                  symbol={currencySymbol}
+                  allowEmpty
+                />
               </div>
               <div>
                 <Label className="text-xs">{t('workshop.form.prepaid')}</Label>
-                <Input className="h-9" type="number" value={prepaid} onChange={e => setPrepaid(Number(e.target.value))} />
+                <MoneyInput value={prepaid} onChange={v => setPrepaid(v ?? 0)} symbol={currencySymbol} />
               </div>
               <div>
                 <Label className="text-xs">{t('workshop.form.readyDate')}</Label>
                 <Input className="h-9" type="date" value={readyDate} onChange={e => setReadyDate(e.target.value)} />
+              </div>
+              <div className="col-span-2 flex flex-wrap gap-1">
+                <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => presetReady(1)}>
+                  {t('workshop.form.preset1d')}
+                </Button>
+                <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => presetReady(3)}>
+                  {t('workshop.form.preset3d')}
+                </Button>
+                <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => presetReady(7)}>
+                  {t('workshop.form.preset7d')}
+                </Button>
               </div>
               <div className="col-span-2">
                 <Label className="text-xs">{t('workshop.form.warrantyDays')}</Label>
@@ -222,6 +322,15 @@ export function WorkshopOrderFormPage() {
           <Section title={t('workshop.form.sectionNotes')}>
             <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
           </Section>
+
+          <label className="flex items-start gap-2 rounded-lg border bg-card p-3 cursor-pointer hover:bg-accent/30 transition-colors">
+            <Checkbox
+              checked={consent}
+              onCheckedChange={(v) => setConsent(v === true)}
+              className="mt-0.5"
+            />
+            <span className="text-xs leading-snug">{t('workshop.form.clientConsent')}</span>
+          </label>
 
           {/* Desktop save button */}
           <div className="hidden lg:flex gap-2 justify-end">
@@ -242,38 +351,128 @@ export function WorkshopOrderFormPage() {
   )
 }
 
-// ── Плитки типов устройств ──────────────────────────────────────────────────
+// ── Сегментный контрол срочности ────────────────────────────────────────────
+function PrioritySelector({ value, onChange }: {
+  value: WorkshopPriority
+  onChange: (v: WorkshopPriority) => void
+}) {
+  const { t } = useTranslation()
+  const opts: { k: WorkshopPriority; label: string; icon?: LucideIcon; tone: string }[] = [
+    { k: 'normal',  label: t('workshop.form.priorityNormal'),  tone: '' },
+    { k: 'urgent',  label: t('workshop.form.priorityUrgent'),  icon: AlarmClock, tone: 'data-[on=true]:bg-amber-500 data-[on=true]:text-white data-[on=true]:border-amber-500' },
+    { k: 'express', label: t('workshop.form.priorityExpress'), icon: Zap,        tone: 'data-[on=true]:bg-red-500 data-[on=true]:text-white data-[on=true]:border-red-500' },
+  ]
+  return (
+    <div className="grid grid-cols-3 gap-1 rounded-md bg-muted p-1">
+      {opts.map(o => {
+        const on = value === o.k
+        const Icon = o.icon
+        return (
+          <button
+            key={o.k}
+            type="button"
+            data-on={on}
+            onClick={() => onChange(o.k)}
+            className={cn(
+              'h-8 rounded-sm text-xs font-medium flex items-center justify-center gap-1 border border-transparent transition-all',
+              on ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+              o.tone,
+            )}
+          >
+            {Icon && <Icon className="h-3 w-3" />}
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Денежный input с суффиксом валюты ──────────────────────────────────────
+function MoneyInput({ value, onChange, symbol, allowEmpty }: {
+  value: number | null
+  onChange: (v: number | null) => void
+  symbol: string
+  allowEmpty?: boolean
+}) {
+  return (
+    <div className="relative">
+      <Input
+        type="number"
+        className="h-9 pr-12"
+        value={value === null ? '' : value}
+        onChange={e => {
+          const v = e.target.value
+          if (v === '' && allowEmpty) onChange(null)
+          else onChange(Number(v) || 0)
+        }}
+      />
+      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+        {symbol}
+      </span>
+    </div>
+  )
+}
+
+// ── Плитки типов устройств с поиском ───────────────────────────────────────
 function ItemTypeTiles({ itemTypes, value, onChange }: {
   itemTypes: WorkshopItemType[]
   value: string
   onChange: (id: string) => void
 }) {
-  const active = itemTypes.filter(t => t.active)
+  const { t } = useTranslation()
+  const [q, setQ] = useState('')
+  const active = useMemo(() => itemTypes.filter(t => t.active), [itemTypes])
+  const filtered = useMemo(() => {
+    if (!q.trim()) return active
+    const needle = q.trim().toLowerCase()
+    return active.filter(t =>
+      t.name.toLowerCase().includes(needle) ||
+      (t.category ?? '').toLowerCase().includes(needle)
+    )
+  }, [active, q])
+
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-      {active.map(t => {
-        const Icon = iconFor(t.icon)
-        const selected = t.id === value
-        return (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => onChange(t.id)}
-            className={cn(
-              'flex flex-col items-center justify-center gap-1 rounded-lg border p-3 transition-all',
-              'hover:border-primary/50 hover:bg-accent/40',
-              selected
-                ? 'border-primary bg-primary/10 ring-1 ring-primary'
-                : 'border-border bg-card'
-            )}
-          >
-            <Icon className={cn('h-6 w-6', selected ? 'text-primary' : 'text-muted-foreground')} />
-            <span className={cn('text-xs text-center leading-tight line-clamp-2', selected && 'font-semibold')}>
-              {t.name}
-            </span>
-          </button>
-        )
-      })}
+    <div className="space-y-2">
+      {active.length > 8 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            className="h-8 text-xs pl-9"
+            placeholder={t('workshop.form.searchTypesPlaceholder')}
+            value={q}
+            onChange={e => setQ(e.target.value)}
+          />
+        </div>
+      )}
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+        {filtered.map(t => {
+          const Icon = iconFor(t.icon)
+          const selected = t.id === value
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onChange(t.id)}
+              className={cn(
+                'flex flex-col items-center justify-center gap-1 rounded-lg border p-3 transition-all',
+                'hover:border-primary/50 hover:bg-accent/40',
+                selected
+                  ? 'border-primary bg-primary/10 ring-1 ring-primary'
+                  : 'border-border bg-card'
+              )}
+            >
+              <Icon className={cn('h-6 w-6', selected ? 'text-primary' : 'text-muted-foreground')} />
+              <span className={cn('text-xs text-center leading-tight line-clamp-2', selected && 'font-semibold')}>
+                {t.name}
+              </span>
+            </button>
+          )
+        })}
+        {filtered.length === 0 && (
+          <div className="col-span-full text-center text-xs text-muted-foreground py-4">—</div>
+        )}
+      </div>
     </div>
   )
 }

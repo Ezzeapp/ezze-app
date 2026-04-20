@@ -17,6 +17,20 @@ export function printWorkshopReceipt({ order, template, statusLabel, trackUrl }:
   const clientPhone = client?.phone ?? ''
   const device = [order.item_type_name, order.brand, order.model].filter(Boolean).join(' ')
 
+  const COMPLETENESS_LABELS: Record<string, string> = {
+    charger: 'Зарядка', cable: 'Кабель', box: 'Коробка', case: 'Чехол',
+    glass: 'Стекло', sim: 'SIM-карта', sdcard: 'Карта памяти',
+    stylus: 'Стилус', remote: 'Пульт',
+  }
+  const completenessList = (order.completeness_items ?? [])
+    .map(k => COMPLETENESS_LABELS[k] ?? k)
+    .concat(order.completeness ? [order.completeness] : [])
+    .filter(Boolean)
+    .join(', ')
+
+  const priorityLabel = order.priority === 'express' ? 'ЭКСПРЕСС'
+    : order.priority === 'urgent' ? 'СРОЧНО' : ''
+
   const worksRows = (order.works ?? []).map(w => `
     <tr>
       <td>${esc(w.name)}</td>
@@ -117,6 +131,7 @@ export function printWorkshopReceipt({ order, template, statusLabel, trackUrl }:
       <div class="number">№ ${esc(order.number)}</div>
       <div class="muted">${dayjs(order.created_at).format('DD.MM.YYYY HH:mm')}</div>
       <div class="muted">Статус: ${esc(statusLabel)}</div>
+      ${priorityLabel ? `<div style="font-weight:700;color:${order.priority === 'express' ? '#c00' : '#d80'};margin-top:2px">${priorityLabel}</div>` : ''}
     </div>
   </div>
 
@@ -130,7 +145,7 @@ export function printWorkshopReceipt({ order, template, statusLabel, trackUrl }:
   ${order.imei ? `<div class="row"><div class="label">IMEI</div><div class="val">${esc(order.imei)}</div></div>` : ''}
   ${order.defect_description ? `<div class="row"><div class="label">Неисправность</div><div class="val">${esc(order.defect_description)}</div></div>` : ''}
   ${order.visible_defects ? `<div class="row"><div class="label">Внешний вид</div><div class="val">${esc(order.visible_defects)}</div></div>` : ''}
-  ${order.completeness ? `<div class="row"><div class="label">Комплектность</div><div class="val">${esc(order.completeness)}</div></div>` : ''}
+  ${completenessList ? `<div class="row"><div class="label">Комплектность</div><div class="val">${esc(completenessList)}</div></div>` : ''}
 
   ${photosHtml}
 
@@ -179,6 +194,8 @@ export function printWorkshopReceipt({ order, template, statusLabel, trackUrl }:
     ${template.refuse_terms ? `<p><b>Отказ от ремонта.</b> ${esc(template.refuse_terms)}${order.diagnostic_price > 0 ? ` Стоимость диагностики: ${formatCurrency(order.diagnostic_price)}.` : ''}</p>` : ''}
     ${template.pickup_terms ? `<p><b>Получение.</b> ${esc(template.pickup_terms)}</p>` : ''}
   </div>
+
+  ${order.client_consent_at ? `<div class="muted" style="margin-top:10px">✓ Клиент ознакомлен с условиями приёма (${dayjs(order.client_consent_at).format('DD.MM.YYYY HH:mm')})</div>` : ''}
 
   <div class="signatures">
     <div class="sig">Принял (мастер): _________________</div>
