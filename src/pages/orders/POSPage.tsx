@@ -996,21 +996,23 @@ export function POSPage() {
                           )}
                         </div>
                         {/* Вес + Цена */}
-                        <div>
-                          <Label className="text-xs flex items-center gap-1">
-                            <Weight className="h-3 w-3" />
-                            Вес (кг)
-                          </Label>
-                          <Input type="number" min={0} step={0.1} placeholder="0.0"
-                            value={item.weight_kg}
-                            onChange={e => updateItem(item.key, 'weight_kg', e.target.value)}
-                            className="h-7 text-xs mt-0.5" />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Цена ({symbol})</Label>
-                          <Input type="number" value={item.price}
-                            onChange={e => updateItem(item.key, 'price', parseFloat(e.target.value) || 0)}
-                            className="h-7 text-xs mt-0.5" />
+                        <div className="col-span-2 grid grid-cols-2 gap-2 items-end">
+                          <div>
+                            <Label className="text-xs flex items-center gap-1">
+                              <Weight className="h-3 w-3" />
+                              Вес (кг)
+                            </Label>
+                            <Input type="number" min={0} step={0.1} placeholder="0.0"
+                              value={item.weight_kg}
+                              onChange={e => updateItem(item.key, 'weight_kg', e.target.value)}
+                              className="h-7 text-xs mt-0.5" />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Цена ({symbol})</Label>
+                            <Input type="number" value={item.price}
+                              onChange={e => updateItem(item.key, 'price', parseFloat(e.target.value) || 0)}
+                              className="h-7 text-xs mt-0.5" />
+                          </div>
                         </div>
 
                         {/* Фото при приёмке */}

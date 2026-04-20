@@ -606,6 +606,8 @@ export function CleaningCatalogTab() {
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deletingSelected, setDeletingSelected] = useState(false)
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
 
   // Category counts based on stored category field
   const categoryCounts = useMemo(() => {
@@ -820,7 +822,7 @@ export function CleaningCatalogTab() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setPage(1) }}
             placeholder="Поиск..."
             className="w-full h-9 pl-8 pr-3 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           />
@@ -864,7 +866,7 @@ export function CleaningCatalogTab() {
       {/* Category filter tabs */}
       <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         <button
-          onClick={() => setCategoryFilter('all')}
+          onClick={() => { setCategoryFilter('all'); setPage(1) }}
           className={cn(
             'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border',
             categoryFilter === 'all'
@@ -880,7 +882,7 @@ export function CleaningCatalogTab() {
           return (
             <button
               key={cat}
-              onClick={() => setCategoryFilter(cat)}
+              onClick={() => { setCategoryFilter(cat); setPage(1) }}
               className={cn(
                 'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border',
                 categoryFilter === cat
@@ -944,7 +946,7 @@ export function CleaningCatalogTab() {
               </tr>
             </thead>
             <tbody>
-              {filteredItems.map(item => {
+              {filteredItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(item => {
                 const isDeleting = deletingId === item.id
                 const isSaving = savingId === item.id
                 const cfg = orderTypesConfig.find(c => c.slug === (item.category || 'clothing'))
@@ -1079,6 +1081,29 @@ export function CleaningCatalogTab() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {Math.ceil(filteredItems.length / PAGE_SIZE) > 1 && (
+        <div className="flex justify-center items-center gap-2 pt-2">
+          <button
+            onClick={() => setPage(p => p - 1)}
+            disabled={page === 1}
+            className="px-3 py-1.5 rounded-md border text-sm font-medium disabled:opacity-40 hover:bg-muted transition-colors"
+          >
+            Назад
+          </button>
+          <span className="text-sm text-muted-foreground">
+            {page} / {Math.ceil(filteredItems.length / PAGE_SIZE)}
+          </span>
+          <button
+            onClick={() => setPage(p => p + 1)}
+            disabled={page >= Math.ceil(filteredItems.length / PAGE_SIZE)}
+            className="px-3 py-1.5 rounded-md border text-sm font-medium disabled:opacity-40 hover:bg-muted transition-colors"
+          >
+            Далее
+          </button>
         </div>
       )}
 
