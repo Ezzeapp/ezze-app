@@ -1009,7 +1009,7 @@ export function POSPage() {
                         <div>
                           <Label className="text-xs">Цена ({symbol})</Label>
                           <Input type="number" value={item.price}
-                            onChange={e => updateItem(item.key, 'price', e.target.value as any)}
+                            onChange={e => updateItem(item.key, 'price', parseFloat(e.target.value) || 0)}
                             className="h-7 text-xs mt-0.5" />
                         </div>
 
