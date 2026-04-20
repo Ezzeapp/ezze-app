@@ -87,13 +87,10 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
       {/* Bottom nav replica */}
       <div className="shrink-0 border-t bg-background pb-safe">
         <div className="flex items-stretch h-16 w-full">
-          {([
-            { icon: CalendarDays,    label: PRODUCT === 'clinic' ? 'clinic.nav.appointments' : 'nav.calendar',  to: '/calendar'  },
-            { icon: Users,           label: PRODUCT === 'clinic' ? 'clinic.nav.patients' : 'nav.clients',   to: '/clients'   },
-          ] as { icon: React.ComponentType<{ className?: string }>; label: string; to: string }[]).map((tab) => (
+          {/* Первая колонка — календарь / заказы в ремонт / заказы */}
+          {PRODUCT === 'workshop' ? (
             <NavLink
-              key={tab.to}
-              to={tab.to}
+              to="/orders"
               onClick={onClose}
               className={({ isActive }) =>
                 cn(
@@ -102,13 +99,40 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
                 )
               }
             >
-              <tab.icon className="h-5 w-5" />
-              <span>{t(tab.label)}</span>
+              <Wrench className="h-5 w-5" />
+              <span>{t('workshop.nav.orders', 'Ремонт')}</span>
             </NavLink>
-          ))}
+          ) : (
+            <NavLink
+              to="/calendar"
+              onClick={onClose}
+              className={({ isActive }) =>
+                cn(
+                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                )
+              }
+            >
+              <CalendarDays className="h-5 w-5" />
+              <span>{t(PRODUCT === 'clinic' ? 'clinic.nav.appointments' : 'nav.calendar')}</span>
+            </NavLink>
+          )}
+          <NavLink
+            to="/clients"
+            onClick={onClose}
+            className={({ isActive }) =>
+              cn(
+                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              )
+            }
+          >
+            <Users className="h-5 w-5" />
+            <span>{t(PRODUCT === 'clinic' ? 'clinic.nav.patients' : 'nav.clients')}</span>
+          </NavLink>
           {/* Статистика */}
           <NavLink
-            to="/dashboard"
+            to={PRODUCT === 'workshop' || PRODUCT === 'cleaning' ? '/stats' : '/dashboard'}
             onClick={onClose}
             className={({ isActive }) =>
               cn(
@@ -218,7 +242,7 @@ export function BottomNav() {
 
           {/* Статистика */}
           <NavLink
-            to="/dashboard"
+            to={PRODUCT === 'workshop' || PRODUCT === 'cleaning' ? '/stats' : '/dashboard'}
             className={({ isActive }) =>
               cn(
                 'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',

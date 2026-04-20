@@ -28,6 +28,7 @@ import { useCurrency } from '@/hooks/useCurrency'
 import { useProfileIcon } from '@/hooks/useProfileIcon'
 import { usePlanLimitCheck } from '@/hooks/useAppSettings'
 import { useFeature } from '@/hooks/useFeatureFlags'
+import { PRODUCT } from '@/lib/config'
 import type { Service, ServiceCategory } from '@/types'
 
 const DURATION_PRESETS = [15, 30, 45, 60]
@@ -560,9 +561,9 @@ export function ServicesPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{service.name}</p>
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    {service.is_bookable
+                    {PRODUCT !== 'workshop' && (service.is_bookable
                       ? <Badge variant="success" className="text-xs shrink-0">{t('services.online')}</Badge>
-                      : <Badge variant="secondary" className="text-xs shrink-0">{t('services.offline')}</Badge>}
+                      : <Badge variant="secondary" className="text-xs shrink-0">{t('services.offline')}</Badge>)}
                     {!service.is_active && <Badge variant="secondary" className="text-xs shrink-0">{t('services.inactive')}</Badge>}
                     {cat && (
                       <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
@@ -570,9 +571,11 @@ export function ServicesPage() {
                         <span className="max-w-[70px] truncate">{cat.name}</span>
                       </span>
                     )}
-                    <span className="text-xs text-muted-foreground flex items-center gap-0.5 shrink-0">
-                      <Clock className="h-3 w-3" />{formatDuration(service.duration_min, t)}
-                    </span>
+                    {PRODUCT !== 'workshop' && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-0.5 shrink-0">
+                        <Clock className="h-3 w-3" />{formatDuration(service.duration_min, t)}
+                      </span>
+                    )}
                     <span className="text-xs font-medium shrink-0">{formatCurrency(service.price, currency, i18n.language)}</span>
                   </div>
                 </div>
@@ -620,11 +623,13 @@ export function ServicesPage() {
                     {t('services.category')}<ArrowUpDown className={`h-3 w-3 shrink-0 ${sortKey === 'category' ? 'text-primary' : 'opacity-30'}`} />
                   </button>
                 </th>
-                <th className="text-left p-3 font-medium">
-                  <button type="button" onClick={() => toggleSort('duration')} className="flex items-center gap-1 hover:text-foreground transition-colors">
-                    {t('services.duration')}<ArrowUpDown className={`h-3 w-3 shrink-0 ${sortKey === 'duration' ? 'text-primary' : 'opacity-30'}`} />
-                  </button>
-                </th>
+                {PRODUCT !== 'workshop' && (
+                  <th className="text-left p-3 font-medium">
+                    <button type="button" onClick={() => toggleSort('duration')} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                      {t('services.duration')}<ArrowUpDown className={`h-3 w-3 shrink-0 ${sortKey === 'duration' ? 'text-primary' : 'opacity-30'}`} />
+                    </button>
+                  </th>
+                )}
                 <th className="text-left p-3 font-medium">
                   <button type="button" onClick={() => toggleSort('price')} className="flex items-center gap-1 hover:text-foreground transition-colors">
                     {t('services.price')}<ArrowUpDown className={`h-3 w-3 shrink-0 ${sortKey === 'price' ? 'text-primary' : 'opacity-30'}`} />
@@ -666,12 +671,14 @@ export function ServicesPage() {
                         <span className="text-muted-foreground/40">—</span>
                       )}
                     </td>
-                    <td className="p-3 text-muted-foreground whitespace-nowrap">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5 shrink-0" />
-                        {formatDuration(service.duration_min, t)}
-                      </span>
-                    </td>
+                    {PRODUCT !== 'workshop' && (
+                      <td className="p-3 text-muted-foreground whitespace-nowrap">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5 shrink-0" />
+                          {formatDuration(service.duration_min, t)}
+                        </span>
+                      </td>
+                    )}
                     <td className="p-3 font-medium whitespace-nowrap">
                       {formatCurrency(service.price, currency, i18n.language)}
                       {service.price_max ? ` — ${formatCurrency(service.price_max, currency, i18n.language)}` : ''}
@@ -679,9 +686,9 @@ export function ServicesPage() {
                     <td className="p-3">
                       <div className="flex flex-col gap-0.5 items-start">
                         {!service.is_active && <Badge variant="secondary" className="text-xs">{t('services.inactive')}</Badge>}
-                        {service.is_bookable
+                        {PRODUCT !== 'workshop' && (service.is_bookable
                           ? <Badge variant="success" className="text-xs">{t('services.online')}</Badge>
-                          : <Badge variant="secondary" className="text-xs">{t('services.offline')}</Badge>}
+                          : <Badge variant="secondary" className="text-xs">{t('services.offline')}</Badge>)}
                       </div>
                     </td>
                     <td className="p-3 w-10">
@@ -738,22 +745,24 @@ export function ServicesPage() {
                   <Textarea rows={2} {...register('description')} />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>{t('services.duration')} ({t('services.minutes')})</Label>
-                    <div className="flex items-center gap-1.5">
-                      {DURATION_PRESETS.map((d) => (
-                        <button
-                          key={d} type="button"
-                          onClick={() => setValue('duration_min', d, { shouldDirty: true })}
-                          className={`px-2 py-1 rounded text-xs border transition-colors shrink-0 ${duration === d ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:border-primary/50'}`}
-                        >
-                          {d}
-                        </button>
-                      ))}
-                      <Input type="number" min={5} {...register('duration_min', { valueAsNumber: true })} className="min-w-0" />
+                <div className={cn('grid gap-4', PRODUCT !== 'workshop' && 'sm:grid-cols-2')}>
+                  {PRODUCT !== 'workshop' && (
+                    <div className="space-y-2">
+                      <Label>{t('services.duration')} ({t('services.minutes')})</Label>
+                      <div className="flex items-center gap-1.5">
+                        {DURATION_PRESETS.map((d) => (
+                          <button
+                            key={d} type="button"
+                            onClick={() => setValue('duration_min', d, { shouldDirty: true })}
+                            className={`px-2 py-1 rounded text-xs border transition-colors shrink-0 ${duration === d ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:border-primary/50'}`}
+                          >
+                            {d}
+                          </button>
+                        ))}
+                        <Input type="number" min={5} {...register('duration_min', { valueAsNumber: true })} className="min-w-0" />
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <div className="space-y-2">
                     <Label>{t('services.price')}</Label>
                     <Controller
@@ -894,10 +903,12 @@ export function ServicesPage() {
                   <Label>{t('services.active')}</Label>
                   <Switch checked={isActive} onCheckedChange={(v) => setValue('is_active', v, { shouldDirty: true })} />
                 </div>
-                <div className="flex items-center justify-between">
-                  <Label>{t('services.onlineBooking')}</Label>
-                  <Switch checked={isBookable} onCheckedChange={(v) => setValue('is_bookable', v, { shouldDirty: true })} />
-                </div>
+                {PRODUCT !== 'workshop' && (
+                  <div className="flex items-center justify-between">
+                    <Label>{t('services.onlineBooking')}</Label>
+                    <Switch checked={isBookable} onCheckedChange={(v) => setValue('is_bookable', v, { shouldDirty: true })} />
+                  </div>
+                )}
 
                 {!editService && hasServiceMaterials && (
                   <div className="flex items-center justify-between rounded-lg border border-dashed border-border px-3 py-2.5 bg-muted/30">

@@ -185,6 +185,21 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
     enabled: PRODUCT === 'cleaning',
   })
 
+  const { data: workshopClientOrders = [] } = useQuery({
+    queryKey: ['workshop_orders', 'by_client', client.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('workshop_orders')
+        .select('id, number, status, payment_status, total_amount, created_at, item_type_name, brand, model')
+        .eq('client_id', client.id)
+        .eq('product', PRODUCT)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      return data ?? []
+    },
+    enabled: PRODUCT === 'workshop',
+  })
+
   const [tab, setTab] = useState<'stats' | 'loyalty' | 'medcard' | 'dental' | 'lab' | 'dispensing' | 'hosp'>('stats')
   const [manualAmount, setManualAmount] = useState('')
   const [manualNote, setManualNote] = useState('')
@@ -386,6 +401,31 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
                         className="w-full text-left flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-accent transition-colors text-sm"
                       >
                         <span className="font-medium">{order.number}</span>
+                        <span className="text-muted-foreground text-xs">{dayjs(order.created_at).format('DD.MM.YY')}</span>
+                        <span className="font-semibold text-xs">{formatCurrency(order.total_amount, currency, i18n.language)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {PRODUCT === 'workshop' && workshopClientOrders.length > 0 && (
+                <div className="mt-3 border-t pt-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide flex items-center gap-1.5">
+                    <ShoppingBag className="h-3.5 w-3.5" />
+                    История ремонтов
+                  </p>
+                  <div className="space-y-1.5">
+                    {workshopClientOrders.map((order: any) => (
+                      <button
+                        key={order.id}
+                        onClick={(e) => { e.stopPropagation(); onClose(); navigate(`/orders/${order.id}`) }}
+                        className="w-full text-left flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg hover:bg-accent transition-colors text-sm"
+                      >
+                        <span className="font-medium shrink-0">{order.number}</span>
+                        <span className="text-muted-foreground text-xs truncate flex-1">
+                          {[order.item_type_name, order.brand, order.model].filter(Boolean).join(' ')}
+                        </span>
                         <span className="text-muted-foreground text-xs">{dayjs(order.created_at).format('DD.MM.YY')}</span>
                         <span className="font-semibold text-xs">{formatCurrency(order.total_amount, currency, i18n.language)}</span>
                       </button>

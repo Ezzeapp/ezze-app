@@ -25,6 +25,7 @@ import { cn, generateSlug, getFileUrl } from '@/lib/utils'
 import { TeamAnalyticsTab } from './TeamAnalyticsTab'
 import { TeamCalendarTab } from './TeamCalendarTab'
 import { TeamSettingsTab } from './TeamSettingsTab'
+import { PRODUCT } from '@/lib/config'
 import dayjs from 'dayjs'
 
 // ── Модальное подтверждение ──────────────────────────────────────────────────
@@ -687,7 +688,8 @@ function OwnerView({ team }: { team: any }) {
 
   const tabs: { key: OwnerTab; label: string }[] = [
     { key: 'members',   label: t('team.tabMembers')   },
-    { key: 'calendar',  label: t('team.tabCalendar')  },
+    // Календарь бронирований не используется в workshop
+    ...(PRODUCT !== 'workshop' ? [{ key: 'calendar' as OwnerTab, label: t('team.tabCalendar') }] : []),
     { key: 'analytics', label: t('team.tabAnalytics') },
     { key: 'settings',  label: t('team.tabSettings')  },
   ]

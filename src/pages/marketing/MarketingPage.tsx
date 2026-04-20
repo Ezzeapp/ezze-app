@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Send, Bell, Tag, Gift, Star } from 'lucide-react'
@@ -9,6 +9,7 @@ import { AutoTab } from './tabs/AutoTab'
 import { PromoTab } from './tabs/PromoTab'
 import { LoyaltyTab } from './tabs/LoyaltyTab'
 import { ReviewsTab } from './tabs/ReviewsTab'
+import { PRODUCT } from '@/lib/config'
 
 type MarketingTab = 'broadcasts' | 'auto' | 'promo' | 'loyalty' | 'reviews'
 
@@ -18,8 +19,15 @@ export function MarketingPage() {
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
 
+  // Для workshop Auto-уведомления привязаны к appointment-флоу — не показываем,
+  // для workshop есть отдельная страница настроек шаблонов уведомлений.
+  const validTabs: MarketingTab[] = useMemo(() => (
+    PRODUCT === 'workshop'
+      ? ['broadcasts', 'promo', 'loyalty', 'reviews']
+      : ['broadcasts', 'auto', 'promo', 'loyalty', 'reviews']
+  ), [])
+
   const rawTab = searchParams.get('tab') as MarketingTab | null
-  const validTabs: MarketingTab[] = ['broadcasts', 'auto', 'promo', 'loyalty', 'reviews']
   const activeTab: MarketingTab = rawTab && validTabs.includes(rawTab) ? rawTab : DEFAULT_TAB
 
   // Если tab не задан — добавляем default
@@ -29,13 +37,14 @@ export function MarketingPage() {
     }
   }, [rawTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const tabs: { id: MarketingTab; label: string; icon: React.ElementType }[] = [
+  const allTabs: { id: MarketingTab; label: string; icon: React.ElementType }[] = [
     { id: 'broadcasts', label: t('marketing.tabBroadcasts'), icon: Send  },
     { id: 'auto',       label: t('marketing.tabAuto'),       icon: Bell  },
     { id: 'promo',      label: t('marketing.tabPromo'),      icon: Tag   },
     { id: 'loyalty',    label: t('marketing.tabLoyalty'),    icon: Gift  },
     { id: 'reviews',    label: t('marketing.tabReviews'),    icon: Star  },
   ]
+  const tabs = allTabs.filter(x => validTabs.includes(x.id))
 
   return (
     <div className="space-y-0">

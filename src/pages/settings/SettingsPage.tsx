@@ -166,8 +166,11 @@ export function SettingsPage() {
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'profile',   label: t('settings.tabProfile'),                        icon: User     },
     { id: 'interface', label: t('settings.tabInterface'),                      icon: Sun      },
-    { id: 'schedule',  label: t('nav.schedule'),                               icon: Clock    },
-    { id: 'public',    label: t('settings.tabPublicPage', 'Моя страница'),     icon: Layout   },
+    // Расписание и публичная витрина не применимы к workshop (приёмка, а не запись)
+    ...(PRODUCT !== 'workshop' ? [
+      { id: 'schedule' as Tab, label: t('nav.schedule'),                           icon: Clock  },
+      { id: 'public'   as Tab, label: t('settings.tabPublicPage', 'Моя страница'), icon: Layout },
+    ] : []),
     ...(PRODUCT === 'cleaning' ? [
       { id: 'receipt' as Tab, label: 'Квитанция', icon: FileText },
     ] : []),
