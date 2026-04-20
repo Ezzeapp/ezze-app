@@ -77,7 +77,9 @@
   },
   "common": {
     "save": "Сохранить",
+    "saving": "Сохранение...",
     "saved": "Сохранено",
+    "error": "Ошибка",
     "saveError": "Ошибка сохранения",
     "cancel": "Отмена",
     "back": "Назад",
@@ -692,6 +694,16 @@
     "tabBilling": "Биллинг",
     "tabEmail": "Email",
     "tabAI": "ИИ",
+    "homeScreen": {
+      "title": "Главный экран",
+      "mode": "Режим навигации",
+      "modeSidebar": "Сайдбар",
+      "modeTiles": "Плитки",
+      "tiles": "Плитки",
+      "addTile": "Добавить плитку",
+      "resetDefault": "Сбросить к дефолту",
+      "save": "Сохранить"
+    },
     "specialtiesTitle": "Справочник специальностей",
     "specialtiesDesc": "Управление видами деятельности и специальностями для мастеров",
     "openSpecialties": "Открыть справочник",
@@ -2317,15 +2329,42 @@
       "defect": "Неисправность (со слов клиента)",
       "visible": "Внешний вид / видимые дефекты",
       "completeness": "Комплектность",
+      "completenessChecklist": "Комплектность",
+      "completenessExtra": "Другое (свободный ввод)",
+      "completenessOptions": {
+        "charger": "Зарядка",
+        "cable": "Кабель",
+        "box": "Коробка",
+        "case": "Чехол",
+        "glass": "Стекло",
+        "sim": "SIM-карта",
+        "sdcard": "Карта памяти",
+        "stylus": "Стилус",
+        "remote": "Пульт"
+      },
+      "unlockCode": "Пароль / графический ключ",
+      "unlockCodePlaceholder": "Напр. 1234 или L-образный",
+      "unlockCodeHint": "Хранится в заказе. Не попадает в печать квитанции.",
+      "priority": "Срочность",
+      "priorityNormal": "Обычно",
+      "priorityUrgent": "Срочно",
+      "priorityExpress": "Экспресс",
       "diagnosticPrice": "Цена диагностики",
       "estimated": "Предварительная оценка",
       "prepaid": "Предоплата",
       "readyDate": "Срок готовности",
+      "preset1d": "+1 день",
+      "preset3d": "+3 дня",
+      "preset7d": "+7 дней",
       "warrantyDays": "Гарантия (дней)",
       "notes": "Внутренние заметки",
       "cancel": "Отмена",
       "create": "Создать заказ",
-      "created": "Заказ {{number}} создан"
+      "created": "Заказ {{number}} создан",
+      "clientConsent": "Клиент ознакомлен с условиями приёма устройства в ремонт",
+      "nextNumber": "Следующий №",
+      "searchTypesPlaceholder": "Поиск типа устройства…",
+      "photos": "Фото устройства"
     },
     "detail": {
       "back": "Назад",
@@ -2367,7 +2406,12 @@
       "cancel": "Отмена",
       "confirmDelete": "Удалить заказ {{number}}?",
       "confirmDeleteHint": "Действие необратимо. Будут удалены работы, запчасти и история.",
-      "deleted": "Заказ удалён"
+      "deleted": "Заказ удалён",
+      "consentedAt": "Клиент подписал:"
     }
+  },
+  "homeScreen": {
+    "welcome": "Добро пожаловать",
+    "back": "Главная"
   }
 }

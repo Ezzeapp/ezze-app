@@ -13,6 +13,7 @@ import { useDynamicFavicon } from '@/hooks/useDynamicFavicon'
 import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/lib/supabase'
 import { PRODUCT } from '@/lib/config'
+import { useHomeScreenConfig } from '@/hooks/useAppSettings'
 
 const inTelegram = isTelegramMiniApp()
 
@@ -34,6 +35,8 @@ export function AppLayout() {
   const isWide = WIDE_ROUTES.includes(location.pathname)
   const queryClient = useQueryClient()
   const { data: existingProfile } = useProfile()
+  const { data: homeScreenConfig } = useHomeScreenConfig()
+  const isTilesMode = homeScreenConfig?.mode === 'tiles'
 
   useAppointmentsRealtime()
   useClientsRealtime()
@@ -105,13 +108,15 @@ export function AppLayout() {
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background">
-      {/* Desktop Sidebar — только lg+ */}
-      <aside className="hidden lg:flex lg:w-60 lg:flex-col lg:fixed lg:inset-y-0">
-        <Sidebar />
-      </aside>
+      {/* Desktop Sidebar — только lg+, скрыт в tiles-режиме */}
+      {!isTilesMode && (
+        <aside className="hidden lg:flex lg:w-60 lg:flex-col lg:fixed lg:inset-y-0">
+          <Sidebar />
+        </aside>
+      )}
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-hidden lg:pl-60">
+      <div className={`flex flex-1 flex-col overflow-hidden ${isTilesMode ? '' : 'lg:pl-60'}`}>
         <TopBar />
         <main className={isFullscreen ? 'flex-1 overflow-hidden flex flex-col' : 'flex-1 overflow-y-auto overflow-x-hidden'}>
           {isFullscreen ? (
@@ -129,8 +134,8 @@ export function AppLayout() {
         </main>
       </div>
 
-      {/* Нижняя навигация — только на мобиле (lg:hidden внутри компонента) */}
-      <BottomNav />
+      {/* Нижняя навигация — только на мобиле, скрыта в tiles-режиме */}
+      {!isTilesMode && <BottomNav />}
 
       {showOnboarding && (
         <OnboardingWizard

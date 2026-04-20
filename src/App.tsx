@@ -1,9 +1,13 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { PRODUCT } from '@/lib/config'
+import { useHomeScreenConfig } from '@/hooks/useAppSettings'
+import { HomeScreen } from '@/pages/home/HomeScreen'
 
-/** Для cleaning/workshop → Заказы, для farm → ферма, для остальных → Календарь */
+/** Tiles-режим: показываем HomeScreen. Sidebar-режим: редирект по продукту */
 function DefaultRedirect() {
+  const { data: config } = useHomeScreenConfig()
+  if (config?.mode === 'tiles') return <HomeScreen />
   if (PRODUCT === 'cleaning') return <Navigate to="/orders" replace />
   if (PRODUCT === 'workshop') return <Navigate to="/orders" replace />
   if (PRODUCT === 'farm')     return <Navigate to="/farm" replace />

@@ -2369,5 +2369,9 @@
       "confirmDeleteHint": "This cannot be undone. Works, parts and history will be deleted.",
       "deleted": "Order deleted"
     }
+  },
+  "homeScreen": {
+    "welcome": "Welcome",
+    "back": "Home"
   }
 }

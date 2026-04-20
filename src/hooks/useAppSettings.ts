@@ -561,3 +561,59 @@ export function useUpdateTgConfig() {
     onSuccess: () => qc.invalidateQueries({ queryKey: [APP_SETTINGS_KEY, 'tg_config'] }),
   })
 }
+
+// ── Home Screen Config ─────────────────────────────────────────────────────
+
+export interface HomeScreenTile {
+  id: string
+  label: Record<string, string>  // { ru, en, kz, uz, ... }
+  icon: string
+  route: string
+  visible: boolean
+  order: number
+}
+
+export interface HomeScreenConfig {
+  mode: 'sidebar' | 'tiles'
+  tiles: HomeScreenTile[]
+}
+
+const DEFAULT_HOME_SCREEN_CONFIG: HomeScreenConfig = { mode: 'sidebar', tiles: [] }
+
+export function useHomeScreenConfig() {
+  return useQuery({
+    queryKey: [APP_SETTINGS_KEY, 'home_screen_config'],
+    queryFn: async (): Promise<HomeScreenConfig> => {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'home_screen_config')
+        .eq('product', PRODUCT)
+        .maybeSingle()
+      if (!data?.value) return DEFAULT_HOME_SCREEN_CONFIG
+      try {
+        return JSON.parse(data.value) as HomeScreenConfig
+      } catch {
+        return DEFAULT_HOME_SCREEN_CONFIG
+      }
+    },
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useUpdateHomeScreenConfig() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (config: HomeScreenConfig) => {
+      const value = JSON.stringify(config)
+      const { data, error } = await supabase
+        .from('app_settings')
+        .upsert({ product: PRODUCT, key: 'home_screen_config', value }, { onConflict: 'product,key' })
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [APP_SETTINGS_KEY, 'home_screen_config'] }),
+  })
+}

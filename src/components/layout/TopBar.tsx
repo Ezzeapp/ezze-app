@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { LogOut, User, ExternalLink, Search } from 'lucide-react'
+import { LogOut, User, ExternalLink, Search, ChevronLeft } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useHomeScreenConfig } from '@/hooks/useAppSettings'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -17,7 +18,10 @@ export function TopBar() {
   const { t } = useTranslation()
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchOpen, setSearchOpen] = useState(false)
+  const { data: homeScreenConfig } = useHomeScreenConfig()
+  const showHomeButton = homeScreenConfig?.mode === 'tiles' && location.pathname !== '/'
 
   // Cmd+K / Ctrl+K shortcut
   useEffect(() => {
@@ -39,6 +43,18 @@ export function TopBar() {
     <>
       <header className="border-b bg-background pt-tg-safe">
         <div className="flex h-14 items-center gap-4 px-4 lg:px-6">
+        {/* Кнопка "← Главная" в tiles-режиме */}
+        {showHomeButton && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/')}
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground px-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span className="text-sm">{t('homeScreen.back')}</span>
+          </Button>
+        )}
         {/* Search trigger — slim input-like button on desktop, icon on mobile */}
         <Button
           variant="outline"

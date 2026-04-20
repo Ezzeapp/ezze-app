@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
-import { Shield, Zap, Users, BookOpen, Palette, CreditCard, Mail, Bot, UserCheck, BarChart2, LifeBuoy } from 'lucide-react'
+import { Shield, Zap, Users, BookOpen, Palette, CreditCard, Mail, Bot, UserCheck, BarChart2, LifeBuoy, LayoutGrid } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
@@ -15,9 +15,10 @@ import { AdminAITab } from '@/components/admin/AdminAITab'
 import { AdminTgClientsTab } from '@/components/admin/AdminTgClientsTab'
 import { AdminReportsTab } from '@/components/admin/AdminReportsTab'
 import { AdminSupportTab } from '@/components/admin/AdminSupportTab'
+import { AdminHomeScreenTab } from '@/components/admin/AdminHomeScreenTab'
 import { useAdminSupportTickets } from '@/hooks/useSupportTickets'
 
-type Tab = 'features' | 'users' | 'catalogs' | 'appearance' | 'billing' | 'email' | 'ai' | 'tg_clients' | 'reports' | 'support'
+type Tab = 'features' | 'users' | 'catalogs' | 'appearance' | 'billing' | 'email' | 'ai' | 'tg_clients' | 'reports' | 'support' | 'home_screen'
 
 export function AdminPage() {
   const { t } = useTranslation()
@@ -42,7 +43,8 @@ export function AdminPage() {
     { id: 'ai',         label: t('admin.tabAI'),         icon: Bot },
     { id: 'tg_clients', label: 'Клиенты',                icon: UserCheck },
     { id: 'reports',    label: 'Отчёты',                 icon: BarChart2  },
-    { id: 'support',    label: 'Поддержка',              icon: LifeBuoy, badge: newSupportCount },
+    { id: 'support',     label: 'Поддержка',               icon: LifeBuoy, badge: newSupportCount },
+    { id: 'home_screen', label: t('admin.homeScreen.title'), icon: LayoutGrid },
   ]
 
   return (
@@ -117,6 +119,7 @@ export function AdminPage() {
           {tab === 'tg_clients' && <AdminTgClientsTab />}
           {tab === 'reports'    && <AdminReportsTab />}
           {tab === 'support'    && <AdminSupportTab />}
+          {tab === 'home_screen' && <AdminHomeScreenTab />}
         </div>
       </div>
     </div>
