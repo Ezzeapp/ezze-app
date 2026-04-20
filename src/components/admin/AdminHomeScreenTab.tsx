@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useToast } from '@/hooks/useToast'
+import { toast } from '@/components/shared/Toaster'
 
 const ICON_OPTIONS: { value: string; Icon: LucideIcon }[] = [
   { value: 'ClipboardList', Icon: ClipboardList },
@@ -57,7 +57,6 @@ const LABEL_LANGS = [
 
 export function AdminHomeScreenTab() {
   const { t } = useTranslation()
-  const { toast } = useToast()
   const { data: config, isLoading } = useHomeScreenConfig()
   const updateConfig = useUpdateHomeScreenConfig()
 
@@ -81,9 +80,9 @@ export function AdminHomeScreenTab() {
     }
     try {
       await updateConfig.mutateAsync(cfg)
-      toast({ title: t('common.saved'), variant: 'default' })
+      toast.success(t('common.saved'))
     } catch {
-      toast({ title: t('common.error'), variant: 'destructive' })
+      toast.error(t('common.error'))
     }
   }
 
