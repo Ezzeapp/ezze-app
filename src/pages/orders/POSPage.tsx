@@ -672,7 +672,7 @@ export function POSPage() {
             >
               <Star className="h-3.5 w-3.5" />
               Избранное
-              {favourites.size > 0 && <span className="ml-0.5 text-xs opacity-80">({favourites.size})</span>}
+              {favouriteTypes.length > 0 && <span className="ml-0.5 text-xs opacity-80">({favouriteTypes.length})</span>}
             </button>
           </div>
 
@@ -808,13 +808,6 @@ export function POSPage() {
                         <span className="text-xs text-muted-foreground">{type.default_days} дн.</span>
                       </button>
                     ))}
-                    <button
-                      onClick={addCustomItem}
-                      className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl border border-dashed text-muted-foreground hover:border-primary hover:text-primary transition-all"
-                    >
-                      <Plus className="h-5 w-5" />
-                      <span className="text-xs">Своё</span>
-                    </button>
                   </div>
                 ) : (
                   /* Список: партиями по 20 */
