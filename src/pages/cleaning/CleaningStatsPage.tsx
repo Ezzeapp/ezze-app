@@ -497,7 +497,7 @@ export function CleaningStatsPage() {
       )}
 
       {/* Tab navigation */}
-      <div className="flex border-b mb-8 overflow-x-auto scrollbar-none">
+      <div className="flex border-b overflow-x-auto scrollbar-none">
         {TABS.map(tabDef => (
           <button
             key={tabDef.id}
@@ -515,6 +515,7 @@ export function CleaningStatsPage() {
       </div>
 
       {/* Loading */}
+      <div className="mt-6">
       {isLoading ? (
         <div className="flex items-center justify-center h-48">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -917,6 +918,7 @@ export function CleaningStatsPage() {
           )}
         </>
       )}
+      </div>
     </div>
   )
 }
