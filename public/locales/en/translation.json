@@ -587,7 +587,15 @@
     "tabRecurring": "Repeat",
     "selectTimeFirst": "Select a time first",
     "tabDetails": "Details",
-    "summary": "Summary"
+    "summary": "Summary",
+    "searchClient": "Search by name and phone",
+    "guestPhone": "Phone",
+    "noServicesYet": "No services selected",
+    "createAppt": "Create appointment",
+    "saveDraft": "Save draft",
+    "busySlots": "Busy: {{count}}",
+    "searchService": "Search service",
+    "allServices": "All services"
   },
   "calendar": {
     "week": "Week",

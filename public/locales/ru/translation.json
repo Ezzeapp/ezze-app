@@ -589,7 +589,15 @@
     "tabNote": "Заметка",
     "tabRecurring": "Повтор",
     "tabDetails": "Детали",
-    "summary": "Итог"
+    "summary": "Итог",
+    "searchClient": "Поиск по имени и телефону",
+    "guestPhone": "Телефон",
+    "noServicesYet": "Услуги не выбраны",
+    "createAppt": "Создать запись",
+    "saveDraft": "Сохранить черновик",
+    "busySlots": "Занято: {{count}}",
+    "searchService": "Поиск услуги",
+    "allServices": "Все услуги"
   },
   "calendar": {
     "week": "Неделя",

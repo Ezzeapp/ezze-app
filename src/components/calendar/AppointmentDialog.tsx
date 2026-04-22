@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Search, Clock, X, Percent, User, UserPlus, CalendarCheck, ChevronLeft, ChevronRight, Copy, ArrowRightLeft, Plus, CreditCard, StickyNote, Repeat, Info, Printer, CheckCircle2 } from 'lucide-react'
+import { Search, Clock, X, Percent, User, UserPlus, CalendarCheck, ChevronLeft, ChevronRight, Copy, ArrowRightLeft, Plus, CreditCard, StickyNote, Repeat, Info, Printer, CheckCircle2, Banknote, MoreHorizontal } from 'lucide-react'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import { supabase } from '@/lib/supabase'
@@ -892,7 +892,7 @@ export function AppointmentDialog({
   )
 
   // ── Блок ЦЕНА ─────────────────────────────────────────────────────────────
-  const PRESETS = adjustMode === 'discount' ? [5, 10, 15] : [5, 10, 15]
+  const PRESETS = adjustMode === 'discount' ? [0, 5, 10, 15] : [0, 5, 10, 15]
   const activePreset = adjustMode === 'discount' ? effectiveDiscount : effectiveSurcharge
   const customAdjust = adjustMode === 'discount' ? customDiscount : customSurcharge
 
@@ -1121,15 +1121,9 @@ export function AppointmentDialog({
         <DialogHeader className="px-5 pt-4 pb-3 border-b shrink-0">
           <DialogTitle className="flex items-center gap-3">
             {editAppt ? t('appointments.edit') : t('appointments.add')}
-            {canSave && (
-              <span className="hidden lg:flex items-center gap-2 text-xs font-normal text-muted-foreground ml-auto pr-6">
-                <CalendarCheck className="h-3.5 w-3.5 text-primary shrink-0" />
-                {dayjs(selectedDate).format('D MMM')} · {selectedTime}
-                {totalDuration > 0 && (
-                  <span className="text-muted-foreground/60">→ {minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)}</span>
-                )}
-              </span>
-            )}
+            <span className="hidden lg:flex items-center gap-1.5 text-xs font-normal text-muted-foreground/60 ml-auto pr-6">
+              ESC — закрыть · ⌘S — сохранить
+            </span>
           </DialogTitle>
         </DialogHeader>
 
@@ -1830,15 +1824,79 @@ export function AppointmentDialog({
 
                   {/* ── КОЛ 2: УСЛУГА + ДАТА + ВРЕМЯ (44%) ── */}
                   <div className="flex flex-col w-[44%] overflow-hidden">
-                    {/* Услуга */}
-                    <div className="shrink-0 px-4 pt-3 pb-2 border-b">
-                      {servicesBlock}
+
+                    {/* ── УСЛУГА: поиск + прокручиваемый список ── */}
+                    <div className="shrink-0 border-b">
+                      <div className="px-4 pt-3 pb-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                            {t('appointments.service')}
+                            {selectedSvcs.length > 0 && (
+                              <span className="bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">{selectedSvcs.length}</span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                          <Input
+                            className="pl-9 pr-9 h-9 text-sm"
+                            placeholder={t('appointments.searchService')}
+                            value={svcSearch}
+                            onChange={e => setSvcSearch(e.target.value)}
+                          />
+                          {svcSearch && (
+                            <button type="button" onClick={() => setSvcSearch('')}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {/* Прокручиваемый список услуг */}
+                      <div className="max-h-[210px] overflow-y-auto px-3 pb-2 space-y-0.5">
+                        {filteredSvcs.map(svc => {
+                          const isSel = !!selectedSvcs.find(s => s.id === svc.id)
+                          const catColor = svc.expand?.category?.color
+                          const catName  = svc.expand?.category?.name
+                          return (
+                            <button key={svc.id} type="button" onClick={() => toggleSvc(svc)}
+                              className={`w-full flex items-stretch rounded-xl transition-all text-left overflow-hidden ${
+                                isSel ? 'bg-foreground' : 'hover:bg-muted/50'
+                              }`}>
+                              {/* Цветная полоска категории */}
+                              <div className="w-1 shrink-0 rounded-l-xl" style={{ backgroundColor: catColor || 'transparent' }} />
+                              <div className="flex items-center gap-3 px-3 py-2.5 flex-1 min-w-0">
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm font-medium truncate ${isSel ? 'text-background' : ''}`}>{svc.name}</p>
+                                  <p className={`text-[11px] leading-tight ${isSel ? 'text-background/60' : 'text-muted-foreground'}`}>
+                                    {catName ? `${catName} · ` : ''}{formatDuration(svc.duration_min, t)}
+                                  </p>
+                                </div>
+                                {svc.price > 0 && (
+                                  <span className={`shrink-0 text-sm font-semibold ${isSel ? 'text-background' : ''}`}>
+                                    {formatCurrency(svc.price, currency, i18n.language)}
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          )
+                        })}
+                        {filteredSvcs.length === 0 && (
+                          <p className="text-xs text-muted-foreground text-center py-3">{t('booking.noServices')}</p>
+                        )}
+                      </div>
+                      {svcBlockedWarning && (
+                        <div className="mx-3 mb-2 flex items-start gap-2 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
+                          <p className="text-xs text-amber-700 dark:text-amber-400">⚠️ {svcBlockedWarning} — {t('appointments.changeTimeOrService')}</p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Дата + Время скролл */}
                     <div className="flex-1 overflow-y-auto">
                     {/* Месячный мини-календарь */}
                     <div className="px-4 pt-3 pb-2 shrink-0">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{t('appointments.date')}</p>
                       {/* Навигация месяц */}
                       <div className="flex items-center justify-between mb-2">
                         <button type="button"
@@ -1895,11 +1953,15 @@ export function AppointmentDialog({
                     </div>
 
                     {/* Слоты времени */}
-                    <div className="flex-1 overflow-y-auto border-t px-4 pt-3 pb-4">
+                    <div className="border-t px-4 pt-3 pb-4">
                       <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-2">
                         {t('appointments.time')}
-                        {totalDuration > 0 && <span className="font-normal normal-case text-muted-foreground">· {formatDuration(totalDuration, t)}</span>}
-                        {slotsLoading && <span className="ml-auto"><div className="h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></span>}
+                        {slots.length > 0 && (
+                          <span className="ml-auto font-normal normal-case text-[11px] text-muted-foreground/60">
+                            {t('appointments.busySlots', { count: slots.filter(s => s.busy).length })}
+                          </span>
+                        )}
+                        {slotsLoading && <span><div className="h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></span>}
                       </p>
                       <div className={`relative transition-opacity duration-150 ${slotsLoading ? 'opacity-40 pointer-events-none' : ''}`}>
                         {slots.length === 0 && !slotsLoading ? (
@@ -1948,6 +2010,21 @@ export function AppointmentDialog({
                           </>
                         )}
                       </div>
+                      {/* Диапазон времени */}
+                      {selectedTime && totalDuration > 0 && (
+                        <div className="flex items-center gap-1.5 mt-2.5 text-xs text-muted-foreground">
+                          <Clock className="h-3.5 w-3.5 shrink-0" />
+                          С {selectedTime} до {minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)} — {formatDuration(totalDuration, t)}
+                        </div>
+                      )}
+                      {/* Повторяющаяся запись */}
+                      {!editAppt && showRecurring && (
+                        <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                          <Repeat className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <p className="text-xs flex-1">{t('appointments.recurring')}</p>
+                          <Switch checked={recurring} onCheckedChange={setRecurring} />
+                        </div>
+                      )}
                     </div>
                     </div>{/* конец flex-1 overflow-y-auto центральной колонки */}
                   </div>
@@ -2045,89 +2122,82 @@ export function AppointmentDialog({
 
                       {/* Скидка / Наценка */}
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex rounded-lg border overflow-hidden shrink-0">
-                            <button type="button" onClick={() => handleModeSwitch('discount')}
-                              className={`px-3 h-7 text-xs font-medium transition-all border-r ${adjustMode === 'discount' ? 'bg-emerald-500 text-white' : 'bg-background text-muted-foreground hover:text-emerald-600'}`}>
-                              {t('appointments.discount')}
-                            </button>
-                            <button type="button" onClick={() => handleModeSwitch('surcharge')}
-                              className={`px-3 h-7 text-xs font-medium transition-all ${adjustMode === 'surcharge' ? 'bg-orange-500 text-white' : 'bg-background text-muted-foreground hover:text-orange-500'}`}>
-                              {t('appointments.surcharge')}
-                            </button>
-                          </div>
-                          <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : effectiveDiscount > 0 ? 'text-emerald-600' : 'text-muted-foreground/40'}`}>
-                            {effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : effectiveDiscount > 0 ? `−${effectiveDiscount}%` : adjustMode === 'discount' ? '−%' : '+%'}
-                          </span>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          {t('appointments.addDiscount')}
+                        </p>
+                        <div className="flex rounded-lg border overflow-hidden">
+                          <button type="button" onClick={() => handleModeSwitch('discount')}
+                            className={`flex-1 h-8 text-xs font-medium transition-all border-r ${adjustMode === 'discount' ? 'bg-emerald-500 text-white' : 'bg-background text-muted-foreground hover:text-emerald-600'}`}>
+                            {t('appointments.discount')}
+                          </button>
+                          <button type="button" onClick={() => handleModeSwitch('surcharge')}
+                            className={`flex-1 h-8 text-xs font-medium transition-all ${adjustMode === 'surcharge' ? 'bg-orange-500 text-white' : 'bg-background text-muted-foreground hover:text-orange-500'}`}>
+                            {t('appointments.surcharge')}
+                          </button>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                           {PRESETS.map(p => (
                             <button key={p} type="button" onClick={() => handlePresetClick(p)}
-                              className={`h-7 px-2 rounded-lg border text-xs font-medium transition-all flex-1 ${activePreset === p ? adjustMode === 'discount' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-orange-500 border-orange-500 text-white' : adjustMode === 'discount' ? 'border-border hover:border-emerald-400 hover:text-emerald-600' : 'border-border hover:border-orange-400 hover:text-orange-500'}`}>
+                              className={`h-8 rounded-lg border text-xs font-medium transition-all flex-1 ${
+                                activePreset === p
+                                  ? adjustMode === 'discount'
+                                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                                    : 'bg-orange-500 border-orange-500 text-white'
+                                  : adjustMode === 'discount'
+                                    ? 'border-border hover:border-emerald-400 hover:text-emerald-600'
+                                    : 'border-border hover:border-orange-400 hover:text-orange-500'
+                              }`}>
                               {p}%
                             </button>
                           ))}
-                          <div className="relative flex-1">
-                            <Percent className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
-                            <Input type="number" min={0} max={100}
-                              className="h-7 w-full pr-6 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              placeholder="0" value={customAdjust} onChange={e => handleCustomChange(e.target.value)} />
-                          </div>
                         </div>
                       </div>
 
                       {/* Способ оплаты */}
-                      <div className="grid grid-cols-2 gap-1">
-                        {([
-                          { key: 'cash',     label: t('appointments.paymentCash') },
-                          { key: 'card',     label: t('appointments.paymentCard') },
-                          { key: 'transfer', label: t('appointments.paymentTransfer') },
-                          { key: 'other',    label: t('appointments.paymentOther') },
-                        ] as const).map(m => (
-                          <button key={m.key} type="button"
-                            onClick={() => setPaymentMethod(paymentMethod === m.key ? '' : m.key)}
-                            className={`py-2 px-3 rounded-lg text-xs font-medium transition-colors ${paymentMethod === m.key ? 'bg-primary/10 text-primary' : 'bg-muted/40 text-muted-foreground hover:bg-muted'}`}>
-                            {m.label}
-                          </button>
-                        ))}
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                          {t('appointments.paymentMethod')}
+                        </p>
+                        <div className="grid grid-cols-2 gap-1">
+                          {([
+                            { key: 'cash',     label: t('appointments.paymentCash'),     Icon: Banknote },
+                            { key: 'card',     label: t('appointments.paymentCard'),     Icon: CreditCard },
+                            { key: 'transfer', label: t('appointments.paymentTransfer'), Icon: ArrowRightLeft },
+                            { key: 'other',    label: t('appointments.paymentOther'),    Icon: MoreHorizontal },
+                          ] as const).map(m => (
+                            <button key={m.key} type="button"
+                              onClick={() => setPaymentMethod(paymentMethod === m.key ? '' : m.key)}
+                              className={`flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-colors ${paymentMethod === m.key ? 'bg-foreground text-background' : 'bg-muted/40 text-muted-foreground hover:bg-muted'}`}>
+                              <m.Icon className="h-3.5 w-3.5 shrink-0" />
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
                       {/* Заметки */}
-                      {showNotes && (
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
-                            {t('appointments.tabNote')}
-                          </p>
-                          <Textarea rows={2} className="text-sm resize-none min-h-0"
-                            placeholder={t('booking.commentPlaceholder')}
-                            value={notes} onChange={e => setNotes(e.target.value)} />
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                          {t('appointments.tabNote')}
+                        </p>
+                        <Textarea rows={2} className="text-sm resize-none min-h-0"
+                          placeholder={t('booking.commentPlaceholder')}
+                          value={notes} onChange={e => setNotes(e.target.value)} />
+                      </div>
+
+                      {/* TG уведомление */}
+                      {!editAppt && hasTelegram && (
+                        <div className="flex items-center justify-between pt-1 border-t">
+                          <p className="text-xs">{t('appointments.notifyTelegram')}</p>
+                          <Switch checked={notifyTg} onCheckedChange={setNotifyTg} />
                         </div>
                       )}
-
-                      {/* TG уведомление + Повтор */}
-                      {!editAppt && (hasTelegram || showRecurring) && (
-                        <div className="space-y-2 pt-1 border-t">
-                          {hasTelegram && (
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs">{t('appointments.notifyTelegram')}</p>
-                              <Switch checked={notifyTg} onCheckedChange={setNotifyTg} />
-                            </div>
-                          )}
-                          {showRecurring && (
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <p className="text-xs font-medium">{t('appointments.recurring')}</p>
-                                <Switch checked={recurring} onCheckedChange={setRecurring} />
-                              </div>
-                              {recurring && (
-                                <div className="flex items-center gap-2">
-                                  <p className="text-xs text-muted-foreground shrink-0">{t('appointments.recurringWeeks')}</p>
-                                  <Input type="number" min={2} max={52} className="w-20 h-7 text-xs"
-                                    value={recurringWeeks} onChange={e => setRecurringWeeks(Number(e.target.value))} />
-                                </div>
-                              )}
-                            </div>
-                          )}
+                      {/* Повтор (недели) — когда recurring включён через toggle в блоке ВРЕМЯ */}
+                      {!editAppt && showRecurring && recurring && (
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-muted-foreground shrink-0">{t('appointments.recurringWeeks')}</p>
+                          <Input type="number" min={2} max={52} className="w-20 h-7 text-xs"
+                            value={recurringWeeks} onChange={e => setRecurringWeeks(Number(e.target.value))} />
                         </div>
                       )}
 
@@ -2206,6 +2276,13 @@ export function AppointmentDialog({
                 {/* ── ФУТЕР ДЕСКТОПА ── */}
                 <div className="shrink-0 border-t px-4 py-3 flex items-center justify-between bg-background">
                   <div className="flex items-center gap-2">
+                    {!editAppt && (
+                      <button type="button"
+                        onClick={() => { draft.save({ serviceIds: selectedSvcs.map(s => s.id), date: selectedDate, time: selectedTime, clientId: selectedClient?.id ?? null, isGuest, guestName, guestPhone, priceInput, notes, discount, customDiscount, paymentMethod }); toast.success(t('draft.found')) }}
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                        {t('appointments.saveDraft')}
+                      </button>
+                    )}
                     {editAppt && onDelete && (
                       <Button type="button" size="sm" variant="destructive" className="gap-1" onClick={onDelete}>
                         {t('common.delete')}
