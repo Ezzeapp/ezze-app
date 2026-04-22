@@ -1704,16 +1704,16 @@ export function AppointmentDialog({
               {/* ── БОЛЬШОЙ ДЕСКТОП (≥ lg) ─── */}
               <div className="hidden lg:flex flex-col flex-1 overflow-hidden">
                 {/* L-форма + Правая панель сводки */}
-                <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 flex overflow-hidden bg-muted/20">
 
                   {/* ── ЛЕВАЯ ОБЛАСТЬ (L-форма) ── */}
-                  <div className="flex-1 flex flex-col border-r overflow-hidden">
+                  <div className="flex-1 flex flex-col overflow-hidden p-3 gap-3">
 
                     {/* ВЕРХНИЙ РЯД: Клиент | Услуга */}
-                    <div className="flex border-b shrink-0">
+                    <div className="flex shrink-0 gap-3">
 
                       {/* КОЛ: КЛИЕНТ */}
-                      <div className="flex flex-col w-1/2 border-r overflow-hidden">
+                      <div className="flex flex-col w-1/2 overflow-hidden rounded-xl border bg-background">
                         <div className="shrink-0 px-4 pt-3 pb-2">
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1785,7 +1785,7 @@ export function AppointmentDialog({
                                     key={c.id}
                                     type="button"
                                     onClick={() => { setSelectedClient(c); setIsGuest(false); setClientSearch('') }}
-                                    className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-xl border transition-all text-left ${
+                                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-xl border transition-all text-left ${
                                       isSelected
                                         ? 'bg-primary/10 border-primary/40'
                                         : 'border-transparent hover:bg-muted/50'
@@ -1804,11 +1804,18 @@ export function AppointmentDialog({
                                         <p className="text-[11px] text-muted-foreground truncate leading-tight">{c.phone}</p>
                                       )}
                                     </div>
-                                    {(c.total_visits ?? 0) > 0 && (
-                                      <span className="shrink-0 text-[10px] text-muted-foreground">
-                                        {c.total_visits} виз.
-                                      </span>
-                                    )}
+                                    <div className="shrink-0 flex flex-col items-end gap-0.5">
+                                      {(c.total_visits ?? 0) > 0 && (
+                                        <span className="text-[10px] font-medium text-muted-foreground leading-none">
+                                          {c.total_visits} виз.
+                                        </span>
+                                      )}
+                                      {c.last_visit && (
+                                        <span className="text-[10px] text-muted-foreground/70 leading-none">
+                                          {dayjs(c.last_visit).format('D MMM')}
+                                        </span>
+                                      )}
+                                    </div>
                                   </button>
                                 )
                               })}
@@ -1818,7 +1825,7 @@ export function AppointmentDialog({
                       </div>
 
                       {/* КОЛ: УСЛУГА */}
-                      <div className="flex flex-col w-1/2 overflow-hidden">
+                      <div className="flex flex-col w-1/2 overflow-hidden rounded-xl border bg-background">
                         <div className="shrink-0 px-4 pt-3 pb-2">
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
@@ -1855,7 +1862,7 @@ export function AppointmentDialog({
                                   isSel ? 'bg-foreground' : 'hover:bg-muted/50'
                                 }`}>
                                 <div className="w-1 shrink-0 rounded-l-xl" style={{ backgroundColor: catColor || 'transparent' }} />
-                                <div className="flex items-center gap-3 px-3 py-2.5 flex-1 min-w-0">
+                                <div className="flex items-center gap-3 px-3 py-2 flex-1 min-w-0">
                                   <div className="flex-1 min-w-0">
                                     <p className={`text-sm font-medium truncate ${isSel ? 'text-background' : ''}`}>{svc.name}</p>
                                     <p className={`text-[11px] leading-tight ${isSel ? 'text-background/60' : 'text-muted-foreground'}`}>
@@ -1884,7 +1891,7 @@ export function AppointmentDialog({
                     </div>
 
                     {/* НИЖНИЙ РЯД: Календарь | Слоты времени */}
-                    <div className="flex-1 flex overflow-hidden">
+                    <div className="flex-1 flex overflow-hidden rounded-xl border bg-background">
 
                       {/* Календарь */}
                       <div className="w-[290px] border-r overflow-y-auto px-4 pt-3 pb-4 shrink-0">
@@ -2018,8 +2025,8 @@ export function AppointmentDialog({
                   </div>
 
                   {/* ── ПРАВАЯ ПАНЕЛЬ: СВОДКА (320px) ── */}
-                  <div className="w-[320px] flex flex-col overflow-hidden border-l bg-muted/20">
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  <div className="w-[340px] flex flex-col overflow-hidden p-3 pl-0">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 rounded-xl border bg-background">
 
                       {/* Сводка */}
                       <div>
