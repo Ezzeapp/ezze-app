@@ -1746,7 +1746,7 @@ export function AppointmentDialog({
                             </div>
                           )}
                         </div>
-                        <div className="h-[200px] overflow-y-auto px-3 pb-3 space-y-1">
+                        <div className="h-[208px] overflow-y-auto px-3 pb-2 space-y-1">
                           {showNewClient ? (
                             <div className="border rounded-xl p-3 space-y-2 bg-muted/30">
                               <p className="text-sm font-medium">{t('appointments.newClientTitle')}</p>
@@ -1844,7 +1844,7 @@ export function AppointmentDialog({
                             )}
                           </div>
                         </div>
-                        <div className="h-[200px] overflow-y-auto px-3 pb-2 space-y-0.5">
+                        <div className="h-[208px] overflow-y-auto px-3 pb-2 space-y-0.5">
                           {filteredSvcs.map(svc => {
                             const isSel = !!selectedSvcs.find(s => s.id === svc.id)
                             const catColor = svc.expand?.category?.color
