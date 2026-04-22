@@ -256,9 +256,36 @@ export function POSPage() {
   const [clientSearch, setClientSearch] = useState('')
   const [clientId, setClientId] = useState<string | null>(null)
   const [clientName, setClientName] = useState('')
+  const [selectedClient, setSelectedClient] = useState<{ first_name: string; last_name?: string | null; phone?: string | null } | null>(null)
   const [showClientList, setShowClientList] = useState(false)
   const { data: clientsData } = useClientsPaged(clientSearch, 1, 20)
   const clients = clientsData?.items ?? []
+
+  // Bulk-статистика для результатов поиска (cleaning)
+  const clientSearchIds = clients.map((c: any) => c.id)
+  const { data: searchStatsMap } = useQuery({
+    queryKey: ['pos_search_stats', clientSearchIds, PRODUCT],
+    queryFn: async () => {
+      if (!clientSearchIds.length) return {}
+      const { data } = await supabase
+        .from('cleaning_orders')
+        .select('client_id, payment_status, total_amount, created_at')
+        .in('client_id', clientSearchIds)
+        .eq('product', PRODUCT)
+        .order('created_at', { ascending: false })
+      const rows = data ?? []
+      const map: Record<string, { count: number; spent: number; last: string | null }> = {}
+      for (const row of rows) {
+        if (!row.client_id) continue
+        if (!map[row.client_id]) map[row.client_id] = { count: 0, spent: 0, last: null }
+        map[row.client_id].count++
+        if (row.payment_status === 'paid') map[row.client_id].spent += row.total_amount || 0
+        if (!map[row.client_id].last) map[row.client_id].last = row.created_at
+      }
+      return map
+    },
+    enabled: clientSearchIds.length > 0,
+  })
 
   // Статистика выбранного клиента (только для cleaning)
   const { data: posClientStats } = useQuery({
@@ -272,8 +299,11 @@ export function POSPage() {
         .eq('product', PRODUCT)
         .order('created_at', { ascending: false })
       const orders = data ?? []
-      const spent = orders.filter(o => o.payment_status === 'paid').reduce((s, o) => s + (o.total_amount || 0), 0)
-      return { count: orders.length, spent, last: orders[0]?.created_at ?? null }
+      const paid = orders.filter(o => o.payment_status === 'paid')
+      const spent = paid.reduce((s, o) => s + (o.total_amount || 0), 0)
+      const last = orders[0]?.created_at ?? null
+      const first = orders.length ? orders[orders.length - 1].created_at : null
+      return { count: orders.length, spent, last, first, paidCount: paid.length }
     },
     enabled: !!clientId,
   })
@@ -438,14 +468,15 @@ export function POSPage() {
   function selectClient(c: any) {
     setClientId(c.id)
     setClientName([c.first_name, c.last_name].filter(Boolean).join(' ') + (c.phone ? ` · ${c.phone}` : ''))
+    setSelectedClient(c)
     setClientSearch('')
     setShowClientList(false)
   }
 
-  function clearClient() { setClientId(null); setClientName(''); setClientSearch('') }
+  function clearClient() { setClientId(null); setClientName(''); setClientSearch(''); setSelectedClient(null) }
 
   function resetForm() {
-    setCart([]); setClientId(null); setClientName(''); setClientSearch('')
+    setCart([]); setClientId(null); setClientName(''); setClientSearch(''); setSelectedClient(null)
     setAssignedTo(null); setPrepaid(''); setNotes(''); setGlobalReadyDate(dayjs().add(1, 'day').format('YYYY-MM-DD'))
     setDiscount(''); setIsExpress(false); setExpressCharge(''); setExpressChargeIsPercent(true)
     setPaymentMethod('cash'); setSurchargePct(''); setPaymentCash(''); setPaymentCard('')
@@ -638,13 +669,27 @@ export function POSPage() {
               />
               {showClientList && clientSearch && (
                 <div className="absolute top-full mt-1 w-full bg-background dark:bg-card border shadow-xl rounded-lg z-50 overflow-hidden">
-                  {clients.slice(0, 8).map(c => (
-                    <button key={c.id} onClick={() => selectClient(c)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors">
-                      <span className="font-medium">{[c.first_name, c.last_name].filter(Boolean).join(' ')}</span>
-                      {c.phone && <span className="text-muted-foreground ml-2">{c.phone}</span>}
-                    </button>
-                  ))}
+                  {clients.slice(0, 8).map((c: any) => {
+                    const st = searchStatsMap?.[c.id]
+                    return (
+                      <button key={c.id} onClick={() => selectClient(c)}
+                        className="w-full text-left px-3 py-2.5 hover:bg-accent transition-colors border-b last:border-b-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium truncate">{[c.first_name, c.last_name].filter(Boolean).join(' ')}</span>
+                          {c.phone && <span className="text-xs text-muted-foreground shrink-0">{c.phone}</span>}
+                        </div>
+                        {st ? (
+                          <div className="flex items-center gap-3 mt-0.5">
+                            <span className="text-xs text-muted-foreground">Заказов: <span className="font-medium text-foreground">{st.count}</span></span>
+                            <span className="text-xs text-muted-foreground">Оплачено: <span className="font-medium text-foreground">{formatCurrency(st.spent)} {symbol}</span></span>
+                            {st.last && <span className="text-xs text-muted-foreground">Последний: <span className="font-medium text-foreground">{dayjs(st.last).format('DD.MM.YY')}</span></span>}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground mt-0.5">Новый клиент</p>
+                        )}
+                      </button>
+                    )
+                  })}
                   <button
                     onClick={() => { setShowClientList(false); setQuickAddClient(true) }}
                     className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center gap-2 text-primary border-t"
@@ -874,13 +919,34 @@ export function POSPage() {
         {/* ── Правая панель: чек ── */}
         <div className="w-[340px] xl:w-[30%] flex flex-col overflow-hidden min-h-0 shrink-0">
 
-          {/* Мини-статистика клиента */}
-          {clientId && posClientStats && posClientStats.count > 0 && (
-            <div className="flex items-center gap-3 px-3 py-1.5 border-b bg-muted/30 text-xs shrink-0">
-              <span className="text-muted-foreground">Заказов: <span className="font-semibold text-foreground">{posClientStats.count}</span></span>
-              <span className="text-muted-foreground">Оплачено: <span className="font-semibold text-foreground">{formatCurrency(posClientStats.spent)} {symbol}</span></span>
-              {posClientStats.last && (
-                <span className="text-muted-foreground">Был: <span className="font-semibold text-foreground">{dayjs(posClientStats.last).format('DD.MM.YY')}</span></span>
+          {/* Карточка выбранного клиента */}
+          {clientId && posClientStats && (
+            <div className="px-3 py-2.5 border-b bg-muted/20 shrink-0">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-semibold text-primary">
+                    {selectedClient?.first_name?.[0]?.toUpperCase() ?? '?'}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate leading-tight">
+                    {[selectedClient?.first_name, selectedClient?.last_name].filter(Boolean).join(' ')}
+                  </p>
+                  {selectedClient?.phone && (
+                    <p className="text-xs text-muted-foreground leading-tight">{selectedClient.phone}</p>
+                  )}
+                </div>
+              </div>
+              {posClientStats.count > 0 ? (
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="text-muted-foreground">Заказов: <span className="font-semibold text-foreground">{posClientStats.count}</span></span>
+                  <span className="text-muted-foreground">Оплачено: <span className="font-semibold text-foreground">{formatCurrency(posClientStats.spent)} {symbol}</span></span>
+                  {posClientStats.last && (
+                    <span className="text-muted-foreground">Последний: <span className="font-semibold text-foreground">{dayjs(posClientStats.last).format('DD.MM.YY')}</span></span>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">Новый клиент — заказов ещё нет</p>
               )}
             </div>
           )}
