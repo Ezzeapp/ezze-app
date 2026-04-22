@@ -20,6 +20,7 @@ import { useCurrency, useCurrencySymbol } from '@/hooks/useCurrency'
 import { useSchedule, useScheduleBreaks } from '@/hooks/useSchedule'
 import { useCreateClient } from '@/hooks/useClients'
 import { useClientStats } from '@/hooks/useClientStats'
+import { useAllClientsDoneVisits } from '@/hooks/useLoyalty'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFeature } from '@/hooks/useFeatureFlags'
 import { useDraft } from '@/hooks/useDraft'
@@ -273,6 +274,7 @@ export function AppointmentDialog({
     ? `${selectedClient.first_name} ${selectedClient.last_name || ''}`.trim()
     : ''
   const { data: clientStats } = useClientStats(selectedClient?.id ?? '', clientFullName || undefined)
+  const { data: clientVisitCounts = {} } = useAllClientsDoneVisits()
 
   // ── Финансы ───────────────────────────────────────────────────────────────
   // Ref: ключ услуг при открытии редактирования — чтобы пропустить только инит, а не реальные смены
@@ -1780,6 +1782,7 @@ export function AppointmentDialog({
                               {clientsForList.map(c => {
                                 const isSelected = selectedClient?.id === c.id
                                 const initials = (c.first_name?.charAt(0) || '').toUpperCase() + (c.last_name?.charAt(0) || '').toUpperCase()
+                                const visits = clientVisitCounts[c.id] ?? c.total_visits ?? 0
                                 return (
                                   <button
                                     key={c.id}
@@ -1804,18 +1807,20 @@ export function AppointmentDialog({
                                         <p className="text-[11px] text-muted-foreground truncate leading-tight">{c.phone}</p>
                                       )}
                                     </div>
-                                    <div className="shrink-0 flex flex-col items-end gap-0.5">
-                                      {(c.total_visits ?? 0) > 0 && (
-                                        <span className="text-[10px] font-medium text-muted-foreground leading-none">
-                                          {c.total_visits} виз.
-                                        </span>
-                                      )}
-                                      {c.last_visit && (
-                                        <span className="text-[10px] text-muted-foreground/70 leading-none">
-                                          {dayjs(c.last_visit).format('D MMM')}
-                                        </span>
-                                      )}
-                                    </div>
+                                    {(visits > 0 || c.last_visit) && (
+                                      <div className="shrink-0 flex flex-col items-end gap-0.5">
+                                        {visits > 0 && (
+                                          <span className="text-[10px] font-medium text-muted-foreground leading-none">
+                                            {visits} виз.
+                                          </span>
+                                        )}
+                                        {c.last_visit && (
+                                          <span className="text-[10px] text-muted-foreground/70 leading-none">
+                                            {dayjs(c.last_visit).format('D MMM')}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
                                   </button>
                                 )
                               })}
@@ -1894,7 +1899,7 @@ export function AppointmentDialog({
                     <div className="flex-1 flex overflow-hidden rounded-xl border bg-background">
 
                       {/* Календарь */}
-                      <div className="w-[290px] border-r overflow-y-auto px-4 pt-3 pb-4 shrink-0">
+                      <div className="w-1/2 overflow-y-auto px-4 pt-3 pb-4 shrink-0">
                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{t('appointments.date')}</p>
                         <div className="flex items-center justify-between mb-2">
                           <button type="button"
