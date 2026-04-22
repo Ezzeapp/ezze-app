@@ -141,7 +141,7 @@ function KanbanView({ orders, symbol, onNavigate, isOverdueMap, isDueTodayMap, t
   }
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2" style={{ minHeight: 'min(300px, calc(100vh - 420px))' }}>
+    <div className="flex gap-2 overflow-x-auto pb-2">
       {KANBAN_COLS.map(col => {
         const colOrders = grouped[col.value] ?? []
         return (
@@ -174,7 +174,7 @@ function KanbanView({ orders, symbol, onNavigate, isOverdueMap, isDueTodayMap, t
             </div>
 
             {/* Карточки */}
-            <div className="flex-1 p-2 space-y-1.5 min-h-[60px] overflow-y-auto" style={{ maxHeight: 'calc(100vh - 420px)' }}>
+            <div className="flex-1 p-2 space-y-1.5 min-h-[60px] overflow-y-auto" style={{ maxHeight: '450px' }}>
               {colOrders.map(order => {
                 const TypeIcon  = ORDER_TYPE_ICONS[order.order_type as OrderType]
                 const overdue   = isOverdueMap[order.id]
