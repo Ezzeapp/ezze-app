@@ -1,16 +1,14 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import {
   Calendar, Clock, CheckCircle, XCircle, AlertCircle, CalendarClock,
-  Zap, Gift, Copy, Check, Sun, Moon, Search, User, Users,
-  ChevronRight, X, QrCode,
+  Zap, Gift, Copy, Check, Sun, Moon, User, Package, Wrench,
+  RotateCw, X, ExternalLink,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { PRODUCT } from '@/lib/config'
-import { getFileUrl, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import {
   isTelegramMiniApp,
   getTelegramUserId,
@@ -20,15 +18,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
-import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { TelegramSplash } from '@/components/shared/TelegramSplash'
-import { toast } from '@/components/shared/Toaster'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { getStoredTheme, setTheme } from '@/stores/themeStore'
-import type { Appointment } from '@/types'
 
 // ── Telegram Login Widget ─────────────────────────────────────────────────────
 function TelegramLoginWidget({ onAuth }: { onAuth: (user: Record<string, unknown>) => void }) {
@@ -56,48 +49,76 @@ function TelegramLoginWidget({ onAuth }: { onAuth: (user: Record<string, unknown
 }
 
 // ── Типы ─────────────────────────────────────────────────────────────────────
-interface AppointmentWithMaster extends Appointment {
-  masterName?: string
-  serviceName?: string
-  bookingSlug?: string
-  masterUserId?: string
+type OrderKind = 'appointment' | 'cleaning' | 'workshop'
+
+interface CabinetOrder {
+  kind:            OrderKind
+  id:              string
+  status:          string
+  date:            string | null          // appointment: 'YYYY-MM-DD'
+  time_text:       string | null          // appointment: 'HH:mm'
+  total:           number | null
+  notes:           string | null
+  cancel_token:    string | null
+  number:          string | null          // cleaning/workshop: 'КВ-0001' / 'РМ-0001'
+  booking_slug:    string | null
+  master_name:     string | null
+  master_avatar:   string | null
+  title:           string
+  approval_token:  string | null
+  public_token:    string | null
+  ready_date:      string | null
+  created_at:      string
 }
 
-interface MasterResult {
-  booking_slug: string
-  profession: string | null
-  avatar: string | null
-  phone: string | null
-  display_name: string | null
+// ── Статусы для appointments ─────────────────────────────────────────────────
+const APPT_STATUS = {
+  scheduled: { icon: Clock,        color: 'text-blue-500',        variant: 'default'     as const },
+  done:      { icon: CheckCircle,  color: 'text-emerald-500',     variant: 'secondary'   as const },
+  cancelled: { icon: XCircle,      color: 'text-muted-foreground', variant: 'outline'    as const },
+  no_show:   { icon: AlertCircle,  color: 'text-destructive',     variant: 'destructive' as const },
+} as const
+
+// ── Статусы для cleaning_orders ──────────────────────────────────────────────
+const CLEANING_STATUS = {
+  received:    { icon: Package,      color: 'text-blue-500',     variant: 'default'   as const },
+  in_progress: { icon: RotateCw,     color: 'text-amber-500',    variant: 'default'   as const },
+  ready:       { icon: CheckCircle,  color: 'text-emerald-500',  variant: 'default'   as const },
+  issued:      { icon: CheckCircle,  color: 'text-emerald-500',  variant: 'secondary' as const },
+  paid:        { icon: CheckCircle,  color: 'text-emerald-500',  variant: 'secondary' as const },
+  cancelled:   { icon: XCircle,      color: 'text-muted-foreground', variant: 'outline' as const },
+} as const
+
+// ── Статусы для workshop_orders ──────────────────────────────────────────────
+const WORKSHOP_STATUS = {
+  received:         { icon: Package,     color: 'text-blue-500',    variant: 'default'     as const },
+  diagnosing:       { icon: RotateCw,    color: 'text-amber-500',   variant: 'default'     as const },
+  waiting_approval: { icon: AlertCircle, color: 'text-orange-500',  variant: 'destructive' as const },
+  waiting_parts:    { icon: Clock,       color: 'text-amber-500',   variant: 'default'     as const },
+  in_progress:      { icon: Wrench,      color: 'text-amber-500',   variant: 'default'     as const },
+  ready:            { icon: CheckCircle, color: 'text-emerald-500', variant: 'default'     as const },
+  issued:           { icon: CheckCircle, color: 'text-emerald-500', variant: 'secondary'   as const },
+  paid:             { icon: CheckCircle, color: 'text-emerald-500', variant: 'secondary'   as const },
+  refused:          { icon: XCircle,     color: 'text-muted-foreground', variant: 'outline' as const },
+  cancelled:        { icon: XCircle,     color: 'text-muted-foreground', variant: 'outline' as const },
+} as const
+
+function statusCfg(kind: OrderKind, status: string) {
+  if (kind === 'appointment') return (APPT_STATUS     as any)[status] ?? APPT_STATUS.scheduled
+  if (kind === 'cleaning')    return (CLEANING_STATUS as any)[status] ?? CLEANING_STATUS.received
+  return (WORKSHOP_STATUS as any)[status] ?? WORKSHOP_STATUS.received
 }
 
-interface TeamResult {
-  id: string
-  name: string
-  slug: string
-  description: string | null
-  logo: string | null
-}
+const ACTIVE_APPT      = new Set(['scheduled'])
+const ACTIVE_CLEANING  = new Set(['received', 'in_progress', 'ready'])
+const ACTIVE_WORKSHOP  = new Set(['received', 'diagnosing', 'waiting_approval', 'waiting_parts', 'in_progress', 'ready'])
 
-type Tab = 'appointments' | 'search' | 'profile'
-
-// ── Mock данные (dev) ─────────────────────────────────────────────────────────
-const DEV_MOCK: AppointmentWithMaster[] = [
-  { id: 'mock1', collectionId: '', collectionName: 'appointments', created: '', updated: '', master: 'mock', client: '', service: '', date: dayjs().add(2, 'day').format('YYYY-MM-DD'), start_time: '14:00', end_time: '15:00', status: 'scheduled', price: 2500, notes: '[Стрижка + укладка]', cancel_token: 'mock-token', masterName: 'Парикмахер', serviceName: 'Стрижка', bookingSlug: 'mock-master' },
-  { id: 'mock2', collectionId: '', collectionName: 'appointments', created: '', updated: '', master: 'mock', client: '', service: '', date: dayjs().subtract(10, 'day').format('YYYY-MM-DD'), start_time: '11:00', end_time: '12:00', status: 'done', price: 1500, notes: '[Окрашивание]', cancel_token: '', masterName: 'Колорист', serviceName: 'Окрашивание', bookingSlug: 'mock-master-2' },
-]
-
-// ── Утилиты ──────────────────────────────────────────────────────────────────
-/** Убирает эмодзи из строки для «умного» поиска без учёта смайликов */
-const stripEmoji = (s: string) =>
-  s.replace(/\p{Extended_Pictographic}/gu, '').replace(/\s+/g, ' ').trim().toLowerCase()
-
-// ── Статусы ──────────────────────────────────────────────────────────────────
-const STATUS_CONFIG = {
-  scheduled: { label: 'Запланировано', variant: 'default' as const, icon: Clock,        color: 'text-blue-500' },
-  done:      { label: 'Выполнено',     variant: 'secondary' as const, icon: CheckCircle, color: 'text-emerald-500' },
-  cancelled: { label: 'Отменено',      variant: 'outline' as const,   icon: XCircle,     color: 'text-muted-foreground' },
-  no_show:   { label: 'Не явился',     variant: 'destructive' as const, icon: AlertCircle, color: 'text-destructive' },
+function isActive(o: CabinetOrder): boolean {
+  if (o.kind === 'appointment') {
+    return ACTIVE_APPT.has(o.status) && (!o.date || o.date >= dayjs().format('YYYY-MM-DD'))
+  }
+  if (o.kind === 'cleaning') return ACTIVE_CLEANING.has(o.status)
+  return ACTIVE_WORKSHOP.has(o.status)
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -105,18 +126,16 @@ export function ClientCabinetPage() {
   const navigate = useNavigate()
   const { t } = useTranslation()
 
-  const [tab, setTab]                   = useState<Tab>('appointments')
-  const [appointments, setAppointments] = useState<AppointmentWithMaster[]>([])
+  const [orders, setOrders]             = useState<CabinetOrder[]>([])
   const [loading, setLoading]           = useState(true)
   const [telegramId, setTelegramId]     = useState<string | null>(null)
-  const [userName, setUserName]         = useState('')       // зарегистрированное имя (введённое в боте)
-  const [tgProfileName, setTgProfileName] = useState('')     // имя из Telegram-профиля
+  const [userName, setUserName]         = useState('')
+  const [tgProfileName, setTgProfileName] = useState('')
   const [telegramPhone, setTelegramPhone] = useState('')
   const [tgTopPadding, setTgTopPadding] = useState(0)
   const [loyaltySummary, setLoyaltySummary] = useState<any[]>([])
   const [copied, setCopied]             = useState(false)
-  const [searchQuery, setSearchQuery]   = useState('')
-  const [isNotRegistered, setIsNotRegistered] = useState(false)  // удалён / не зарегистрирован
+  const [isNotRegistered, setIsNotRegistered] = useState(false)
   const [theme, setThemeState]          = useState<'light' | 'dark'>(() => {
     const s = getStoredTheme()
     return s === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : s
@@ -124,7 +143,6 @@ export function ClientCabinetPage() {
 
   // ── Инициализация ───────────────────────────────────────────────────────────
   useEffect(() => {
-    // Если запущено через Telegram с параметром team_{slug} — переходим на страницу команды
     const startParam = getTelegramStartParam()
     if (startParam && startParam.startsWith('team_')) {
       const teamSlug = startParam.replace(/^team_/, '')
@@ -150,13 +168,13 @@ export function ClientCabinetPage() {
     }
     const params = new URLSearchParams(window.location.search)
     const tgId      = getTelegramUserId() || params.get('tg_id')
-    const tgWebName = getTelegramDisplayName() || '' // имя из Telegram-профиля (WebApp API)
-    const urlName   = params.get('tg_name') || ''   // имя из URL (registered name от бота)
+    const tgWebName = getTelegramDisplayName() || ''
+    const urlName   = params.get('tg_name') || ''
     const tgPhone   = params.get('tg_phone') || ''
-    const deleted   = params.get('deleted') === '1'  // пришёл из уведомления об удалении
+    const deleted   = params.get('deleted') === '1'
     setTelegramId(tgId)
-    setUserName(urlName || tgWebName)       // зарегистрированное имя из URL приоритетнее TG-профиля (loadData перезапишет из БД)
-    setTgProfileName(tgWebName)             // Telegram profile name для субтитра
+    setUserName(urlName || tgWebName)
+    setTgProfileName(tgWebName)
     setTelegramPhone(tgPhone)
     if (deleted) {
       setIsNotRegistered(true)
@@ -165,10 +183,6 @@ export function ClientCabinetPage() {
     }
     if (tgId) {
       loadData(tgId)
-    } else if (import.meta.env.DEV) {
-      setUserName('Тест Пользователь')
-      setAppointments(DEV_MOCK)
-      setLoading(false)
     } else {
       setLoading(false)
     }
@@ -177,14 +191,11 @@ export function ClientCabinetPage() {
   // ── Загрузка данных ─────────────────────────────────────────────────────────
   const loadData = async (tgId: string) => {
     try {
-      // Подгружаем телефон из tg_clients (бот сохраняет его туда при регистрации)
-      // Используем SECURITY DEFINER RPC вместо прямого чтения tg_clients (014 политика закрыта в 015)
       type TgClientRow = { phone: string | null; name: string | null; tg_name: string | null; lang: string | null }
       const { data: tgClient } = await supabase
         .rpc('get_tg_client_safe', { p_tg_chat_id: tgId })
         .maybeSingle() as { data: TgClientRow | null; error: unknown }
 
-      // Новый незарегистрированный пользователь → перенаправляем на Mini App регистрацию
       if (!tgClient && isTelegramMiniApp()) {
         navigate('/client-register')
         return
@@ -194,34 +205,9 @@ export function ClientCabinetPage() {
       if (tgClient?.name)    setUserName(tgClient.name)
       if (tgClient?.tg_name) setTgProfileName(prev => prev || tgClient!.tg_name!)
 
-      const { data: records } = await supabase
-        .from('appointments')
-        .select('*, service:services(name)')
-        .eq('telegram_id', tgId)
-        .order('date', { ascending: false })
-        .order('start_time', { ascending: false })
-
-      const masterIds = [...new Set((records ?? []).map((a: any) => a.master_id).filter(Boolean))]
-      let profileMap = new Map<string, any>()
-      if (masterIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('master_profiles')
-          .select('user_id, profession, booking_slug, avatar')
-          .in('user_id', masterIds)
-        profileMap = new Map((profiles ?? []).map((p: any) => [p.user_id, p]))
-      }
-
-      const enriched: AppointmentWithMaster[] = (records ?? []).map((appt: any) => {
-        const profile = profileMap.get(appt.master_id)
-        return {
-          ...appt,
-          masterName:   profile?.profession || '',
-          serviceName:  appt.service?.name || '',
-          bookingSlug:  profile?.booking_slug || '',
-          masterUserId: appt.master_id || '',
-        }
-      })
-      setAppointments(enriched)
+      const { data: ordersData } = await supabase
+        .rpc('get_client_cabinet_orders', { p_tg_chat_id: tgId })
+      setOrders((ordersData as CabinetOrder[] | null) ?? [])
 
       const { data: loyaltyData } = await supabase
         .rpc('get_client_loyalty_summary', { p_telegram_id: tgId })
@@ -233,79 +219,6 @@ export function ClientCabinetPage() {
     }
   }
 
-  // ── Поиск мастеров ──────────────────────────────────────────────────────────
-  const { data: allMasters = [], isLoading: mastersLoading } = useQuery<MasterResult[]>({
-    queryKey: ['master_search_cabinet'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('master_profiles')
-        .select('booking_slug, profession, avatar, phone, display_name')
-        .not('booking_slug', 'is', null)
-        .eq('is_public', true)
-        .eq('product', PRODUCT)
-        .order('created_at', { ascending: false })
-        .limit(200)
-      return (data ?? []) as unknown as MasterResult[]
-    },
-    enabled: tab === 'search',
-    staleTime: 2 * 60_000,
-  })
-
-  const { data: allTeams = [], isLoading: teamsLoading } = useQuery<TeamResult[]>({
-    queryKey: ['public_teams_cabinet'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('teams')
-        .select('id, name, slug, description, logo')
-        .eq('is_public', true)
-        .order('name')
-      return (data ?? []) as TeamResult[]
-    },
-    enabled: tab === 'search',
-    staleTime: 2 * 60_000,
-  })
-
-  const filteredTeams = useMemo(() => {
-    const q = stripEmoji(searchQuery)
-    if (!q) return allTeams
-    return allTeams.filter(t =>
-      stripEmoji(t.name).includes(q) ||
-      t.name.toLowerCase().includes(q) ||
-      stripEmoji(t.description ?? '').includes(q)
-    )
-  }, [allTeams, searchQuery])
-
-  // Мастера, к которым клиент ходил раньше (избранные)
-  const visitedSlugs = useMemo(() => {
-    const slugs = new Set<string>()
-    appointments.filter(a => a.status === 'done' && a.bookingSlug).forEach(a => slugs.add(a.bookingSlug!))
-    return slugs
-  }, [appointments])
-
-  const filteredMasters = useMemo(() => {
-    const q        = stripEmoji(searchQuery)
-    const qRaw     = searchQuery.trim().toLowerCase()
-    const qDigits  = qRaw.replace(/\D/g, '')
-    const list = qRaw
-      ? allMasters.filter(m => {
-          const name = m.display_name ?? ''
-          return (
-            stripEmoji(name).includes(q) ||          // поиск без смайликов
-            name.toLowerCase().includes(qRaw) ||      // поиск с смайликами
-            stripEmoji(m.profession ?? '').includes(q) ||
-            (m.profession ?? '').toLowerCase().includes(qRaw) ||
-            (qDigits && (m.phone ?? '').replace(/\D/g, '').includes(qDigits))
-          )
-        })
-      : allMasters
-    // Избранные сверху
-    return [...list].sort((a, b) => {
-      const aFav = visitedSlugs.has(a.booking_slug) ? 0 : 1
-      const bFav = visitedSlugs.has(b.booking_slug) ? 0 : 1
-      return aFav - bFav
-    })
-  }, [allMasters, searchQuery, visitedSlugs])
-
   // ── Хелперы ─────────────────────────────────────────────────────────────────
   const handleWidgetAuth = (user: Record<string, unknown>) => {
     const tgId = String(user.id ?? '')
@@ -313,7 +226,7 @@ export function ClientCabinetPage() {
     if (!tgId) return
     setTelegramId(tgId)
     setUserName(name)
-    setTgProfileName(name)   // сохраняем TG-имя как субтитр (loadData перезапишет основное)
+    setTgProfileName(name)
     setLoading(true)
     loadData(tgId)
   }
@@ -339,39 +252,16 @@ export function ClientCabinetPage() {
     navigate(`/book/${slug}?${params.toString()}`)
   }
 
-  const openTeam = (slug: string) => {
-    const params = new URLSearchParams()
-    if (telegramId)    params.set('tg_id',    telegramId)
-    if (userName)      params.set('tg_name',  userName)
-    if (telegramPhone) params.set('tg_phone', telegramPhone)
-    navigate(`/book/team/${slug}?${params.toString()}`)
-  }
-
-  // ── QR-сканер (Telegram WebApp API) ─────────────────────────────────────────
-  const handleScanQr = () => {
-    const tg = (window as any).Telegram?.WebApp
-    if (!tg?.showScanQrPopup) {
-      toast.error('QR-сканер недоступен. Обновите Telegram до последней версии.')
-      return
-    }
-    tg.showScanQrPopup({ text: 'Наведите камеру на QR-код мастера' }, (data: string) => {
-      tg.closeScanQrPopup?.()
-      try {
-        const url = new URL(data)
-        // Формат: https://ezze.site/book/my-salon
-        const masterMatch = url.pathname.match(/\/book\/([^/]+)$/)
-        if (masterMatch) { openBooking(masterMatch[1]); return true }
-        // Формат: https://ezze.site/book/team/my-team
-        const teamMatch = url.pathname.match(/\/book\/team\/([^/]+)$/)
-        if (teamMatch) { openTeam(teamMatch[1]); return true }
-      } catch {}
-      toast.error('Не удалось распознать QR-код мастера')
-      return true
-    })
-  }
+  // ── Разделение списка ───────────────────────────────────────────────────────
+  const { active, history } = useMemo(() => {
+    const a: CabinetOrder[] = []
+    const h: CabinetOrder[] = []
+    for (const o of orders) (isActive(o) ? a : h).push(o)
+    return { active: a, history: h }
+  }, [orders])
 
   // ── Экран без авторизации ───────────────────────────────────────────────────
-  if (!loading && !telegramId && !import.meta.env.DEV) {
+  if (!loading && !telegramId) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center gap-6">
         <div className="space-y-2">
@@ -380,7 +270,7 @@ export function ClientCabinetPage() {
               <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-2.02 9.52c-.148.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.883.701z"/>
             </svg>
           </div>
-          <h1 className="text-xl font-bold">{t('cabinet.myAppointments')}</h1>
+          <h1 className="text-xl font-bold">{t('cabinet.myOrders')}</h1>
           <p className="text-muted-foreground text-sm">{t('cabinet.loginDesc')}</p>
         </div>
         <TelegramLoginWidget onAuth={handleWidgetAuth} />
@@ -406,378 +296,194 @@ export function ClientCabinetPage() {
           <User className="h-8 w-8 text-destructive" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-xl font-bold">Вы не являетесь клиентом</h1>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            Ваши данные были удалены из системы.<br />
-            Для продолжения необходимо зарегистрироваться снова.
-          </p>
+          <h1 className="text-xl font-bold">{t('cabinet.notClientTitle')}</h1>
+          <p className="text-muted-foreground text-sm leading-relaxed">{t('cabinet.notClientDesc')}</p>
         </div>
         <Button onClick={openBot} className="gap-2 px-6">
-          🔄 Зарегистрироваться
+          {t('cabinet.registerAgain')}
         </Button>
       </div>
     )
   }
 
-  const today    = dayjs().format('YYYY-MM-DD')
-  const upcoming = appointments.filter(a => a.status === 'scheduled' && a.date >= today)
-  const past     = appointments.filter(a => a.status !== 'scheduled' || a.date < today)
-  const topPad   = tgTopPadding > 0 ? `${tgTopPadding + 8}px` : isTelegramMiniApp() ? '36px' : '12px'
+  const topPad = tgTopPadding > 0 ? `${tgTopPadding + 8}px` : isTelegramMiniApp() ? '36px' : '12px'
 
   // ── Рендер ──────────────────────────────────────────────────────────────────
   return (
-    <div className="bg-background flex flex-col" style={{ height: 'var(--tg-viewport-stable-height, 100dvh)' }}>
+    <div className="bg-background" style={{ minHeight: 'var(--tg-viewport-stable-height, 100dvh)' }}>
+      <div className="max-w-lg mx-auto px-4 space-y-4" style={{ paddingTop: topPad, paddingBottom: '32px' }}>
 
-      {/* ── Контент (прокручиваемый) ── */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-lg mx-auto px-4 space-y-4" style={{ paddingTop: topPad, paddingBottom: '80px' }}>
-
-          {/* Шапка */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <Avatar className="h-11 w-11 bg-primary/10 shrink-0">
-                <AvatarFallback className="text-primary font-semibold">
-                  {userName ? userName.charAt(0).toUpperCase() : '?'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <h1 className="text-base font-bold truncate">{userName || tgProfileName || t('cabinet.myAppointments')}</h1>
-                {tgProfileName && tgProfileName.toLowerCase() !== userName.toLowerCase() && (
-                  <p className="text-xs text-muted-foreground/70 truncate leading-tight">{tgProfileName}</p>
-                )}
-                <p className="text-xs text-muted-foreground">{t('cabinet.personalCabinet')}</p>
-              </div>
-            </div>
-            <div className="shrink-0 flex items-center gap-1">
-              <button onClick={toggleTheme} className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
-              <LanguageSwitcher />
+        {/* Шапка */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <Avatar className="h-11 w-11 bg-primary/10 shrink-0">
+              <AvatarFallback className="text-primary font-semibold">
+                {userName ? userName.charAt(0).toUpperCase() : '?'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <h1 className="text-base font-bold truncate">{userName || tgProfileName || t('cabinet.myOrders')}</h1>
+              {tgProfileName && tgProfileName.toLowerCase() !== userName.toLowerCase() && (
+                <p className="text-xs text-muted-foreground/70 truncate leading-tight">{tgProfileName}</p>
+              )}
+              <p className="text-xs text-muted-foreground">{t('cabinet.personalCabinet')}</p>
             </div>
           </div>
-
-          {/* ── Вкладка: Записи ── */}
-          {tab === 'appointments' && (
-            <div className="space-y-4">
-              {appointments.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center space-y-4">
-                    <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
-                    <div>
-                      <h2 className="font-semibold">{t('cabinet.noAppointments')}</h2>
-                      <p className="text-sm text-muted-foreground mt-1">{t('cabinet.noAppointmentsDesc')}</p>
-                    </div>
-                    <Button onClick={() => setTab('search')} className="gap-2">
-                      <Search className="h-4 w-4" />
-                      Найти мастера
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <>
-                  {upcoming.length > 0 && (
-                    <section className="space-y-2">
-                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        {t('cabinet.upcoming')}
-                      </h2>
-                      {upcoming.map(appt => (
-                        <AppointmentCard
-                          key={appt.id}
-                          appt={appt}
-                          onCancel={appt.cancel_token ? () => navigate(`/cancel/${appt.cancel_token}`) : undefined}
-                          onReschedule={appt.bookingSlug ? () => openBooking(appt.bookingSlug!) : undefined}
-                        />
-                      ))}
-                    </section>
-                  )}
-                  {past.length > 0 && (
-                    <section className="space-y-2">
-                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        {t('cabinet.history')}
-                      </h2>
-                      {past.map(appt => (
-                        <AppointmentCard
-                          key={appt.id}
-                          appt={appt}
-                          onBookAgain={appt.bookingSlug ? () => openBooking(appt.bookingSlug!) : undefined}
-                        />
-                      ))}
-                    </section>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-
-          {/* ── Вкладка: Поиск мастеров ── */}
-          {tab === 'search' && (
-            <div className="space-y-3">
-              {/* QR-сканер (только в Telegram Mini App) */}
-              {isTelegramMiniApp() && (
-                <button
-                  type="button"
-                  onClick={handleScanQr}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 active:bg-primary/15 transition-colors py-3 text-sm font-medium text-primary"
-                >
-                  <QrCode className="h-4 w-4" />
-                  Сканировать QR-код мастера
-                </button>
-              )}
-
-              {/* Поиск */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Имя, телефон, специальность или команда…"
-                  className="pl-9 pr-9"
-                  autoFocus
-                />
-                {searchQuery && (
-                  <button type="button" onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Избранные мастера */}
-              {!searchQuery && visitedSlugs.size > 0 && (
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">⭐ Были раньше</p>
-                  {filteredMasters.filter(m => visitedSlugs.has(m.booking_slug)).map(m => (
-                    <MasterCard key={m.booking_slug} master={m} isFav onClick={() => openBooking(m.booking_slug)} />
-                  ))}
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2">Все мастера</p>
-                </div>
-              )}
-
-              {/* Список команд и мастеров */}
-              {(mastersLoading || teamsLoading) ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 py-2">
-                    <Skeleton className="h-11 w-11 rounded-full" />
-                    <div className="flex-1 space-y-1.5">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-3 w-24" />
-                    </div>
-                  </div>
-                ))
-              ) : filteredTeams.length === 0 && filteredMasters.filter(m => searchQuery || !visitedSlugs.has(m.booking_slug)).length === 0 && !searchQuery ? (
-                <p className="text-center text-sm text-muted-foreground py-8">Нет доступных мастеров</p>
-              ) : (
-                <>
-                  {/* Команды */}
-                  {filteredTeams.length > 0 && (
-                    <>
-                      {(filteredMasters.length > 0 || visitedSlugs.size > 0) && (
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Команды</p>
-                      )}
-                      {filteredTeams.map(team => (
-                        <TeamCard key={team.id} team={team} onClick={() => openTeam(team.slug)} />
-                      ))}
-                    </>
-                  )}
-
-                  {/* Мастера */}
-                  {filteredMasters.filter(m => searchQuery || !visitedSlugs.has(m.booking_slug)).length > 0 && (
-                    <>
-                      {filteredTeams.length > 0 && (
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-1">Мастера</p>
-                      )}
-                      {filteredMasters
-                        .filter(m => searchQuery || !visitedSlugs.has(m.booking_slug))
-                        .map(m => (
-                          <MasterCard key={m.booking_slug} master={m} onClick={() => openBooking(m.booking_slug)} />
-                        ))}
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-
-          {/* ── Вкладка: Профиль ── */}
-          {tab === 'profile' && (
-            <div className="space-y-4">
-              {/* Инфо */}
-              <Card>
-                <CardContent className="pt-5 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-14 w-14 bg-primary/10">
-                      <AvatarFallback className="text-primary font-bold text-xl">
-                        {userName ? userName.charAt(0).toUpperCase() : '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">{userName || tgProfileName || '—'}</p>
-                      {tgProfileName && tgProfileName.toLowerCase() !== userName.toLowerCase() && (
-                        <p className="text-xs text-muted-foreground/70">{tgProfileName}</p>
-                      )}
-                      {telegramId && <p className="text-xs text-muted-foreground">ID: {telegramId}</p>}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Настройки */}
-              <Card>
-                <CardContent className="pt-5 space-y-4">
-                  <p className="text-sm font-semibold">Настройки</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Тема оформления</span>
-                    <button
-                      onClick={toggleTheme}
-                      className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
-                    >
-                      {theme === 'dark' ? <><Moon className="h-3.5 w-3.5" /> Тёмная</> : <><Sun className="h-3.5 w-3.5" /> Светлая</>}
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Язык</span>
-                    <LanguageSwitcher />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Программа лояльности */}
-              {loyaltySummary.filter(s => s.loyalty_enabled).map(s => (
-                <LoyaltyCard key={s.master_id} s={s} copied={copied} onCopyReferral={handleCopyReferral} t={t} />
-              ))}
-
-              {/* Статистика */}
-              {appointments.length > 0 && (
-                <Card>
-                  <CardContent className="pt-5">
-                    <p className="text-sm font-semibold mb-3">Статистика</p>
-                    <div className="grid grid-cols-3 gap-3 text-center">
-                      <div className="rounded-xl bg-muted p-3">
-                        <p className="text-xl font-bold">{appointments.filter(a => a.status === 'done').length}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Визитов</p>
-                      </div>
-                      <div className="rounded-xl bg-muted p-3">
-                        <p className="text-xl font-bold">{upcoming.length}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Предстоит</p>
-                      </div>
-                      <div className="rounded-xl bg-muted p-3">
-                        <p className="text-xl font-bold">{visitedSlugs.size}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Мастеров</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-
-        </div>
-      </div>
-
-      {/* ── Нижние вкладки ── */}
-      <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm">
-        <div className="max-w-lg mx-auto grid grid-cols-3" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
-          {([
-            { id: 'appointments', icon: Calendar, label: 'Записи' },
-            { id: 'search',       icon: Search,   label: 'Поиск' },
-            { id: 'profile',      icon: User,     label: 'Профиль' },
-          ] as const).map(({ id, icon: Icon, label }) => (
+          <div className="shrink-0 flex items-center gap-1">
             <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id)}
-              className={cn(
-                'flex flex-col items-center gap-1 py-3 px-2 text-xs font-medium transition-colors relative',
-                tab === id ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-              )}
+              onClick={toggleTheme}
+              className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
-              <Icon className="h-5 w-5" />
-              {label}
-              {/* Индикатор активной вкладки */}
-              {tab === id && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary" />
-              )}
-              {/* Бейдж на Записях */}
-              {id === 'appointments' && upcoming.length > 0 && (
-                <span className="absolute top-2 right-1/4 h-4 min-w-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center px-1">
-                  {upcoming.length}
-                </span>
-              )}
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
-          ))}
+            <LanguageSwitcher />
+          </div>
         </div>
+
+        {/* Программа лояльности (если есть) */}
+        {loyaltySummary.filter(s => s.loyalty_enabled).map(s => (
+          <LoyaltyCard key={s.master_id} s={s} copied={copied} onCopyReferral={handleCopyReferral} t={t} />
+        ))}
+
+        {/* Пустой список */}
+        {orders.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center space-y-3">
+              <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
+              <div>
+                <h2 className="font-semibold">{t('cabinet.noOrders')}</h2>
+                <p className="text-sm text-muted-foreground mt-1">{t('cabinet.noOrdersDesc')}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {active.length > 0 && (
+              <section className="space-y-2">
+                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  {t('cabinet.active')}
+                </h2>
+                {active.map(o => (
+                  <OrderCard
+                    key={`${o.kind}-${o.id}`}
+                    order={o}
+                    onBookAgain={o.booking_slug ? () => openBooking(o.booking_slug!) : undefined}
+                    onCancel={o.cancel_token ? () => navigate(`/cancel/${o.cancel_token}`) : undefined}
+                    onTrack={o.number ? () => navigate(`/track/${o.number}`) : undefined}
+                    onApprove={o.approval_token ? () => navigate(`/approve/${o.approval_token}`) : undefined}
+                  />
+                ))}
+              </section>
+            )}
+            {history.length > 0 && (
+              <section className="space-y-2">
+                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  {t('cabinet.history')}
+                </h2>
+                {history.map(o => (
+                  <OrderCard
+                    key={`${o.kind}-${o.id}`}
+                    order={o}
+                    onBookAgain={o.booking_slug ? () => openBooking(o.booking_slug!) : undefined}
+                  />
+                ))}
+              </section>
+            )}
+          </>
+        )}
       </div>
     </div>
   )
 }
 
-// ── Карточка записи ───────────────────────────────────────────────────────────
-interface AppointmentCardProps {
-  appt: AppointmentWithMaster
-  onCancel?: () => void
-  onReschedule?: () => void
-  onBookAgain?: () => void
+// ── Карточка заказа ───────────────────────────────────────────────────────────
+interface OrderCardProps {
+  order:         CabinetOrder
+  onBookAgain?:  () => void
+  onCancel?:     () => void
+  onTrack?:      () => void
+  onApprove?:    () => void
 }
 
-function AppointmentCard({ appt, onCancel, onReschedule, onBookAgain }: AppointmentCardProps) {
+function OrderCard({ order, onBookAgain, onCancel, onTrack, onApprove }: OrderCardProps) {
   const { t } = useTranslation()
-  const cfg = STATUS_CONFIG[appt.status] ?? STATUS_CONFIG.scheduled
+  const cfg = statusCfg(order.kind, order.status)
   const StatusIcon = cfg.icon
-  const isUpcoming = appt.status === 'scheduled' && appt.date >= dayjs().format('YYYY-MM-DD')
+  const active = isActive(order)
 
-  const serviceNames = (() => {
-    const match = (appt.notes || '').match(/^\[([^\]]+)\]/)
-    return match ? match[1] : (appt.serviceName || '—')
-  })()
+  // Заголовок карточки (дата или номер квитанции)
+  const primary = order.kind === 'appointment' && order.date
+    ? dayjs(order.date).format('D MMMM, dddd')
+    : order.number ?? ''
+
+  // Вторичная строка: время для appointment / дата готовности для cleaning/workshop
+  const secondary = order.kind === 'appointment'
+    ? order.time_text
+    : order.ready_date ? t('cabinet.readyBy', { date: dayjs(order.ready_date).format('D MMM') }) : null
+
+  // Название услуги/изделия — для appointment парсим notes
+  const title = order.kind === 'appointment'
+    ? (() => {
+        const match = (order.notes || '').match(/^\[([^\]]+)\]/)
+        return match ? match[1] : (order.title || '—')
+      })()
+    : (order.title || '—')
+
+  const kindLabel = t(`cabinet.kind.${order.kind}`)
+  const statusLabel = t(`cabinet.status.${order.kind}.${order.status}`, order.status)
 
   return (
-    <Card className={isUpcoming ? 'border-primary/30' : ''}>
+    <Card className={active ? 'border-primary/30' : ''}>
       <div className="px-4 py-4 space-y-3">
-        {/* Статус + дата */}
+        {/* Верх: тип + статус */}
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
             <StatusIcon className={`h-4 w-4 shrink-0 ${cfg.color}`} />
-            <span className="text-sm font-medium">{dayjs(appt.date).format('D MMMM, dddd')}</span>
+            <span className="text-sm font-medium truncate">{primary || kindLabel}</span>
           </div>
           <Badge variant={cfg.variant} className="text-xs shrink-0">
-            {t(`cabinet.status.${appt.status}`, cfg.label)}
+            {statusLabel}
           </Badge>
         </div>
 
         {/* Детали */}
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-3.5 w-3.5 shrink-0" />
-            <span>{appt.start_time}{appt.end_time ? ` — ${appt.end_time}` : ''}</span>
-          </div>
+          {secondary && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="h-3.5 w-3.5 shrink-0" />
+              <span>{secondary}</span>
+            </div>
+          )}
           <div className="flex items-start gap-2 text-sm">
             <Zap className="h-3.5 w-3.5 shrink-0 mt-0.5 text-muted-foreground" />
-            <span className="leading-snug">{serviceNames}</span>
+            <span className="leading-snug">{title}</span>
           </div>
-          {appt.masterName && (
+          {order.master_name && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <User className="h-3.5 w-3.5 shrink-0" />
-              <span>{appt.masterName}</span>
+              <span>{order.master_name}</span>
             </div>
           )}
         </div>
 
         {/* Цена */}
-        {(appt.price ?? 0) > 0 && (
-          <p className="text-sm font-semibold">{appt.price?.toLocaleString()} ₽</p>
+        {(order.total ?? 0) > 0 && (
+          <p className="text-sm font-semibold">{Number(order.total).toLocaleString()} ₽</p>
         )}
 
-        {/* Кнопки */}
-        {(onCancel || onReschedule || onBookAgain) && (
-          <div className="flex gap-2 pt-1">
-            {onBookAgain && (
-              <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={onBookAgain}>
-                🔁 {t('cabinet.bookAgain')}
+        {/* Кнопки действий */}
+        {(onApprove || onTrack || onCancel || onBookAgain) && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {onApprove && order.status === 'waiting_approval' && (
+              <Button size="sm" className="flex-1 gap-1.5" onClick={onApprove}>
+                <AlertCircle className="h-3.5 w-3.5" />
+                {t('cabinet.approveEstimate')}
               </Button>
             )}
-            {onReschedule && (
-              <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={onReschedule}>
-                <CalendarClock className="h-3.5 w-3.5" />
-                Перенести
+            {onTrack && (
+              <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={onTrack}>
+                <ExternalLink className="h-3.5 w-3.5" />
+                {t('cabinet.trackOrder')}
               </Button>
             )}
             {onCancel && (
@@ -788,71 +494,19 @@ function AppointmentCard({ appt, onCancel, onReschedule, onBookAgain }: Appointm
                 onClick={onCancel}
               >
                 <X className="h-3.5 w-3.5" />
-                {t('cabinet.cancelAppt')}
+                {t('cabinet.cancelOrder')}
+              </Button>
+            )}
+            {onBookAgain && !active && (
+              <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={onBookAgain}>
+                <CalendarClock className="h-3.5 w-3.5" />
+                {t('cabinet.bookAgain')}
               </Button>
             )}
           </div>
         )}
       </div>
     </Card>
-  )
-}
-
-// ── Карточка мастера ──────────────────────────────────────────────────────────
-function TeamCard({ team, onClick }: { team: TeamResult; onClick: () => void }) {
-  const logoUrl = team.logo ? getFileUrl('teams', team.logo) : undefined
-  const initials = team.name.slice(0, 2).toUpperCase()
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full flex items-center gap-3 py-2.5 px-1 hover:bg-muted/50 active:bg-muted rounded-xl transition-colors text-left"
-    >
-      <div className="h-11 w-11 shrink-0 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-        {logoUrl
-          ? <img src={logoUrl} alt={team.name} className="h-11 w-11 object-cover" />
-          : <span className="text-sm font-semibold text-primary">{initials}</span>
-        }
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <p className="font-medium text-sm truncate">{team.name}</p>
-          <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] font-medium text-primary/70 bg-primary/10 rounded-full px-1.5 py-0.5 leading-none">
-            <Users className="h-2.5 w-2.5" />команда
-          </span>
-        </div>
-        {team.description && <p className="text-xs text-muted-foreground truncate">{team.description}</p>}
-      </div>
-      <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
-    </button>
-  )
-}
-
-function MasterCard({ master, isFav, onClick }: { master: MasterResult; isFav?: boolean; onClick: () => void }) {
-  const name      = master.display_name ?? 'Мастер'
-  const avatarUrl = master.avatar ? getFileUrl('master_profiles', master.avatar) : undefined
-  // Инициалы — берём только буквы/цифры, игнорируя эмодзи
-  const cleanName = stripEmoji(name) || name
-  const initials  = cleanName.split(' ').map(w => w[0]).filter(Boolean).join('').slice(0, 2).toUpperCase() || '?'
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full flex items-center gap-3 py-2.5 px-1 hover:bg-muted/50 active:bg-muted rounded-xl transition-colors text-left"
-    >
-      <Avatar className="h-11 w-11 shrink-0">
-        <AvatarImage src={avatarUrl} />
-        <AvatarFallback className="text-sm font-medium bg-primary/10 text-primary">{initials}</AvatarFallback>
-      </Avatar>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm truncate">
-          {isFav && '⭐ '}{name}
-        </p>
-        {master.profession && <p className="text-xs text-muted-foreground truncate">{master.profession}</p>}
-      </div>
-      <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
-    </button>
   )
 }
 
@@ -863,8 +517,15 @@ function LoyaltyCard({ s, copied, onCopyReferral, t }: { s: any; copied: boolean
   const level = visits >= s.level_premium_visits ? 'premium'
     : visits >= s.level_vip_visits ? 'vip'
     : visits >= s.level_regular_visits ? 'regular' : 'new'
-  const levelLabel = { new: `🆕 ${t('loyalty.level_new')}`, regular: `🥈 ${t('loyalty.level_regular')}`, vip: `🥇 ${t('loyalty.level_vip')}`, premium: `💎 ${t('loyalty.level_premium')}` }[level]
-  const nextVisits = level === 'new' ? s.level_regular_visits : level === 'regular' ? s.level_vip_visits : level === 'vip' ? s.level_premium_visits : null
+  const levelLabel = {
+    new:     t('loyalty.level_new'),
+    regular: t('loyalty.level_regular'),
+    vip:     t('loyalty.level_vip'),
+    premium: t('loyalty.level_premium'),
+  }[level]
+  const nextVisits = level === 'new' ? s.level_regular_visits
+    : level === 'regular' ? s.level_vip_visits
+    : level === 'vip' ? s.level_premium_visits : null
   const progressPct = nextVisits ? Math.min(100, Math.round((visits / nextVisits) * 100)) : 100
 
   return (

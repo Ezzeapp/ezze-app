@@ -1234,19 +1234,60 @@
   },
   "cabinet": {
     "myAppointments": "My Appointments",
+    "myOrders": "My Orders",
     "personalCabinet": "My Cabinet",
     "upcoming": "Upcoming",
+    "active": "Active",
     "history": "History",
     "noAppointments": "No appointments",
-    "noAppointmentsDesc": "Book with a master using their link",
+    "noOrders": "No orders yet",
+    "noOrdersDesc": "Your appointments and orders will appear here. Follow a master's link to place the first one.",
     "cancelAppt": "Cancel",
+    "cancelOrder": "Cancel",
+    "trackOrder": "Track order",
+    "approveEstimate": "Approve estimate",
+    "readyBy": "Ready by {{date}}",
     "bookAgain": "Book again",
-    "loginDesc": "Sign in with Telegram to see your appointments",
+    "notClientTitle": "You are not a client",
+    "notClientDesc": "Your data has been removed. Please register again to continue.",
+    "registerAgain": "Register",
+    "loginDesc": "Sign in with Telegram to see your orders",
+    "kind": {
+      "appointment": "Appointment",
+      "cleaning": "Dry cleaning",
+      "workshop": "Repair"
+    },
     "status": {
       "scheduled": "Scheduled",
       "done": "Done",
       "cancelled": "Cancelled",
-      "no_show": "No show"
+      "no_show": "No show",
+      "appointment": {
+        "scheduled": "Scheduled",
+        "done": "Done",
+        "cancelled": "Cancelled",
+        "no_show": "No show"
+      },
+      "cleaning": {
+        "received": "Received",
+        "in_progress": "In progress",
+        "ready": "Ready",
+        "issued": "Picked up",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+      },
+      "workshop": {
+        "received": "Received",
+        "diagnosing": "Diagnosing",
+        "waiting_approval": "Awaiting approval",
+        "waiting_parts": "Waiting for parts",
+        "in_progress": "In repair",
+        "ready": "Ready",
+        "issued": "Picked up",
+        "paid": "Paid",
+        "refused": "Refused",
+        "cancelled": "Cancelled"
+      }
     }
   },
   "support": {

@@ -1246,19 +1246,60 @@
   },
   "cabinet": {
     "myAppointments": "Мои записи",
+    "myOrders": "Мои заказы",
     "personalCabinet": "Личный кабинет",
     "upcoming": "Предстоящие",
+    "active": "Активные",
     "history": "История",
     "noAppointments": "Нет записей",
-    "noAppointmentsDesc": "Запишитесь к мастеру по его ссылке",
+    "noOrders": "Заказов пока нет",
+    "noOrdersDesc": "Ваши записи и заказы будут здесь. Перейдите по ссылке от мастера, чтобы оформить первый.",
     "cancelAppt": "Отменить",
+    "cancelOrder": "Отменить",
+    "trackOrder": "Отследить",
+    "approveEstimate": "Согласовать стоимость",
+    "readyBy": "Готов к {{date}}",
     "bookAgain": "Записаться снова",
-    "loginDesc": "Войдите через Telegram, чтобы увидеть ваши записи",
+    "notClientTitle": "Вы не являетесь клиентом",
+    "notClientDesc": "Ваши данные были удалены из системы. Для продолжения необходимо зарегистрироваться снова.",
+    "registerAgain": "Зарегистрироваться",
+    "loginDesc": "Войдите через Telegram, чтобы увидеть ваши заказы",
+    "kind": {
+      "appointment": "Запись",
+      "cleaning": "Химчистка",
+      "workshop": "Ремонт"
+    },
     "status": {
       "scheduled": "Запланировано",
       "done": "Выполнено",
       "cancelled": "Отменено",
-      "no_show": "Не явился"
+      "no_show": "Не явился",
+      "appointment": {
+        "scheduled": "Запланировано",
+        "done": "Выполнено",
+        "cancelled": "Отменено",
+        "no_show": "Не явился"
+      },
+      "cleaning": {
+        "received": "Принят",
+        "in_progress": "В работе",
+        "ready": "Готов",
+        "issued": "Выдан",
+        "paid": "Оплачен",
+        "cancelled": "Отменён"
+      },
+      "workshop": {
+        "received": "Принят",
+        "diagnosing": "Диагностика",
+        "waiting_approval": "Ждём согласование",
+        "waiting_parts": "Ждём запчасти",
+        "in_progress": "В ремонте",
+        "ready": "Готов",
+        "issued": "Выдан",
+        "paid": "Оплачен",
+        "refused": "Отказ клиента",
+        "cancelled": "Отменён"
+      }
     }
   },
   "support": {
