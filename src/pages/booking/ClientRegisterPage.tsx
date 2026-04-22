@@ -51,11 +51,11 @@ export function ClientRegisterPage() {
 
     ;(async () => {
       try {
+        // anon не может читать tg_clients напрямую (RLS закрыт в 015),
+        // поэтому используем SECURITY DEFINER RPC
         const { data } = await supabase
-          .from('tg_clients')
-          .select('phone, name')
-          .eq('tg_chat_id', String(tgId))
-          .maybeSingle()
+          .rpc('get_tg_client_safe', { p_tg_chat_id: String(tgId) })
+          .maybeSingle() as { data: { phone: string | null; name: string | null } | null }
         if (data) {
           // Уже зарегистрирован — переходим сразу в кабинет
           const params = new URLSearchParams({ tg_id: String(tgId) })
