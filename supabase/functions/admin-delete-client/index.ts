@@ -166,9 +166,9 @@ Deno.serve(async (req: Request) => {
       stats.tg_clients = count ?? 0
     }
 
-    // Fire-and-forget TG-уведомление
+    // Fire-and-forget TG-уведомление (клиентский бот, т.к. tg_chat_id из tg_clients)
     if (tgChatId) {
-      const botToken = Deno.env.get('TG_BOT_TOKEN') ?? ''
+      const botToken = Deno.env.get('TG_CLIENT_BOT_TOKEN') || Deno.env.get('TG_BOT_TOKEN') || ''
       if (botToken) {
         const text = tgLang === 'en'
           ? '❌ Your account has been removed from the platform by the administrator.'

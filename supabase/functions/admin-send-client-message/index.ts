@@ -72,10 +72,10 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  // ── 3. Send ──────────────────────────────────────────────────────
-  const botToken = Deno.env.get('TG_BOT_TOKEN') ?? ''
+  // ── 3. Send (клиентский бот — тот же, с которым клиент взаимодействует)
+  const botToken = Deno.env.get('TG_CLIENT_BOT_TOKEN') || Deno.env.get('TG_BOT_TOKEN') || ''
   if (!botToken) {
-    return new Response(JSON.stringify({ message: 'TG_BOT_TOKEN not configured' }), {
+    return new Response(JSON.stringify({ message: 'TG_CLIENT_BOT_TOKEN not configured' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     })
   }
