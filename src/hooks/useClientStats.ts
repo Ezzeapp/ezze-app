@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { PRODUCT } from '@/lib/config'
 import type { Appointment } from '@/types'
 
 export interface ClientStats {
@@ -18,8 +19,38 @@ export function useClientStats(clientId: string, clientName?: string) {
   const { user } = useAuth()
 
   return useQuery({
-    queryKey: ['client_stats', clientId, clientName],
+    queryKey: ['client_stats', clientId, clientName, PRODUCT],
     queryFn: async (): Promise<ClientStats> => {
+
+      // ── Cleaning: считаем из cleaning_orders ──────────────────────────────
+      if (PRODUCT === 'cleaning') {
+        const { data } = await supabase
+          .from('cleaning_orders')
+          .select('id, status, payment_status, total_amount, created_at')
+          .eq('client_id', clientId)
+          .eq('product', PRODUCT)
+          .order('created_at', { ascending: true })
+
+        const orders = data ?? []
+        const completed = orders.filter(o => o.status === 'issued' || o.status === 'paid')
+        const cancelled = orders.filter(o => o.status === 'cancelled')
+        const totalSpent = orders
+          .filter(o => o.payment_status === 'paid')
+          .reduce((sum, o) => sum + (o.total_amount || 0), 0)
+
+        return {
+          totalVisits:     orders.length,
+          completedVisits: completed.length,
+          cancelledVisits: cancelled.length,
+          noShowVisits:    0,
+          totalSpent,
+          firstVisit: orders.length ? orders[0].created_at.slice(0, 10) : null,
+          lastVisit:  orders.length ? orders[orders.length - 1].created_at.slice(0, 10) : null,
+          appointments: [],
+        }
+      }
+
+      // ── Остальные продукты: appointments ──────────────────────────────────
       // Query 1: by client_id relation
       const { data: byRelation } = await supabase
         .from('appointments')
@@ -71,6 +102,6 @@ export function useClientStats(clientId: string, clientName?: string) {
         appointments,
       }
     },
-    enabled: !!user && !!clientId,
+    enabled: !!clientId && (PRODUCT === 'cleaning' || !!user),
   })
 }

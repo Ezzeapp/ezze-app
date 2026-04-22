@@ -497,7 +497,7 @@ export function CleaningStatsPage() {
       )}
 
       {/* Tab navigation */}
-      <div className="flex border-b mb-6 overflow-x-auto scrollbar-none">
+      <div className="flex border-b mb-8 overflow-x-auto scrollbar-none">
         {TABS.map(tabDef => (
           <button
             key={tabDef.id}

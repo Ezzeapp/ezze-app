@@ -407,333 +407,355 @@ export function OrderDetailPage() {
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4 pb-40 space-y-4 pt-4">
+      <div className="flex-1 overflow-y-auto px-4 pb-40 pt-4">
 
-        {/* Urgency banners */}
-        {isOverdue && (
-          <div className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800 px-4 py-2.5 text-sm font-medium text-red-700 dark:text-red-400">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            Срок сдачи просрочен!
+        {/* Urgency banners — full width */}
+        {(isOverdue || isDueToday) && (
+          <div className="space-y-2 mb-4">
+            {isOverdue && (
+              <div className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800 px-4 py-2.5 text-sm font-medium text-red-700 dark:text-red-400">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                Срок сдачи просрочен!
+              </div>
+            )}
+            {isDueToday && (
+              <div className="flex items-center gap-2 rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-800 px-4 py-2.5 text-sm font-medium text-orange-700 dark:text-orange-400">
+                <Clock className="h-4 w-4 shrink-0" />
+                Срок сдачи сегодня!
+              </div>
+            )}
           </div>
         )}
-        {!isOverdue && isDueToday && (
-          <div className="flex items-center gap-2 rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-800 px-4 py-2.5 text-sm font-medium text-orange-700 dark:text-orange-400">
-            <Clock className="h-4 w-4 shrink-0" />
-            Срок сдачи сегодня!
+
+        {/* 2-col on desktop, stacked on mobile */}
+        <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+
+          {/* ── Левый сайдбар ── */}
+          <div className="flex flex-col gap-4 lg:w-64 xl:w-72 shrink-0">
+
+            {/* Клиент + Детали */}
+            <Card>
+              <CardContent className="pt-4 space-y-4">
+
+                {/* Клиент */}
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Клиент</p>
+
+                  {order.client ? (
+                    <div className="flex items-start gap-3">
+                      <User className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm">{clientName}</p>
+                        {order.client.phone && (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-muted-foreground">{order.client.phone}</span>
+                            <a
+                              href={`tel:${order.client.phone}`}
+                              className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 transition-colors"
+                              title="Позвонить"
+                            >
+                              <Phone className="h-3 w-3" />
+                            </a>
+                            <a
+                              href={`tg://resolve?phone=${order.client.phone.replace(/[^0-9]/g, '')}`}
+                              className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-400 transition-colors"
+                              title="Написать в Telegram"
+                            >
+                              <MessageCircle className="h-3 w-3" />
+                            </a>
+                            {order.status === 'ready' && (
+                              <button
+                                onClick={() => setNotifyOpen(v => !v)}
+                                className={cn(
+                                  'inline-flex items-center justify-center h-6 w-6 rounded-full transition-colors',
+                                  notifyOpen
+                                    ? 'bg-violet-200 text-violet-700 dark:bg-violet-800/50 dark:text-violet-300'
+                                    : 'bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-400'
+                                )}
+                                title="Уведомить клиента"
+                              >
+                                <Bell className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setShowClientPick(v => !v)}
+                        className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                        title="Сменить клиента"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowClientPick(v => !v)}
+                      className="flex items-center gap-2 text-sm text-primary hover:underline w-fit"
+                    >
+                      <User className="h-4 w-4" />
+                      + Привязать клиента
+                    </button>
+                  )}
+
+                  {notifyOpen && order.status === 'ready' && order.client && (
+                    <div className="rounded-lg border border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/20 p-3 space-y-2 mt-2">
+                      <p className="text-xs font-medium text-violet-700 dark:text-violet-300">Уведомить клиента</p>
+                      <div className="rounded-md bg-white dark:bg-background/60 border px-3 py-2 text-sm text-foreground">
+                        {notifyText}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => { navigator.clipboard.writeText(notifyText); toast.success('Скопировано') }}>
+                          Скопировать
+                        </Button>
+                        <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => window.open(tgLink, '_blank')}>
+                          Открыть Telegram
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {showClientPick && (
+                    <ClientPickerDropdown
+                      onSelect={handleAssignClient}
+                      onClose={() => setShowClientPick(false)}
+                    />
+                  )}
+                </div>
+
+                {order.assigned_to_profile && (
+                  <div className="flex items-center gap-3">
+                    <Package className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <p className="text-sm">Исп.: {order.assigned_to_profile.display_name}</p>
+                  </div>
+                )}
+
+                {order.order_type === 'carpet' && ((order as any).pickup_date || (order as any).delivery_date) && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div className="text-sm space-y-0.5">
+                      {(order as any).pickup_date && <p>Забор: {dayjs((order as any).pickup_date).format('DD.MM.YYYY')}</p>}
+                      {(order as any).delivery_date && <p>Доставка: {dayjs((order as any).delivery_date).format('DD.MM.YYYY')}</p>}
+                    </div>
+                  </div>
+                )}
+                {order.order_type === 'furniture' && ((order as any).visit_address || (order as any).visit_date) && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div className="text-sm space-y-0.5">
+                      {(order as any).visit_address && <p>{(order as any).visit_address}</p>}
+                      {(order as any).visit_date && <p>Дата выезда: {dayjs((order as any).visit_date).format('DD.MM.YYYY')}</p>}
+                    </div>
+                  </div>
+                )}
+
+                {order.notes && (
+                  <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+                    {order.notes}
+                  </p>
+                )}
+
+                <Separator />
+
+                {/* Детали */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Детали</p>
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Создан</span>
+                      <span>{dayjs(order.created_at).format('DD.MM.YY HH:mm')}</span>
+                    </div>
+                    {order.ready_date && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Срок</span>
+                        <span className={cn(isOverdue ? 'text-red-500 font-medium' : isDueToday ? 'text-orange-500 font-medium' : '')}>
+                          {dayjs(order.ready_date).format('DD.MM.YYYY')}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Оплата</span>
+                      <PaymentStatusBadge status={order.payment_status} />
+                    </div>
+                  </div>
+                </div>
+
+              </CardContent>
+            </Card>
+
+            {/* Изменить статус */}
+            {nextStatuses.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Изменить статус</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-2">
+                  {nextStatuses.map(s => (
+                    <Button
+                      key={s}
+                      variant={s === 'cancelled' ? 'outline' : 'default'}
+                      size="sm"
+                      disabled={updatingStatus}
+                      className={
+                        s === 'cancelled'
+                          ? 'border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30'
+                          : POSITIVE_STATUSES.includes(s)
+                          ? 'bg-green-600 hover:bg-green-700 text-white dark:bg-green-700 dark:hover:bg-green-600'
+                          : ''
+                      }
+                      onClick={s === 'cancelled' ? () => setCancelDialogOpen(true) : () => handleStatusChange(s)}
+                    >
+                      {STATUS_CONFIG[s].label}
+                    </Button>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
           </div>
-        )}
 
-        {/* Client / Executor / Notes */}
-        <Card>
-          <CardContent className="pt-4 space-y-3">
+          {/* ── Правая область: изделия ── */}
+          <div className="flex-1 min-w-0">
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Изделия ({items.length})</CardTitle>
+                  <button
+                    onClick={() => { setAddingItem(v => !v); setEditingItemId(null) }}
+                    className="flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Добавить
+                  </button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
 
-            {order.client ? (
-              <div className="flex items-start gap-3">
-                <User className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm">{clientName}</p>
-                  {order.client.phone && (
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-muted-foreground">{order.client.phone}</span>
-                      <a
-                        href={`tel:${order.client.phone}`}
-                        className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 transition-colors"
-                        title="Позвонить"
-                      >
-                        <Phone className="h-3 w-3" />
-                      </a>
-                      <a
-                        href={`tg://resolve?phone=${order.client.phone.replace(/[^0-9]/g, '')}`}
-                        className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-400 transition-colors"
-                        title="Написать в Telegram"
-                      >
-                        <MessageCircle className="h-3 w-3" />
-                      </a>
-                      {/* Feature 2: Notify button when order is ready */}
-                      {order.status === 'ready' && (
-                        <button
-                          onClick={() => setNotifyOpen(v => !v)}
-                          className={cn(
-                            'inline-flex items-center justify-center h-6 w-6 rounded-full transition-colors',
-                            notifyOpen
-                              ? 'bg-violet-200 text-violet-700 dark:bg-violet-800/50 dark:text-violet-300'
-                              : 'bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-400'
+                {addingItem && (
+                  <AddItemForm orderId={order.id} onClose={() => setAddingItem(false)} />
+                )}
+
+                {items.map(item => (
+                  <div key={item.id}>
+                    <div
+                      className={`flex items-start gap-3 rounded-lg border p-3 group ${
+                        item.defects
+                          ? 'border-orange-300 bg-orange-50/50 dark:border-orange-700 dark:bg-orange-950/20'
+                          : ''
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-sm">{item.item_type_name}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            item.status === 'issued'
+                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                              : item.status === 'ready'
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                              : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                          }`}>
+                            {ITEM_STATUS_LABELS[item.status] ?? item.status}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-muted-foreground">
+                          {item.color      && <span>Цвет: {item.color}</span>}
+                          {item.brand      && <span>Бренд: {item.brand}</span>}
+                          {(item as any).area_m2 != null && (
+                            <span>Площадь: {Number((item as any).area_m2).toFixed(2)} м²</span>
                           )}
-                          title="Уведомить клиента"
+                          {item.ready_date && <span>Срок: {dayjs(item.ready_date).format('DD.MM')}</span>}
+                        </div>
+                        {item.defects && (
+                          <p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
+                            ⚠ {item.defects}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-sm font-semibold">
+                          {formatCurrency(item.price)} {symbol}
+                        </span>
+                        <button
+                          onClick={() => setEditingItemId(v => v === item.id ? null : item.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-primary"
+                          title="Редактировать"
                         >
-                          <Bell className="h-3 w-3" />
+                          <Pencil className="h-3.5 w-3.5" />
                         </button>
-                      )}
+                        <button
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-destructive"
+                          title="Удалить изделие"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => setShowClientPick(v => !v)}
-                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                  title="Сменить клиента"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1">
-                <button
-                  onClick={() => setShowClientPick(v => !v)}
-                  className="flex items-center gap-2 text-sm text-primary hover:underline w-fit"
-                >
-                  <User className="h-4 w-4" />
-                  + Привязать клиента
-                </button>
-              </div>
-            )}
 
-            {/* Feature 2: Notify panel */}
-            {notifyOpen && order.status === 'ready' && order.client && (
-              <div className="rounded-lg border border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/20 p-3 space-y-2">
-                <p className="text-xs font-medium text-violet-700 dark:text-violet-300">Уведомить клиента</p>
-                <div className="rounded-md bg-white dark:bg-background/60 border px-3 py-2 text-sm text-foreground">
-                  {notifyText}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 h-8 text-xs"
-                    onClick={() => {
-                      navigator.clipboard.writeText(notifyText)
-                      toast.success('Скопировано')
-                    }}
-                  >
-                    Скопировать
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 h-8 text-xs"
-                    onClick={() => window.open(tgLink, '_blank')}
-                  >
-                    Открыть Telegram
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {showClientPick && (
-              <ClientPickerDropdown
-                onSelect={handleAssignClient}
-                onClose={() => setShowClientPick(false)}
-              />
-            )}
-
-            {order.assigned_to_profile && (
-              <div className="flex items-center gap-3">
-                <Package className="h-4 w-4 text-muted-foreground shrink-0" />
-                <p className="text-sm">Исп.: {order.assigned_to_profile.display_name}</p>
-              </div>
-            )}
-
-            {/* Feature 3: Visit address/date display */}
-            {order.order_type === 'carpet' && ((order as any).pickup_date || (order as any).delivery_date) && (
-              <div className="flex items-start gap-3">
-                <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                <div className="text-sm space-y-0.5">
-                  {(order as any).pickup_date && (
-                    <p>Забор: {dayjs((order as any).pickup_date).format('DD.MM.YYYY')}</p>
-                  )}
-                  {(order as any).delivery_date && (
-                    <p>Доставка: {dayjs((order as any).delivery_date).format('DD.MM.YYYY')}</p>
-                  )}
-                </div>
-              </div>
-            )}
-            {order.order_type === 'furniture' && ((order as any).visit_address || (order as any).visit_date) && (
-              <div className="flex items-start gap-3">
-                <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                <div className="text-sm space-y-0.5">
-                  {(order as any).visit_address && <p>{(order as any).visit_address}</p>}
-                  {(order as any).visit_date && (
-                    <p>Дата выезда: {dayjs((order as any).visit_date).format('DD.MM.YYYY')}</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {order.notes && (
-              <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-                {order.notes}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Items */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Изделия ({items.length})</CardTitle>
-              <button
-                onClick={() => { setAddingItem(v => !v); setEditingItemId(null) }}
-                className="flex items-center gap-1 text-xs text-primary hover:underline"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Добавить
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-
-            {addingItem && (
-              <AddItemForm orderId={order.id} onClose={() => setAddingItem(false)} />
-            )}
-
-            {items.map(item => (
-              <div key={item.id}>
-                <div
-                  className={`flex items-start gap-3 rounded-lg border p-3 group ${
-                    item.defects
-                      ? 'border-orange-300 bg-orange-50/50 dark:border-orange-700 dark:bg-orange-950/20'
-                      : ''
-                  }`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm">{item.item_type_name}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        item.status === 'issued'
-                          ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-                          : item.status === 'ready'
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                          : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
-                      }`}>
-                        {ITEM_STATUS_LABELS[item.status] ?? item.status}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-muted-foreground">
-                      {item.color      && <span>Цвет: {item.color}</span>}
-                      {item.brand      && <span>Бренд: {item.brand}</span>}
-                      {(item as any).area_m2 != null && (
-                        <span>Площадь: {Number((item as any).area_m2).toFixed(2)} м²</span>
-                      )}
-                      {item.ready_date && <span>Срок: {dayjs(item.ready_date).format('DD.MM')}</span>}
-                    </div>
-                    {item.defects && (
-                      <p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
-                        ⚠ {item.defects}
-                      </p>
+                    {editingItemId === item.id && (
+                      <EditItemRow
+                        item={item}
+                        orderId={order.id}
+                        onClose={() => setEditingItemId(null)}
+                      />
                     )}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span className="text-sm font-semibold">
-                      {formatCurrency(item.price)} {symbol}
-                    </span>
-                    <button
-                      onClick={() => setEditingItemId(v => v === item.id ? null : item.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-primary"
-                      title="Редактировать"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleRemoveItem(item.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-destructive"
-                      title="Удалить изделие"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                ))}
+
+                <Separator />
+
+                {/* Итого */}
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Итого</span>
+                    <span className="font-semibold">{formatCurrency(order.total_amount)} {symbol}</span>
                   </div>
+                  {order.prepaid_amount > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Предоплата</span>
+                      <span>{formatCurrency(order.prepaid_amount)} {symbol}</span>
+                    </div>
+                  )}
+                  {order.paid_amount > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Оплачено</span>
+                      <span>{formatCurrency(order.paid_amount)} {symbol}</span>
+                    </div>
+                  )}
+                  {remaining > 0 && (
+                    <div className="flex justify-between font-medium text-orange-600 dark:text-orange-400">
+                      <span>Остаток</span>
+                      <span>{formatCurrency(remaining)} {symbol}</span>
+                    </div>
+                  )}
+
+                  {order.total_amount > 0 && (
+                    <div className="mt-2">
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>Оплачено {paidPercent}%</span>
+                        <span>{formatCurrency(order.paid_amount)} / {formatCurrency(order.total_amount)} {symbol}</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            paidPercent >= 100
+                              ? 'bg-green-500'
+                              : paidPercent > 0
+                              ? 'bg-orange-400'
+                              : 'bg-muted-foreground/30'
+                          }`}
+                          style={{ width: `${paidPercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {editingItemId === item.id && (
-                  <EditItemRow
-                    item={item}
-                    orderId={order.id}
-                    onClose={() => setEditingItemId(null)}
-                  />
-                )}
-              </div>
-            ))}
+              </CardContent>
+            </Card>
+          </div>
 
-            <Separator />
-
-            {/* Totals */}
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Итого</span>
-                <span className="font-semibold">{formatCurrency(order.total_amount)} {symbol}</span>
-              </div>
-              {order.prepaid_amount > 0 && (
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Предоплата</span>
-                  <span>{formatCurrency(order.prepaid_amount)} {symbol}</span>
-                </div>
-              )}
-              {order.paid_amount > 0 && (
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Оплачено</span>
-                  <span>{formatCurrency(order.paid_amount)} {symbol}</span>
-                </div>
-              )}
-              {remaining > 0 && (
-                <div className="flex justify-between font-medium text-orange-600 dark:text-orange-400">
-                  <span>Остаток</span>
-                  <span>{formatCurrency(remaining)} {symbol}</span>
-                </div>
-              )}
-
-              {/* Feature 4: Payment progress bar */}
-              {order.total_amount > 0 && (
-                <div className="mt-2">
-                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                    <span>Оплачено {paidPercent}%</span>
-                    <span>{formatCurrency(order.paid_amount)} / {formatCurrency(order.total_amount)} {symbol}</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        paidPercent >= 100
-                          ? 'bg-green-500'
-                          : paidPercent > 0
-                          ? 'bg-orange-400'
-                          : 'bg-muted-foreground/30'
-                      }`}
-                      style={{ width: `${paidPercent}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Status change */}
-        {nextStatuses.length > 0 && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Изменить статус</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {nextStatuses.map(s => (
-                <Button
-                  key={s}
-                  variant={s === 'cancelled' ? 'outline' : 'default'}
-                  size="sm"
-                  disabled={updatingStatus}
-                  className={
-                    s === 'cancelled'
-                      ? 'border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30'
-                      : POSITIVE_STATUSES.includes(s)
-                      ? 'bg-green-600 hover:bg-green-700 text-white dark:bg-green-700 dark:hover:bg-green-600'
-                      : ''
-                  }
-                  onClick={s === 'cancelled' ? () => setCancelDialogOpen(true) : () => handleStatusChange(s)}
-                >
-                  {STATUS_CONFIG[s].label}
-                </Button>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
+        </div>
       </div>
 
       {/* Footer */}

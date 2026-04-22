@@ -260,6 +260,24 @@ export function POSPage() {
   const { data: clientsData } = useClientsPaged(clientSearch, 1, 20)
   const clients = clientsData?.items ?? []
 
+  // Статистика выбранного клиента (только для cleaning)
+  const { data: posClientStats } = useQuery({
+    queryKey: ['pos_client_stats', clientId, PRODUCT],
+    queryFn: async () => {
+      if (!clientId) return null
+      const { data } = await supabase
+        .from('cleaning_orders')
+        .select('id, payment_status, total_amount, created_at')
+        .eq('client_id', clientId)
+        .eq('product', PRODUCT)
+        .order('created_at', { ascending: false })
+      const orders = data ?? []
+      const spent = orders.filter(o => o.payment_status === 'paid').reduce((s, o) => s + (o.total_amount || 0), 0)
+      return { count: orders.length, spent, last: orders[0]?.created_at ?? null }
+    },
+    enabled: !!clientId,
+  })
+
   // Исполнитель
   const [assignedTo, setAssignedTo] = useState<string | null>(null)
   const [flashTypeId, setFlashTypeId] = useState<string|null>(null)
@@ -855,6 +873,17 @@ export function POSPage() {
 
         {/* ── Правая панель: чек ── */}
         <div className="w-[340px] xl:w-[30%] flex flex-col overflow-hidden min-h-0 shrink-0">
+
+          {/* Мини-статистика клиента */}
+          {clientId && posClientStats && posClientStats.count > 0 && (
+            <div className="flex items-center gap-3 px-3 py-1.5 border-b bg-muted/30 text-xs shrink-0">
+              <span className="text-muted-foreground">Заказов: <span className="font-semibold text-foreground">{posClientStats.count}</span></span>
+              <span className="text-muted-foreground">Оплачено: <span className="font-semibold text-foreground">{formatCurrency(posClientStats.spent)} {symbol}</span></span>
+              {posClientStats.last && (
+                <span className="text-muted-foreground">Был: <span className="font-semibold text-foreground">{dayjs(posClientStats.last).format('DD.MM.YY')}</span></span>
+              )}
+            </div>
+          )}
 
           {/* Список позиций */}
           <div className="flex-1 overflow-y-auto min-h-0">

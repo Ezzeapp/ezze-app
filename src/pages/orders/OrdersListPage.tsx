@@ -101,7 +101,7 @@ function SortIndicator({ active, asc }: { active: boolean; asc: boolean }) {
 // ── Канбан-вид ─────────────────────────────────────────────────────────────────
 
 const KANBAN_COLS: { value: OrderStatus; label: string; accent: string; header: string }[] = [
-  { value: 'received',    label: 'Получен',    accent: 'border-t-blue-400',    header: 'bg-blue-50 dark:bg-blue-950/30' },
+  { value: 'received',    label: 'Принят',     accent: 'border-t-blue-400',    header: 'bg-blue-50 dark:bg-blue-950/30' },
   { value: 'in_progress', label: 'В работе',   accent: 'border-t-yellow-400',  header: 'bg-yellow-50 dark:bg-yellow-950/30' },
   { value: 'ready',       label: 'Готов',      accent: 'border-t-green-400',   header: 'bg-green-50 dark:bg-green-950/30' },
   { value: 'issued',      label: 'Выдан',      accent: 'border-t-purple-400',  header: 'bg-purple-50 dark:bg-purple-950/30' },
@@ -141,7 +141,7 @@ function KanbanView({ orders, symbol, onNavigate, isOverdueMap, isDueTodayMap, t
   }
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2" style={{ minHeight: 'min(400px, calc(100vh - 320px))' }}>
+    <div className="flex gap-2 overflow-x-auto pb-2" style={{ minHeight: 'min(300px, calc(100vh - 420px))' }}>
       {KANBAN_COLS.map(col => {
         const colOrders = grouped[col.value] ?? []
         return (
@@ -174,7 +174,7 @@ function KanbanView({ orders, symbol, onNavigate, isOverdueMap, isDueTodayMap, t
             </div>
 
             {/* Карточки */}
-            <div className="flex-1 p-2 space-y-1.5 min-h-[60px] overflow-y-auto" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+            <div className="flex-1 p-2 space-y-1.5 min-h-[60px] overflow-y-auto" style={{ maxHeight: 'calc(100vh - 420px)' }}>
               {colOrders.map(order => {
                 const TypeIcon  = ORDER_TYPE_ICONS[order.order_type as OrderType]
                 const overdue   = isOverdueMap[order.id]
@@ -562,7 +562,7 @@ export function OrdersListPage() {
       <div className="flex-1 overflow-y-auto px-4 lg:px-[18px] pb-20 lg:pb-4 space-y-3">
 
         {/* Статистика */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none sticky top-0 z-10 bg-background py-2 -my-2">
 
           {/* Сегодня */}
           <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[105px]">
