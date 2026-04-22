@@ -560,7 +560,7 @@ export function AppointmentDialog({
     )
   }, [services, svcSearch])
 
-  // Поиск клиентов
+  // Поиск клиентов (для дропдауна)
   const filteredClients = useMemo(() => {
     const q = clientSearch.toLowerCase().trim()
     if (!q) return []
@@ -569,6 +569,19 @@ export function AppointmentDialog({
       (c.phone || '').includes(q) ||
       (c.email || '').toLowerCase().includes(q)
     ).slice(0, 8)
+  }, [clients, clientSearch])
+
+  // Список клиентов (левая колонка на десктопе) — поиск или топ-20 по визитам
+  const clientsForList = useMemo(() => {
+    const q = clientSearch.toLowerCase().trim()
+    const arr = q
+      ? clients.filter(c =>
+          `${c.first_name} ${c.last_name || ''}`.toLowerCase().includes(q) ||
+          (c.phone || '').includes(q) ||
+          (c.email || '').toLowerCase().includes(q)
+        )
+      : [...clients].sort((a, b) => (b.total_visits ?? 0) - (a.total_visits ?? 0))
+    return arr.slice(0, 200)
   }, [clients, clientSearch])
 
   // Итоговая цена
@@ -1699,22 +1712,131 @@ export function AppointmentDialog({
                 {/* 3 колонки */}
                 <div className="flex-1 flex overflow-hidden divide-x">
 
-                  {/* ── КОЛ 1: УСЛУГИ (28%) ── */}
-                  <div className="flex flex-col w-[28%] overflow-hidden">
-                    <div className="flex-1 overflow-y-auto p-3">
-                      {servicesBlock}
-                    </div>
-                    {selectedSvcs.length > 0 && (
-                      <div className="shrink-0 border-t px-4 py-2 bg-muted/20 text-xs text-muted-foreground flex items-center gap-3">
-                        <span className="font-medium text-foreground">{selectedSvcs.length} усл.</span>
-                        {totalDuration > 0 && <span>· {formatDuration(totalDuration, t)}</span>}
-                        {totalBasePrice > 0 && <span className="ml-auto font-semibold text-foreground">{formatCurrency(totalBasePrice, currency, i18n.language)}</span>}
+                  {/* ── КОЛ 1: КЛИЕНТ (26%) ── */}
+                  <div className="flex flex-col w-[26%] overflow-hidden">
+                    <div className="shrink-0 px-4 pt-3 pb-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          {t('appointments.client')}
+                        </p>
+                        {!showNewClient && (
+                          <button type="button"
+                            onClick={() => { setShowNewClient(true); setSelectedClient(null); setIsGuest(false) }}
+                            className="text-xs text-primary hover:underline flex items-center gap-1">
+                            <UserPlus className="h-3 w-3" />{t('appointments.newClient')}
+                          </button>
+                        )}
                       </div>
-                    )}
+                      {!showNewClient && (
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                          <Input
+                            className="pl-9 pr-9 h-9 text-sm"
+                            placeholder={t('appointments.searchClient')}
+                            value={clientSearch}
+                            onChange={e => setClientSearch(e.target.value)}
+                          />
+                          {clientSearch && (
+                            <button type="button"
+                              onClick={() => setClientSearch('')}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
+                      {showNewClient ? (
+                        <div className="border rounded-xl p-3 space-y-2 bg-muted/30">
+                          <p className="text-sm font-medium">{t('appointments.newClientTitle')}</p>
+                          <div className="grid grid-cols-1 gap-2">
+                            <Input className="h-8 text-sm" placeholder={`${t('clients.firstName')} *`}
+                              value={newFirstName} onChange={e => setNewFirstName(e.target.value)} autoFocus />
+                            <Input className="h-8 text-sm" placeholder={t('clients.phone')}
+                              value={newPhone} onChange={e => setNewPhone(e.target.value)} />
+                            <Input className="h-8 text-sm" placeholder={t('clients.email')}
+                              value={newEmail} onChange={e => setNewEmail(e.target.value)} />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button type="button" size="sm" className="h-7 text-xs"
+                              loading={savingClient} disabled={!newFirstName.trim()} onClick={handleAddClient}>
+                              {t('common.save')}
+                            </Button>
+                            <Button type="button" size="sm" variant="ghost" className="h-7 text-xs"
+                              onClick={() => { setShowNewClient(false); setIsGuest(false) }}>
+                              {t('common.cancel')}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Гость */}
+                          {isGuest && !selectedClient && (
+                            <div className="border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 rounded-xl px-3 py-2 space-y-1.5 mb-2">
+                              <p className="text-[11px] text-amber-700 dark:text-amber-300 font-medium">{t('appointments.guestClient')}</p>
+                              <Input className="h-8 text-sm" placeholder={t('appointments.guestName') || 'Имя'}
+                                value={guestName} onChange={e => setGuestName(e.target.value)} />
+                              <Input className="h-8 text-sm" placeholder={t('appointments.guestPhone') || 'Телефон'}
+                                value={guestPhone} onChange={e => setGuestPhone(e.target.value)} />
+                            </div>
+                          )}
+                          {/* Список клиентов */}
+                          {clientsForList.length === 0 && clientSearch && (
+                            <p className="text-xs text-muted-foreground text-center py-4">
+                              {t('appointments.noClientsFound') || 'Ничего не найдено'}
+                            </p>
+                          )}
+                          {clientsForList.map(c => {
+                            const isSelected = selectedClient?.id === c.id
+                            const initials = (c.first_name?.charAt(0) || '').toUpperCase() + (c.last_name?.charAt(0) || '').toUpperCase()
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => { setSelectedClient(c); setIsGuest(false); setClientSearch('') }}
+                                className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-xl border transition-all text-left ${
+                                  isSelected
+                                    ? 'bg-primary/10 border-primary/40'
+                                    : 'border-transparent hover:bg-muted/50'
+                                }`}
+                              >
+                                <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 text-[11px] font-semibold ${
+                                  isSelected ? 'bg-primary text-primary-foreground' : 'bg-primary/15 text-primary'
+                                }`}>
+                                  {initials || '?'}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate leading-tight">
+                                    {c.first_name}{c.last_name ? ' ' + c.last_name : ''}
+                                  </p>
+                                  {c.phone && (
+                                    <p className="text-[11px] text-muted-foreground truncate leading-tight">{c.phone}</p>
+                                  )}
+                                </div>
+                                {(c.total_visits ?? 0) > 0 && (
+                                  <span className="shrink-0 text-[10px] text-muted-foreground">
+                                    {c.total_visits} виз.
+                                  </span>
+                                )}
+                              </button>
+                            )
+                          })}
+                        </>
+                      )}
+                    </div>
                   </div>
 
-                  {/* ── КОЛ 2: ДАТА + ВРЕМЯ (38%) ── */}
-                  <div className="flex flex-col w-[38%] overflow-hidden">
+                  {/* ── КОЛ 2: УСЛУГА + ДАТА + ВРЕМЯ (44%) ── */}
+                  <div className="flex flex-col w-[44%] overflow-hidden">
+                    {/* Услуга */}
+                    <div className="shrink-0 px-4 pt-3 pb-2 border-b">
+                      {servicesBlock}
+                    </div>
+
+                    {/* Дата + Время скролл */}
+                    <div className="flex-1 overflow-y-auto">
                     {/* Месячный мини-календарь */}
                     <div className="px-4 pt-3 pb-2 shrink-0">
                       {/* Навигация месяц */}
@@ -1827,34 +1949,98 @@ export function AppointmentDialog({
                         )}
                       </div>
                     </div>
+                    </div>{/* конец flex-1 overflow-y-auto центральной колонки */}
                   </div>
 
-                  {/* ── КОЛ 3: КЛИЕНТ + ОПЛАТА (34%) ── */}
-                  <div className="flex flex-col w-[34%] overflow-hidden">
+                  {/* ── КОЛ 3: СВОДКА + ОПЛАТА (30%) ── */}
+                  <div className="flex flex-col w-[30%] overflow-hidden">
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
 
-                      {/* Клиент */}
-                      {clientBlock}
-
-                      {/* Цена */}
-                      <div className="space-y-1 pt-2 border-t">
-                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2">
-                          {t('appointments.total')}
+                      {/* ── СВОДКА ── */}
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                          {t('appointments.summary') || 'Сводка'}
                         </p>
-                        <div className="relative">
-                          <Input type="number" min={0}
-                            className="h-12 w-full text-2xl font-bold pr-14"
-                            placeholder={totalBasePrice > 0 ? String(totalBasePrice) : t('appointments.pricePlaceholder')}
-                            value={priceInput} onChange={e => setPriceInput(e.target.value)} />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
-                        </div>
-                        {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
-                          <div className="flex items-center justify-end gap-1.5 px-1">
-                            <span className="text-xs text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
-                            <span className="text-xs">→</span>
-                            <span className={`text-sm font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : 'text-emerald-600'}`}>{formatCurrency(finalPrice, currency, i18n.language)}</span>
+
+                        {/* Клиент в сводке */}
+                        {(selectedClient || (isGuest && guestName)) && (
+                          <div className="flex items-center gap-2.5 mb-3 pb-3 border-b">
+                            <div className="h-8 w-8 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0 text-[11px] font-semibold">
+                              {(selectedClient?.first_name || guestName || '?').charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate leading-tight">{clientLabel}</p>
+                              {(selectedClient?.phone || guestPhone) && (
+                                <p className="text-[11px] text-muted-foreground truncate leading-tight">
+                                  {selectedClient?.phone || guestPhone}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         )}
+
+                        {/* Услуги с ценами */}
+                        {selectedSvcs.length > 0 ? (
+                          <div className="space-y-2 mb-3">
+                            {selectedSvcs.map((svc, i) => (
+                              <div key={svc.id} className="flex items-start gap-2 text-sm">
+                                <div className="flex-1 min-w-0">
+                                  <p className="truncate leading-tight">{svc.name}</p>
+                                  {i === 0 && selectedDate && selectedTime && (
+                                    <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                                      {dayjs(selectedDate).format('D MMM')}, {selectedTime}
+                                      {totalDuration > 0 && ` — ${minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)}`}
+                                    </p>
+                                  )}
+                                </div>
+                                <span className="shrink-0 text-sm font-medium">
+                                  {formatCurrency(svc.price || 0, currency, i18n.language)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic mb-3">{t('appointments.noServicesYet') || 'Услуги не выбраны'}</p>
+                        )}
+
+                        {/* Скидка / Надбавка строкой */}
+                        {effectiveDiscount > 0 && basePrice > 0 && (
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="text-muted-foreground">{t('appointments.discount')} {effectiveDiscount}%</span>
+                            <span className="text-emerald-600 font-medium">
+                              −{formatCurrency(Math.round(basePrice * effectiveDiscount / 100), currency, i18n.language)}
+                            </span>
+                          </div>
+                        )}
+                        {effectiveSurcharge > 0 && basePrice > 0 && (
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="text-muted-foreground">{t('appointments.surcharge')} {effectiveSurcharge}%</span>
+                            <span className="text-orange-500 font-medium">
+                              +{formatCurrency(Math.round(basePrice * effectiveSurcharge / 100), currency, i18n.language)}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Итого */}
+                        <div className="flex items-center justify-between pt-2 border-t">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            {t('appointments.total')}
+                          </span>
+                          <span className="text-xl font-bold">
+                            {formatCurrency(basePrice > 0 ? finalPrice : totalBasePrice, currency, i18n.language)}
+                          </span>
+                        </div>
+
+                        {/* Ручная цена (свёрнутая) */}
+                        <div className="mt-2">
+                          <div className="relative">
+                            <Input type="number" min={0}
+                              className="h-9 w-full text-sm pr-10"
+                              placeholder={totalBasePrice > 0 ? `${t('appointments.overridePrice') || 'Своя цена'}: ${totalBasePrice}` : t('appointments.pricePlaceholder')}
+                              value={priceInput} onChange={e => setPriceInput(e.target.value)} />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Скидка / Наценка */}
@@ -2052,8 +2238,16 @@ export function AppointmentDialog({
                         <Printer className="h-3.5 w-3.5" />
                       </Button>
                     )}
-                    <Button type="button" loading={isLoading} disabled={!canSave} onClick={handleSubmit}>
-                      {t('common.save')}
+                    <Button type="button" variant="outline" onClick={onClose}>
+                      {t('common.cancel')}
+                    </Button>
+                    <Button type="button" loading={isLoading} disabled={!canSave} onClick={handleSubmit} className="gap-2">
+                      {editAppt ? t('common.save') : (t('appointments.createAppt') || 'Создать запись')}
+                      {!editAppt && canSave && (basePrice > 0 ? finalPrice : totalBasePrice) > 0 && (
+                        <span className="font-bold">
+                          · {formatCurrency(basePrice > 0 ? finalPrice : totalBasePrice, currency, i18n.language)}
+                        </span>
+                      )}
                     </Button>
                   </div>
                 </div>
