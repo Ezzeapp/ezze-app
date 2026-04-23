@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next'
 import {
   Plus, Search, ClipboardList, Loader2,
   AlertTriangle, Trash2, Download, CalendarRange, X,
-  ArrowUpDown, ArrowUp, ArrowDown, List, Columns3,
+  ArrowUpDown, ArrowUp, ArrowDown, List, Columns3, Truck,
 } from 'lucide-react'
+import { PRODUCT } from '@/lib/config'
+import { DeliveryContent } from '@/pages/cleaning/DeliveryPage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DateInput } from '@/components/ui/date-input'
@@ -405,11 +407,13 @@ export function OrdersListPage() {
 
   const [deleteId,       setDeleteId]       = useState<string | null>(null)
   const [deleteAllOpen,  setDeleteAllOpen]  = useState(false)
-  const [viewMode,       setViewMode]       = useState<'table' | 'kanban'>('table')
+  const [viewMode,       setViewMode]       = useState<'table' | 'kanban' | 'delivery'>('table')
   const { mutateAsync: deleteOrder } = useDeleteOrder()
 
   const hasDateFilter = !!dateFrom || !!dateTo
   const isKanban = viewMode === 'kanban'
+  const isDelivery = viewMode === 'delivery'
+  const isCleaningProduct = PRODUCT === 'cleaning'
 
   const { data, isLoading } = useCleaningOrders({
     status:        isKanban ? 'all' : status,
@@ -504,7 +508,7 @@ export function OrdersListPage() {
         description={total > 0 ? `${total} ${t('orders.shortOrders')}` : undefined}
       >
         <div className="flex items-center gap-1.5">
-          {/* Вид: таблица / канбан */}
+          {/* Вид: таблица / канбан / доставка */}
           <div className="flex rounded-lg border overflow-hidden">
             <button
               onClick={() => setViewMode('table')}
@@ -520,6 +524,15 @@ export function OrdersListPage() {
             >
               <Columns3 className="h-4 w-4" />
             </button>
+            {isCleaningProduct && (
+              <button
+                onClick={() => setViewMode('delivery')}
+                className={cn('p-1.5 transition-colors', viewMode === 'delivery' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
+                title="Доставка"
+              >
+                <Truck className="h-4 w-4" />
+              </button>
+            )}
           </div>
           {/* Период */}
           <Button
@@ -682,39 +695,43 @@ export function OrdersListPage() {
           </div>
         )}
 
-        {/* Поиск */}
-        <div className="pt-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t('orders.search')}
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1) }}
-              className="pl-9"
-            />
-          </div>
-        </div>
+        {/* Поиск + Статусы — не нужны в режиме Доставка */}
+        {!isDelivery && (
+          <>
+            <div className="pt-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t('orders.search')}
+                  value={search}
+                  onChange={e => { setSearch(e.target.value); setPage(1) }}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
+              {STATUS_TABS.map(tab => (
+                <button
+                  key={tab.value}
+                  onClick={() => { setStatus(tab.value); setPage(1) }}
+                  className={cn(
+                    'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                    status === tab.value
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
-        {/* Статусы */}
-        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
-          {STATUS_TABS.map(tab => (
-            <button
-              key={tab.value}
-              onClick={() => { setStatus(tab.value); setPage(1) }}
-              className={cn(
-                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                status === tab.value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Список / Таблица / Канбан */}
-        {isLoading ? (
+        {/* Список / Таблица / Канбан / Доставка */}
+        {isDelivery ? (
+          <DeliveryContent />
+        ) : isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>

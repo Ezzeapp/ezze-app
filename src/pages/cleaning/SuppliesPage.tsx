@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { toast } from '@/components/shared/Toaster'
 import { cn, formatCurrency } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSuppliesCategories } from '@/hooks/useSuppliesCategories'
 import dayjs from 'dayjs'
 
 interface Supply {
@@ -24,13 +25,6 @@ interface Supply {
   notes: string | null
 }
 
-const CATEGORIES = [
-  { value: 'all', label: 'Все' },
-  { value: 'chemical', label: 'Химия' },
-  { value: 'packaging', label: 'Упаковка' },
-  { value: 'equipment', label: 'Оборудование' },
-  { value: 'other', label: 'Прочее' },
-]
 
 function useSupplies() {
   return useQuery({
@@ -51,6 +45,11 @@ export function SuppliesPage() {
   const { user } = useAuth()
   const qc = useQueryClient()
   const { data: supplies = [], isLoading } = useSupplies()
+  const { data: rawCategories = [] } = useSuppliesCategories()
+  const enabledCategories = rawCategories.filter(c => c.enabled)
+  const CATEGORIES = [{ value: 'all', label: 'Все' }, ...enabledCategories]
+  const defaultCat = enabledCategories[0]?.value ?? 'other'
+  const labelFor = (value: string) => rawCategories.find(c => c.value === value)?.label ?? value
   const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState('all')
   const [addOpen, setAddOpen] = useState(false)
@@ -58,7 +57,7 @@ export function SuppliesPage() {
 
   // Form
   const [fname, setFname] = useState('')
-  const [fcat, setFcat] = useState('chemical')
+  const [fcat, setFcat] = useState(defaultCat)
   const [funit, setFunit] = useState('шт')
   const [fqty, setFqty] = useState('')
   const [fmin, setFmin] = useState('')
@@ -67,7 +66,7 @@ export function SuppliesPage() {
   const [fnotes, setFnotes] = useState('')
 
   function resetForm() {
-    setFname(''); setFcat('chemical'); setFunit('шт'); setFqty(''); setFmin(''); setFprice(''); setFsupplier(''); setFnotes('')
+    setFname(''); setFcat(defaultCat); setFunit('шт'); setFqty(''); setFmin(''); setFprice(''); setFsupplier(''); setFnotes('')
     setEditId(null); setAddOpen(false)
   }
 
@@ -176,7 +175,7 @@ export function SuppliesPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm">{s.name}</span>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                        {CATEGORIES.find(c => c.value === s.category)?.label || s.category}
+                        {labelFor(s.category)}
                       </span>
                       {isLow && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 flex items-center gap-1">

@@ -1,7 +1,8 @@
 import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
-import { Shield, Zap, Users, BookOpen, Palette, CreditCard, Mail, Bot, UserCheck, BarChart2, LifeBuoy, LayoutGrid } from 'lucide-react'
+import { Shield, Zap, Users, BookOpen, Palette, CreditCard, Mail, Bot, UserCheck, BarChart2, LifeBuoy, LayoutGrid, Droplets } from 'lucide-react'
+import { PRODUCT } from '@/lib/config'
 import { useAuth } from '@/contexts/AuthContext'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
@@ -16,9 +17,10 @@ import { AdminTgClientsTab } from '@/components/admin/AdminTgClientsTab'
 import { AdminReportsTab } from '@/components/admin/AdminReportsTab'
 import { AdminSupportTab } from '@/components/admin/AdminSupportTab'
 import { AdminHomeScreenTab } from '@/components/admin/AdminHomeScreenTab'
+import { AdminSuppliesCategoriesTab } from '@/components/admin/AdminSuppliesCategoriesTab'
 import { useAdminSupportTickets } from '@/hooks/useSupportTickets'
 
-type Tab = 'features' | 'users' | 'catalogs' | 'appearance' | 'billing' | 'email' | 'ai' | 'tg_clients' | 'reports' | 'support' | 'home_screen'
+type Tab = 'features' | 'users' | 'catalogs' | 'appearance' | 'billing' | 'email' | 'ai' | 'tg_clients' | 'reports' | 'support' | 'home_screen' | 'supplies_cats'
 
 export function AdminPage() {
   const { t } = useTranslation()
@@ -45,6 +47,7 @@ export function AdminPage() {
     { id: 'reports',    label: 'Отчёты',                 icon: BarChart2  },
     { id: 'support',     label: 'Поддержка',               icon: LifeBuoy, badge: newSupportCount },
     { id: 'home_screen', label: t('admin.homeScreen.title'), icon: LayoutGrid },
+    ...(PRODUCT === 'cleaning' ? [{ id: 'supplies_cats' as Tab, label: 'Категории расходников', icon: Droplets }] : []),
   ]
 
   return (
@@ -120,6 +123,7 @@ export function AdminPage() {
           {tab === 'reports'    && <AdminReportsTab />}
           {tab === 'support'    && <AdminSupportTab />}
           {tab === 'home_screen' && <AdminHomeScreenTab />}
+          {tab === 'supplies_cats' && <AdminSuppliesCategoriesTab />}
         </div>
       </div>
     </div>

@@ -138,7 +138,7 @@ function OrderCard({ order, onNavigate, onPrint }: { order: DeliveryOrder; onNav
   )
 }
 
-export function DeliveryPage() {
+export function DeliveryContent({ showHeader = false }: { showHeader?: boolean }) {
   const navigate = useNavigate()
   const [dateFrom, setDateFrom] = useState(dayjs().format('YYYY-MM-DD'))
   const [dateTo, setDateTo] = useState(dayjs().add(7, 'day').format('YYYY-MM-DD'))
@@ -156,16 +156,30 @@ export function DeliveryPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Доставка и забор" description={`Забор: ${pickupCount} · Доставка: ${deliveryCount}`}>
-        <Button
-          variant={showFilter ? 'default' : 'ghost'}
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => setShowFilter(v => !v)}
-        >
-          <CalendarRange className="h-4 w-4" />
-        </Button>
-      </PageHeader>
+      {showHeader ? (
+        <PageHeader title="Доставка и забор" description={`Забор: ${pickupCount} · Доставка: ${deliveryCount}`}>
+          <Button
+            variant={showFilter ? 'default' : 'ghost'}
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setShowFilter(v => !v)}
+          >
+            <CalendarRange className="h-4 w-4" />
+          </Button>
+        </PageHeader>
+      ) : (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">Забор: {pickupCount} · Доставка: {deliveryCount}</p>
+          <Button
+            variant={showFilter ? 'default' : 'ghost'}
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setShowFilter(v => !v)}
+          >
+            <CalendarRange className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {showFilter && (
         <div className="flex items-end gap-3 flex-wrap rounded-xl border bg-muted/30 p-3">
@@ -235,4 +249,8 @@ export function DeliveryPage() {
       )}
     </div>
   )
+}
+
+export function DeliveryPage() {
+  return <DeliveryContent showHeader />
 }
