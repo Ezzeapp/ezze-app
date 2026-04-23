@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import { Plus, Search, X, Loader2, Trash2, ArrowDown, ArrowUp, Package, Download, AlertTriangle } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -10,6 +11,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { toast } from '@/components/shared/Toaster'
 import { cn, formatCurrency } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
+import { useFeature } from '@/hooks/useFeatureFlags'
 import { useSuppliesCategories } from '@/hooks/useSuppliesCategories'
 import dayjs from 'dayjs'
 
@@ -42,6 +44,7 @@ function useSupplies() {
 }
 
 export function SuppliesPage() {
+  const hasAccess = useFeature('supplies')
   const { user } = useAuth()
   const qc = useQueryClient()
   const { data: supplies = [], isLoading } = useSupplies()
@@ -127,6 +130,8 @@ export function SuppliesPage() {
   })
 
   const lowStock = supplies.filter(s => s.quantity < s.min_quantity).length
+
+  if (!hasAccess) return <Navigate to="/orders" replace />
 
   return (
     <div className="space-y-4">

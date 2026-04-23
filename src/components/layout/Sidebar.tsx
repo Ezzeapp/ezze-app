@@ -94,7 +94,7 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
         )}
         {PRODUCT === 'cleaning' ? (<>
           <SidebarNavItem icon={ClipboardList} iconColor="dark:text-indigo-400" label={t('nav.orders')} to="/orders" onClick={onClose} />
-          <SidebarNavItem icon={Droplets} iconColor="dark:text-teal-400" label="Расходники" to="/supplies" onClick={onClose} />
+          <NavItemGated icon={Droplets} iconColor="dark:text-teal-400" label="Расходники" to="/supplies" feature="supplies" onClick={onClose} />
         </>) : PRODUCT === 'workshop' ? (
           <SidebarNavItem icon={Wrench} iconColor="dark:text-indigo-400" label={t('workshop.nav.orders', 'Заказы в ремонт')} to="/orders" onClick={onClose} />
         ) : PRODUCT === 'farm' ? null : (

@@ -45,6 +45,14 @@ export const FEATURES: FeatureConfig[] = [
     section: 'navigation',
   },
   {
+    key: 'supplies',
+    label: 'Расходники (Cleaning)',
+    description: 'Учёт расходных материалов химчистки: химия, упаковка, оборудование',
+    defaultPlan: 'free',
+    behavior: 'hidden',
+    section: 'navigation',
+  },
+  {
     key: 'calendar',
     label: 'Календарь',
     description: 'Просмотр записей в календарном виде',
