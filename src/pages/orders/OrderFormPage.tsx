@@ -173,7 +173,8 @@ export function OrderFormPage() {
     }
   }
 
-  const itemLabel = orderType === 'carpet' ? 'Ковёр' : orderType === 'furniture' ? 'Предмет' : 'Изделие'
+  const itemLabel       = orderType === 'carpet' ? 'Ковёр'   : orderType === 'furniture' ? 'Предмет'  : 'Изделие'
+  const itemLabelPlural = orderType === 'carpet' ? 'Ковры'   : orderType === 'furniture' ? 'Предметы' : 'Изделия'
 
   return (
     <div className="flex flex-col h-full">
@@ -185,7 +186,7 @@ export function OrderFormPage() {
         <h1 className="text-lg font-semibold">Новый заказ</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-32 space-y-4 pt-4">
+      <div className="flex-1 overflow-y-auto px-4 pb-40 lg:pb-4 space-y-4 pt-4">
 
         {/* Тип заказа */}
         <Card>
@@ -301,7 +302,7 @@ export function OrderFormPage() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">{itemLabel}ия</CardTitle>
+              <CardTitle className="text-base">{itemLabelPlural}</CardTitle>
               <Button variant="ghost" size="sm" onClick={addItem}>
                 <Plus className="h-4 w-4 mr-1" />
                 Добавить
@@ -493,7 +494,7 @@ export function OrderFormPage() {
       </div>
 
       {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 lg:relative lg:bottom-auto bg-background border-t px-4 py-3 flex gap-2">
+      <div className="fixed bottom-16 pb-safe left-0 right-0 lg:relative lg:bottom-auto lg:pb-0 bg-background border-t px-4 py-3 flex gap-2 z-40">
         <Button variant="outline" className="flex-1" onClick={() => navigate('/orders')}>
           Отмена
         </Button>

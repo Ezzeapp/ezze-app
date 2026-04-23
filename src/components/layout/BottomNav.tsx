@@ -87,8 +87,22 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
       {/* Bottom nav replica */}
       <div className="shrink-0 border-t bg-background pb-safe">
         <div className="flex items-stretch h-16 w-full">
-          {/* Первая колонка — календарь / заказы в ремонт / заказы */}
-          {PRODUCT === 'workshop' ? (
+          {/* Первая колонка — заказы cleaning/workshop / календарь */}
+          {PRODUCT === 'cleaning' ? (
+            <NavLink
+              to="/orders"
+              onClick={onClose}
+              className={({ isActive }) =>
+                cn(
+                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                )
+              }
+            >
+              <ClipboardList className="h-5 w-5" />
+              <span>{t('nav.orders')}</span>
+            </NavLink>
+          ) : PRODUCT === 'workshop' ? (
             <NavLink
               to="/orders"
               onClick={onClose}

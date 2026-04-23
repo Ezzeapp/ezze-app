@@ -543,11 +543,11 @@ export function OrdersListPage() {
           >
             <CalendarRange className="h-4 w-4" />
           </Button>
-          {/* CSV */}
+          {/* CSV — десктоп */}
           {orders.length > 0 && (
             <Button
               variant="ghost" size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
               title={t('orders.exportCsv')}
               onClick={() => exportCSV(orders, symbol, t('orders.noClient'), [
                 t('orders.col.number'), t('orders.col.type'), t('orders.col.client'),
@@ -558,11 +558,11 @@ export function OrdersListPage() {
               <Download className="h-4 w-4" />
             </Button>
           )}
-          {/* Удалить все */}
+          {/* Удалить все — десктоп */}
           {orders.length > 0 && (
             <Button
               variant="ghost" size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive hidden sm:inline-flex"
               title={t('orders.deleteAll')}
               onClick={() => setDeleteAllOpen(true)}
             >
@@ -572,9 +572,10 @@ export function OrdersListPage() {
           <Button
             onClick={() => navigate(window.innerWidth >= 1024 ? '/orders/pos' : '/orders/new')}
             size="sm"
+            className="shrink-0"
           >
-            <Plus className="h-4 w-4 mr-1" />
-            {t('orders.newOrder')}
+            <Plus className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">{t('orders.newOrder')}</span>
           </Button>
         </div>
       </PageHeader>
