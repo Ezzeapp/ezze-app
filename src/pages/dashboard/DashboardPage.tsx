@@ -355,7 +355,7 @@ export function DashboardPage() {
                 value={customStart}
                 max={customEnd}
                 onChange={e => setCustomStart(e.target.value)}
-                className="h-8 px-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 px-2 rounded-lg border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
               />
               <span className="text-xs text-muted-foreground">{t('analytics.customTo')}</span>
               <DateInput
@@ -363,7 +363,7 @@ export function DashboardPage() {
                 min={customStart}
                 max={today}
                 onChange={e => setCustomEnd(e.target.value)}
-                className="h-8 px-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 px-2 rounded-lg border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           )}
