@@ -295,7 +295,7 @@ function CampaignDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent mobileFullscreen className="sm:max-w-md max-h-[90vh] overflow-y-auto max-sm:flex max-sm:flex-col">
         <DialogHeader>
           <DialogTitle>
             {editing ? 'Редактировать кампанию' : t('marketing.broadcasts.dialogTitle')}
@@ -599,8 +599,8 @@ export function BroadcastsTab() {
                       <StatusBadge status={c.status} />
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7">
-                            <MoreVertical className="h-3.5 w-3.5" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

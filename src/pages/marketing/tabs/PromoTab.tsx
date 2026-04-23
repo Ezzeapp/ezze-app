@@ -174,21 +174,21 @@ export function PromoTab() {
               </Button>
             </div>
 
-            <div className="flex gap-3 items-end">
-              <div className="space-y-1">
+            <div className="flex flex-wrap gap-2 sm:gap-3 items-end">
+              <div className="space-y-1 flex-1 min-w-[140px] sm:flex-none">
                 <Label>{t('promo.discountType')}</Label>
                 <Select
                   value={form.discount_type}
                   onValueChange={(v) => setForm(f => ({ ...f, discount_type: v as 'percent' | 'fixed' }))}
                 >
-                  <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-36"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="percent">{t('promo.discountPercent')}</SelectItem>
                     <SelectItem value="fixed">{t('promo.discountFixed')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1 w-28">
+              <div className="space-y-1 flex-1 min-w-[100px] sm:flex-none sm:w-28">
                 <Label>{t('promo.discountValue')}</Label>
                 <Input
                   type="number"
@@ -197,7 +197,7 @@ export function PromoTab() {
                   onChange={(e) => setForm(f => ({ ...f, discount_value: e.target.value }))}
                 />
               </div>
-              <div className="space-y-1 w-28">
+              <div className="space-y-1 flex-1 min-w-[100px] sm:flex-none sm:w-28">
                 <Label>{t('promo.maxUses')}</Label>
                 <Input
                   type="number"

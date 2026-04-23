@@ -284,7 +284,7 @@ export function LoyaltyTab() {
       </Button>
 
       <Dialog open={holidayModalOpen} onOpenChange={setHolidayModalOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent mobileFullscreen className="max-w-sm max-sm:flex max-sm:flex-col">
           <DialogHeader>
             <DialogTitle>{editingHoliday ? t('loyalty.editHoliday') : t('loyalty.addHoliday')}</DialogTitle>
           </DialogHeader>

@@ -118,17 +118,17 @@ export function ReviewsTab() {
                   <div className="flex items-center gap-1">
                     {!review.is_visible && <Badge variant="outline" className="text-xs">{t('reviews.hiddenBadge')}</Badge>}
                     <Button
-                      variant="ghost" size="icon" className="h-7 w-7"
+                      variant="ghost" size="icon" className="h-8 w-8"
                       onClick={() => toggleVisibility.mutateAsync({ id: review.id, is_visible: !review.is_visible })}
                       title={review.is_visible ? t('reviews.hide') : t('reviews.show')}
                     >
-                      {review.is_visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                      {review.is_visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                     </Button>
                     <Button
-                      variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+                      variant="ghost" size="icon" className="h-8 w-8 text-destructive"
                       onClick={() => deleteReview.mutateAsync(review.id)}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
