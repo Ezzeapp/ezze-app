@@ -531,21 +531,14 @@ export function OrderDetailPage() {
                   </div>
                 )}
 
-                {order.order_type === 'carpet' && ((order as any).pickup_date || (order as any).delivery_date) && (
+                {((order as any).pickup_date || (order as any).delivery_date || (order as any).visit_address || (order as any).visit_date) && (
                   <div className="flex items-start gap-3">
                     <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                     <div className="text-sm space-y-0.5">
                       {(order as any).pickup_date && <p>Забор: {dayjs((order as any).pickup_date).format('DD.MM.YYYY')}</p>}
                       {(order as any).delivery_date && <p>Доставка: {dayjs((order as any).delivery_date).format('DD.MM.YYYY')}</p>}
-                    </div>
-                  </div>
-                )}
-                {order.order_type === 'furniture' && ((order as any).visit_address || (order as any).visit_date) && (
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <div className="text-sm space-y-0.5">
-                      {(order as any).visit_address && <p>{(order as any).visit_address}</p>}
                       {(order as any).visit_date && <p>Дата выезда: {dayjs((order as any).visit_date).format('DD.MM.YYYY')}</p>}
+                      {(order as any).visit_address && <p className="text-muted-foreground">{(order as any).visit_address}</p>}
                     </div>
                   </div>
                 )}
