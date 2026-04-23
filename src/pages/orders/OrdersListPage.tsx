@@ -456,10 +456,17 @@ export function OrdersListPage() {
     }
   }
 
+  const qc = useQueryClient()
   async function handleDeleteAll() {
+    const ids = orders.map(o => o.id)
+    if (ids.length === 0) { setDeleteAllOpen(false); return }
     try {
-      for (const o of orders) { await deleteOrder(o.id) }
-      toast.success(t('orders.deletedMultiple', { count: orders.length }))
+      await supabase.from('cleaning_order_items').delete().in('order_id', ids)
+      await supabase.from('cleaning_order_history').delete().in('order_id', ids)
+      const { error } = await supabase.from('cleaning_orders').delete().in('id', ids)
+      if (error) throw error
+      qc.invalidateQueries({ queryKey: [ORDERS_KEY] })
+      toast.success(t('orders.deletedMultiple', { count: ids.length }))
       setDeleteAllOpen(false)
     } catch {
       toast.error(t('orders.deleteError'))
@@ -675,14 +682,16 @@ export function OrdersListPage() {
         )}
 
         {/* Поиск */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t('orders.search')}
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }}
-            className="pl-9"
-          />
+        <div className="pt-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('orders.search')}
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1) }}
+              className="pl-9"
+            />
+          </div>
         </div>
 
         {/* Статусы */}
