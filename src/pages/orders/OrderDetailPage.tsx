@@ -410,6 +410,7 @@ export function OrderDetailPage() {
             variant="outline" size="sm"
             onClick={() => navigate(`/orders/new?repeat=${order.id}`)}
             title="Создать похожий заказ"
+            className="hidden sm:inline-flex"
           >
             <Copy className="h-4 w-4 sm:mr-1.5" />
             <span className="hidden sm:inline">Повторить</span>
@@ -427,7 +428,7 @@ export function OrderDetailPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:text-destructive"
+            className="text-muted-foreground hover:text-destructive hidden sm:inline-flex"
             onClick={() => setDeleteConfirm(true)}
             title="Удалить заказ"
           >
@@ -437,7 +438,7 @@ export function OrderDetailPage() {
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4 pb-40 pt-4">
+      <div className="flex-1 overflow-y-auto px-4 pb-56 lg:pb-4 pt-4">
 
         {/* Urgency banners — full width */}
         {(isOverdue || isDueToday) && (
@@ -782,7 +783,7 @@ export function OrderDetailPage() {
       </div>
 
       {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 lg:relative lg:bottom-auto bg-background border-t px-4 py-3 space-y-2 shrink-0">
+      <div className="fixed bottom-16 pb-safe left-0 right-0 lg:relative lg:bottom-auto lg:pb-0 bg-background border-t px-4 py-3 space-y-2 shrink-0 z-40">
 
         {/* Payment inline panel */}
         {payDialogOpen && (
