@@ -375,23 +375,23 @@ function InviteRow({ invite, onShowQR }: { invite: any; onShowQR?: (code: string
       <div className="flex gap-1 shrink-0">
         {isActive && (
           <>
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onShowQR?.(invite.code)} title="Показать QR-код">
-              <QrCode className="h-3.5 w-3.5" />
+            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onShowQR?.(invite.code)} title="Показать QR-код">
+              <QrCode className="h-4 w-4" />
             </Button>
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleCopy} title={t('team.copyCode')}>
-              {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleCopy} title={t('team.copyCode')}>
+              {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
             </Button>
           </>
         )}
         {invite.is_active && (
           <Button
             size="icon" variant="ghost"
-            className="h-7 w-7 text-destructive hover:text-destructive"
+            className="h-8 w-8 text-destructive hover:text-destructive"
             onClick={() => deactivate.mutateAsync(invite.id)}
             disabled={deactivate.isPending}
             title={t('team.deactivate')}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-4 w-4" />
           </Button>
         )}
       </div>
@@ -609,23 +609,23 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
                     <div className="flex gap-0.5 shrink-0">
                       <Button
                         size="icon" variant="ghost"
-                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
                         onClick={() => togglePause.mutate({ memberId: m.id, currentStatus: m.status })}
                         disabled={togglePause.isPending}
                         title={m.status === 'paused' ? t('team.unpauseMember') : t('team.pauseMember')}
                       >
                         {m.status === 'paused'
-                          ? <PlayCircle className="h-3.5 w-3.5" />
-                          : <PauseCircle className="h-3.5 w-3.5" />
+                          ? <PlayCircle className="h-4 w-4" />
+                          : <PauseCircle className="h-4 w-4" />
                         }
                       </Button>
                       <Button
                         size="icon" variant="ghost"
-                        className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
+                        className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
                         onClick={() => setConfirmRemoveId(m.id)}
                         title={t('team.removeMember')}
                       >
-                        <UserMinus className="h-3.5 w-3.5" />
+                        <UserMinus className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
