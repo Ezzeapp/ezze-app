@@ -303,7 +303,8 @@ export function ServicesPage() {
   }
 
   const hasGlobalServices = useFeature('global_services_catalog')
-  const hasServiceMaterials = useFeature('service_materials')
+  // TODO: включить через флаг `service_materials` когда будет готова админ-панель
+  const hasServiceMaterials = false
   const currency = useCurrency()
   const ServiceIcon = useProfileIcon()
   const { data: pagedServices, isLoading } = useServicesPage(debouncedSearch, page, 25, pbSort)
@@ -729,12 +730,12 @@ export function ServicesPage() {
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="max-sm:flex-1 max-sm:flex max-sm:flex-col max-sm:overflow-hidden">
-            <TabsList className="w-full shrink-0 grid grid-cols-2">
-              <TabsTrigger value="main">{t('services.name')}</TabsTrigger>
-              {hasServiceMaterials && (
+            {hasServiceMaterials && (
+              <TabsList className="w-full shrink-0 grid grid-cols-2">
+                <TabsTrigger value="main">{t('services.name')}</TabsTrigger>
                 <TabsTrigger value="materials">{t('services.materialsTab')}</TabsTrigger>
-              )}
-            </TabsList>
+              </TabsList>
+            )}
 
             <TabsContent value="main" className="max-sm:flex-1 max-sm:overflow-y-auto max-sm:pb-2">
               <form onSubmit={handleSubmit(onSubmit, (errs) => { console.error('Form validation errors:', errs); toast.error(t('common.saveError')) })} className="space-y-4 pt-3">
