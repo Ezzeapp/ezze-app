@@ -53,7 +53,12 @@ export function WorkshopOrdersListPage() {
   const [status, setStatus] = useState<WorkshopOrderStatus | 'all'>('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
-  const [view, setView] = useState<ViewMode>(() => (localStorage.getItem('ws_view') as ViewMode) || 'board')
+  const [view, setView] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem('ws_view') as ViewMode | null
+    if (saved === 'list' || saved === 'board') return saved
+    // Default: mobile → list (kanban horizontal scroll is painful on <1024px), desktop → board
+    return typeof window !== 'undefined' && window.innerWidth < 1024 ? 'list' : 'board'
+  })
 
   const { data: stats } = useWorkshopOrdersStats()
   const { data, isLoading } = useWorkshopOrders({
@@ -274,7 +279,7 @@ function KanbanBoard({ orders, onOpen, onAdd }: {
       className="grid gap-2 overflow-x-auto flex-1 min-h-0 pb-2"
       style={{
         gridAutoFlow: 'column',
-        gridAutoColumns: 'minmax(200px, 1fr)',
+        gridAutoColumns: 'minmax(240px, 1fr)',
       }}
     >
       {grouped.map(col => {

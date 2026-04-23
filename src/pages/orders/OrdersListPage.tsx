@@ -151,7 +151,7 @@ function KanbanView({ orders, symbol, onNavigate, isOverdueMap, isDueTodayMap, t
           <div
             key={col.value}
             className={cn(
-              'flex flex-col rounded-xl border-2 border-t-4 min-w-[200px] w-[220px] flex-shrink-0 transition-colors',
+              'flex flex-col rounded-xl border-2 border-t-4 min-w-[240px] w-[260px] flex-shrink-0 transition-colors',
               col.accent,
               overCol === col.value ? 'bg-accent/60 border-primary/40' : 'border-border/60 bg-background'
             )}

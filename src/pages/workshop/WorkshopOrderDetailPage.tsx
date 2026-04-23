@@ -111,6 +111,7 @@ export function WorkshopOrderDetailPage() {
         <div className="flex items-center gap-1">
           <Button
             variant="ghost" size="sm"
+            title="Ссылка клиенту"
             onClick={() => {
               const slug = order!.public_token || encodeURIComponent(order!.number)
               const url = `${window.location.origin}/track/${slug}`
@@ -118,10 +119,11 @@ export function WorkshopOrderDetailPage() {
               toast.success(`Скопировано: ${url}`)
             }}
           >
-            <Link2 className="h-4 w-4 mr-1" /> Ссылка клиенту
+            <Link2 className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Ссылка клиенту</span>
           </Button>
           <Button
             variant="ghost" size="sm"
+            title="Печать"
             onClick={() => {
               if (!receiptTpl) return
               const slug = order!.public_token || encodeURIComponent(order!.number)
@@ -134,10 +136,10 @@ export function WorkshopOrderDetailPage() {
               })
             }}
           >
-            <Printer className="h-4 w-4 mr-1" /> Печать
+            <Printer className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Печать</span>
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(true)} className="text-red-600">
-            <Trash2 className="h-4 w-4 mr-1" /> {t('workshop.detail.delete')}
+          <Button variant="ghost" size="sm" title={t('workshop.detail.delete')} onClick={() => setDeleteConfirm(true)} className="text-red-600">
+            <Trash2 className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">{t('workshop.detail.delete')}</span>
           </Button>
         </div>
       </div>
