@@ -366,7 +366,7 @@ export function InventoryPage() {
             <div className="relative flex-1 min-w-0">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <input
-                className="w-full pl-8 pr-8 py-1.5 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full pl-8 pr-8 py-1.5 text-base sm:text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder={t('inventory.search')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -698,7 +698,7 @@ export function InventoryPage() {
                     onFocus={() => setCatDropOpen(true)}
                     onBlur={() => setTimeout(() => setCatDropOpen(false), 150)}
                     placeholder={t('inventory.categoryNamePlaceholder')}
-                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full px-3 py-1.5 text-base sm:text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                   {catDropOpen && (catSuggestions.length > 0 || (catValue.trim() && !allCategories.map(c => c.toLowerCase()).includes(catValue.trim().toLowerCase()))) && (
                     <div className="absolute z-50 left-0 right-0 mt-1 rounded-lg border bg-white dark:bg-zinc-900 shadow-lg overflow-hidden">
@@ -940,7 +940,7 @@ export function InventoryPage() {
                   value={catDialogSearch}
                   onChange={(e) => setCatDialogSearch(e.target.value)}
                   placeholder={t('inventory.search')}
-                  className="w-full pl-8 pr-8 py-1.5 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full pl-8 pr-8 py-1.5 text-base sm:text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 {catDialogSearch && (
                   <button className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setCatDialogSearch('')}>
