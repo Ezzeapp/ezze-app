@@ -101,10 +101,10 @@ type OrderRow = {
 function SummaryCard({ title, value, sub }: { title: string; value: string; sub?: string }) {
   return (
     <Card>
-      <CardContent className="pt-5 pb-4">
-        <p className="text-sm text-muted-foreground mb-1">{title}</p>
-        <p className="text-2xl font-bold">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+      <CardContent className="pt-3 pb-2.5 px-3 sm:pt-5 sm:pb-4 sm:px-6">
+        <p className="text-[11px] sm:text-sm text-muted-foreground mb-0.5 sm:mb-1 leading-tight">{title}</p>
+        <p className="text-base sm:text-2xl font-bold leading-tight break-words">{value}</p>
+        {sub && <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{sub}</p>}
       </CardContent>
     </Card>
   )
