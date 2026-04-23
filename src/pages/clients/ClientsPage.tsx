@@ -913,18 +913,18 @@ export function ClientsPage() {
 
       {!isLoading && totalItems > 0 && (
         <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl border bg-card p-4">
-              <p className="text-xs text-muted-foreground">Всего клиентов</p>
-              <p className="text-2xl font-bold mt-1">{totalItems}</p>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="rounded-xl border bg-card p-2.5 sm:p-4">
+              <p className="text-[11px] sm:text-xs text-muted-foreground leading-tight">Всего клиентов</p>
+              <p className="text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1">{totalItems}</p>
             </div>
-            <div className="rounded-xl border bg-card p-4">
-              <p className="text-xs text-muted-foreground">Новых за 30 дней</p>
-              <p className="text-2xl font-bold mt-1">{newThisMonth ?? '—'}</p>
+            <div className="rounded-xl border bg-card p-2.5 sm:p-4">
+              <p className="text-[11px] sm:text-xs text-muted-foreground leading-tight">Новых за 30 дней</p>
+              <p className="text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1">{newThisMonth ?? '—'}</p>
             </div>
-            <div className="rounded-xl border bg-card p-4">
-              <p className="text-xs text-muted-foreground">С телефоном</p>
-              <p className="text-2xl font-bold mt-1">{withPhone ?? '—'}</p>
+            <div className="rounded-xl border bg-card p-2.5 sm:p-4">
+              <p className="text-[11px] sm:text-xs text-muted-foreground leading-tight">С телефоном</p>
+              <p className="text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1">{withPhone ?? '—'}</p>
             </div>
           </div>
           {aiConfig?.enabled && (
