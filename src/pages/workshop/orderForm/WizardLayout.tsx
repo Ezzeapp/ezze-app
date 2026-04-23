@@ -68,9 +68,9 @@ export function WizardLayout({ f, onCancel }: { f: OrderFormHandle; onCancel: ()
   }, [canNext, isLast, step, next, prev])
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5 pb-24">
+    <div className="max-w-3xl mx-auto space-y-5 pb-36 lg:pb-6">
       {/* Progress */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto -mx-1 px-1">
         <div className="flex items-center gap-1 min-w-max lg:grid lg:grid-cols-5 lg:gap-2 px-0.5">
           {steps.map((s, i) => {
             const active = i === step
@@ -108,7 +108,7 @@ export function WizardLayout({ f, onCancel }: { f: OrderFormHandle; onCancel: ()
       </div>
 
       {/* Body */}
-      <div className="rounded-xl border bg-card p-5 sm:p-6">
+      <div className="rounded-xl border bg-card p-4 sm:p-6">
         {step === 0 && (
           <StepHeader title={t('workshop.form.wizardStepDeviceTitle')} sub={t('workshop.form.wizardHintDevice')}>
             <DeviceSection
@@ -200,8 +200,8 @@ export function WizardLayout({ f, onCancel }: { f: OrderFormHandle; onCancel: ()
         )}
       </div>
 
-      {/* Nav */}
-      <div className="fixed bottom-0 left-0 right-0 lg:static z-10 border-t lg:border-none bg-background/95 lg:bg-transparent backdrop-blur lg:backdrop-blur-0 p-3 lg:p-0 flex items-center gap-2">
+      {/* Nav — sits above app's bottom tab bar on mobile (bottom-16) */}
+      <div className="fixed bottom-16 left-0 right-0 lg:static lg:bottom-auto z-20 border-t lg:border-none bg-background/95 lg:bg-transparent backdrop-blur lg:backdrop-blur-0 px-3 py-2 lg:p-0 flex items-center gap-2">
         {step === 0 ? (
           <Button variant="ghost" onClick={onCancel}>{t('workshop.form.cancel')}</Button>
         ) : (

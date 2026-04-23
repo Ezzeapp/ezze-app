@@ -48,7 +48,7 @@ export function SectionCard({
 }) {
   return (
     <section className={cn('rounded-xl border bg-card overflow-hidden', className)}>
-      <header className="flex items-center gap-3 px-5 py-3.5 border-b">
+      <header className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-3.5 border-b">
         <span
           className={cn(
             'grid place-items-center w-6 h-6 rounded-full text-[11px] font-semibold transition-colors shrink-0',
@@ -62,7 +62,7 @@ export function SectionCard({
         <h3 className="font-semibold text-sm flex-1">{title}</h3>
         {action}
       </header>
-      <div className="p-5 space-y-4">{children}</div>
+      <div className="p-4 sm:p-5 space-y-4">{children}</div>
     </section>
   )
 }
