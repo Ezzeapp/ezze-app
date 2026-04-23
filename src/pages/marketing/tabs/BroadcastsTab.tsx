@@ -171,7 +171,7 @@ function ClientPicker({ selected, onChange }: { selected: string[]; onChange: (i
       <div className="relative">
         <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
         <Input value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Поиск..." className="pl-8 h-8 text-sm" />
+          placeholder="Поиск..." className="pl-8 h-8" />
       </div>
 
       <div className="border rounded-lg overflow-hidden">
