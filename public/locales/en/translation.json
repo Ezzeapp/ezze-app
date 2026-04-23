@@ -2315,7 +2315,8 @@
   },
   "workshop": {
     "nav": {
-      "orders": "Repair orders"
+      "orders": "Repair orders",
+      "ordersShort": "Repairs"
     },
     "list": {
       "title": "Repair orders",

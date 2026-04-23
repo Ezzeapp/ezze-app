@@ -114,7 +114,7 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
               }
             >
               <Wrench className="h-5 w-5" />
-              <span>{t('workshop.nav.orders', 'Ремонт')}</span>
+              <span>{t('workshop.nav.ordersShort', 'Ремонт')}</span>
             </NavLink>
           ) : (
             <NavLink
@@ -223,7 +223,7 @@ export function BottomNav() {
               }
             >
               <Wrench className="h-5 w-5" />
-              <span>{t('workshop.nav.orders', 'Ремонт')}</span>
+              <span>{t('workshop.nav.ordersShort', 'Ремонт')}</span>
             </NavLink>
           ) : (
             <NavLink

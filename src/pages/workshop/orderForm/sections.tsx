@@ -555,9 +555,9 @@ export function PricingSection({
         <Label className="text-xs">{t('workshop.form.priority')}</Label>
         <PrioritySelector value={priority} onChange={setPriority} />
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <Label className="text-xs">{t('workshop.form.diagnosticPrice')}</Label>
+          <Label className="text-xs leading-tight block mb-1">{t('workshop.form.diagnosticPrice')}</Label>
           <MoneyInput
             value={diagnosticPrice}
             onChange={v => setDiagnosticPrice(v ?? 0)}
@@ -565,7 +565,7 @@ export function PricingSection({
           />
         </div>
         <div>
-          <Label className="text-xs">{t('workshop.form.estimated')}</Label>
+          <Label className="text-xs leading-tight block mb-1">{t('workshop.form.estimated')}</Label>
           <MoneyInput
             value={estimated === '' ? null : estimated}
             onChange={v => setEstimated(v === null ? '' : v)}
@@ -574,7 +574,7 @@ export function PricingSection({
           />
         </div>
         <div>
-          <Label className="text-xs">{t('workshop.form.prepaid')}</Label>
+          <Label className="text-xs leading-tight block mb-1">{t('workshop.form.prepaid')}</Label>
           <MoneyInput
             value={prepaid}
             onChange={v => setPrepaid(v ?? 0)}
@@ -582,17 +582,17 @@ export function PricingSection({
           />
         </div>
         <div>
-          <Label className="text-xs">{t('workshop.form.readyDate')}</Label>
+          <Label className="text-xs leading-tight block mb-1">{t('workshop.form.readyDate')}</Label>
           <Input className="h-9" type="date" value={readyDate} onChange={e => setReadyDate(e.target.value)} />
         </div>
-        <div className="col-span-2 flex flex-wrap gap-1">
+        <div className="sm:col-span-2 flex flex-wrap gap-1">
           {[1, 3, 7, 14].map(d => (
             <button
               key={d}
               type="button"
               onClick={() => presetReady(d)}
               className={cn(
-                'h-7 px-2.5 rounded-md border text-[11px] transition-all',
+                'h-8 px-3 rounded-md border text-xs transition-all',
                 activePreset === d
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-background hover:bg-accent',
@@ -602,8 +602,8 @@ export function PricingSection({
             </button>
           ))}
         </div>
-        <div className="col-span-2">
-          <Label className="text-xs">{t('workshop.form.warrantyDays')}</Label>
+        <div className="sm:col-span-2">
+          <Label className="text-xs leading-tight block mb-1">{t('workshop.form.warrantyDays')}</Label>
           <Input className="h-9" type="number" value={warrantyDays} onChange={e => setWarrantyDays(Number(e.target.value))} />
         </div>
       </div>
