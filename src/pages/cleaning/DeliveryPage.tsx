@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Phone, MapPin, CalendarRange, Loader2, Truck, ArrowDown, ArrowUp, X } from 'lucide-react'
+import { Phone, MapPin, CalendarRange, Loader2, Truck, ArrowDown, ArrowUp, X, Printer } from 'lucide-react'
+import { DeliverySlipModal, type DeliverySlipData } from '@/components/orders/DeliverySlipModal'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -20,10 +21,14 @@ interface DeliveryOrder {
   status: string
   order_type: string
   total_amount: number
+  prepaid_amount: number
+  created_at: string
+  notes: string | null
   pickup_date: string | null
   delivery_date: string | null
   visit_address: string | null
   client: { first_name: string; last_name: string | null; phone: string | null } | null
+  items: { item_type_name: string; price: number; color: string | null; brand: string | null; defects: string | null }[]
 }
 
 function useDeliveryOrders(dateFrom: string, dateTo: string) {
@@ -32,7 +37,7 @@ function useDeliveryOrders(dateFrom: string, dateTo: string) {
     queryFn: async () => {
       let q = supabase
         .from('cleaning_orders')
-        .select('id, number, status, order_type, total_amount, pickup_date, delivery_date, visit_address, client:clients(first_name, last_name, phone)')
+        .select('id, number, status, order_type, total_amount, prepaid_amount, created_at, notes, pickup_date, delivery_date, visit_address, client:clients(first_name, last_name, phone), items:cleaning_order_items(item_type_name, price, color, brand, defects)')
         .or('pickup_date.not.is.null,delivery_date.not.is.null')
         .not('status', 'in', '("cancelled","paid")')
         .order('pickup_date', { ascending: true, nullsFirst: false })
@@ -42,6 +47,21 @@ function useDeliveryOrders(dateFrom: string, dateTo: string) {
       return (data ?? []) as unknown as DeliveryOrder[]
     },
   })
+}
+
+function orderToSlip(o: DeliveryOrder): DeliverySlipData {
+  return {
+    number:         o.number,
+    created_at:     o.created_at,
+    client:         o.client,
+    items:          o.items ?? [],
+    total_amount:   o.total_amount,
+    prepaid_amount: o.prepaid_amount,
+    pickup_date:    o.pickup_date,
+    delivery_date:  o.delivery_date,
+    visit_address:  o.visit_address,
+    notes:          o.notes,
+  }
 }
 
 function groupByDate(orders: DeliveryOrder[], field: 'pickup_date' | 'delivery_date'): Record<string, DeliveryOrder[]> {
@@ -55,7 +75,7 @@ function groupByDate(orders: DeliveryOrder[], field: 'pickup_date' | 'delivery_d
   return groups
 }
 
-function OrderCard({ order, onNavigate }: { order: DeliveryOrder; onNavigate: (id: string) => void }) {
+function OrderCard({ order, onNavigate, onPrint }: { order: DeliveryOrder; onNavigate: (id: string) => void; onPrint: (o: DeliveryOrder) => void }) {
   const symbol = useCurrencySymbol()
   const clientName = order.client ? [order.client.first_name, order.client.last_name].filter(Boolean).join(' ') : 'Без клиента'
 
@@ -79,6 +99,13 @@ function OrderCard({ order, onNavigate }: { order: DeliveryOrder; onNavigate: (i
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={e => { e.stopPropagation(); onPrint(order) }}
+            className="h-8 w-8 rounded-full bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 flex items-center justify-center transition-colors"
+            title="Печать накладной"
+          >
+            <Printer className="h-3.5 w-3.5" />
+          </button>
           {order.client?.phone && (
             <a
               href={`tel:${order.client.phone}`}
@@ -116,6 +143,8 @@ export function DeliveryPage() {
   const [dateFrom, setDateFrom] = useState(dayjs().format('YYYY-MM-DD'))
   const [dateTo, setDateTo] = useState(dayjs().add(7, 'day').format('YYYY-MM-DD'))
   const [showFilter, setShowFilter] = useState(false)
+
+  const [slipOrder, setSlipOrder] = useState<DeliveryOrder | null>(null)
 
   const { data: orders = [], isLoading } = useDeliveryOrders(dateFrom, dateTo)
 
@@ -170,7 +199,7 @@ export function DeliveryPage() {
                     {dayjs(date).format('DD MMMM, dd')}
                   </p>
                   <div className="space-y-1.5">
-                    {items.map(o => <OrderCard key={o.id} order={o} onNavigate={id => navigate(`/orders/${id}`)} />)}
+                    {items.map(o => <OrderCard key={o.id} order={o} onNavigate={id => navigate(`/orders/${id}`)} onPrint={setSlipOrder} />)}
                   </div>
                 </div>
               ))}
@@ -191,7 +220,7 @@ export function DeliveryPage() {
                     {dayjs(date).format('DD MMMM, dd')}
                   </p>
                   <div className="space-y-1.5">
-                    {items.map(o => <OrderCard key={o.id} order={o} onNavigate={id => navigate(`/orders/${id}`)} />)}
+                    {items.map(o => <OrderCard key={o.id} order={o} onNavigate={id => navigate(`/orders/${id}`)} onPrint={setSlipOrder} />)}
                   </div>
                 </div>
               ))}
@@ -199,6 +228,10 @@ export function DeliveryPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {slipOrder && (
+        <DeliverySlipModal data={orderToSlip(slipOrder)} onClose={() => setSlipOrder(null)} />
       )}
     </div>
   )

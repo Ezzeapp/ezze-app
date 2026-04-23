@@ -4,9 +4,10 @@ import {
   ArrowLeft, CheckCircle2, Loader2, Package, User, Calendar,
   AlertCircle, Printer, Phone, MessageCircle, AlertTriangle,
   Clock, Banknote, X, Trash2, Pencil, Plus, Check, Search,
-  Bell, MapPin, Copy,
+  Bell, MapPin, Copy, Truck,
 } from 'lucide-react'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
+import { DeliverySlipModal, type DeliverySlipData } from '@/components/orders/DeliverySlipModal'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -218,6 +219,7 @@ export function OrderDetailPage() {
 
   const [issueOpen,      setIssueOpen]      = useState(false)
   const [showReceipt,    setShowReceipt]    = useState(false)
+  const [showSlip,       setShowSlip]       = useState(false)
   const [payDialogOpen,  setPayDialogOpen]  = useState(false)
   const [payAmount,      setPayAmount]      = useState('')
   const [deleteConfirm,  setDeleteConfirm]  = useState(false)
@@ -243,6 +245,27 @@ export function OrderDetailPage() {
     prepaid_amount: order.prepaid_amount,
     notes:          order.notes,
   } : null
+
+  const slipData: DeliverySlipData | null = order ? {
+    number:         order.number,
+    created_at:     order.created_at,
+    client:         order.client,
+    items:          (order.items ?? []).map(it => ({
+      item_type_name: it.item_type_name,
+      price:          it.price,
+      color:          (it as any).color,
+      brand:          (it as any).brand,
+      defects:        (it as any).defects,
+    })),
+    total_amount:   order.total_amount,
+    prepaid_amount: order.prepaid_amount,
+    pickup_date:    (order as any).pickup_date,
+    delivery_date:  (order as any).delivery_date,
+    visit_address:  (order as any).visit_address,
+    notes:          order.notes,
+  } : null
+
+  const hasDelivery = !!(order && ((order as any).pickup_date || (order as any).delivery_date || (order as any).visit_address))
 
   async function handleStatusChange(newStatus: OrderStatus, note?: string) {
     if (!order) return
@@ -395,6 +418,12 @@ export function OrderDetailPage() {
             <Printer className="h-4 w-4 sm:mr-1.5" />
             <span className="hidden sm:inline">Квитанция</span>
           </Button>
+          {hasDelivery && (
+            <Button variant="outline" size="sm" onClick={() => setShowSlip(true)}>
+              <Truck className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Накладная</span>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -886,6 +915,11 @@ export function OrderDetailPage() {
       {/* ReceiptModal */}
       {showReceipt && receiptData && (
         <ReceiptModal data={receiptData} onClose={() => setShowReceipt(false)} />
+      )}
+
+      {/* DeliverySlipModal */}
+      {showSlip && slipData && (
+        <DeliverySlipModal data={slipData} onClose={() => setShowSlip(false)} />
       )}
     </div>
   )
