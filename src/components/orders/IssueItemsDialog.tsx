@@ -62,7 +62,7 @@ export function IssueItemsDialog({ order, open, onClose }: IssueItemsDialogProps
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent mobileFullscreen className="max-w-md max-sm:flex max-sm:flex-col">
         <DialogHeader>
           <DialogTitle>Выдача изделий — {order.number}</DialogTitle>
         </DialogHeader>

@@ -188,14 +188,14 @@ export function DeliverySlipModal({ data, onClose }: { data: DeliverySlipData; o
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-background rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
-          <div className="flex items-center gap-3">
-            <Truck className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold">Накладная · {data.number}</h2>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center sm:p-4">
+      <div className="bg-background shadow-2xl w-full h-full sm:h-auto sm:rounded-2xl sm:max-w-2xl sm:max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between gap-2 px-4 sm:px-5 py-3 sm:py-4 border-b shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <Truck className="h-5 w-5 text-primary shrink-0" />
+            <h2 className="font-semibold truncate"><span className="hidden sm:inline">Накладная · </span>{data.number}</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted shrink-0">
             <X className="h-4 w-4" />
           </button>
         </div>

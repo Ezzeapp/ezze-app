@@ -334,28 +334,28 @@ export function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: ()
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-background rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center sm:p-4">
+      <div className="bg-background shadow-2xl w-full h-full sm:h-auto sm:rounded-2xl sm:max-w-2xl sm:max-h-[92vh] flex flex-col">
 
         {/* Заголовок */}
-        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
-          <div className="flex items-center gap-3">
-            <FileText className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold">Квитанция {data.number}</h2>
+        <div className="flex items-center justify-between gap-2 px-4 sm:px-5 py-3 sm:py-4 border-b shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <FileText className="h-5 w-5 text-primary shrink-0" />
+            <h2 className="font-semibold truncate"><span className="hidden sm:inline">Квитанция </span>{data.number}</h2>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Переключатель формата */}
-            <div className="flex rounded-lg border overflow-hidden text-sm">
+            <div className="flex rounded-lg border overflow-hidden text-xs sm:text-sm">
               {(['a4', '80mm'] as const).map(f => (
                 <button
                   key={f}
                   onClick={() => setFormat(f)}
                   className={cn(
-                    'px-3 py-1.5 font-medium transition-colors',
+                    'px-2 sm:px-3 py-1.5 font-medium transition-colors',
                     format === f ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'
                   )}
                 >
-                  {f === 'a4' ? 'A4' : '80 мм'}
+                  {f === 'a4' ? 'A4' : '80мм'}
                 </button>
               ))}
             </div>
