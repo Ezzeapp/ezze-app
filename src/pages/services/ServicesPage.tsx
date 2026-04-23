@@ -362,7 +362,7 @@ export function ServicesPage() {
       is_bookable: s.is_bookable,
     })
     setPriceDisplay(price > 0 ? String(price) : '')
-    setSelectedCatId(s.category || '__none__')
+    setSelectedCatId((s as any).category_id || '__none__')
     setCatSearch('')
     setActiveTab('main')
     setDialogOpen(true)
