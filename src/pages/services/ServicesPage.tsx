@@ -68,7 +68,10 @@ function CategoriesDialog({ open, onClose }: { open: boolean; onClose: () => voi
 
   const catCount = useMemo(() => {
     const map: Record<string, number> = {}
-    allServices?.forEach((s) => { if (s.category) map[s.category] = (map[s.category] || 0) + 1 })
+    allServices?.forEach((s) => {
+      const catId = (s as any).category_id as string | null
+      if (catId) map[catId] = (map[catId] || 0) + 1
+    })
     return map
   }, [allServices])
 
@@ -353,7 +356,7 @@ export function ServicesPage() {
       duration_min: s.duration_min,
       price,
       price_max: s.price_max ?? undefined,
-      category: s.category || '__none__',
+      category: (s as any).category_id || '__none__',
       is_active: s.is_active,
       is_bookable: s.is_bookable,
     })
@@ -541,7 +544,7 @@ export function ServicesPage() {
         {/* Grid/Card view — на мобильном всегда, на десктопе только в grid-режиме */}
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 sm:hidden">
           {services.map((service) => {
-            const cat = service.category ? getCategoryById(service.category) : undefined
+            const cat = (service as any).category as ServiceCategory | null | undefined
             const isSelected = selectedIds.has(service.id)
             return (
               <div
@@ -641,7 +644,7 @@ export function ServicesPage() {
             </thead>
             <tbody>
               {services.map((service) => {
-                const cat = service.category ? getCategoryById(service.category) : undefined
+                const cat = (service as any).category as ServiceCategory | null | undefined
                 const isSelected = selectedIds.has(service.id)
                 return (
                   <tr
