@@ -724,29 +724,26 @@ export function ServicesPage() {
 
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent mobileFullscreen className="max-w-lg overflow-y-auto max-sm:flex max-sm:flex-col">
-          <DialogHeader>
+        <DialogContent mobileFullscreen className="max-w-lg flex flex-col max-h-[90vh] overflow-hidden p-0 gap-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
             <DialogTitle>{editService ? t('services.edit') : t('services.add')}</DialogTitle>
           </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="max-sm:flex-1 max-sm:flex max-sm:flex-col max-sm:overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
             {hasServiceMaterials && (
-              <TabsList className="w-full shrink-0 grid grid-cols-2">
+              <TabsList className="w-full shrink-0 grid grid-cols-2 mx-6">
                 <TabsTrigger value="main">{t('services.name')}</TabsTrigger>
                 <TabsTrigger value="materials">{t('services.materialsTab')}</TabsTrigger>
               </TabsList>
             )}
 
-            <TabsContent value="main" className="max-sm:flex-1 max-sm:overflow-y-auto max-sm:pb-2">
-              <form onSubmit={handleSubmit(onSubmit, (errs) => { console.error('Form validation errors:', errs); toast.error(t('common.saveError')) })} className="space-y-4 pt-3">
+            <TabsContent value="main" className="flex-1 flex flex-col overflow-hidden mt-0">
+              <form onSubmit={handleSubmit(onSubmit, (errs) => { console.error('Form validation errors:', errs); toast.error(t('common.saveError')) })} className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto px-6 py-3 space-y-4">
                 <div className="space-y-2">
                   <Label>{t('services.name')} *</Label>
                   <Input {...register('name')} />
                   {errors.name && <p className="text-xs text-destructive">{t('common.required')}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('services.description')}</Label>
-                  <Textarea rows={2} {...register('description')} />
                 </div>
 
                 <div className={cn('grid gap-4', PRODUCT !== 'workshop' && 'sm:grid-cols-2')}>
@@ -828,7 +825,7 @@ export function ServicesPage() {
                       <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0 opacity-50" />
                     </button>
                     {catOpen && (
-                      <div className="absolute left-0 top-full mt-1 z-50 w-full bg-white dark:bg-zinc-900 border border-border rounded-xl shadow-xl overflow-hidden">
+                      <div className="absolute left-0 bottom-full mb-1 z-50 w-full bg-white dark:bg-zinc-900 border border-border rounded-xl shadow-xl overflow-hidden">
                         {/* Поиск */}
                         <div className="p-2 border-b">
                           <div className="relative">
@@ -923,15 +920,16 @@ export function ServicesPage() {
                     <Switch checked={goToMaterials} onCheckedChange={setGoToMaterials} />
                   </div>
                 )}
+                </div>
 
-                <DialogFooter>
+                <DialogFooter className="px-6 py-3 shrink-0 border-t">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>
                   <Button type="submit" loading={create.isPending || update.isPending}>{t('common.save')}</Button>
                 </DialogFooter>
               </form>
             </TabsContent>
 
-            {hasServiceMaterials && <TabsContent value="materials" className="pt-3 max-sm:flex-1 max-sm:overflow-y-auto max-sm:pb-2">
+            {hasServiceMaterials && <TabsContent value="materials" className="flex-1 overflow-y-auto px-6 py-3">
               {editService ? (
                 <>
                   <ServiceMaterialsTab serviceId={editService.id} />
