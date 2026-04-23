@@ -4,12 +4,17 @@
  * Запуск: node tg_client_bot.js
  * Systemd: ezze-client-bot.service
  *
- * Сценарий 1: Клиент открывает бота сам (/start без параметра)
- *   → регистрация (телефон → имя) → запись в tg_clients → личный кабинет
+ * Назначение (после рефакторинга):
+ *   Клиент бронируется на САЙТЕ мастера (без Mini App).
+ *   Бот — это канал уведомлений + быстрый просмотр (мои записи, бонусы, история)
+ *   через chat-кнопки. Связь «клиент ↔ запись» идёт по нормализованному телефону.
  *
- * Сценарий 2: Клиент переходит по ссылке мастера (/start book_SLUG)
- *   → уже в tg_clients? → сразу кнопка "Записаться" (без повторного ввода)
- *   → не в tg_clients? → регистрация → запись в tg_clients → кнопка "Записаться"
+ * Сценарий /start:
+ *   1. Выбор языка (6 языков)
+ *   2. Поделиться номером телефона (request_contact)
+ *   3. Имя берётся автоматически из Telegram-профиля
+ *   4. Линкуем существующие appointments по телефону (telegram_id = chat_id)
+ *   5. Показываем главное меню (persistent reply-keyboard, 5 кнопок)
  */
 
 import { readFileSync, writeFileSync } from "fs";
@@ -20,53 +25,19 @@ import {
   handleAIMessage, fmtDate,
   createBotHelpers,
   escapeHtml, sessionEntry, cleanupSessions, PRODUCT,
+  normalizePhone, linkAppointmentsByPhone,
 } from "./tg_shared.js";
 
 const bot = createBotHelpers(CLIENT_BOT_TOKEN);
 
-// Отдельный helper для отправки уведомлений мастерам через мастерский бот
+// Отдельный helper для уведомлений мастерам через мастерский бот
 const masterBot = createBotHelpers(MASTER_BOT_TOKEN);
 
-// ── Маппинг продукт → URL (единый бот для всех продуктов) ────────────────────
-
-const PRODUCT_MAP = {
-  beauty:    "https://beauty.ezze.site",
-  clinic:    "https://clinic.ezze.site",
-  workshop:  "https://workshop.ezze.site",
-  edu:       "https://edu.ezze.site",
-  hotel:     "https://hotel.ezze.site",
-  food:      "https://food.ezze.site",
-  event:     "https://event.ezze.site",
-  farm:      "https://farm.ezze.site",
-  transport: "https://transport.ezze.site",
-  build:     "https://build.ezze.site",
-  trade:     "https://trade.ezze.site",
-};
-
-function getProductUrl(product) {
-  return PRODUCT_MAP[product] || APP_URL;
-}
-
-/** Возвращает URL продукта мастера по его booking_slug */
-async function getMasterProductUrl(slug) {
-  try {
-    const { data } = await supabase
-      .from("master_profiles")
-      .select("user_id, users!inner(product)")
-      .eq("booking_slug", slug)
-      .maybeSingle();
-    const product = data?.users?.product || "beauty";
-    return getProductUrl(product);
-  } catch {
-    return APP_URL;
-  }
-}
-
-// ── Persistent sessions ───────────────────────────────────────────────────────
+// ── Persistent сессии регистрации (waiting_language / waiting_phone) ─────────
 
 const SESSIONS_FILE = "./tg_client_sessions.json";
 
-function loadPendingBookings() {
+function loadSessions() {
   try {
     const raw = readFileSync(SESSIONS_FILE, "utf8");
     return new Map(Object.entries(JSON.parse(raw)));
@@ -75,476 +46,388 @@ function loadPendingBookings() {
   }
 }
 
-function savePendingBookings() {
+function saveSessions() {
   try {
-    writeFileSync(SESSIONS_FILE, JSON.stringify(Object.fromEntries(pendingBookings)));
+    writeFileSync(SESSIONS_FILE, JSON.stringify(Object.fromEntries(sessions)));
   } catch (e) {
-    console.error("savePendingBookings error:", e.message);
+    console.error("saveSessions error:", e.message);
   }
 }
 
-const pendingBookings = loadPendingBookings();
+const sessions = loadSessions();
 
-// ── Файловое хранилище ID сообщений кабинета (для удаления при DELETE клиента) ─
+// ── Многоязычные строки ──────────────────────────────────────────────────────
 
-const CABINET_MSGS_FILE = "./tg_client_cabinet_msgs.json";
-
-function loadCabinetMsgs() {
-  try {
-    return JSON.parse(readFileSync(CABINET_MSGS_FILE, "utf8"));
-  } catch {
-    return {};
-  }
-}
-
-function saveCabinetMsgs(data) {
-  try {
-    writeFileSync(CABINET_MSGS_FILE, JSON.stringify(data));
-  } catch (e) {
-    console.error("saveCabinetMsgs error:", e.message);
-  }
-}
-
-/** Добавляет message_id-шники для chatId в файловое хранилище (макс 100) */
-function addCabinetMsgs(chatId, msgIds) {
-  if (!msgIds || msgIds.length === 0) return;
-  const data = loadCabinetMsgs();
-  const key = String(chatId);
-  const existing = data[key] || [];
-  data[key] = [...existing, ...msgIds.filter(Boolean)].slice(-100);
-  saveCabinetMsgs(data);
-}
-
-/** Удаляет через Telegram API все сохранённые сообщения бота для данного chatId */
-async function deleteStoredMsgs(chatId) {
-  const data = loadCabinetMsgs();
-  const key = String(chatId);
-  const msgIds = data[key] || [];
-  if (msgIds.length === 0) {
-    console.log(`🗑️ deleteStoredMsgs: нет сохранённых сообщений для chat ${chatId}`);
-    return;
-  }
-  console.log(`🗑️ deleteStoredMsgs: удаляем ${msgIds.length} сообщений для chat ${chatId}`);
-  await Promise.allSettled(
-    msgIds.map(msgId =>
-      fetch(`${bot.TG_API}/deleteMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: String(chatId), message_id: msgId }),
-      }).catch(() => {})
-    )
-  );
-  delete data[key];
-  saveCabinetMsgs(data);
-}
-
-// ── Многоязычные строки клиентского бота ──────────────────────────────────────
-
-const CLIENT_LANG_STRINGS = {
+const LANG_STRINGS = {
   ru: {
-    phonePrompt: `📱 Поделитесь вашим номером телефона:`,
-    shareBtn:    'Поделиться номером',
-    remindShare: `📱 Пожалуйста, нажмите кнопку <b>«Поделиться номером»</b> ниже.`,
-    askName:     `👤 Как вас зовут?`,
-    askNameHint: name => `\n\n<i>Можете написать: ${name}</i>`,
-    registered:  name => `✅ <b>Готово, ${name}!</b>\n\nВы зарегистрированы. Нажмите кнопку меню внизу, чтобы открыть кабинет.`,
-    cabinetBtn:  '📋 Мой кабинет',
-    welcomeBack: `Рады видеть вас снова в <b>Ezze</b>!\n\nНажмите кнопку меню внизу для открытия кабинета.`,
+    langTitle:    `🌐 <b>Выберите язык / Tilni tanlang / Select language:</b>`,
+    phonePrompt:  `📱 Поделитесь номером телефона, чтобы получать уведомления о записях.`,
+    shareBtn:     "📱 Поделиться номером",
+    remindShare:  `📱 Пожалуйста, нажмите кнопку <b>«Поделиться номером»</b> ниже.`,
+    registered:   name => `✅ <b>Готово, ${name}!</b>\n\nТеперь вы будете получать уведомления о ваших записях.\nИспользуйте кнопки ниже 👇`,
+    welcomeBack:  name => `👋 С возвращением, <b>${name}</b>!\n\nИспользуйте кнопки ниже 👇`,
+    btnBookings:  "📅 Мои записи",
+    btnBonuses:   "🎁 Бонусы",
+    btnHistory:   "🕓 История",
+    btnLang:      "🌐 Язык",
+    btnHelp:      "❓ Помощь",
+    soon:         "⏳ Функция скоро будет доступна.",
+    noClient:     "⚠️ Похоже, вы ещё не зарегистрированы. Нажмите /start для начала.",
   },
   uz: {
-    phonePrompt: `📱 Telefon raqamingizni ulashing:`,
-    shareBtn:    "Raqamni ulashish",
-    remindShare: `📱 Iltimos, <b>«Raqamni ulashish»</b> tugmasini bosing.`,
-    askName:     `👤 Ismingiz nima?`,
-    askNameHint: name => `\n\n<i>Yozishingiz mumkin: ${name}</i>`,
-    registered:  name => `✅ <b>Tayyor, ${name}!</b>\n\nSiz ro'yxatdan o'tdingiz. Kabinetni ochish uchun pastdagi menyu tugmasini bosing.`,
-    cabinetBtn:  "📋 Mening kabinetim",
-    welcomeBack: `<b>Ezze</b>ga yana xush kelibsiz!\n\nKabinetni ochish uchun pastdagi menyu tugmasini bosing.`,
+    langTitle:    `🌐 <b>Tilni tanlang / Выберите язык / Select language:</b>`,
+    phonePrompt:  `📱 Yozuvlar haqida xabarnomalarni olish uchun telefon raqamingizni ulashing.`,
+    shareBtn:     "📱 Raqamni ulashish",
+    remindShare:  `📱 Iltimos, <b>«Raqamni ulashish»</b> tugmasini bosing.`,
+    registered:   name => `✅ <b>Tayyor, ${name}!</b>\n\nEndi siz yozuvlar haqida xabarnomalar olasiz.\nQuyidagi tugmalardan foydalaning 👇`,
+    welcomeBack:  name => `👋 Qaytganingizdan xursandmiz, <b>${name}</b>!\n\nQuyidagi tugmalardan foydalaning 👇`,
+    btnBookings:  "📅 Yozuvlarim",
+    btnBonuses:   "🎁 Bonuslar",
+    btnHistory:   "🕓 Tarix",
+    btnLang:      "🌐 Til",
+    btnHelp:      "❓ Yordam",
+    soon:         "⏳ Funksiya tez orada mavjud bo'ladi.",
+    noClient:     "⚠️ Siz hali ro'yxatdan o'tmagansiz. Boshlash uchun /start bosing.",
   },
   en: {
-    phonePrompt: `📱 Please share your phone number:`,
-    shareBtn:    "Share phone number",
-    remindShare: `📱 Please press the <b>«Share phone number»</b> button below.`,
-    askName:     `👤 What is your name?`,
-    askNameHint: name => `\n\n<i>You can type: ${name}</i>`,
-    registered:  name => `✅ <b>Done, ${name}!</b>\n\nYou're registered. Press the menu button below to open your cabinet.`,
-    cabinetBtn:  "📋 My Cabinet",
-    welcomeBack: `Welcome back to <b>Ezze</b>!\n\nPress the menu button below to open your cabinet.`,
+    langTitle:    `🌐 <b>Select language / Выберите язык / Tilni tanlang:</b>`,
+    phonePrompt:  `📱 Share your phone number to receive appointment notifications.`,
+    shareBtn:     "📱 Share phone number",
+    remindShare:  `📱 Please press the <b>«Share phone number»</b> button below.`,
+    registered:   name => `✅ <b>Done, ${name}!</b>\n\nYou'll now receive appointment notifications.\nUse the buttons below 👇`,
+    welcomeBack:  name => `👋 Welcome back, <b>${name}</b>!\n\nUse the buttons below 👇`,
+    btnBookings:  "📅 My bookings",
+    btnBonuses:   "🎁 Bonuses",
+    btnHistory:   "🕓 History",
+    btnLang:      "🌐 Language",
+    btnHelp:      "❓ Help",
+    soon:         "⏳ This feature will be available soon.",
+    noClient:     "⚠️ You are not registered yet. Send /start to begin.",
   },
   tg: {
-    phonePrompt: `📱 Рақами телефони худро мубодила кунед:`,
-    shareBtn:    "Мубодилаи рақам",
-    remindShare: `📱 Лутфан тугмаи <b>«Мубодилаи рақам»</b>-ро пахш кунед.`,
-    askName:     `👤 Номи шумо чист?`,
-    askNameHint: name => `\n\n<i>Навиштан мумкин: ${name}</i>`,
-    registered:  name => `✅ <b>Тайёр, ${name}!</b>\n\nШумо сабти ном шудед. Тугмаи менюи поёниро пахш кунед.`,
-    cabinetBtn:  "📋 Кабинети ман",
-    welcomeBack: `Ба <b>Ezze</b> хуш омадед!\n\nТугмаи менюи поёниро пахш кунед.`,
+    langTitle:    `🌐 <b>Забонро интихоб кунед / Выберите язык / Select language:</b>`,
+    phonePrompt:  `📱 Барои гирифтани огоҳномаҳо рақами телефонро мубодила кунед.`,
+    shareBtn:     "📱 Мубодилаи рақам",
+    remindShare:  `📱 Лутфан, тугмаи <b>«Мубодилаи рақам»</b>-ро пахш кунед.`,
+    registered:   name => `✅ <b>Тайёр, ${name}!</b>\n\nАкнун шумо огоҳномаҳо мегиред.\nТугмаҳои поёниро истифода баред 👇`,
+    welcomeBack:  name => `👋 Боз хуш омадед, <b>${name}</b>!\n\nТугмаҳои поёниро истифода баред 👇`,
+    btnBookings:  "📅 Сабтҳои ман",
+    btnBonuses:   "🎁 Бонусҳо",
+    btnHistory:   "🕓 Таърих",
+    btnLang:      "🌐 Забон",
+    btnHelp:      "❓ Кумак",
+    soon:         "⏳ Функсия ба зудӣ дастрас мешавад.",
+    noClient:     "⚠️ Шумо ҳанӯз сабти ном нашудаед. /start-ро пахш кунед.",
   },
   kz: {
-    phonePrompt: `📱 Телефон нөміріңізді бөлісіңіз:`,
-    shareBtn:    "Нөмірді бөлісу",
-    remindShare: `📱 <b>«Нөмірді бөлісу»</b> түймесін басыңыз.`,
-    askName:     `👤 Атыңыз қалай?`,
-    askNameHint: name => `\n\n<i>Жазуыңызға болады: ${name}</i>`,
-    registered:  name => `✅ <b>Дайын, ${name}!</b>\n\nТіркелдіңіз. Кабинетті ашу үшін төмендегі мәзір түймесін басыңыз.`,
-    cabinetBtn:  "📋 Менің кабинетім",
-    welcomeBack: `<b>Ezze</b>-ге қайта қош келдіңіз!\n\nКабинетті ашу үшін төмендегі мәзір түймесін басыңыз.`,
+    langTitle:    `🌐 <b>Тілді таңдаңыз / Выберите язык / Select language:</b>`,
+    phonePrompt:  `📱 Хабарландырулар алу үшін телефон нөміріңізді бөлісіңіз.`,
+    shareBtn:     "📱 Нөмірді бөлісу",
+    remindShare:  `📱 <b>«Нөмірді бөлісу»</b> түймесін басыңыз.`,
+    registered:   name => `✅ <b>Дайын, ${name}!</b>\n\nЕнді сіз жазбалар туралы хабарландырулар аласыз.\nТөмендегі түймелерді қолданыңыз 👇`,
+    welcomeBack:  name => `👋 Қайта қош келдіңіз, <b>${name}</b>!\n\nТөмендегі түймелерді қолданыңыз 👇`,
+    btnBookings:  "📅 Жазбаларым",
+    btnBonuses:   "🎁 Бонустар",
+    btnHistory:   "🕓 Тарих",
+    btnLang:      "🌐 Тіл",
+    btnHelp:      "❓ Көмек",
+    soon:         "⏳ Функция жақында қолжетімді болады.",
+    noClient:     "⚠️ Сіз әлі тіркелмегенсіз. /start басыңыз.",
   },
   ky: {
-    phonePrompt: `📱 Телефон номериңизди бөлүшүңүз:`,
-    shareBtn:    "Номерди бөлүшүү",
-    remindShare: `📱 <b>«Номерди бөлүшүү»</b> баскычын басыңыз.`,
-    askName:     `👤 Атыңыз кандай?`,
-    askNameHint: name => `\n\n<i>Жазсаңыз болот: ${name}</i>`,
-    registered:  name => `✅ <b>Даяр, ${name}!</b>\n\nКаттоодон өттүңүз. Кабинетти ачуу үчүн ылдыйдагы меню баскычын басыңыз.`,
-    cabinetBtn:  "📋 Менин кабинетим",
-    welcomeBack: `<b>Ezze</b>-ге кайра кош келиңиз!\n\nКабинетти ачуу үчүн ылдыйдагы меню баскычын басыңыз.`,
+    langTitle:    `🌐 <b>Тилди тандаңыз / Выберите язык / Select language:</b>`,
+    phonePrompt:  `📱 Билдирүүлөрдү алуу үчүн телефон номериңизди бөлүшүңүз.`,
+    shareBtn:     "📱 Номерди бөлүшүү",
+    remindShare:  `📱 <b>«Номерди бөлүшүү»</b> баскычын басыңыз.`,
+    registered:   name => `✅ <b>Даяр, ${name}!</b>\n\nЭми сиз жазуулар боюнча билдирүү аласыз.\nТөмөнкү баскычтарды колдонуңуз 👇`,
+    welcomeBack:  name => `👋 Кайра кош келиңиз, <b>${name}</b>!\n\nТөмөнкү баскычтарды колдонуңуз 👇`,
+    btnBookings:  "📅 Жазууларым",
+    btnBonuses:   "🎁 Бонустар",
+    btnHistory:   "🕓 Тарых",
+    btnLang:      "🌐 Тил",
+    btnHelp:      "❓ Жардам",
+    soon:         "⏳ Функция жакында жеткиликтүү болот.",
+    noClient:     "⚠️ Сиз али катталбагансыз. /start басыңыз.",
   },
 };
 
-function getClientLang(lang) {
-  return CLIENT_LANG_STRINGS[lang] ? lang : 'ru';
-}
+const LANG_NAMES = {
+  ru: "🇷🇺 Русский", uz: "🇺🇿 O'zbek", en: "🇬🇧 English",
+  tg: "🇹🇯 Тоҷикӣ",  kz: "🇰🇿 Қазақша", ky: "🇰🇬 Кыргызча",
+};
 
-// ── tg_clients: сохранение/поиск платформенных клиентов ───────────────────────
+function getLang(lang) { return LANG_STRINGS[lang] ? lang : 'ru'; }
 
-/** Ищет клиента в tg_clients по tg_chat_id. Возвращает запись или null. */
+// ── tg_clients: CRUD + трекинг message_ids ───────────────────────────────────
+
 async function findTgClient(chatId) {
   const { data } = await supabase
     .from("tg_clients")
-    .select("id, name, phone, tg_username, tg_name, lang")
+    .select("id, name, phone, tg_username, tg_name, lang, bot_message_ids")
     .eq("tg_chat_id", String(chatId))
     .maybeSingle();
   return data ?? null;
 }
 
-/**
- * Сохраняет/обновляет клиента в tg_clients.
- * @param {number|string} chatId     — Telegram chat ID
- * @param {string}        name       — имя, введённое клиентом
- * @param {string}        phone      — телефон
- * @param {string|null}   tgUsername — @никнейм из Telegram-профиля
- * @param {string|null}   tgName     — отображаемое имя из Telegram-профиля
- * @param {string}        lang       — выбранный язык
- */
-async function saveTgClient(chatId, name, phone, tgUsername = null, tgName = null, lang = 'ru', initialMessageIds = []) {
-  // Основной upsert — без bot_message_ids, чтобы не падать если миграция ещё не применена
+async function saveTgClient({ chatId, phone, tgName, tgUsername, lang }) {
   const { error } = await supabase.from("tg_clients").upsert({
     tg_chat_id:  String(chatId),
-    name,
-    phone,
+    name:        tgName || 'Клиент', // имя берём из TG-профиля, fallback
+    phone:       phone,
     tg_username: tgUsername || null,
     tg_name:     tgName     || null,
     lang:        lang       || 'ru',
     updated_at:  new Date().toISOString(),
   }, { onConflict: "tg_chat_id" });
   if (error) console.error("saveTgClient error:", error.message);
-
-  // Отдельно сохраняем IDs сообщений — fire-and-forget, не влияет на регистрацию
-  if (initialMessageIds.length > 0) {
-    supabase.from("tg_clients")
-      .update({ bot_message_ids: initialMessageIds })
-      .eq("tg_chat_id", String(chatId))
-      .then(({ error: e }) => { if (e) console.error("bot_message_ids update error:", e.message) })
-      .catch(() => {});
-  }
 }
 
-/** Дописывает message_id в bot_message_ids зарегистрированного клиента (fire-and-forget) */
-async function trackBotMessage(chatId, msgId) {
+/**
+ * Fire-and-forget: дописывает message_id в tg_clients.bot_message_ids.
+ * Нужен, чтобы при DELETE клиента realtime-хэндлер мог почистить чат.
+ */
+function trackMsg(chatId, msgId) {
   if (!msgId) return;
-  try {
-    const { data: cur } = await supabase
-      .from("tg_clients").select("bot_message_ids")
-      .eq("tg_chat_id", String(chatId)).maybeSingle();
-    if (!cur) return; // клиент ещё не зарегистрирован — не трекаем
-    const ids = (cur.bot_message_ids || []).slice(-199); // храним не более 200
-    ids.push(msgId);
-    await supabase.from("tg_clients")
-      .update({ bot_message_ids: ids })
-      .eq("tg_chat_id", String(chatId));
-  } catch { /* не блокируем основной поток */ }
+  supabase.from("tg_clients")
+    .select("bot_message_ids").eq("tg_chat_id", String(chatId)).maybeSingle()
+    .then(({ data }) => {
+      if (!data) return; // клиент не зарегистрирован ещё — не трекаем
+      const ids = (data.bot_message_ids || []).slice(-199);
+      ids.push(msgId);
+      return supabase.from("tg_clients")
+        .update({ bot_message_ids: ids })
+        .eq("tg_chat_id", String(chatId));
+    })
+    .then((res) => { if (res?.error) console.error("trackMsg:", res.error.message); })
+    .catch(() => {});
 }
 
-// ── Выбор языка для клиента ───────────────────────────────────────────────────
-
-async function sendClientLangSelection(chatId, firstName) {
-  const greeting = `👋 <b>Привет${firstName ? ", " + escapeHtml(firstName) : ""}!</b>`;
+/** Отправка сообщения + автотрекинг message_id */
+async function sendMsg(chatId, text, extra = {}) {
   const res = await fetch(`${bot.TG_API}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: `${greeting}\n\nДобро пожаловать в <b>Ezze</b>!\n\n🌐 <b>Выберите язык / Tilni tanlang / Select language:</b>`,
-      parse_mode: "HTML",
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", ...extra }),
+  });
+  const json = await res.json().catch(() => ({}));
+  const msgId = json?.result?.message_id;
+  trackMsg(chatId, msgId);
+  return msgId;
+}
+
+// ── Удаление всех сообщений бота в чате (при DELETE клиента) ─────────────────
+
+async function deleteBotMessages(chatId, msgIds) {
+  if (!msgIds?.length) return;
+  console.log(`🗑️ deleteBotMessages: ${msgIds.length} сообщений для chat ${chatId}`);
+  await Promise.allSettled(
+    msgIds.map(id =>
+      fetch(`${bot.TG_API}/deleteMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: String(chatId), message_id: id }),
+      }).catch(() => {})
+    )
+  );
+}
+
+// ── Регистрация: шаги ────────────────────────────────────────────────────────
+
+async function sendLanguageSelection(chatId, firstName) {
+  const greeting = `👋 <b>Привет${firstName ? ", " + escapeHtml(firstName) : ""}!</b>`;
+  await sendMsg(chatId,
+    `${greeting}\n\nДобро пожаловать в <b>Ezze</b>!\n\n${LANG_STRINGS.ru.langTitle}`,
+    {
       reply_markup: {
         inline_keyboard: [
-          [
-            { text: "🇷🇺 Русский",   callback_data: "lang_ru", style: "primary" },
-            { text: "🇺🇿 O'zbek",    callback_data: "lang_uz", style: "primary" },
-          ],
-          [
-            { text: "🇬🇧 English",   callback_data: "lang_en", style: "primary" },
-            { text: "🇹🇯 Тоҷикӣ",   callback_data: "lang_tg", style: "primary" },
-          ],
-          [
-            { text: "🇰🇿 Қазақша",  callback_data: "lang_kz", style: "primary" },
-            { text: "🇰🇬 Кыргызча", callback_data: "lang_ky", style: "primary" },
-          ],
+          [{ text: LANG_NAMES.ru, callback_data: "lang_ru" },
+           { text: LANG_NAMES.uz, callback_data: "lang_uz" }],
+          [{ text: LANG_NAMES.en, callback_data: "lang_en" },
+           { text: LANG_NAMES.tg, callback_data: "lang_tg" }],
+          [{ text: LANG_NAMES.kz, callback_data: "lang_kz" },
+           { text: LANG_NAMES.ky, callback_data: "lang_ky" }],
         ],
       },
-    }),
-  });
-  // Трекаем message_id в pending (до сохранения в tg_clients)
-  const json = await res.json();
-  const msgId = json?.result?.message_id;
-  if (msgId) {
-    const pending = pendingBookings.get(chatId);
-    if (pending) {
-      (pending.messageIds = pending.messageIds || []).push(msgId);
     }
-  }
+  );
 }
 
-// ── Клиентские хелперы ────────────────────────────────────────────────────────
-
-async function setClientMenuButton(chatId, phone = '', name = '') {
-  const cfg = await loadTgConfig();
-  // Если телефон не передан — пробуем достать из tg_clients
-  if (!phone) {
-    const tgClient = await findTgClient(chatId);
-    phone = tgClient?.phone || '';
-    if (!name) name = tgClient?.name || '';
-  }
-  const params = new URLSearchParams({ tg_id: String(chatId) });
-  if (phone) params.set('tg_phone', phone);
-  if (name) params.set('tg_name', name);
-  await bot.setUserMenuButton(chatId, cfg.client_label, `${APP_URL}/my?${params.toString()}`);
-}
-
-async function showBookingButton(chatId, slug, phone, name, tgUsername = '') {
-  const params = new URLSearchParams({ tg_phone: phone, tg_name: name, tg_id: String(chatId) });
-  if (tgUsername) params.set('tg_username', tgUsername);
-  const masterUrl = await getMasterProductUrl(slug);
-  const bookUrl = `${masterUrl}/book/${slug}?${params.toString()}`;
-  await fetch(`${bot.TG_API}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: `✅ <b>Отлично, ${escapeHtml(name)}!</b>\n\nВсё готово — нажмите кнопку ниже, чтобы выбрать услугу и удобное время:`,
-      parse_mode: "HTML",
-      reply_markup: { inline_keyboard: [[{ text: "📅 Записаться", style: "primary", web_app: { url: bookUrl } }]] },
-    }),
+async function sendPhoneRequest(chatId, lang) {
+  const s = LANG_STRINGS[lang];
+  await sendMsg(chatId, s.phonePrompt, {
+    reply_markup: {
+      keyboard: [[{ text: s.shareBtn, request_contact: true }]],
+      resize_keyboard: true,
+      one_time_keyboard: true,
+    },
   });
 }
 
-async function showTeamBookingButton(chatId, teamSlug, phone, name, tgUsername = '') {
-  const params = new URLSearchParams({ tg_phone: phone, tg_name: name, tg_id: String(chatId) });
-  if (tgUsername) params.set('tg_username', tgUsername);
-  const masterUrl = await getMasterProductUrl(teamSlug);
-  const teamUrl = `${masterUrl}/book/team/${teamSlug}?${params.toString()}`;
-  await fetch(`${bot.TG_API}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: `✅ <b>Отлично, ${escapeHtml(name)}!</b>\n\nНажмите кнопку ниже, чтобы выбрать мастера и записаться:`,
-      parse_mode: "HTML",
-      reply_markup: { inline_keyboard: [[{ text: "👥 Выбрать мастера", style: "primary", web_app: { url: teamUrl } }]] },
-    }),
-  });
+/** Возвращает persistent reply-клавиатуру для главного меню на выбранном языке */
+function buildMainKeyboard(lang) {
+  const s = LANG_STRINGS[lang];
+  return {
+    keyboard: [
+      [{ text: s.btnBookings }, { text: s.btnBonuses }],
+      [{ text: s.btnHistory },  { text: s.btnLang }],
+      [{ text: s.btnHelp }],
+    ],
+    resize_keyboard: true,
+    is_persistent: true,
+  };
 }
 
-async function sendClientMenuSmart(chatId, firstName, tgUsername = '') {
-  const greeting = `👋 <b>Привет${firstName ? ", " + escapeHtml(firstName) : ""}!</b>`;
+async function sendMainMenu(chatId, lang, name, firstTime = false) {
+  const s = LANG_STRINGS[lang];
+  const text = firstTime
+    ? s.registered(escapeHtml(name))
+    : s.welcomeBack(escapeHtml(name));
+  await sendMsg(chatId, text, { reply_markup: buildMainKeyboard(lang) });
+}
 
-  // Источник истины — tg_clients. Если записи нет — клиент не зарегистрирован
-  // (в т.ч. после удаления через админ/мастера)
-  const knownTgClient = await findTgClient(chatId);
+// ── Обработчики кнопок главного меню (заглушки для этапа 1) ──────────────────
 
-  if (knownTgClient) {
-    const clientPhone = knownTgClient.phone || '';
-    const clientName  = knownTgClient.name  || '';
-    const clientLang  = getClientLang(knownTgClient.lang || 'ru');
-    const s = CLIENT_LANG_STRINGS[clientLang];
-    // Обновляем кнопку меню (единственная точка входа в кабинет)
-    await setClientMenuButton(chatId, clientPhone, clientName);
-    await fetch(`${bot.TG_API}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: `${greeting}\n\n${s.welcomeBack}`,
-        parse_mode: "HTML",
-      }),
+async function handleMenuAction(chatId, action, client) {
+  const lang = getLang(client?.lang || 'ru');
+  const s = LANG_STRINGS[lang];
+
+  if (action === 'lang') {
+    // Смена языка — показать тот же выбор, что при регистрации
+    sessions.set(chatId, sessionEntry({ step: 'waiting_language', changingLang: true }));
+    saveSessions();
+    await sendMsg(chatId, s.langTitle, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: LANG_NAMES.ru, callback_data: "lang_ru" },
+           { text: LANG_NAMES.uz, callback_data: "lang_uz" }],
+          [{ text: LANG_NAMES.en, callback_data: "lang_en" },
+           { text: LANG_NAMES.tg, callback_data: "lang_tg" }],
+          [{ text: LANG_NAMES.kz, callback_data: "lang_kz" },
+           { text: LANG_NAMES.ky, callback_data: "lang_ky" }],
+        ],
+      },
     });
-  } else {
-    // Новый клиент — ставим кнопку меню на страницу регистрации (название из настроек)
-    const cfg = await loadTgConfig();
-    await bot.setUserMenuButton(chatId, cfg.client_label, `${APP_URL}/client-register`);
-    await fetch(`${bot.TG_API}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: `${greeting}\n\nДобро пожаловать в <b>Ezze</b>!\nНажмите кнопку <b>${escapeHtml(cfg.client_label)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`,
-        parse_mode: "HTML",
-      }),
-    });
+    return;
   }
+
+  // bookings / bonuses / history / help — заглушки, наполним в этапе 2
+  await sendMsg(chatId, s.soon);
 }
 
-// ── Обработка обновлений ──────────────────────────────────────────────────────
+/** Матчит текст пользователя с кнопкой меню, с учётом языка клиента */
+function matchMenuButton(text, lang) {
+  const s = LANG_STRINGS[lang];
+  if (text === s.btnBookings) return 'bookings';
+  if (text === s.btnBonuses)  return 'bonuses';
+  if (text === s.btnHistory)  return 'history';
+  if (text === s.btnLang)     return 'lang';
+  if (text === s.btnHelp)     return 'help';
+  return null;
+}
+
+// ── /start — умная точка входа ───────────────────────────────────────────────
+
+async function handleStart(chatId, firstName) {
+  const client = await findTgClient(chatId);
+  if (client?.phone) {
+    // Уже зарегистрирован — показываем главное меню
+    const lang = getLang(client.lang);
+    const name = client.tg_name || client.name || firstName || 'Клиент';
+    await sendMainMenu(chatId, lang, name, false);
+    return;
+  }
+  // Новый клиент — запускаем регистрацию
+  sessions.set(chatId, sessionEntry({ step: 'waiting_language' }));
+  saveSessions();
+  await sendLanguageSelection(chatId, firstName);
+}
+
+// ── processUpdate ────────────────────────────────────────────────────────────
 
 async function processUpdate(update) {
   const message = update.message;
 
-  // ── Контакт (шаг 1: номер телефона / Mini App fallback) ─────────────────
+  // ── Контакт (шаг 2: телефон) ─────────────────────────────────────────────
   if (message?.contact) {
-    const chatId = message.chat.id;
-    const pending = pendingBookings.get(chatId);
-    const phone = message.contact.phone_number;
-    // Mini App requestContact() fallback — сохраняем в tg_phone_cache для поллинга
+    const chatId  = message.chat.id;
+    const pending = sessions.get(chatId);
     if (pending?.step !== "waiting_phone") {
-      const { error: cacheErr } = await supabase.from('tg_phone_cache').upsert({
-        tg_chat_id: String(chatId),
-        phone,
-      }, { onConflict: 'tg_chat_id' });
-      if (cacheErr) console.error('tg_phone_cache upsert error:', cacheErr.message);
-      else console.log(`📱 [client] Phone cached for Mini App: chat=${chatId}`);
+      // Контакт пришёл вне регистрации — игнорируем
       return;
     }
-    if (pending?.step === "waiting_phone") {
-      const phone = message.contact.phone_number;
-      const contactName = [message.contact.first_name, message.contact.last_name]
-        .filter(Boolean).join(" ");
-      // tgProfileName — отображаемое имя из Telegram-профиля (может отличаться от имени контакта)
-      const tgProfileName = [message.from?.first_name, message.from?.last_name]
-        .filter(Boolean).join(" ") || contactName;
-      const lang = getClientLang(pending?.lang);
-      const s = CLIENT_LANG_STRINGS[lang];
-      pending.step = "waiting_name";
-      pending.phone = phone;
-      pending.tgName = contactName;
-      pending.tgProfileName = tgProfileName;
-      pending.tgUsername = message.from?.username || '';
-      savePendingBookings();
-      const nameReqResult = await bot.sendMessage(
-        chatId,
-        `${s.askName}${contactName ? s.askNameHint(escapeHtml(contactName)) : ""}`,
-        { remove_keyboard: true }
-      );
-      const nameReqMsgId = nameReqResult?.result?.message_id;
-      if (nameReqMsgId) {
-        (pending.messageIds = pending.messageIds || []).push(nameReqMsgId);
-      }
-    }
+    const rawPhone  = message.contact.phone_number;
+    const tgProfile = [message.from?.first_name, message.from?.last_name]
+                        .filter(Boolean).join(" ").trim() || 'Клиент';
+    const tgUsername = message.from?.username || '';
+    const lang = getLang(pending.lang);
+
+    // 1. Сохраняем клиента
+    await saveTgClient({
+      chatId, phone: rawPhone,
+      tgName: tgProfile, tgUsername, lang,
+    });
+
+    // 2. Линкуем существующие appointments по нормализованному телефону
+    await linkAppointmentsByPhone(rawPhone, chatId);
+
+    // 3. Очищаем сессию регистрации
+    sessions.delete(chatId);
+    saveSessions();
+
+    // 4. Показываем главное меню (с приветствием для нового клиента)
+    await sendMainMenu(chatId, lang, tgProfile, true);
     return;
   }
 
+  // ── Текстовые сообщения ───────────────────────────────────────────────────
   if (message?.text) {
     const chatId = message.chat.id;
     const text = message.text;
     const firstName = message.from?.first_name || "";
     console.log(`👤 [client] chat=${chatId} text="${text}"`);
 
-    // ── /start ────────────────────────────────────────────────────────────────
+    // /start — умная точка входа
     if (text.startsWith("/start")) {
-      // Единственный сценарий: регистрация → личный кабинет
-      // Клиент находит мастера через поиск или QR-сканер внутри кабинета
-      const tgUsernameNow = message.from?.username || '';
-      const existingSession = pendingBookings.get(chatId);
-      if (existingSession && existingSession.mode !== "registered") {
-        existingSession.tgUsername = tgUsernameNow;
-      }
-      await sendClientMenuSmart(chatId, firstName, tgUsernameNow);
+      await handleStart(chatId, firstName);
       return;
     }
 
-    if (text === "/menu") {
-      await sendClientMenuSmart(chatId, firstName);
+    // Если на этапе waiting_phone пользователь пишет текст вместо кнопки
+    const pending = sessions.get(chatId);
+    if (pending?.step === "waiting_phone") {
+      const lang = getLang(pending.lang);
+      const s = LANG_STRINGS[lang];
+      await sendMsg(chatId, s.remindShare, {
+        reply_markup: {
+          keyboard: [[{ text: s.shareBtn, request_contact: true }]],
+          resize_keyboard: true,
+          one_time_keyboard: true,
+        },
+      });
       return;
     }
 
-    // ── Шаг 0b: написал текст при ожидании выбора языка ──────────────────────
-    if (!text.startsWith("/")) {
-      const pending = pendingBookings.get(chatId);
-      if (pending?.step === "waiting_language") {
-        await sendClientLangSelection(chatId, firstName);
-        return;
-      }
+    // Если на этапе waiting_language пользователь пишет текст
+    if (pending?.step === "waiting_language") {
+      await sendLanguageSelection(chatId, firstName);
+      return;
     }
 
-    // ── Шаг 1b: написал текст вместо кнопки "Поделиться номером" ─────────────
-    if (!text.startsWith("/")) {
-      const pending = pendingBookings.get(chatId);
-      if (pending?.step === "waiting_phone") {
-        const lang = getClientLang(pending?.lang);
-        const s = CLIENT_LANG_STRINGS[lang];
-        const remindRes = await fetch(`${bot.TG_API}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: s.remindShare,
-            parse_mode: "HTML",
-            reply_markup: {
-              keyboard: [[{ text: s.shareBtn, request_contact: true, style: "primary" }]],
-              resize_keyboard: true,
-              one_time_keyboard: true,
-            },
-          }),
-        });
-        const remindJson = await remindRes.json();
-        const remindMsgId = remindJson?.result?.message_id;
-        if (remindMsgId) {
-          (pending.messageIds = pending.messageIds || []).push(remindMsgId);
-        }
+    // Проверяем — не нажал ли пользователь кнопку главного меню
+    const client = await findTgClient(chatId);
+    if (client) {
+      const action = matchMenuButton(text, getLang(client.lang));
+      if (action) {
+        await handleMenuAction(chatId, action, client);
         return;
       }
+    } else {
+      // Не зарегистрирован — вежливо просим /start
+      await sendMsg(chatId, LANG_STRINGS.ru.noClient);
+      return;
     }
 
-    // ── Шаг 2: ввод имени ────────────────────────────────────────────────────
-    if (!text.startsWith("/")) {
-      const pending = pendingBookings.get(chatId);
-      if (pending?.step === "waiting_name") {
-        const name          = text.trim() || pending.tgName || firstName;
-        const tgUsername    = pending.tgUsername    || '';
-        const tgProfileName = pending.tgProfileName || '';
-        const lang          = getClientLang(pending?.lang);
-        const s             = CLIENT_LANG_STRINGS[lang];
-
-        // ✅ 1. Сначала сохраняем клиента в tg_clients — до отправки кнопки кабинета!
-        await saveTgClient(chatId, name, pending.phone, tgUsername, tgProfileName, lang, pending.messageIds || []);
-
-        pendingBookings.set(chatId, sessionEntry({
-          mode: "registered",
-          phone: pending.phone,
-          name,
-          tgUsername,
-        }));
-        savePendingBookings();
-        await setClientMenuButton(chatId, pending.phone, name);
-
-        // 2. Отправляем сообщение об успешной регистрации (без инлайн-кнопок)
-        //    Кабинет доступен через кнопку меню (setClientMenuButton выше)
-        await fetch(`${bot.TG_API}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: s.registered(escapeHtml(name)),
-            parse_mode: "HTML",
-          }),
-        });
-
-        return;
-      }
-    }
-
-    // ── AI для клиентов ───────────────────────────────────────────────────────
+    // ── AI для клиентов (только если у клиента есть хотя бы одна запись) ────
     if (!text.startsWith("/")) {
       const { count } = await supabase
         .from("appointments").select("id", { count: "exact", head: true })
@@ -567,86 +450,44 @@ async function processUpdate(update) {
 
     // ── Выбор языка ────────────────────────────────────────────────────────
     if (callback.data?.startsWith("lang_")) {
-      const selectedLang = callback.data.slice(5); // "lang_ru" → "ru"
-      if (!CLIENT_LANG_STRINGS[selectedLang]) return;
-      const pending = pendingBookings.get(chatId);
-      if (pending?.step === "waiting_language") {
+      const selectedLang = callback.data.slice(5);
+      if (!LANG_STRINGS[selectedLang]) return;
+
+      const pending = sessions.get(chatId);
+      const isChangingLang = pending?.changingLang === true;
+
+      await bot.editMessageText(chatId, msgId, `✅ ${LANG_NAMES[selectedLang]}`);
+
+      if (isChangingLang) {
+        // Смена языка у зарегистрированного клиента
+        await supabase.from("tg_clients")
+          .update({ lang: selectedLang, updated_at: new Date().toISOString() })
+          .eq("tg_chat_id", String(chatId));
+        sessions.delete(chatId);
+        saveSessions();
+        const client = await findTgClient(chatId);
+        const name = client?.tg_name || client?.name || 'Клиент';
+        await sendMainMenu(chatId, selectedLang, name, false);
+      } else if (pending?.step === "waiting_language") {
+        // Первичная регистрация → переход к шагу телефона
         pending.step = "waiting_phone";
         pending.lang = selectedLang;
-        savePendingBookings();
-        const s = CLIENT_LANG_STRINGS[selectedLang];
-        const langNames = { ru: "🇷🇺 Русский", uz: "🇺🇿 O'zbek", en: "🇬🇧 English", tg: "🇹🇯 Тоҷикӣ", kz: "🇰🇿 Қазақша", ky: "🇰🇬 Кыргызча" };
-        await bot.editMessageText(chatId, msgId, `✅ ${langNames[selectedLang] || selectedLang}`);
-        const phoneRes = await fetch(`${bot.TG_API}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: s.phonePrompt,
-            parse_mode: "HTML",
-            reply_markup: {
-              keyboard: [[{ text: s.shareBtn, request_contact: true, style: "primary" }]],
-              resize_keyboard: true,
-              one_time_keyboard: true,
-            },
-          }),
-        });
-        const phoneJson = await phoneRes.json();
-        const phoneMsgId = phoneJson?.result?.message_id;
-        if (phoneMsgId) {
-          (pending.messageIds = pending.messageIds || []).push(phoneMsgId);
-          savePendingBookings();
-        }
+        saveSessions();
+        await sendPhoneRequest(chatId, selectedLang);
       }
       return;
     }
 
-    // ── Перезапуск регистрации после удаления ─────────────────────────────────
-    if (callback.data === "restart_registration") {
-      const firstName = callback.from?.first_name || '';
-      const tgUsername = callback.from?.username || '';
-
-      // Проверяем — вдруг клиент уже зарегистрирован (повторное нажатие кнопки)
-      const alreadyExists = await findTgClient(chatId);
-      if (alreadyExists) {
-        // Клиент есть в базе — показываем кабинет вместо регистрации
-        await sendClientMenuSmart(chatId, firstName, tgUsername);
-        return;
-      }
-
-      // Клиента нет — ставим кнопку меню на страницу регистрации (название из настроек)
-      const cfg = await loadTgConfig();
-      await bot.setUserMenuButton(chatId, cfg.client_label, `${APP_URL}/client-register`);
-      await fetch(`${bot.TG_API}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: `👋 <b>Привет${firstName ? ", " + escapeHtml(firstName) : ""}!</b>\n\nНажмите кнопку <b>${escapeHtml(cfg.client_label)}</b> рядом с полем ввода, чтобы зарегистрироваться 👇`,
-          parse_mode: "HTML",
-        }),
-      });
-      return;
-    }
-
-    if (callback.data === "open_cabinet") {
-      const tgCl = await findTgClient(chatId);
-      const cbParams = new URLSearchParams({ tg_id: String(chatId) });
-      if (tgCl?.phone) cbParams.set('tg_phone', tgCl.phone);
-      if (tgCl?.name)  cbParams.set('tg_name', tgCl.name);
-      await bot.sendMessageWithWebApp(chatId, "📋 Открываю ваши записи...", "Ezze", `${APP_URL}/my?${cbParams.toString()}`);
-    }
-
+    // ── Отмена записи (из уведомления) ────────────────────────────────────
     if (callback.data?.startsWith("cancel_appt_")) {
       const apptId = callback.data.replace("cancel_appt_", "");
-
       const { data: appt } = await supabase
         .from("appointments")
         .select("id, status, client_name, date, start_time, master_id")
         .eq("id", apptId).maybeSingle();
 
       if (!appt) {
-        await bot.editMessageText(chatId, msgId, "❌ Запись не найдена. Возможно, она была удалена.");
+        await bot.editMessageText(chatId, msgId, "❌ Запись не найдена.");
         return;
       }
       if (appt.status === "cancelled") {
@@ -658,7 +499,6 @@ async function processUpdate(update) {
         return;
       }
 
-      // Получаем данные мастера заранее
       const { data: prof } = await supabase
         .from("master_profiles").select("tg_chat_id, profession")
         .eq("user_id", appt.master_id).maybeSingle();
@@ -691,43 +531,18 @@ console.log(`👤 [${PRODUCT}] Ezze Client Bot starting...`);
 console.log(`App URL: ${APP_URL}`);
 
 bot.deleteWebhook()
-  .then(() => bot.setupDefaultMenuButton())
+  .then(() => bot.setupDefaultMenuButton()) // menu-button = commands (без WebApp)
   .then(() => {
-    console.log("✅ Client bot polling started (@ezzeprogo_bot)");
+    console.log("✅ Client bot polling started");
     bot.startPolling(processUpdate);
 
     // Очищаем устаревшие сессии каждые 10 минут
     setInterval(() => {
-      const removed = cleanupSessions(pendingBookings);
-      if (removed > 0) savePendingBookings();
+      const removed = cleanupSessions(sessions);
+      if (removed > 0) saveSessions();
     }, 10 * 60 * 1000);
 
-    // ── Realtime: tg_config изменился → обновляем кнопку меню у всех клиентов ────
-    // Требует миграции 017: app_settings в supabase_realtime
-    supabase
-      .channel('app_settings_tg_config_client')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'app_settings', filter: 'key=eq.tg_config' },
-        async () => {
-          invalidateTgConfigCache();
-          const newCfg = await loadTgConfig();
-          console.log(`🔄 tg_config обновлён: client_label="${newCfg.client_label}"`);
-          const { data: clients } = await supabase
-            .from('tg_clients').select('tg_chat_id, phone, name');
-          if (!clients?.length) return;
-          console.log(`🔄 Обновляем кнопку меню у ${clients.length} клиентов...`);
-          await Promise.allSettled(
-            clients.map(c => setClientMenuButton(c.tg_chat_id, c.phone || '', c.name || ''))
-          );
-          console.log(`✅ Кнопки меню клиентов обновлены`);
-        }
-      )
-      .subscribe((status) => {
-        console.log(`📡 app_settings Realtime (client): ${status}`);
-      });
-
-    // ── Realtime: при удалении клиента из tg_clients — удаляем все кнопки в чате ─
+    // ── Realtime: при удалении клиента из tg_clients — чистим чат ────────
     // Требует миграции 016: REPLICA IDENTITY FULL на tg_clients
     supabase
       .channel('tg_clients_delete_bot')
@@ -736,12 +551,10 @@ bot.deleteWebhook()
         { event: 'DELETE', schema: 'public', table: 'tg_clients' },
         async (payload) => {
           const tgChatId = payload.old?.tg_chat_id;
-          if (!tgChatId) {
-            console.log('⚠️ tg_clients DELETE: tg_chat_id отсутствует в payload.old');
-            return;
-          }
-          console.log(`🗑️ tg_clients DELETE → очищаем чат ${tgChatId}`);
-          await deleteStoredMsgs(tgChatId);
+          const msgIds   = payload.old?.bot_message_ids || [];
+          if (!tgChatId) return;
+          console.log(`🗑️ tg_clients DELETE → чистим чат ${tgChatId} (${msgIds.length} msgs)`);
+          await deleteBotMessages(tgChatId, msgIds);
         }
       )
       .subscribe((status) => {

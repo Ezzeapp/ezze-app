@@ -92,6 +92,48 @@ export function fmtDate(s) {
   return (mon >= 0 && mon <= 11) ? `${day} ${months[mon]}` : s;
 }
 
+// ── Телефоны: нормализация и линковка ────────────────────────────────────────
+
+/**
+ * Приводит телефон к строке только из цифр ("+998 90 123-45-67" → "998901234567").
+ * Идентично regexp_replace(phone, '\D', '', 'g') в PG, чтобы совпадало с
+ * generated-колонками *_normalized (миграция 056).
+ */
+export function normalizePhone(raw) {
+  return String(raw ?? "").replace(/\D/g, "");
+}
+
+/**
+ * После регистрации клиента в боте — привязывает его tg_chat_id ко всем
+ * существующим appointments с таким же телефоном (тем, которые создавались
+ * на сайте до того, как клиент нажал /start в боте).
+ *
+ * После этого уведомления об этих записях начнут приходить клиенту в TG.
+ *
+ * @param {string} phone       — сырой телефон (+, пробелы, скобки — всё ок)
+ * @param {number|string} chatId — Telegram chat id
+ * @returns {Promise<number>} число обновлённых записей
+ */
+export async function linkAppointmentsByPhone(phone, chatId) {
+  const norm = normalizePhone(phone);
+  if (!norm) return 0;
+  const { data, error } = await supabase
+    .from("appointments")
+    .update({ telegram_id: String(chatId) })
+    .eq("client_phone_normalized", norm)
+    .is("telegram_id", null) // не перезаписываем уже привязанные
+    .select("id");
+  if (error) {
+    console.error("linkAppointmentsByPhone error:", error.message);
+    return 0;
+  }
+  const count = data?.length ?? 0;
+  if (count > 0) {
+    console.log(`🔗 linkAppointmentsByPhone: chat=${chatId} phone=${norm} → ${count} appointments`);
+  }
+  return count;
+}
+
 // ── Конфиги из app_settings (с кешем 5 мин) ──────────────────────────────────
 
 /** Сбрасывает кеш tg_config — вызывать при изменении настроек в admin */
