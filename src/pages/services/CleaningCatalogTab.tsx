@@ -817,8 +817,8 @@ export function CleaningCatalogTab() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="relative flex-1 max-w-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="relative flex-1 min-w-[160px] max-w-xs order-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             value={search}
@@ -835,10 +835,10 @@ export function CleaningCatalogTab() {
             </button>
           )}
         </div>
-        <p className="text-sm text-muted-foreground hidden sm:block shrink-0">
+        <p className="text-sm text-muted-foreground hidden sm:block shrink-0 order-2">
           {filteredItems.length === items.length ? `${items.length} позиций` : `${filteredItems.length} из ${items.length}`}
         </p>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 order-3 ml-auto">
           {selectedIds.size > 0 && (
             <Button
               size="sm"
@@ -857,8 +857,8 @@ export function CleaningCatalogTab() {
             <span className="hidden sm:inline">Из справочника</span>
           </Button>
           <Button size="sm" onClick={() => setAddOpen(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" />
-            Добавить
+            <Plus className="h-3.5 w-3.5 sm:mr-1.5" />
+            <span className="hidden sm:inline">Добавить</span>
           </Button>
         </div>
       </div>
