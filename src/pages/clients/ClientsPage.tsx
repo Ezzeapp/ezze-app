@@ -266,10 +266,10 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
         </DialogHeader>
 
         {/* Tabs */}
-        <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
+        <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit max-w-full overflow-x-auto scrollbar-none">
           <button
             onClick={() => setTab('stats')}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'stats' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'stats' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <BarChart2 className="h-3.5 w-3.5 inline mr-1.5" />
             {t('clients.history')}
@@ -277,7 +277,7 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
           {loyaltySettings?.enabled && (
             <button
               onClick={() => setTab('loyalty')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'loyalty' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab ==='loyalty' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             >
               <Gift className="h-3.5 w-3.5 inline mr-1.5" />
               {t('loyalty.title')}
@@ -286,7 +286,7 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
           {PRODUCT === 'clinic' && (
             <button
               onClick={() => setTab('medcard')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'medcard' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab ==='medcard' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             >
               <Stethoscope className="h-3.5 w-3.5 inline mr-1.5" />
               {t('clinic.medcard.title')}
@@ -295,7 +295,7 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
           {PRODUCT === 'clinic' && (
             <button
               onClick={() => setTab('dental')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'dental' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab ==='dental' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             >
               {t('clinic.dental.title')}
             </button>
@@ -303,7 +303,7 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
           {PRODUCT === 'clinic' && (
             <button
               onClick={() => setTab('lab')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'lab' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab ==='lab' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             >
               {t('clinic.lab.title')}
             </button>
@@ -311,7 +311,7 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
           {PRODUCT === 'clinic' && (
             <button
               onClick={() => setTab('dispensing')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'dispensing' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab ==='dispensing' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             >
               {t('clinic.pharmacy.dispensingHistory')}
             </button>
@@ -319,7 +319,7 @@ function ClientStatsDialog({ client, onClose }: { client: Client; onClose: () =>
           {PRODUCT === 'clinic' && (
             <button
               onClick={() => setTab('hosp')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'hosp' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab ==='hosp' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             >
               {t('clinic.hosp.hospHistory')}
             </button>
