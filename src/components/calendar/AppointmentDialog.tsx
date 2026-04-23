@@ -1863,19 +1863,19 @@ export function AppointmentDialog({
                             const catName  = svc.expand?.category?.name
                             return (
                               <button key={svc.id} type="button" onClick={() => toggleSvc(svc)}
-                                className={`w-full flex items-stretch rounded-xl transition-all text-left overflow-hidden ${
-                                  isSel ? 'bg-foreground' : 'hover:bg-muted/50'
+                                className={`w-full flex items-stretch rounded-xl border transition-all text-left overflow-hidden ${
+                                  isSel ? 'bg-primary/10 border-primary/40' : 'border-transparent hover:bg-muted/50'
                                 }`}>
                                 <div className="w-1 shrink-0 rounded-l-xl" style={{ backgroundColor: catColor || 'transparent' }} />
                                 <div className="flex items-center gap-3 px-3 py-2 flex-1 min-w-0">
                                   <div className="flex-1 min-w-0">
-                                    <p className={`text-sm font-medium truncate ${isSel ? 'text-background' : ''}`}>{svc.name}</p>
-                                    <p className={`text-[11px] leading-tight ${isSel ? 'text-background/60' : 'text-muted-foreground'}`}>
+                                    <p className="text-sm font-medium truncate">{svc.name}</p>
+                                    <p className="text-[11px] leading-tight text-muted-foreground">
                                       {catName ? `${catName} · ` : ''}{formatDuration(svc.duration_min, t)}
                                     </p>
                                   </div>
                                   {svc.price > 0 && (
-                                    <span className={`shrink-0 text-sm font-semibold ${isSel ? 'text-background' : ''}`}>
+                                    <span className="shrink-0 text-sm font-semibold">
                                       {formatCurrency(svc.price, currency, i18n.language)}
                                     </span>
                                   )}
@@ -1954,8 +1954,8 @@ export function AppointmentDialog({
                       </div>
 
                       {/* Слоты времени */}
-                      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4">
-                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-2">
+                      <div className="flex-1 flex flex-col overflow-hidden px-4 pt-3 pb-4">
+                        <p className="shrink-0 text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-2">
                           {t('appointments.time')}
                           {slots.length > 0 && (
                             <span className="ml-auto font-normal normal-case text-[11px] text-muted-foreground/60">
@@ -1964,12 +1964,12 @@ export function AppointmentDialog({
                           )}
                           {slotsLoading && <span><div className="h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></span>}
                         </p>
-                        <div className={`relative transition-opacity duration-150 ${slotsLoading ? 'opacity-40 pointer-events-none' : ''}`}>
+                        <div className={`flex-1 overflow-y-auto relative transition-opacity duration-150 ${slotsLoading ? 'opacity-40 pointer-events-none' : ''}`}>
                           {slots.length === 0 && !slotsLoading ? (
                             <p className="text-sm text-muted-foreground italic py-1">{t('schedule.dayOff')}</p>
                           ) : (
                             <>
-                              <div className="grid grid-cols-4 gap-1.5">
+                              <div className="grid grid-cols-4 gap-1.5 pr-1">
                                 {slots.map(slot => {
                                   const isChosen   = selectedTime === slot.time
                                   const isDisabled = slot.busy
@@ -2012,13 +2012,13 @@ export function AppointmentDialog({
                           )}
                         </div>
                         {selectedTime && totalDuration > 0 && (
-                          <div className="flex items-center gap-1.5 mt-2.5 text-xs text-muted-foreground">
+                          <div className="shrink-0 flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                             <Clock className="h-3.5 w-3.5 shrink-0" />
                             С {selectedTime} до {minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)} — {formatDuration(totalDuration, t)}
                           </div>
                         )}
                         {!editAppt && showRecurring && (
-                          <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                          <div className="shrink-0 flex items-center gap-2 mt-2 pt-2 border-t">
                             <Repeat className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                             <p className="text-xs flex-1">{t('appointments.recurring')}</p>
                             <Switch checked={recurring} onCheckedChange={setRecurring} />
