@@ -165,7 +165,7 @@ function AddItemDialog({ open, onClose, maxSortOrder, orderTypes, existingSubcat
               <select
                 value={category}
                 onChange={e => setCategory(e.target.value)}
-                className="w-full h-9 appearance-none rounded-md border border-input bg-background px-3 pr-8 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full h-9 appearance-none rounded-md border border-input bg-background px-3 pr-8 py-1 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {orderTypes.map(t => (
                   <option key={t.slug} value={t.slug}>{t.label}</option>
@@ -824,7 +824,7 @@ export function CleaningCatalogTab() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
             placeholder="Поиск..."
-            className="w-full h-9 pl-8 pr-3 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full h-9 pl-8 pr-3 text-base sm:text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           />
           {search && (
             <button

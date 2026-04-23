@@ -164,7 +164,7 @@ function CategoriesDialog({ open, onClose }: { open: boolean; onClose: () => voi
               <div className="relative shrink-0">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                 <input
-                  className="w-full pl-8 pr-8 py-1.5 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full pl-8 pr-8 py-1.5 text-base sm:text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder={t('services.search')}
                   value={listSearch}
                   onChange={(e) => setListSearch(e.target.value)}
@@ -512,18 +512,18 @@ export function ServicesPage() {
       <PlanLimitBanner limitKey="services" count={serviceCount} entityKey="services" />
 
       {!isLoading && serviceStats.total > 0 && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-xs text-muted-foreground">Всего услуг</p>
-            <p className="text-2xl font-bold mt-1">{serviceStats.total}</p>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="rounded-xl border bg-card p-2.5 sm:p-4">
+            <p className="text-[11px] sm:text-xs text-muted-foreground leading-tight">Всего услуг</p>
+            <p className="text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1">{serviceStats.total}</p>
           </div>
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-xs text-muted-foreground">Категорий</p>
-            <p className="text-2xl font-bold mt-1">{serviceStats.categories}</p>
+          <div className="rounded-xl border bg-card p-2.5 sm:p-4">
+            <p className="text-[11px] sm:text-xs text-muted-foreground leading-tight">Категорий</p>
+            <p className="text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1">{serviceStats.categories}</p>
           </div>
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-xs text-muted-foreground">Без категории</p>
-            <p className={`text-2xl font-bold mt-1 ${noCatCount ? 'text-amber-500' : ''}`}>{noCatCount ?? '—'}</p>
+          <div className="rounded-xl border bg-card p-2.5 sm:p-4">
+            <p className="text-[11px] sm:text-xs text-muted-foreground leading-tight">Без категории</p>
+            <p className={`text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1 ${noCatCount ? 'text-amber-500' : ''}`}>{noCatCount ?? '—'}</p>
           </div>
         </div>
       )}
