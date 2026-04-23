@@ -63,7 +63,6 @@ const POSPage = lazy(() => import('@/pages/orders/POSPage').then(m => ({ default
 const CleaningStatsPage = lazy(() => import('@/pages/cleaning/CleaningStatsPage').then(m => ({ default: m.CleaningStatsPage })))
 const CleaningReportsPage = lazy(() => import('@/pages/cleaning/CleaningReportsPage').then(m => ({ default: m.CleaningReportsPage })))
 const CleaningTrackPage = lazy(() => import('@/pages/orders/CleaningTrackPage').then(m => ({ default: m.CleaningTrackPage })))
-const SuppliesPage = lazy(() => import('@/pages/cleaning/SuppliesPage').then(m => ({ default: m.SuppliesPage })))
 const DeliveryPage = lazy(() => import('@/pages/cleaning/DeliveryPage').then(m => ({ default: m.DeliveryPage })))
 const WorkshopOrdersListPage = lazy(() => import('@/pages/workshop/WorkshopOrdersListPage').then(m => ({ default: m.WorkshopOrdersListPage })))
 const WorkshopOrderFormPage  = lazy(() => import('@/pages/workshop/WorkshopOrderFormPage').then(m => ({ default: m.WorkshopOrderFormPage })))
@@ -165,7 +164,6 @@ const router = createBrowserRouter([
       ...(PRODUCT === 'cleaning' ? [
         { path: 'stats', element: <CleaningStatsPage /> },
         { path: 'reports', element: <CleaningReportsPage /> },
-        { path: 'supplies', element: <SuppliesPage /> },
         { path: 'delivery', element: <DeliveryPage /> },
       ] : []),
       ...(PRODUCT === 'workshop' ? [
