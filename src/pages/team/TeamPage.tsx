@@ -478,7 +478,7 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
                 max={999}
                 value={maxUsesInput}
                 onChange={e => setMaxUsesInput(e.target.value.replace(/[^0-9]/g, ''))}
-                className="w-16 h-8 rounded border border-border bg-background px-2 text-sm text-center font-medium focus:outline-none focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-16 h-8 rounded border border-border bg-background px-2 text-base sm:text-sm text-center font-medium focus:outline-none focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 placeholder="0=∞"
               />
               <Button type="submit" size="sm" loading={createInvite.isPending} className="ml-auto shrink-0">
@@ -593,7 +593,7 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
                             min={0}
                             max={100}
                             defaultValue={m.commission_pct ?? 100}
-                            className="w-12 text-xs border rounded px-1 py-0.5 text-center focus:outline-none focus:ring-1 focus:ring-primary bg-background"
+                            className="w-14 sm:w-12 text-base sm:text-xs border rounded px-1 py-0.5 text-center focus:outline-none focus:ring-1 focus:ring-primary bg-background"
                             onBlur={(e) => {
                               const val = Math.max(0, Math.min(100, parseInt(e.target.value) || 100))
                               e.target.value = String(val)
