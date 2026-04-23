@@ -7,6 +7,7 @@ import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DateInput } from '@/components/ui/date-input'
 import { Label } from '@/components/ui/label'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/orders/OrderStatusBadge'
 import { Download, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -135,9 +136,8 @@ export function CleaningReportsPage() {
       <div className="flex flex-wrap gap-4 items-end">
         <div className="space-y-1">
           <Label htmlFor="dateFrom">С</Label>
-          <Input
+          <DateInput
             id="dateFrom"
-            type="date"
             value={dateFrom}
             onChange={e => { setDateFrom(e.target.value); handleFilterChange() }}
             className="w-40"
@@ -145,9 +145,8 @@ export function CleaningReportsPage() {
         </div>
         <div className="space-y-1">
           <Label htmlFor="dateTo">По</Label>
-          <Input
+          <DateInput
             id="dateTo"
-            type="date"
             value={dateTo}
             onChange={e => { setDateTo(e.target.value); handleFilterChange() }}
             className="w-40"

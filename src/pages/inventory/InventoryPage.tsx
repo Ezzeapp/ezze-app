@@ -10,6 +10,7 @@ import { PaginationBar } from '@/components/shared/PaginationBar'
 import { useInventoryReceipts, useCreateReceipt } from '@/hooks/useInventoryReceipts'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DateInput } from '@/components/ui/date-input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -801,7 +802,7 @@ export function InventoryPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>{t('inventory.receiptDate')} *</Label>
-                <Input type="date" {...regR('date')} />
+                <DateInput {...regR('date')} />
                 {errR.date && <p className="text-xs text-destructive">{t('common.required')}</p>}
               </div>
               <div className="space-y-2">

@@ -11,6 +11,7 @@ import { formatCurrency, cn } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { DateInput } from '@/components/ui/date-input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Loader2, CalendarRange, Download, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -480,11 +481,11 @@ export function CleaningStatsPage() {
         <div className="flex items-end gap-3 flex-wrap rounded-xl border bg-muted/30 px-4 py-3 mb-4">
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">{t('cleaning.period.from')}</Label>
-            <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36 h-8 text-sm" />
+            <DateInput value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36 h-8 text-sm" />
           </div>
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">{t('cleaning.period.to')}</Label>
-            <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36 h-8 text-sm" />
+            <DateInput value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36 h-8 text-sm" />
           </div>
           {(dateFrom || dateTo) && (
             <p className="text-xs text-muted-foreground pb-1">

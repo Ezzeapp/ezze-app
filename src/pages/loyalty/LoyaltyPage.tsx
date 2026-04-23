@@ -4,6 +4,7 @@ import { Gift, ChevronDown, ChevronUp, Loader2, UserPlus, Check, Star, Pencil, T
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DateInput } from '@/components/ui/date-input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
@@ -504,8 +505,7 @@ export default function LoyaltyPage() {
                   className="h-9 font-mono"
                 />
               ) : (
-                <Input
-                  type="date"
+                <DateInput
                   value={holidayForm.date_value}
                   onChange={e => setHol('date_value', e.target.value)}
                   className="h-9"

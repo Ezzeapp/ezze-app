@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DateInput } from '@/components/ui/date-input'
 import { Label } from '@/components/ui/label'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -141,11 +142,11 @@ export function DeliveryPage() {
         <div className="flex items-end gap-3 flex-wrap rounded-xl border bg-muted/30 p-3">
           <div className="space-y-1">
             <Label className="text-xs">От</Label>
-            <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36 h-8 text-sm" />
+            <DateInput value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36 h-8 text-sm" />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">До</Label>
-            <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36 h-8 text-sm" />
+            <DateInput value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36 h-8 text-sm" />
           </div>
         </div>
       )}

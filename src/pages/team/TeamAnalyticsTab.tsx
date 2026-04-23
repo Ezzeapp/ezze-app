@@ -6,6 +6,7 @@ import {
 import dayjs from 'dayjs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/ui/date-input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatCurrency, getFileUrl } from '@/lib/utils'
@@ -210,8 +211,7 @@ export function TeamAnalyticsTab({ team, members, membersLoading }: Props) {
               <p className="text-xs font-semibold text-foreground">{t('analytics.periodCustom')}</p>
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-muted-foreground">{t('analytics.customFrom')}</label>
-                <input
-                  type="date"
+                <DateInput
                   value={customStart}
                   max={customEnd}
                   onChange={e => setCustomStart(e.target.value)}
@@ -220,8 +220,7 @@ export function TeamAnalyticsTab({ team, members, membersLoading }: Props) {
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-muted-foreground">{t('analytics.customTo')}</label>
-                <input
-                  type="date"
+                <DateInput
                   value={customEnd}
                   min={customStart}
                   max={today}

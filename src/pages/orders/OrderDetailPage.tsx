@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Input } from '@/components/ui/input'
+import { DateInput } from '@/components/ui/date-input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/shared/Toaster'
 import {
@@ -134,7 +135,7 @@ function EditItemRow({ item, orderId, onClose }: {
         </div>
         <div>
           <Label className="text-xs">Срок</Label>
-          <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-7 text-xs mt-0.5" />
+          <DateInput value={date} onChange={e => setDate(e.target.value)} className="h-7 text-xs mt-0.5" />
         </div>
       </div>
       <div className="flex gap-2">
@@ -188,7 +189,7 @@ function AddItemForm({ orderId, onClose }: { orderId: string; onClose: () => voi
         </div>
         <div>
           <Label className="text-xs">Срок готовности</Label>
-          <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-7 text-xs mt-0.5" />
+          <DateInput value={date} onChange={e => setDate(e.target.value)} className="h-7 text-xs mt-0.5" />
         </div>
       </div>
       <div className="flex gap-2">

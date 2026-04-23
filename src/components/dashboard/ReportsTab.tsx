@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/ui/date-input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TrendingUp, CalendarDays, CalendarRange, PieChartIcon } from 'lucide-react'
 import { useAppointments } from '@/hooks/useAppointments'
@@ -209,14 +210,14 @@ export function ReportsTab() {
         {period === 'custom' && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted-foreground">С</span>
-            <input
-              type="date" value={customStart} max={customEnd}
+            <DateInput
+              value={customStart} max={customEnd}
               onChange={e => setCustomStart(e.target.value)}
               className="h-8 px-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <span className="text-xs text-muted-foreground">по</span>
-            <input
-              type="date" value={customEnd} min={customStart} max={today}
+            <DateInput
+              value={customEnd} min={customStart} max={today}
               onChange={e => setCustomEnd(e.target.value)}
               className="h-8 px-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
             />

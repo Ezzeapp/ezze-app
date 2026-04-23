@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/ui/date-input'
 import { Link } from 'react-router-dom'
 import { useAppointments } from '@/hooks/useAppointments'
 import { useClients } from '@/hooks/useClients'
@@ -350,16 +351,14 @@ export function DashboardPage() {
           {period === 'custom' && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-muted-foreground">{t('analytics.customFrom')}</span>
-              <input
-                type="date"
+              <DateInput
                 value={customStart}
                 max={customEnd}
                 onChange={e => setCustomStart(e.target.value)}
                 className="h-8 px-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
               />
               <span className="text-xs text-muted-foreground">{t('analytics.customTo')}</span>
-              <input
-                type="date"
+              <DateInput
                 value={customEnd}
                 min={customStart}
                 max={today}

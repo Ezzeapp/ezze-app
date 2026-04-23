@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Plus, Trash2, Loader2, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DateInput } from '@/components/ui/date-input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -277,8 +278,7 @@ export function OrderFormPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label>Дата забора</Label>
-                  <Input
-                    type="date"
+                  <DateInput
                     value={pickupDate}
                     onChange={e => setPickupDate(e.target.value)}
                     className="mt-1"
@@ -286,8 +286,7 @@ export function OrderFormPage() {
                 </div>
                 <div>
                   <Label>Дата доставки</Label>
-                  <Input
-                    type="date"
+                  <DateInput
                     value={deliveryDate}
                     onChange={e => setDeliveryDate(e.target.value)}
                     className="mt-1"
@@ -434,8 +433,7 @@ export function OrderFormPage() {
                   </div>
                   <div>
                     <Label>Срок готовности</Label>
-                    <Input
-                      type="date"
+                    <DateInput
                       value={item.ready_date}
                       onChange={e => updateItem(item.key, 'ready_date', e.target.value)}
                       className="mt-1"
@@ -472,8 +470,7 @@ export function OrderFormPage() {
             {orderType !== 'carpet' && (
               <div>
                 <Label>Общий срок готовности</Label>
-                <Input
-                  type="date"
+                <DateInput
                   value={readyDate}
                   onChange={e => setReadyDate(e.target.value)}
                   className="mt-1"

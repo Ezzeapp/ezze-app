@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Zap, Camera, Weight, TrendingUp, TrendingDown, MessageSquare, Star, Truck } from 'lucide-react'
+import { X, Plus, Search, ShoppingBag, ArrowLeft, Loader2, Phone, LayoutGrid, List, CheckCircle2, Trash2, UserPlus, Calendar, Zap, Camera, Weight, TrendingUp, TrendingDown, MessageSquare, Star, Truck, PackageOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DateInput } from '@/components/ui/date-input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { toast } from '@/components/shared/Toaster'
@@ -1185,21 +1186,22 @@ export function POSPage() {
             {/* Доставка: дата забора, доставки, адрес */}
             {orderTags.includes('Доставка') && (
               <div className="flex items-center gap-2 flex-wrap">
-                <Truck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <Input
-                  type="date"
-                  value={pickupDate}
-                  onChange={e => setPickupDate(e.target.value)}
-                  className="h-7 text-xs w-32"
-                  title="Дата забора"
-                />
-                <Input
-                  type="date"
-                  value={deliveryDate}
-                  onChange={e => setDeliveryDate(e.target.value)}
-                  className="h-7 text-xs w-32"
-                  title="Дата доставки"
-                />
+                <div className="flex items-center gap-1.5" title="Дата забора у клиента">
+                  <PackageOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <DateInput
+                    value={pickupDate}
+                    onChange={e => setPickupDate(e.target.value)}
+                    className="h-7 text-xs w-32"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5" title="Дата доставки клиенту">
+                  <Truck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <DateInput
+                    value={deliveryDate}
+                    onChange={e => setDeliveryDate(e.target.value)}
+                    className="h-7 text-xs w-32"
+                  />
+                </div>
                 <Input
                   placeholder="Адрес..."
                   value={visitAddress}
