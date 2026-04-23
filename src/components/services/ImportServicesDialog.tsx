@@ -1,17 +1,25 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Search, Download, Check, Scissors, ChevronDown, ChevronRight, Tag } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { Search, Download, Check, Scissors, ChevronDown, ChevronRight } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 import { useGlobalServices } from '@/hooks/useGlobalCatalogs'
-import { useCreateService, useServiceCategories } from '@/hooks/useServices'
+import { useServiceCategories, SERVICES_KEY, CATEGORIES_KEY } from '@/hooks/useServices'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/shared/Toaster'
 import { cn } from '@/lib/utils'
 import type { GlobalService } from '@/types'
+
+const CATEGORY_COLORS = [
+  '#ef4444', '#f97316', '#eab308', '#22c55e',
+  '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
+  '#64748b', '#78716c',
+]
 
 interface Props {
   open: boolean
@@ -20,15 +28,15 @@ interface Props {
 
 export function ImportServicesDialog({ open, onClose }: Props) {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set())
-  const [targetCategoryId, setTargetCategoryId] = useState<string>('__none__')
 
   const { data: services, isLoading } = useGlobalServices()
   const { data: myCategories } = useServiceCategories()
-  const createService = useCreateService()
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
@@ -48,7 +56,6 @@ export function ImportServicesDialog({ open, onClose }: Props) {
     })
   }
 
-  // Client-side grouping + filtering (case-insensitive for any script)
   const grouped = useMemo(() => {
     const q = search.trim().toLowerCase()
     const filtered = q
@@ -75,30 +82,63 @@ export function ImportServicesDialog({ open, onClose }: Props) {
   }
 
   const handleImport = async () => {
-    if (!services || selected.size === 0) return
+    if (!services || selected.size === 0 || !user) return
     setImporting(true)
-    const toImport = services.filter((s) => selected.has(s.id))
-    let count = 0
-    let errors = 0
-    for (const s of toImport) {
-      try {
-        await createService.mutateAsync({
-          name: s.name,
-          description: s.description || undefined,
-          duration_min: s.duration_min || 60,
-          price: s.price || undefined,
-          is_active: true,
-          is_bookable: true,
-          category: targetCategoryId !== '__none__' ? targetCategoryId : '__none__',
-        } as any)
-        count++
-      } catch {
-        errors++
+
+    try {
+      const toImport = services.filter(s => selected.has(s.id))
+
+      // 1. Collect unique category names from selected services
+      const uniqueCatNames = [...new Set(
+        toImport.map(s => s.category).filter(Boolean) as string[]
+      )]
+
+      // 2. Build existing category name → id map (case-insensitive)
+      const catMap: Record<string, string> = {}
+      for (const cat of myCategories ?? []) {
+        catMap[cat.name.toLowerCase()] = cat.id
       }
+
+      // 3. Create missing categories in one batch insert
+      const missingCats = uniqueCatNames.filter(name => !catMap[name.toLowerCase()])
+      if (missingCats.length > 0) {
+        const { data: newCats } = await supabase
+          .from('service_categories')
+          .insert(missingCats.map((name, i) => ({
+            name,
+            master_id: user.id,
+            color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+          })))
+          .select()
+        for (const cat of newCats ?? []) {
+          catMap[cat.name.toLowerCase()] = cat.id
+        }
+      }
+
+      // 4. Bulk insert all services in one request
+      const rows = toImport.map(s => ({
+        name: s.name,
+        description: s.description || null,
+        duration_min: s.duration_min || 60,
+        price: s.price || 0,
+        is_active: true,
+        is_bookable: true,
+        master_id: user.id,
+        category_id: s.category ? (catMap[s.category.toLowerCase()] ?? null) : null,
+      }))
+
+      const { data: created, error } = await supabase.from('services').insert(rows).select()
+
+      if (error) throw error
+
+      queryClient.invalidateQueries({ queryKey: [SERVICES_KEY] })
+      queryClient.invalidateQueries({ queryKey: [CATEGORIES_KEY] })
+      toast.success(t('catalog.importedServices', { count: created?.length ?? rows.length }))
+    } catch {
+      toast.error(t('common.saveError'))
     }
+
     setImporting(false)
-    if (count > 0) toast.success(t('catalog.importedServices', { count }))
-    if (errors > 0) toast.error(t('common.saveError'))
     setSelected(new Set())
     onClose()
   }
@@ -131,7 +171,7 @@ export function ImportServicesDialog({ open, onClose }: Props) {
 
         {/* Select all */}
         {allFilteredServices.length > 0 && (
-          <div className="px-6 pb-2 shrink-0 flex items-center justify-between">
+          <div className="px-6 pb-2 shrink-0 flex items-center justify-between border-b">
             <button
               type="button"
               onClick={handleSelectAll}
@@ -142,25 +182,6 @@ export function ImportServicesDialog({ open, onClose }: Props) {
             {selected.size > 0 && (
               <Badge variant="secondary" className="text-xs">{t('catalog.selectedCount', { count: selected.size })}</Badge>
             )}
-          </div>
-        )}
-
-        {/* Category selector */}
-        {allFilteredServices.length > 0 && (
-          <div className="px-6 pb-3 shrink-0 flex items-center gap-2 border-b">
-            <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span className="text-xs text-muted-foreground shrink-0">{t('catalog.importToCategory')}:</span>
-            <Select value={targetCategoryId} onValueChange={setTargetCategoryId}>
-              <SelectTrigger className="h-7 text-xs flex-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">{t('catalog.noCategory')}</SelectItem>
-                {(myCategories ?? []).map(cat => (
-                  <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         )}
 
@@ -189,7 +210,6 @@ export function ImportServicesDialog({ open, onClose }: Props) {
 
             return (
               <div key={cat}>
-                {/* Category header */}
                 <button
                   type="button"
                   onClick={() => !isSearching && toggleCat(cat)}
@@ -210,7 +230,6 @@ export function ImportServicesDialog({ open, onClose }: Props) {
                   )}
                 </button>
 
-                {/* Items */}
                 {!isCollapsed && (
                   <div className="space-y-1">
                     {items.map((s) => {
