@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { PageHeader } from '@/components/shared/PageHeader'
+import { PaginationBar } from '@/components/shared/PaginationBar'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { PlanLimitBanner } from '@/components/shared/PlanLimitBanner'
 import { usePlanLimitCheck } from '@/hooks/useAppSettings'
@@ -96,6 +97,7 @@ export function CalendarPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [listSearch, setListSearch] = useState('')
   const [listStatus, setListStatus] = useState<string>('all')
+  const [listPage, setListPage] = useState(1)
   const [listDateFrom, setListDateFrom] = useState('')
   const [listDateTo, setListDateTo] = useState('')
   const [sortField, setSortField] = useState<SortField>('date')
@@ -343,6 +345,16 @@ export function CalendarPage() {
         return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
       })
   }, [allAppointments, listSearch, listStatus, listDateFrom, listDateTo, sortField, sortDir])
+
+  // Сброс страницы при изменении фильтров
+  useEffect(() => { setListPage(1) }, [listSearch, listStatus, listDateFrom, listDateTo])
+
+  const LIST_PER_PAGE = 25
+  const listTotalPages = Math.max(1, Math.ceil(filteredList.length / LIST_PER_PAGE))
+  const pagedList = useMemo(
+    () => filteredList.slice((listPage - 1) * LIST_PER_PAGE, listPage * LIST_PER_PAGE),
+    [filteredList, listPage]
+  )
 
   const exportApptsCSV = () => {
     const list = filteredList.length > 0 ? filteredList : (allAppointments ?? [])
@@ -710,7 +722,7 @@ export function CalendarPage() {
                       </td>
                     </tr>
                   )}
-                  {filteredList.map(a => {
+                  {pagedList.map(a => {
                     const clientName = a.expand?.client
                       ? `${a.expand.client.first_name} ${a.expand.client.last_name || ''}`.trim()
                       : a.client_name || t('dashboard.guestClient')
@@ -781,6 +793,13 @@ export function CalendarPage() {
                 </tbody>
               </table>
             </div>
+            <PaginationBar
+              page={listPage}
+              totalPages={listTotalPages}
+              totalItems={filteredList.length}
+              perPage={LIST_PER_PAGE}
+              onChange={setListPage}
+            />
           </div>
         )}
 
