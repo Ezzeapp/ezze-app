@@ -69,7 +69,7 @@ function SearchableCombo({
       </button>
 
       {open && (
-        <div className="absolute z-20 left-0 right-0 mt-1 rounded-lg border bg-popover shadow-lg overflow-hidden">
+        <div className="absolute z-50 left-0 right-0 mt-1 rounded-lg border bg-background text-foreground shadow-lg overflow-hidden">
           <div className="relative p-2 border-b">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
