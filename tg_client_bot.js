@@ -595,6 +595,9 @@ function matchMenuButton(text, lang) {
 // ── /start — умная точка входа ───────────────────────────────────────────────
 
 async function handleStart(chatId, firstName) {
+  // Скрываем chat menu button (убираем остатки старого WebApp-виджета)
+  await bot.setUserMenuButton(chatId);
+
   const client = await findTgClient(chatId);
   if (client?.phone) {
     // Уже зарегистрирован — показываем главное меню
