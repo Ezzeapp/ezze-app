@@ -394,6 +394,11 @@ export function useCreateOrder() {
         if (itemsErr) throw itemsErr
       }
 
+      // Notify client: новый заказ принят (status='received')
+      supabase.functions.invoke('cleaning-notify-status', {
+        body: { order_id: order.id, new_status: 'received' },
+      }).catch(() => {})
+
       return order
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [ORDERS_KEY] }),
@@ -558,8 +563,8 @@ export function useUpdateOrderStatus() {
         note:       note ?? null,
       })
 
-      // Send Telegram notification (fire-and-forget)
-      if (['ready', 'issued', 'paid'].includes(status)) {
+      // Send Telegram notification (fire-and-forget) для всех бизнес-статусов
+      if (['in_progress', 'ready', 'issued', 'paid', 'cancelled'].includes(status)) {
         supabase.functions.invoke('cleaning-notify-status', {
           body: { order_id: id, new_status: status },
         }).catch(() => {})

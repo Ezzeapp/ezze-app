@@ -170,6 +170,12 @@ Object.assign(LANG_STRINGS.ru, {
     "Вопросы по платформе: support@ezze.site",
   cancelBtn:      "❌ Отменить",
   cantCancelBtn:  "ℹ️ Как отменить",
+  cancelOk:       "✅ <b>Отменено.</b> Мастер получит уведомление.",
+  cancelNotFound: "❌ Запись/заказ не найден.",
+  cancelNotOwner: "❌ Вы не можете отменить этот заказ.",
+  cancelTooLate:  "⚠️ Отменить можно не позднее, чем за 1 час до начала. Свяжитесь с мастером.",
+  cancelWrongStatus: "ℹ️ На этом этапе отмену нужно делать через мастера.",
+  cancelError:    "⚠️ Не удалось отменить. Попробуйте позже или свяжитесь с мастером.",
   masterLbl:      "Мастер",
   priceLbl:       "Сумма",
   readyLbl:       "Готов к",
@@ -227,6 +233,12 @@ Object.assign(LANG_STRINGS.en, {
     "Platform questions: support@ezze.site",
   cancelBtn:      "❌ Cancel",
   cantCancelBtn:  "ℹ️ How to cancel",
+  cancelOk:       "✅ <b>Cancelled.</b> The master has been notified.",
+  cancelNotFound: "❌ Booking/order not found.",
+  cancelNotOwner: "❌ You can't cancel this order.",
+  cancelTooLate:  "⚠️ You can cancel no later than 1 hour before the start. Please contact the master.",
+  cancelWrongStatus: "ℹ️ At this stage the cancellation must be handled by the master.",
+  cancelError:    "⚠️ Couldn't cancel. Please try again later or contact the master.",
   masterLbl:      "Master",
   priceLbl:       "Total",
   readyLbl:       "Ready by",
@@ -277,6 +289,12 @@ Object.assign(LANG_STRINGS.uz, {
     "Platforma bo'yicha savollar: support@ezze.site",
   cancelBtn:      "❌ Bekor qilish",
   cantCancelBtn:  "ℹ️ Qanday bekor qilish",
+  cancelOk:       "✅ <b>Bekor qilindi.</b> Ustaga xabar yuborildi.",
+  cancelNotFound: "❌ Yozuv yoki buyurtma topilmadi.",
+  cancelNotOwner: "❌ Siz bu buyurtmani bekor qila olmaysiz.",
+  cancelTooLate:  "⚠️ Boshlanishidan kamida 1 soat oldin bekor qilish mumkin. Iltimos, ustaga murojaat qiling.",
+  cancelWrongStatus: "ℹ️ Bu bosqichda bekor qilishni usta orqali amalga oshirish kerak.",
+  cancelError:    "⚠️ Bekor qilib bo‘lmadi. Keyinroq urinib ko‘ring yoki ustaga murojaat qiling.",
   masterLbl:      "Usta",
   priceLbl:       "Summa",
   readyLbl:       "Tayyor",
@@ -509,6 +527,14 @@ const TERMINAL_STATUSES = new Set([
   'issued', 'paid', 'refused',
 ]);
 
+// Статусы, на которых клиент МОЖЕТ сам отменить (по типу заказа)
+// Для appointments учитываем ещё и «>= 1ч до начала» (проверяется в RPC).
+const CANCELLABLE_BY_KIND = {
+  appointment: new Set(['scheduled']),
+  cleaning:    new Set(['received']),
+  workshop:    new Set(['received', 'diagnosing', 'waiting_approval']),
+};
+
 /** Строка статуса в i18n с fallback */
 function statusLabel(s, status) {
   return s[`status_${status}`] || (status ? `• ${status}` : '•');
@@ -549,13 +575,21 @@ function renderOrderCard(row, s) {
 
   const text = lines.join('\n');
 
-  // Inline-кнопки — только для активных
+  // Inline-кнопки — только для активных статусов
   let inline_keyboard = null;
   if (ACTIVE_STATUSES.has(row.status)) {
-    if (row.kind === 'appointment') {
-      inline_keyboard = [[{ text: s.cancelBtn, callback_data: `cancel_appt_${row.id}` }]];
-    } else {
-      // cleaning / workshop — отмена только через мастера
+    const cancellable = CANCELLABLE_BY_KIND[row.kind]?.has(row.status);
+    if (cancellable) {
+      // Один callback-префикс на kind: cancel_appt_ / cancel_cleaning_ / cancel_workshop_
+      const prefix =
+        row.kind === 'appointment' ? 'cancel_appt_' :
+        row.kind === 'cleaning'    ? 'cancel_cleaning_' :
+        row.kind === 'workshop'    ? 'cancel_workshop_' : null;
+      if (prefix) {
+        inline_keyboard = [[{ text: s.cancelBtn, callback_data: `${prefix}${row.id}` }]];
+      }
+    } else if (row.kind !== 'appointment') {
+      // Статус дальше ранних фаз — отмена только через мастера
       inline_keyboard = [[{ text: s.cantCancelBtn, callback_data: `cancel_order_info` }]];
     }
   }
@@ -850,49 +884,88 @@ async function processUpdate(update) {
       return;
     }
 
-    // ── Отмена записи (из уведомления) ────────────────────────────────────
-    if (callback.data?.startsWith("cancel_appt_")) {
-      const apptId = callback.data.replace("cancel_appt_", "");
-      const { data: appt } = await supabase
-        .from("appointments")
-        .select("id, status, client_name, date, start_time, master_id")
-        .eq("id", apptId).maybeSingle();
+    // ── Отмена записи / заказа клиентом ───────────────────────────────────
+    // Универсальный обработчик на основе префикса callback_data
+    const cancelMatch = callback.data?.match(/^cancel_(appt|cleaning|workshop)_(.+)$/);
+    if (cancelMatch) {
+      const [, kind, targetId] = cancelMatch;
+      const client = await findTgClient(chatId);
+      const lang   = getLang(client?.lang || 'ru');
+      const s      = LANG_STRINGS[lang];
 
-      if (!appt) {
-        await bot.editMessageText(chatId, msgId, "❌ Запись не найдена.");
+      let rpcName, params;
+      if (kind === 'appt') {
+        rpcName = 'appointment_cancel_by_client';
+        params  = { p_appointment_id: targetId, p_tg_chat_id: String(chatId) };
+      } else if (kind === 'cleaning') {
+        rpcName = 'cleaning_cancel_by_client';
+        params  = { p_order_id: targetId, p_tg_chat_id: String(chatId) };
+      } else {
+        rpcName = 'workshop_cancel_by_client';
+        params  = { p_order_id: targetId, p_tg_chat_id: String(chatId) };
+      }
+
+      const { data: res, error } = await supabase.rpc(rpcName, params);
+      if (error) {
+        console.error(`${rpcName}:`, error.message);
+        await bot.editMessageText(chatId, msgId, s.cancelError);
         return;
       }
-      if (appt.status === "cancelled") {
-        await bot.editMessageText(chatId, msgId, "❌ <b>Запись уже была отменена ранее.</b>");
-        return;
+
+      if (res?.ok) {
+        await bot.editMessageText(chatId, msgId, s.cancelOk);
+
+        // Уведомляем мастера (только для appointments — там связь к user_id есть)
+        if (kind === 'appt') {
+          const { data: appt } = await supabase
+            .from('appointments')
+            .select('client_name, date, start_time, master_id')
+            .eq('id', targetId).maybeSingle();
+          if (appt?.master_id) {
+            const { data: prof } = await supabase
+              .from('master_profiles').select('tg_chat_id, profession')
+              .eq('user_id', appt.master_id).maybeSingle();
+            if (prof?.tg_chat_id) {
+              await masterBot.sendMessage(
+                prof.tg_chat_id,
+                `❌ <b>Клиент отменил запись</b>\n\n` +
+                `👤 <b>Клиент:</b> ${appt.client_name ?? "—"}\n` +
+                `📅 <b>Дата:</b> ${fmtDate(appt.date)}\n` +
+                `🕐 <b>Время:</b> ${appt.start_time ?? "—"}`
+              );
+            }
+          }
+        } else {
+          // cleaning / workshop — уведомляем мастера (assigned_to или accepted_by)
+          const table = kind === 'cleaning' ? 'cleaning_orders' : 'workshop_orders';
+          const { data: ord } = await supabase
+            .from(table)
+            .select('number, assigned_to, accepted_by')
+            .eq('id', targetId).maybeSingle();
+          const masterUserId = ord?.assigned_to || ord?.accepted_by;
+          if (masterUserId) {
+            const { data: prof } = await supabase
+              .from('master_profiles').select('tg_chat_id')
+              .eq('user_id', masterUserId).maybeSingle();
+            if (prof?.tg_chat_id) {
+              await masterBot.sendMessage(
+                prof.tg_chat_id,
+                `❌ <b>Клиент отменил заказ</b>\n\n🔖 № ${ord?.number || targetId}`
+              );
+            }
+          }
+        }
+      } else {
+        const reason = res?.reason || 'unknown';
+        const msg =
+          reason === 'not_found'     ? s.cancelNotFound :
+          reason === 'not_owner'     ? s.cancelNotOwner :
+          reason === 'too_late'      ? s.cancelTooLate :
+          reason === 'wrong_status'  ? s.cancelWrongStatus :
+                                       s.cancelError;
+        await bot.editMessageText(chatId, msgId, msg);
       }
-      if (appt.status === "done" || appt.status === "no_show") {
-        await bot.editMessageText(chatId, msgId, "ℹ️ <b>Визит уже состоялся — отменить невозможно.</b>");
-        return;
-      }
-
-      const { data: prof } = await supabase
-        .from("master_profiles").select("tg_chat_id, profession")
-        .eq("user_id", appt.master_id).maybeSingle();
-
-      await supabase.from("appointments").update({ status: "cancelled" }).eq("id", apptId);
-
-      const masterName = prof?.profession ?? "мастера";
-      await bot.editMessageText(
-        chatId, msgId,
-        `❌ Ваша запись к <b>${masterName}</b> на ${fmtDate(appt.date)} в ${appt.start_time ?? "—"} отменена.`
-      );
-
-      // Уведомляем мастера через мастерский бот
-      if (prof?.tg_chat_id) {
-        await masterBot.sendMessage(
-          prof.tg_chat_id,
-          `❌ <b>Клиент отменил запись</b>\n\n` +
-          `👤 <b>Клиент:</b> ${appt.client_name ?? "—"}\n` +
-          `📅 <b>Дата:</b> ${fmtDate(appt.date)}\n` +
-          `🕐 <b>Время:</b> ${appt.start_time ?? "—"}`
-        );
-      }
+      return;
     }
   }
 }

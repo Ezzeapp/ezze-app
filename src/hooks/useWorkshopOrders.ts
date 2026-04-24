@@ -375,6 +375,11 @@ export function useCreateWorkshopOrder() {
         note: 'Заказ принят',
       })
 
+      // Notify client: заявка принята (status='received')
+      supabase.functions.invoke('workshop-notify-status', {
+        body: { order_id: order.id, status: 'received' },
+      }).catch(() => {})
+
       return order as WorkshopOrder
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [WORKSHOP_ORDERS_KEY] }),

@@ -6,7 +6,8 @@
  *   { body: { order_id, status } })
  *
  * Reads template from app_settings (key='workshop_notification_templates') for the product.
- * If template disabled or missing — no-op.
+ * Supports multilang templates: tpl.texts.{ru|en|uz}. Falls back to tpl.text (legacy).
+ * Client language is taken from tg_clients.lang.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -29,12 +30,34 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+const SUPPORTED_LANGS = ['ru', 'en', 'uz'] as const
+type Lang = typeof SUPPORTED_LANGS[number]
+
+function normalizeLang(raw: string | null | undefined): Lang {
+  const s = String(raw || '').toLowerCase().slice(0, 2)
+  return (SUPPORTED_LANGS as readonly string[]).includes(s) ? (s as Lang) : 'ru'
+}
+
 function fmt(n: number): string {
   return new Intl.NumberFormat('ru-RU').format(Math.round(n))
 }
 
+function fmtDate(s: string | null | undefined): string {
+  if (!s) return '—'
+  const d = String(s).slice(0, 10).split('-')
+  if (d.length !== 3) return String(s)
+  return `${d[2]}.${d[1]}.${d[0]}`
+}
+
 function substitute(tpl: string, vars: Record<string, string>): string {
   return tpl.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '')
+}
+
+function pickText(tpl: any, lang: Lang): string | null {
+  if (tpl?.texts && typeof tpl.texts === 'object') {
+    return tpl.texts[lang] || tpl.texts.ru || tpl.texts.en || tpl.text || null
+  }
+  return tpl?.text || null
 }
 
 async function sendTg(chatId: string, text: string): Promise<void> {
@@ -66,7 +89,6 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Fetch order with client
     const { data: order, error: orderErr } = await supabase
       .from('workshop_orders')
       .select(`
@@ -91,8 +113,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Fallback: если tg_chat_id ещё не проставлен, ищем клиента в tg_clients
-    // по нормализованному телефону и backfill'им clients.tg_chat_id
+    // Lookup tg_chat_id via clients.tg_chat_id → tg_clients.phone_normalized
     let tgChatId: string | null = client.tg_chat_id || null
     if (!tgChatId && client.phone_normalized) {
       const { data: tgc } = await supabase
@@ -114,7 +135,18 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Fetch templates
+    // Детект языка клиента
+    let lang: Lang = 'ru'
+    {
+      const { data: tgc } = await supabase
+        .from('tg_clients')
+        .select('lang')
+        .eq('tg_chat_id', String(tgChatId))
+        .maybeSingle()
+      lang = normalizeLang(tgc?.lang)
+    }
+
+    // Templates
     const { data: settings } = await supabase
       .from('app_settings')
       .select('value')
@@ -131,14 +163,20 @@ Deno.serve(async (req) => {
     let templates: any[] = []
     try { templates = JSON.parse(settings.value) } catch { /* ignore */ }
 
-    const tpl = templates.find(t => t.status === status && t.enabled)
-    if (!tpl?.text) {
+    const tpl = Array.isArray(templates) ? templates.find((t: any) => t.status === status && t.enabled) : null
+    if (!tpl) {
       return new Response(JSON.stringify({ skipped: 'template disabled or missing' }), {
         status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // Build substitutions
+    const tplText = pickText(tpl, lang)
+    if (!tplText) {
+      return new Response(JSON.stringify({ skipped: 'template empty for lang' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const device = [order.item_type_name, order.brand, order.model].filter(Boolean).join(' ')
     const remaining = Math.max(0, (order.total_amount ?? 0) - (order.paid_amount ?? 0))
     const trackSlug = order.public_token || encodeURIComponent(order.number)
@@ -146,12 +184,13 @@ Deno.serve(async (req) => {
     const approveUrl = order.approval_token
       ? `${APP_URL_WORKSHOP}/approve/${order.approval_token}`
       : ''
+    const clientName = [client.first_name, client.last_name].filter(Boolean).join(' ')
 
-    const text = substitute(tpl.text, {
+    const text = substitute(tplText, {
       number: order.number,
       device: device || 'устройство',
-      client_name: client.first_name ?? '',
-      ready_date: order.ready_date ?? '—',
+      client_name: clientName || client.first_name || '',
+      ready_date: fmtDate(order.ready_date),
       total: fmt(order.total_amount ?? 0),
       remaining: fmt(remaining),
       estimated: fmt(order.estimated_cost ?? 0),
@@ -161,7 +200,7 @@ Deno.serve(async (req) => {
 
     await sendTg(String(tgChatId), text)
 
-    return new Response(JSON.stringify({ ok: true, sent_to: tgChatId }), {
+    return new Response(JSON.stringify({ ok: true, sent_to: tgChatId, lang }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err: any) {
