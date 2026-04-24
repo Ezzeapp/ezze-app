@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2, Loader2, ArrowLeft } from 'lucide-react'
+import { Plus, Trash2, Loader2, ArrowLeft, Search, Check, ChevronDown, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DateInput } from '@/components/ui/date-input'
@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
 import { toast } from '@/components/shared/Toaster'
-import { useCreateOrder, type OrderType, ORDER_TYPE_LABELS, ORDER_TYPE_ICONS } from '@/hooks/useCleaningOrders'
+import { useCreateOrder, type OrderType, useCleaningEnabledOrderTypes, getOrderTypeIcon } from '@/hooks/useCleaningOrders'
 import { useCleaningItemTypes } from '@/hooks/useCleaningItemTypes'
 import { useClientsPaged } from '@/hooks/useClients'
 import { useQuery } from '@tanstack/react-query'
@@ -19,6 +20,107 @@ import { PRODUCT } from '@/lib/config'
 import { formatCurrency } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import dayjs from 'dayjs'
+
+// ── Поисковый select: список с фильтром, опция "none" и кнопкой очистки ──────
+interface ComboOption { id: string; label: string; sub?: string | null }
+
+function SearchableCombo({
+  value, onChange, options, placeholder, noneLabel, emptyLabel = 'Не найдено',
+}: {
+  value: string
+  onChange: (v: string) => void
+  options: ComboOption[]
+  placeholder: string
+  noneLabel: string
+  emptyLabel?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  const selected = value === 'none' ? null : options.find(o => o.id === value) ?? null
+  const q = query.trim().toLowerCase()
+  const filtered = q
+    ? options.filter(o => o.label.toLowerCase().includes(q) || (o.sub ?? '').toLowerCase().includes(q))
+    : options
+
+  useEffect(() => {
+    if (!open) return
+    function onDoc(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  return (
+    <div ref={rootRef} className="relative mt-1">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm flex items-center justify-between gap-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        <span className={cn('truncate text-left flex-1', !selected && 'text-muted-foreground')}>
+          {selected
+            ? selected.sub ? <>{selected.label} <span className="text-muted-foreground">· {selected.sub}</span></> : selected.label
+            : noneLabel}
+        </span>
+        <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div className="absolute z-20 left-0 right-0 mt-1 rounded-lg border bg-popover shadow-lg overflow-hidden">
+          <div className="relative p-2 border-b">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              autoFocus
+              placeholder={placeholder}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              className="pl-8 h-8 text-sm"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => { onChange('none'); setOpen(false); setQuery('') }}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-accent text-muted-foreground flex items-center justify-between"
+            >
+              <span>{noneLabel}</span>
+              {value === 'none' && <Check className="h-4 w-4 text-primary" />}
+            </button>
+            {filtered.map(o => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => { onChange(o.id); setOpen(false); setQuery('') }}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center justify-between gap-2"
+              >
+                <span className="truncate">
+                  <span className="font-medium">{o.label}</span>
+                  {o.sub && <span className="text-xs text-muted-foreground ml-1">· {o.sub}</span>}
+                </span>
+                {o.id === value && <Check className="h-4 w-4 text-primary shrink-0" />}
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <p className="px-3 py-4 text-sm text-muted-foreground text-center">{emptyLabel}</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface ItemRow {
   key: number
@@ -46,7 +148,6 @@ function newRow(name = '', price = 0, days = 3): ItemRow {
   }
 }
 
-const ORDER_TYPES: OrderType[] = ['clothing', 'carpet', 'furniture']
 
 export function OrderFormPage() {
   const navigate = useNavigate()
@@ -69,6 +170,7 @@ export function OrderFormPage() {
   })
 
   const { mutateAsync: createOrder, isPending } = useCreateOrder()
+  const { data: enabledOrderTypes = [] } = useCleaningEnabledOrderTypes()
 
   // Общие поля
   const [orderType, setOrderType] = useState<OrderType>('clothing')
@@ -195,20 +297,23 @@ export function OrderFormPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-2">
-              {ORDER_TYPES.map(t => (
-                <button
-                  key={t}
-                  onClick={() => { setOrderType(t); setItems([newRow()]) }}
-                  className={`flex flex-col items-center gap-1 py-3 px-2 rounded-lg border-2 transition-colors text-sm font-medium ${
-                    orderType === t
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-border text-muted-foreground hover:border-primary/40'
-                  }`}
-                >
-                  {(() => { const Icon = ORDER_TYPE_ICONS[t]; return <Icon className="h-5 w-5" /> })()}
-                  {ORDER_TYPE_LABELS[t]}
-                </button>
-              ))}
+              {enabledOrderTypes.map(cfg => {
+                const Icon = getOrderTypeIcon(cfg.icon)
+                return (
+                  <button
+                    key={cfg.slug}
+                    onClick={() => { setOrderType(cfg.slug as OrderType); setItems([newRow()]) }}
+                    className={`flex flex-col items-center gap-1 py-3 px-2 rounded-lg border-2 transition-colors text-sm font-medium ${
+                      orderType === cfg.slug
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/40'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {cfg.label}
+                  </button>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
@@ -221,33 +326,30 @@ export function OrderFormPage() {
           <CardContent className="space-y-3">
             <div>
               <Label>Клиент</Label>
-              <Select value={clientId} onValueChange={setClientId}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Выберите клиента..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">— Без клиента —</SelectItem>
-                  {clients.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {[c.first_name, c.last_name].filter(Boolean).join(' ')}{c.phone ? ` · ${c.phone}` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableCombo
+                value={clientId}
+                onChange={setClientId}
+                placeholder="Имя или телефон..."
+                noneLabel="— Без клиента —"
+                options={clients.map(c => ({
+                  id: c.id,
+                  label: [c.first_name, c.last_name].filter(Boolean).join(' ') || '—',
+                  sub: c.phone ?? null,
+                }))}
+              />
             </div>
             <div>
               <Label>Исполнитель</Label>
-              <Select value={assignedTo} onValueChange={setAssignedTo}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Назначить исполнителя..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">— Не назначен —</SelectItem>
-                  {members.map((m: any) => (
-                    <SelectItem key={m.id} value={m.id}>{m.display_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableCombo
+                value={assignedTo}
+                onChange={setAssignedTo}
+                placeholder="Имя мастера..."
+                noneLabel="— Не назначен —"
+                options={members.map((m: any) => ({
+                  id: m.id,
+                  label: m.display_name ?? '—',
+                }))}
+              />
             </div>
 
             {/* Поля для мягкой мебели — адрес и дата выезда */}
