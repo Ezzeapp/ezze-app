@@ -54,11 +54,37 @@ serve(async (req) => {
     // Fetch order with client
     const { data: order } = await sb
       .from('cleaning_orders')
-      .select('id, number, status, total_amount, paid_amount, ready_date, client:clients(id, first_name, last_name, tg_chat_id)')
+      .select('id, number, status, total_amount, paid_amount, ready_date, client:clients(id, first_name, last_name, tg_chat_id, phone_normalized)')
       .eq('id', order_id)
       .single()
 
-    if (!order?.client?.tg_chat_id) {
+    if (!order?.client) {
+      return new Response(JSON.stringify({ sent: false, reason: 'no_client' }), {
+        headers: { ...CORS, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Fallback: если tg_chat_id ещё не проставлен, пробуем найти клиента в
+    // tg_clients по нормализованному телефону (клиент зарегистрировался в
+    // боте, но строка clients создана мастером отдельно)
+    let tgChatId: string | null = order.client.tg_chat_id || null
+    if (!tgChatId && order.client.phone_normalized) {
+      const { data: tgc } = await sb
+        .from('tg_clients')
+        .select('tg_chat_id')
+        .eq('phone_normalized', order.client.phone_normalized)
+        .maybeSingle()
+      tgChatId = tgc?.tg_chat_id || null
+      if (tgChatId) {
+        // Backfill: проставляем tg_chat_id в clients, чтобы последующие
+        // уведомления работали без этого fallback-запроса
+        await sb.from('clients')
+          .update({ tg_chat_id: tgChatId })
+          .eq('id', order.client.id)
+      }
+    }
+
+    if (!tgChatId) {
       return new Response(JSON.stringify({ sent: false, reason: 'no_chat_id' }), {
         headers: { ...CORS, 'Content-Type': 'application/json' },
       })
@@ -98,7 +124,7 @@ serve(async (req) => {
       track_url: `https://cleaning.ezze.site/track/${order.number}`,
     })
 
-    await sendTg(order.client.tg_chat_id, text)
+    await sendTg(tgChatId, text)
 
     return new Response(JSON.stringify({ sent: true }), {
       headers: { ...CORS, 'Content-Type': 'application/json' },

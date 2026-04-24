@@ -39,6 +39,17 @@ function normalizeWriteData(data: Record<string, any>): Record<string, any> {
   return out
 }
 
+// ── Telegram notification (fire-and-forget) ──────────────────────────────────
+// Вызывает edge function appointment-notify-status, которая шлёт клиенту
+// сообщение в Telegram через @ezzeclient_bot. Не блокирует UI.
+function notifyClientTg(appointmentId: string, event: 'created' | 'updated' | 'cancelled') {
+  try {
+    supabase.functions.invoke('appointment-notify-status', {
+      body: { appointment_id: appointmentId, event },
+    }).catch(() => {})
+  } catch { /* ignore */ }
+}
+
 // ── Helper: get list of services from appointment record ─────────────────────
 // Priority:
 //   1. appointment_services (new format)
@@ -173,6 +184,7 @@ export function useCreateAppointmentWithServices() {
         .single()
       if (error) throw error
       await upsertAppointmentServices(appt.id, services)
+      notifyClientTg(appt.id, 'created')
       return normalizeAppointment(appt) as Appointment
     },
     onSuccess: () => {
@@ -204,6 +216,9 @@ export function useUpdateAppointmentWithServices() {
         .single()
       if (error) throw error
       await upsertAppointmentServices(id, services)
+      // Если статус поменялся на cancelled — шлём соответствующее событие
+      const event = (data as any)?.status === 'cancelled' ? 'cancelled' : 'updated'
+      notifyClientTg(id, event)
       return normalizeAppointment(appt) as Appointment
     },
     onSuccess: () => {
@@ -228,6 +243,7 @@ export function useCreateAppointment() {
         .select(APPT_SELECT)
         .single()
       if (error) throw error
+      notifyClientTg(appt.id, 'created')
       return normalizeAppointment(appt) as Appointment
     },
     onSuccess: () => {
@@ -249,6 +265,8 @@ export function useUpdateAppointment() {
         .select(APPT_SELECT)
         .single()
       if (error) throw error
+      const event = (data as any)?.status === 'cancelled' ? 'cancelled' : 'updated'
+      notifyClientTg(id, event)
       return normalizeAppointment(appt) as Appointment
     },
     onSuccess: () => {

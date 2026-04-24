@@ -25,7 +25,7 @@ import {
   handleAIMessage, fmtDate,
   createBotHelpers,
   escapeHtml, sessionEntry, cleanupSessions, PRODUCT,
-  normalizePhone, linkAppointmentsByPhone,
+  normalizePhone, linkAppointmentsByPhone, linkClientsByPhone,
 } from "./tg_shared.js";
 
 const bot = createBotHelpers(CLIENT_BOT_TOKEN);
@@ -154,23 +154,26 @@ const LANG_STRINGS = {
 // ── Строки обработчиков меню ────────────────────────────────────────────────
 // Для 3 основных языков — явный перевод; остальные (tg/kz/ky) берут RU через merge.
 Object.assign(LANG_STRINGS.ru, {
-  bookingsTitle:  "📅 <b>Ваши предстоящие записи</b>",
-  bookingsEmpty:  "📅 У вас пока нет предстоящих записей.\n\nЗаписаться можно на сайте вашего мастера.",
-  historyTitle:   "🕓 <b>История визитов</b>",
-  historyEmpty:   "🕓 У вас пока нет визитов.",
+  bookingsTitle:  "📅 <b>Ваши текущие записи и заказы</b>",
+  bookingsEmpty:  "📅 У вас пока нет активных записей или заказов.\n\nЗаписаться можно на сайте вашего мастера.",
+  historyTitle:   "🕓 <b>История</b>",
+  historyEmpty:   "🕓 У вас пока нет завершённых записей или заказов.",
   bonusesTitle:   "🎁 <b>Ваши бонусы</b>",
   bonusesEmpty:   "🎁 У вас пока нет бонусов.\nОни начисляются после визитов у мастеров с программой лояльности.",
   helpText:
     "❓ <b>Помощь</b>\n\n" +
-    "• <b>📅 Мои записи</b> — предстоящие визиты, можно отменить\n" +
+    "• <b>📅 Мои записи</b> — активные записи (beauty / клиники) и заказы (химчистка / сервис-центр)\n" +
     "• <b>🎁 Бонусы</b> — ваша программа лояльности\n" +
-    "• <b>🕓 История</b> — прошедшие визиты\n" +
+    "• <b>🕓 История</b> — прошедшие и закрытые\n" +
     "• <b>🌐 Язык</b> — смена языка\n\n" +
-    "Записаться — на сайте вашего мастера.\n" +
+    "Записаться / оформить заказ — на сайте вашего мастера.\n" +
     "Вопросы по платформе: support@ezze.site",
   cancelBtn:      "❌ Отменить",
+  cantCancelBtn:  "ℹ️ Как отменить",
   masterLbl:      "Мастер",
   priceLbl:       "Сумма",
+  readyLbl:       "Готов к",
+  orderNoLbl:     "Заказ",
   tierLbl:        "Статус",
   discountLbl:    "Скидка",
   visitsLbl:      "Визитов",
@@ -183,26 +186,51 @@ Object.assign(LANG_STRINGS.ru, {
   statusDone:     "✅",
   statusCancelled:"❌",
   statusNoShow:   "⚠️",
+  // Заголовки карточек по типу
+  kindAppt:       "📅 Запись",
+  kindCleaning:   "🧺 Химчистка",
+  kindWorkshop:   "🔧 Сервис-центр",
+  // Сообщение при попытке отменить cleaning/workshop
+  cannotCancelOrder:
+    "ℹ️ Заказ нельзя отменить через бот.\n\n" +
+    "Свяжитесь напрямую с мастером, он обработает отмену вручную.",
+  // Человеко-читаемые статусы (cleaning / workshop / appointment)
+  status_scheduled:      "📅 Запланирован",
+  status_done:           "✅ Завершён",
+  status_cancelled:      "❌ Отменён",
+  status_no_show:        "⚠️ Не пришёл",
+  status_received:       "📥 Принят",
+  status_diagnosing:     "🔍 Диагностика",
+  status_waiting_approval: "⏸️ Ожидает подтверждения",
+  status_waiting_parts:  "⏳ Ждём запчасти",
+  status_in_progress:    "⚙️ В работе",
+  status_ready:          "✅ Готов",
+  status_issued:         "📤 Выдан",
+  status_paid:           "💰 Оплачен",
+  status_refused:        "🚫 Отказ от ремонта",
 });
 
 Object.assign(LANG_STRINGS.en, {
-  bookingsTitle:  "📅 <b>Your upcoming bookings</b>",
-  bookingsEmpty:  "📅 You have no upcoming bookings.\n\nBook via your master's website.",
-  historyTitle:   "🕓 <b>Visit history</b>",
-  historyEmpty:   "🕓 You have no past visits yet.",
+  bookingsTitle:  "📅 <b>Your active bookings & orders</b>",
+  bookingsEmpty:  "📅 No active bookings or orders.\n\nBook via your master's website.",
+  historyTitle:   "🕓 <b>History</b>",
+  historyEmpty:   "🕓 No completed visits or orders yet.",
   bonusesTitle:   "🎁 <b>Your bonuses</b>",
   bonusesEmpty:   "🎁 You have no bonuses yet.\nThey are awarded after visits to masters with loyalty programs.",
   helpText:
     "❓ <b>Help</b>\n\n" +
-    "• <b>📅 My bookings</b> — upcoming visits with cancel option\n" +
+    "• <b>📅 My bookings</b> — active bookings (beauty/clinics) and orders (cleaning/workshop)\n" +
     "• <b>🎁 Bonuses</b> — your loyalty program\n" +
-    "• <b>🕓 History</b> — past visits\n" +
+    "• <b>🕓 History</b> — past & closed\n" +
     "• <b>🌐 Language</b> — switch language\n\n" +
-    "Book via your master's website.\n" +
+    "Book / place an order via your master's website.\n" +
     "Platform questions: support@ezze.site",
   cancelBtn:      "❌ Cancel",
+  cantCancelBtn:  "ℹ️ How to cancel",
   masterLbl:      "Master",
   priceLbl:       "Total",
+  readyLbl:       "Ready by",
+  orderNoLbl:     "Order",
   tierLbl:        "Tier",
   discountLbl:    "Discount",
   visitsLbl:      "Visits",
@@ -211,26 +239,48 @@ Object.assign(LANG_STRINGS.en, {
   tier_silver:    "🥈 Silver",
   tier_gold:      "🥇 Gold",
   tier_platinum:  "💎 Platinum",
+  kindAppt:       "📅 Appointment",
+  kindCleaning:   "🧺 Cleaning",
+  kindWorkshop:   "🔧 Repair",
+  cannotCancelOrder:
+    "ℹ️ This order can't be cancelled via the bot.\n\n" +
+    "Please contact the master directly — they'll process the cancellation manually.",
+  status_scheduled:        "📅 Scheduled",
+  status_done:             "✅ Done",
+  status_cancelled:        "❌ Cancelled",
+  status_no_show:          "⚠️ No-show",
+  status_received:         "📥 Received",
+  status_diagnosing:       "🔍 Diagnosing",
+  status_waiting_approval: "⏸️ Awaiting approval",
+  status_waiting_parts:    "⏳ Waiting for parts",
+  status_in_progress:      "⚙️ In progress",
+  status_ready:            "✅ Ready",
+  status_issued:           "📤 Issued",
+  status_paid:             "💰 Paid",
+  status_refused:          "🚫 Refused repair",
 });
 
 Object.assign(LANG_STRINGS.uz, {
-  bookingsTitle:  "📅 <b>Sizning kelgusi yozuvlaringiz</b>",
-  bookingsEmpty:  "📅 Sizda kelgusi yozuvlar yo'q.\n\nUstangizning saytidan yozilishingiz mumkin.",
-  historyTitle:   "🕓 <b>Tashriflar tarixi</b>",
-  historyEmpty:   "🕓 Sizda hali tashriflar yo'q.",
+  bookingsTitle:  "📅 <b>Sizning faol yozuvlaringiz va buyurtmalaringiz</b>",
+  bookingsEmpty:  "📅 Sizda faol yozuvlar yoki buyurtmalar yo'q.\n\nUstangizning saytidan yozilishingiz mumkin.",
+  historyTitle:   "🕓 <b>Tarix</b>",
+  historyEmpty:   "🕓 Sizda hali tugallangan tashriflar yoki buyurtmalar yo'q.",
   bonusesTitle:   "🎁 <b>Sizning bonuslaringiz</b>",
   bonusesEmpty:   "🎁 Sizda hali bonuslar yo'q.\nUlar sodiqlik dasturi mavjud ustalarning tashriflaridan keyin beriladi.",
   helpText:
     "❓ <b>Yordam</b>\n\n" +
-    "• <b>📅 Yozuvlarim</b> — kelgusi tashriflar, bekor qilish mumkin\n" +
+    "• <b>📅 Yozuvlarim</b> — faol yozuvlar va buyurtmalar\n" +
     "• <b>🎁 Bonuslar</b> — sodiqlik dasturi\n" +
-    "• <b>🕓 Tarix</b> — o'tgan tashriflar\n" +
+    "• <b>🕓 Tarix</b> — tugallangan va yopilganlari\n" +
     "• <b>🌐 Til</b> — tilni almashtirish\n\n" +
-    "Yozilish — ustangizning saytida.\n" +
+    "Yozilish / buyurtma — ustangizning saytida.\n" +
     "Platforma bo'yicha savollar: support@ezze.site",
   cancelBtn:      "❌ Bekor qilish",
+  cantCancelBtn:  "ℹ️ Qanday bekor qilish",
   masterLbl:      "Usta",
   priceLbl:       "Summa",
+  readyLbl:       "Tayyor",
+  orderNoLbl:     "Buyurtma",
   tierLbl:        "Daraja",
   discountLbl:    "Chegirma",
   visitsLbl:      "Tashriflar",
@@ -239,6 +289,25 @@ Object.assign(LANG_STRINGS.uz, {
   tier_silver:    "🥈 Kumush",
   tier_gold:      "🥇 Oltin",
   tier_platinum:  "💎 Platina",
+  kindAppt:       "📅 Yozuv",
+  kindCleaning:   "🧺 Kimyoviy tozalash",
+  kindWorkshop:   "🔧 Servis",
+  cannotCancelOrder:
+    "ℹ️ Buyurtmani bot orqali bekor qilib bo'lmaydi.\n\n" +
+    "Iltimos, ustaga bevosita murojaat qiling.",
+  status_scheduled:        "📅 Rejalashtirilgan",
+  status_done:             "✅ Bajarildi",
+  status_cancelled:        "❌ Bekor qilindi",
+  status_no_show:          "⚠️ Kelmadi",
+  status_received:         "📥 Qabul qilindi",
+  status_diagnosing:       "🔍 Diagnostika",
+  status_waiting_approval: "⏸️ Tasdiqlash kutilmoqda",
+  status_waiting_parts:    "⏳ Ehtiyot qismlar kutilyapti",
+  status_in_progress:      "⚙️ Jarayonda",
+  status_ready:            "✅ Tayyor",
+  status_issued:           "📤 Berildi",
+  status_paid:             "💰 To'landi",
+  status_refused:          "🚫 Ta'mirdan voz kechildi",
 });
 
 // Fallback на ru для tg/kz/ky: недостающие ключи берутся из ru
@@ -424,89 +493,109 @@ const LANG_INLINE_KB = {
 
 // ── Обработчики кнопок главного меню ─────────────────────────────────────────
 
+// Статусы, которые считаются «активными» (в «Мои записи»)
+const ACTIVE_STATUSES = new Set([
+  // appointments
+  'scheduled',
+  // cleaning & workshop
+  'received', 'in_progress', 'ready',
+  // workshop extra
+  'diagnosing', 'waiting_approval', 'waiting_parts',
+]);
+
+// Терминальные/исторические статусы
+const TERMINAL_STATUSES = new Set([
+  'done', 'cancelled', 'no_show',
+  'issued', 'paid', 'refused',
+]);
+
+/** Строка статуса в i18n с fallback */
+function statusLabel(s, status) {
+  return s[`status_${status}`] || (status ? `• ${status}` : '•');
+}
+
+/**
+ * Рендерит одну карточку заказа/записи и возвращает
+ * { text, inline_keyboard | null } — inline-клавиатуру с кнопкой отмены/info.
+ */
+function renderOrderCard(row, s) {
+  const kindLbl =
+    row.kind === 'appointment' ? s.kindAppt :
+    row.kind === 'cleaning'    ? s.kindCleaning :
+    row.kind === 'workshop'    ? s.kindWorkshop : '•';
+
+  const master = row.master_name ? escapeHtml(row.master_name) : '—';
+  const title  = row.title ? escapeHtml(row.title) : '—';
+  const price  = Number(row.total) > 0 ? fmtPrice(row.total) : null;
+
+  const lines = [];
+  lines.push(`<b>${kindLbl}</b> · ${statusLabel(s, row.status)}`);
+
+  if (row.kind === 'appointment') {
+    // Дата + время
+    const dt = row.date ? fmtDateShort(row.date) : '—';
+    const tm = row.time_text ? fmtTime(row.time_text) : '';
+    lines.push(`📅 <b>${dt}${tm ? ' · ' + tm : ''}</b>`);
+    lines.push(`👤 ${s.masterLbl}: ${master}`);
+    if (title && title !== '—') lines.push(`💼 ${title}`);
+  } else {
+    // cleaning / workshop
+    if (row.number) lines.push(`🔖 ${s.orderNoLbl}: <b>${escapeHtml(row.number)}</b>`);
+    if (title && title !== '—') lines.push(`📦 ${title}`);
+    if (row.date) lines.push(`📅 ${s.readyLbl}: ${fmtDateShort(row.date)}`);
+    lines.push(`👤 ${s.masterLbl}: ${master}`);
+  }
+  if (price) lines.push(`💰 ${s.priceLbl}: ${price}`);
+
+  const text = lines.join('\n');
+
+  // Inline-кнопки — только для активных
+  let inline_keyboard = null;
+  if (ACTIVE_STATUSES.has(row.status)) {
+    if (row.kind === 'appointment') {
+      inline_keyboard = [[{ text: s.cancelBtn, callback_data: `cancel_appt_${row.id}` }]];
+    } else {
+      // cleaning / workshop — отмена только через мастера
+      inline_keyboard = [[{ text: s.cantCancelBtn, callback_data: `cancel_order_info` }]];
+    }
+  }
+  return { text, inline_keyboard };
+}
+
+/** Вызов RPC get_client_cabinet_orders и нормализация результата */
+async function fetchClientCabinet(chatId) {
+  const { data, error } = await supabase.rpc('get_client_cabinet_orders', {
+    p_tg_chat_id: String(chatId),
+  });
+  if (error) { console.error('get_client_cabinet_orders:', error.message); return []; }
+  return Array.isArray(data) ? data : (data ?? []);
+}
+
 async function handleBookings(chatId, s) {
-  const today = new Date().toISOString().slice(0, 10);
-  const { data, error } = await supabase
-    .from("appointments")
-    .select(`
-      id, date, start_time, price, status, master_id,
-      services ( name ),
-      appointment_services ( service_name, price )
-    `)
-    .eq("telegram_id", String(chatId))
-    .eq("status", "scheduled")
-    .gte("date", today)
-    .order("date", { ascending: true })
-    .order("start_time", { ascending: true })
-    .limit(10);
+  const rows = await fetchClientCabinet(chatId);
+  const active = rows.filter(r => ACTIVE_STATUSES.has(r.status));
 
-  if (error) { console.error("handleBookings:", error.message); }
-  if (!data?.length) { await sendMsg(chatId, s.bookingsEmpty); return; }
-
-  const masterIds = [...new Set(data.map(a => a.master_id))];
-  const { data: profs } = await supabase
-    .from("master_profiles")
-    .select("user_id, profession")
-    .in("user_id", masterIds);
-  const masters = Object.fromEntries((profs || []).map(p => [p.user_id, p.profession || '—']));
+  if (!active.length) { await sendMsg(chatId, s.bookingsEmpty); return; }
 
   await sendMsg(chatId, s.bookingsTitle);
-  for (const appt of data) {
-    const svcs  = fmtServices(appt);
-    const price = Number(appt.price) > 0 ? fmtPrice(appt.price) : null;
-    const text =
-      `📅 <b>${fmtDateShort(appt.date)} · ${fmtTime(appt.start_time)}</b>\n` +
-      `👤 ${s.masterLbl}: ${escapeHtml(masters[appt.master_id] || '—')}\n` +
-      `💼 ${escapeHtml(svcs)}` +
-      (price ? `\n💰 ${s.priceLbl}: ${price}` : '');
-    await sendMsg(chatId, text, {
-      reply_markup: {
-        inline_keyboard: [[{ text: s.cancelBtn, callback_data: `cancel_appt_${appt.id}` }]],
-      },
-    });
+  for (const row of active) {
+    const { text, inline_keyboard } = renderOrderCard(row, s);
+    await sendMsg(chatId, text, inline_keyboard ? { reply_markup: { inline_keyboard } } : {});
   }
 }
 
 async function handleHistory(chatId, s) {
-  const today = new Date().toISOString().slice(0, 10);
-  // Прошлые визиты: либо явный статус done/cancelled/no_show, либо scheduled но дата прошла
-  const { data, error } = await supabase
-    .from("appointments")
-    .select(`
-      id, date, start_time, status, master_id,
-      services ( name ),
-      appointment_services ( service_name )
-    `)
-    .eq("telegram_id", String(chatId))
-    .or(`status.in.(done,cancelled,no_show),and(status.eq.scheduled,date.lt.${today})`)
-    .order("date", { ascending: false })
-    .order("start_time", { ascending: false })
-    .limit(10);
+  const rows = await fetchClientCabinet(chatId);
+  // «История» = терминальные статусы. Ограничим 15 последними.
+  const history = rows.filter(r => TERMINAL_STATUSES.has(r.status)).slice(0, 15);
 
-  if (error) { console.error("handleHistory:", error.message); }
-  if (!data?.length) { await sendMsg(chatId, s.historyEmpty); return; }
+  if (!history.length) { await sendMsg(chatId, s.historyEmpty); return; }
 
-  const masterIds = [...new Set(data.map(a => a.master_id))];
-  const { data: profs } = await supabase
-    .from("master_profiles")
-    .select("user_id, profession")
-    .in("user_id", masterIds);
-  const masters = Object.fromEntries((profs || []).map(p => [p.user_id, p.profession || '—']));
-
-  const statusIcon = {
-    done: s.statusDone, cancelled: s.statusCancelled,
-    no_show: s.statusNoShow, scheduled: s.statusScheduled,
-  };
-
-  const lines = [s.historyTitle, ''];
-  for (const a of data) {
-    lines.push(
-      `${statusIcon[a.status] || '•'} <b>${fmtDateShort(a.date)} · ${fmtTime(a.start_time)}</b> · ` +
-      `${escapeHtml(masters[a.master_id] || '—')}\n` +
-      `   💼 ${escapeHtml(fmtServices(a))}`
-    );
+  await sendMsg(chatId, s.historyTitle);
+  for (const row of history) {
+    const { text } = renderOrderCard(row, s);
+    await sendMsg(chatId, text);
   }
-  await sendMsg(chatId, lines.join('\n'));
 }
 
 async function handleBonuses(chatId, s, client) {
@@ -640,6 +729,10 @@ async function processUpdate(update) {
     // 2. Линкуем существующие appointments по нормализованному телефону
     await linkAppointmentsByPhone(rawPhone, chatId);
 
+    // 2b. Проставляем tg_chat_id во всех clients-строках этого телефона
+    //     (нужно для cleaning-notify-status / workshop-notify-status)
+    await linkClientsByPhone(rawPhone, chatId);
+
     // 3. Очищаем сессию регистрации
     sessions.delete(chatId);
     saveSessions();
@@ -745,6 +838,15 @@ async function processUpdate(update) {
         saveSessions();
         await sendPhoneRequest(chatId, selectedLang);
       }
+      return;
+    }
+
+    // ── Cleaning/Workshop заказы — отмена только через мастера ────────────
+    if (callback.data === "cancel_order_info") {
+      const client = await findTgClient(chatId);
+      const lang = getLang(client?.lang || 'ru');
+      const s = LANG_STRINGS[lang];
+      await sendMsg(chatId, s.cannotCancelOrder);
       return;
     }
 

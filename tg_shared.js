@@ -134,6 +134,38 @@ export async function linkAppointmentsByPhone(phone, chatId) {
   return count;
 }
 
+/**
+ * После регистрации клиента в боте — проставляет tg_chat_id во всех строках
+ * таблицы clients с таким же нормализованным телефоном (у разных мастеров
+ * могут быть свои записи этого клиента).
+ *
+ * После этого cleaning-notify-status / workshop-notify-status смогут
+ * отправлять уведомления: они читают clients.tg_chat_id.
+ *
+ * @param {string} phone    — сырой телефон
+ * @param {number|string} chatId — Telegram chat id
+ * @returns {Promise<number>} число обновлённых clients-строк
+ */
+export async function linkClientsByPhone(phone, chatId) {
+  const norm = normalizePhone(phone);
+  if (!norm) return 0;
+  const { data, error } = await supabase
+    .from("clients")
+    .update({ tg_chat_id: String(chatId) })
+    .eq("phone_normalized", norm)
+    .or("tg_chat_id.is.null,tg_chat_id.eq.")
+    .select("id");
+  if (error) {
+    console.error("linkClientsByPhone error:", error.message);
+    return 0;
+  }
+  const count = data?.length ?? 0;
+  if (count > 0) {
+    console.log(`🔗 linkClientsByPhone: chat=${chatId} phone=${norm} → ${count} clients`);
+  }
+  return count;
+}
+
 // ── Конфиги из app_settings (с кешем 5 мин) ──────────────────────────────────
 
 /** Сбрасывает кеш tg_config — вызывать при изменении настроек в admin */

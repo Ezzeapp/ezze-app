@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
         id, number, status, product,
         item_type_name, brand, model,
         total_amount, paid_amount, ready_date, estimated_cost, approval_token, public_token,
-        client:clients(id, first_name, last_name, tg_chat_id)
+        client:clients(id, first_name, last_name, tg_chat_id, phone_normalized)
       `)
       .eq('id', order_id)
       .single()
@@ -85,7 +85,30 @@ Deno.serve(async (req) => {
     }
 
     const client = (order as any).client
-    if (!client?.tg_chat_id) {
+    if (!client) {
+      return new Response(JSON.stringify({ skipped: 'no client' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Fallback: если tg_chat_id ещё не проставлен, ищем клиента в tg_clients
+    // по нормализованному телефону и backfill'им clients.tg_chat_id
+    let tgChatId: string | null = client.tg_chat_id || null
+    if (!tgChatId && client.phone_normalized) {
+      const { data: tgc } = await supabase
+        .from('tg_clients')
+        .select('tg_chat_id')
+        .eq('phone_normalized', client.phone_normalized)
+        .maybeSingle()
+      tgChatId = tgc?.tg_chat_id || null
+      if (tgChatId) {
+        await supabase.from('clients')
+          .update({ tg_chat_id: tgChatId })
+          .eq('id', client.id)
+      }
+    }
+
+    if (!tgChatId) {
       return new Response(JSON.stringify({ skipped: 'no tg_chat_id' }), {
         status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -136,9 +159,9 @@ Deno.serve(async (req) => {
       approve_url: approveUrl,
     })
 
-    await sendTg(String(client.tg_chat_id), text)
+    await sendTg(String(tgChatId), text)
 
-    return new Response(JSON.stringify({ ok: true, sent_to: client.tg_chat_id }), {
+    return new Response(JSON.stringify({ ok: true, sent_to: tgChatId }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err: any) {
