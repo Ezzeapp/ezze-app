@@ -151,6 +151,101 @@ const LANG_STRINGS = {
   },
 };
 
+// ── Строки обработчиков меню ────────────────────────────────────────────────
+// Для 3 основных языков — явный перевод; остальные (tg/kz/ky) берут RU через merge.
+Object.assign(LANG_STRINGS.ru, {
+  bookingsTitle:  "📅 <b>Ваши предстоящие записи</b>",
+  bookingsEmpty:  "📅 У вас пока нет предстоящих записей.\n\nЗаписаться можно на сайте вашего мастера.",
+  historyTitle:   "🕓 <b>История визитов</b>",
+  historyEmpty:   "🕓 У вас пока нет визитов.",
+  bonusesTitle:   "🎁 <b>Ваши бонусы</b>",
+  bonusesEmpty:   "🎁 У вас пока нет бонусов.\nОни начисляются после визитов у мастеров с программой лояльности.",
+  helpText:
+    "❓ <b>Помощь</b>\n\n" +
+    "• <b>📅 Мои записи</b> — предстоящие визиты, можно отменить\n" +
+    "• <b>🎁 Бонусы</b> — ваша программа лояльности\n" +
+    "• <b>🕓 История</b> — прошедшие визиты\n" +
+    "• <b>🌐 Язык</b> — смена языка\n\n" +
+    "Записаться — на сайте вашего мастера.\n" +
+    "Вопросы по платформе: support@ezze.site",
+  cancelBtn:      "❌ Отменить",
+  masterLbl:      "Мастер",
+  priceLbl:       "Сумма",
+  tierLbl:        "Статус",
+  discountLbl:    "Скидка",
+  visitsLbl:      "Визитов",
+  spentLbl:       "На сумму",
+  tier_bronze:    "🥉 Бронза",
+  tier_silver:    "🥈 Серебро",
+  tier_gold:      "🥇 Золото",
+  tier_platinum:  "💎 Платина",
+  statusScheduled: "📅",
+  statusDone:     "✅",
+  statusCancelled:"❌",
+  statusNoShow:   "⚠️",
+});
+
+Object.assign(LANG_STRINGS.en, {
+  bookingsTitle:  "📅 <b>Your upcoming bookings</b>",
+  bookingsEmpty:  "📅 You have no upcoming bookings.\n\nBook via your master's website.",
+  historyTitle:   "🕓 <b>Visit history</b>",
+  historyEmpty:   "🕓 You have no past visits yet.",
+  bonusesTitle:   "🎁 <b>Your bonuses</b>",
+  bonusesEmpty:   "🎁 You have no bonuses yet.\nThey are awarded after visits to masters with loyalty programs.",
+  helpText:
+    "❓ <b>Help</b>\n\n" +
+    "• <b>📅 My bookings</b> — upcoming visits with cancel option\n" +
+    "• <b>🎁 Bonuses</b> — your loyalty program\n" +
+    "• <b>🕓 History</b> — past visits\n" +
+    "• <b>🌐 Language</b> — switch language\n\n" +
+    "Book via your master's website.\n" +
+    "Platform questions: support@ezze.site",
+  cancelBtn:      "❌ Cancel",
+  masterLbl:      "Master",
+  priceLbl:       "Total",
+  tierLbl:        "Tier",
+  discountLbl:    "Discount",
+  visitsLbl:      "Visits",
+  spentLbl:       "Spent",
+  tier_bronze:    "🥉 Bronze",
+  tier_silver:    "🥈 Silver",
+  tier_gold:      "🥇 Gold",
+  tier_platinum:  "💎 Platinum",
+});
+
+Object.assign(LANG_STRINGS.uz, {
+  bookingsTitle:  "📅 <b>Sizning kelgusi yozuvlaringiz</b>",
+  bookingsEmpty:  "📅 Sizda kelgusi yozuvlar yo'q.\n\nUstangizning saytidan yozilishingiz mumkin.",
+  historyTitle:   "🕓 <b>Tashriflar tarixi</b>",
+  historyEmpty:   "🕓 Sizda hali tashriflar yo'q.",
+  bonusesTitle:   "🎁 <b>Sizning bonuslaringiz</b>",
+  bonusesEmpty:   "🎁 Sizda hali bonuslar yo'q.\nUlar sodiqlik dasturi mavjud ustalarning tashriflaridan keyin beriladi.",
+  helpText:
+    "❓ <b>Yordam</b>\n\n" +
+    "• <b>📅 Yozuvlarim</b> — kelgusi tashriflar, bekor qilish mumkin\n" +
+    "• <b>🎁 Bonuslar</b> — sodiqlik dasturi\n" +
+    "• <b>🕓 Tarix</b> — o'tgan tashriflar\n" +
+    "• <b>🌐 Til</b> — tilni almashtirish\n\n" +
+    "Yozilish — ustangizning saytida.\n" +
+    "Platforma bo'yicha savollar: support@ezze.site",
+  cancelBtn:      "❌ Bekor qilish",
+  masterLbl:      "Usta",
+  priceLbl:       "Summa",
+  tierLbl:        "Daraja",
+  discountLbl:    "Chegirma",
+  visitsLbl:      "Tashriflar",
+  spentLbl:       "Jami",
+  tier_bronze:    "🥉 Bronza",
+  tier_silver:    "🥈 Kumush",
+  tier_gold:      "🥇 Oltin",
+  tier_platinum:  "💎 Platina",
+});
+
+// Fallback на ru для tg/kz/ky: недостающие ключи берутся из ru
+for (const lang of ['tg', 'kz', 'ky']) {
+  LANG_STRINGS[lang] = { ...LANG_STRINGS.ru, ...LANG_STRINGS[lang] };
+}
+
 const LANG_NAMES = {
   ru: "🇷🇺 Русский", uz: "🇺🇿 O'zbek", en: "🇬🇧 English",
   tg: "🇹🇯 Тоҷикӣ",  kz: "🇰🇿 Қазақша", ky: "🇰🇬 Кыргызча",
@@ -285,33 +380,205 @@ async function sendMainMenu(chatId, lang, name, firstTime = false) {
   await sendMsg(chatId, text, { reply_markup: buildMainKeyboard(lang) });
 }
 
-// ── Обработчики кнопок главного меню (заглушки для этапа 1) ──────────────────
+// ── Хелперы форматирования ───────────────────────────────────────────────────
+
+/** "150000" / 150000 → "150 000" (group-separator — тонкий пробел) */
+function fmtPrice(n) {
+  const v = Number(n ?? 0);
+  if (!isFinite(v)) return String(n ?? '');
+  return v.toLocaleString('ru-RU').replace(/,/g, ' ');
+}
+
+/** "2026-04-05" → "05.04.2026"  (язык-нейтральный формат) */
+function fmtDateShort(s) {
+  const d = String(s ?? '').slice(0, 10).split('-');
+  if (d.length !== 3) return String(s ?? '');
+  return `${d[2]}.${d[1]}.${d[0]}`;
+}
+
+/** HH:MM:SS → HH:MM */
+function fmtTime(t) {
+  return String(t ?? '').slice(0, 5);
+}
+
+/** Строковое представление списка услуг из appointment (multi) или fallback (single) */
+function fmtServices(appt) {
+  const multi = appt.appointment_services;
+  if (Array.isArray(multi) && multi.length > 0) {
+    return multi.map(x => x.service_name).filter(Boolean).join(', ') || '—';
+  }
+  return appt.services?.name || '—';
+}
+
+/** Один инлайн-выбор языка (используется при регистрации и смене языка) */
+const LANG_INLINE_KB = {
+  inline_keyboard: [
+    [{ text: LANG_NAMES.ru, callback_data: "lang_ru" },
+     { text: LANG_NAMES.uz, callback_data: "lang_uz" }],
+    [{ text: LANG_NAMES.en, callback_data: "lang_en" },
+     { text: LANG_NAMES.tg, callback_data: "lang_tg" }],
+    [{ text: LANG_NAMES.kz, callback_data: "lang_kz" },
+     { text: LANG_NAMES.ky, callback_data: "lang_ky" }],
+  ],
+};
+
+// ── Обработчики кнопок главного меню ─────────────────────────────────────────
+
+async function handleBookings(chatId, s) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from("appointments")
+    .select(`
+      id, date, start_time, price, status, master_id,
+      services ( name ),
+      appointment_services ( service_name, price )
+    `)
+    .eq("telegram_id", String(chatId))
+    .eq("status", "scheduled")
+    .gte("date", today)
+    .order("date", { ascending: true })
+    .order("start_time", { ascending: true })
+    .limit(10);
+
+  if (error) { console.error("handleBookings:", error.message); }
+  if (!data?.length) { await sendMsg(chatId, s.bookingsEmpty); return; }
+
+  const masterIds = [...new Set(data.map(a => a.master_id))];
+  const { data: profs } = await supabase
+    .from("master_profiles")
+    .select("user_id, profession")
+    .in("user_id", masterIds);
+  const masters = Object.fromEntries((profs || []).map(p => [p.user_id, p.profession || '—']));
+
+  await sendMsg(chatId, s.bookingsTitle);
+  for (const appt of data) {
+    const svcs  = fmtServices(appt);
+    const price = Number(appt.price) > 0 ? fmtPrice(appt.price) : null;
+    const text =
+      `📅 <b>${fmtDateShort(appt.date)} · ${fmtTime(appt.start_time)}</b>\n` +
+      `👤 ${s.masterLbl}: ${escapeHtml(masters[appt.master_id] || '—')}\n` +
+      `💼 ${escapeHtml(svcs)}` +
+      (price ? `\n💰 ${s.priceLbl}: ${price}` : '');
+    await sendMsg(chatId, text, {
+      reply_markup: {
+        inline_keyboard: [[{ text: s.cancelBtn, callback_data: `cancel_appt_${appt.id}` }]],
+      },
+    });
+  }
+}
+
+async function handleHistory(chatId, s) {
+  const today = new Date().toISOString().slice(0, 10);
+  // Прошлые визиты: либо явный статус done/cancelled/no_show, либо scheduled но дата прошла
+  const { data, error } = await supabase
+    .from("appointments")
+    .select(`
+      id, date, start_time, status, master_id,
+      services ( name ),
+      appointment_services ( service_name )
+    `)
+    .eq("telegram_id", String(chatId))
+    .or(`status.in.(done,cancelled,no_show),and(status.eq.scheduled,date.lt.${today})`)
+    .order("date", { ascending: false })
+    .order("start_time", { ascending: false })
+    .limit(10);
+
+  if (error) { console.error("handleHistory:", error.message); }
+  if (!data?.length) { await sendMsg(chatId, s.historyEmpty); return; }
+
+  const masterIds = [...new Set(data.map(a => a.master_id))];
+  const { data: profs } = await supabase
+    .from("master_profiles")
+    .select("user_id, profession")
+    .in("user_id", masterIds);
+  const masters = Object.fromEntries((profs || []).map(p => [p.user_id, p.profession || '—']));
+
+  const statusIcon = {
+    done: s.statusDone, cancelled: s.statusCancelled,
+    no_show: s.statusNoShow, scheduled: s.statusScheduled,
+  };
+
+  const lines = [s.historyTitle, ''];
+  for (const a of data) {
+    lines.push(
+      `${statusIcon[a.status] || '•'} <b>${fmtDateShort(a.date)} · ${fmtTime(a.start_time)}</b> · ` +
+      `${escapeHtml(masters[a.master_id] || '—')}\n` +
+      `   💼 ${escapeHtml(fmtServices(a))}`
+    );
+  }
+  await sendMsg(chatId, lines.join('\n'));
+}
+
+async function handleBonuses(chatId, s, client) {
+  const phoneNorm = normalizePhone(client?.phone || '');
+  if (!phoneNorm) { await sendMsg(chatId, s.bonusesEmpty); return; }
+
+  // 1. Все clients-записи с этим телефоном
+  const { data: clients } = await supabase
+    .from("clients")
+    .select("id, master_id")
+    .eq("phone_normalized", phoneNorm);
+
+  if (!clients?.length) { await sendMsg(chatId, s.bonusesEmpty); return; }
+
+  // 2. Лояльность (пока только cleaning_loyalty; другие продукты добавим позже)
+  const clientIds = clients.map(c => c.id);
+  const { data: loyalty } = await supabase
+    .from("cleaning_loyalty")
+    .select("client_id, total_orders, total_spent, current_discount_pct, tier")
+    .in("client_id", clientIds);
+
+  if (!loyalty?.length) { await sendMsg(chatId, s.bonusesEmpty); return; }
+
+  // 3. Имена мастеров
+  const masterIds = [...new Set(clients.map(c => c.master_id))];
+  const { data: profs } = await supabase
+    .from("master_profiles")
+    .select("user_id, profession")
+    .in("user_id", masterIds);
+  const masters        = Object.fromEntries((profs || []).map(p => [p.user_id, p.profession || '—']));
+  const clientToMaster = Object.fromEntries(clients.map(c => [c.id, c.master_id]));
+
+  const lines = [s.bonusesTitle, ''];
+  for (const lo of loyalty) {
+    const masterName = masters[clientToMaster[lo.client_id]] || '—';
+    const tierName   = s[`tier_${lo.tier}`] || lo.tier || '—';
+    lines.push(
+      `🎁 <b>${escapeHtml(masterName)}</b>\n` +
+      `   ${s.tierLbl}: ${tierName}\n` +
+      `   ${s.discountLbl}: ${Number(lo.current_discount_pct || 0)}%\n` +
+      `   ${s.visitsLbl}: ${lo.total_orders || 0} · ${s.spentLbl}: ${fmtPrice(lo.total_spent)}`
+    );
+  }
+  await sendMsg(chatId, lines.join('\n'));
+}
+
+async function handleHelp(chatId, s) {
+  await sendMsg(chatId, s.helpText);
+}
+
+async function handleLangChange(chatId, s) {
+  sessions.set(chatId, sessionEntry({ step: 'waiting_language', changingLang: true }));
+  saveSessions();
+  await sendMsg(chatId, s.langTitle, { reply_markup: LANG_INLINE_KB });
+}
 
 async function handleMenuAction(chatId, action, client) {
   const lang = getLang(client?.lang || 'ru');
   const s = LANG_STRINGS[lang];
-
-  if (action === 'lang') {
-    // Смена языка — показать тот же выбор, что при регистрации
-    sessions.set(chatId, sessionEntry({ step: 'waiting_language', changingLang: true }));
-    saveSessions();
-    await sendMsg(chatId, s.langTitle, {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: LANG_NAMES.ru, callback_data: "lang_ru" },
-           { text: LANG_NAMES.uz, callback_data: "lang_uz" }],
-          [{ text: LANG_NAMES.en, callback_data: "lang_en" },
-           { text: LANG_NAMES.tg, callback_data: "lang_tg" }],
-          [{ text: LANG_NAMES.kz, callback_data: "lang_kz" },
-           { text: LANG_NAMES.ky, callback_data: "lang_ky" }],
-        ],
-      },
-    });
-    return;
+  try {
+    switch (action) {
+      case 'bookings': await handleBookings(chatId, s);          break;
+      case 'history':  await handleHistory(chatId, s);           break;
+      case 'bonuses':  await handleBonuses(chatId, s, client);   break;
+      case 'help':     await handleHelp(chatId, s);              break;
+      case 'lang':     await handleLangChange(chatId, s);        break;
+      default:         await sendMsg(chatId, s.soon);
+    }
+  } catch (e) {
+    console.error(`handleMenuAction[${action}]:`, e.message);
+    await sendMsg(chatId, s.soon);
   }
-
-  // bookings / bonuses / history / help — заглушки, наполним в этапе 2
-  await sendMsg(chatId, s.soon);
 }
 
 /** Матчит текст пользователя с кнопкой меню, с учётом языка клиента */
