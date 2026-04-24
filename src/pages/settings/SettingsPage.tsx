@@ -19,6 +19,7 @@ import { useProfile, useUpsertProfile } from '@/hooks/useProfile'
 import { ScheduleTab } from '@/pages/schedule/ScheduleTab'
 import { PublicPageTab } from './PublicPageTab'
 import { ReceiptSettingsTab } from './ReceiptSettingsTab'
+import { OrderTypesSettingsTab } from './OrderTypesSettingsTab'
 import { VisitTemplatesSettingsTab } from './VisitTemplatesSettingsTab'
 import { LabTestsCatalogSettingsTab } from './LabTestsCatalogSettingsTab'
 import { WardsSettingsTab } from './WardsSettingsTab'
@@ -72,7 +73,7 @@ const TIMEZONES = [
   { value: 'UTC', label: 'UTC (UTC+0)' },
 ]
 
-type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config' | 'exam_rooms' | 'workshop_types' | 'workshop_notifications' | 'workshop_receipt'
+type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config' | 'exam_rooms' | 'workshop_types' | 'workshop_notifications' | 'workshop_receipt'
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -172,6 +173,7 @@ export function SettingsPage() {
       { id: 'public'   as Tab, label: t('settings.tabPublicPage', 'Моя страница'), icon: Layout },
     ] : []),
     ...(PRODUCT === 'cleaning' ? [
+      { id: 'order_types' as Tab, label: 'Типы заказов', icon: Layers },
       { id: 'receipt' as Tab, label: 'Квитанция', icon: FileText },
     ] : []),
     ...(PRODUCT === 'workshop' ? [
@@ -268,6 +270,9 @@ export function SettingsPage() {
 
       {/* ── Моя страница ── */}
       {tab === 'public' && <PublicPageTab />}
+
+      {/* ── Типы заказов (только cleaning) ── */}
+      {tab === 'order_types' && <OrderTypesSettingsTab />}
 
       {/* ── Квитанция ── */}
       {tab === 'receipt' && <ReceiptSettingsTab />}
