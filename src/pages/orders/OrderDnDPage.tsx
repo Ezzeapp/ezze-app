@@ -346,8 +346,7 @@ export function OrderDnDPage() {
   }
 
   return (
-    <div className="h-full w-full bg-muted/30 overflow-auto p-4">
-    <div className="w-full h-[860px] max-h-[calc(100vh-32px)] flex flex-col bg-[#eef1f7] dark:bg-background rounded-xl border shadow-lg overflow-hidden">
+    <div className="flex flex-col h-full w-full max-w-[1700px] mx-auto bg-[#eef1f7] dark:bg-background overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 py-3 bg-background border-b shrink-0">
         <Button variant="ghost" size="icon" onClick={() => navigate('/orders')} className="h-9 w-9">
@@ -387,7 +386,7 @@ export function OrderDnDPage() {
       </div>
 
       {/* ── Body — 3 колонки ──────────────────────────────────── */}
-      <div className="flex-1 grid grid-cols-[300px_1fr_minmax(380px,420px)] gap-3.5 p-3.5 overflow-hidden min-h-0">
+      <div className="flex-1 grid grid-cols-[240px_1fr_minmax(360px,400px)] xl:grid-cols-[300px_1fr_minmax(380px,420px)] gap-3.5 p-3.5 overflow-hidden min-h-0">
 
         {/* ── Колонка 1: каталог (subgroups) ──────────────────── */}
         <div className="bg-background rounded-2xl border shadow-sm flex flex-col overflow-hidden">
@@ -836,7 +835,6 @@ export function OrderDnDPage() {
           onClose={() => { setShowReceipt(false); navigate(`/orders/${createdOrder?.id ?? ''}`) }}
         />
       )}
-    </div>
     </div>
   )
 }

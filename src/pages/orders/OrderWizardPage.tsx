@@ -339,8 +339,7 @@ export function OrderWizardPage() {
   }
 
   return (
-    <div className="h-full w-full bg-muted/30 overflow-auto p-0 lg:p-4">
-    <div className="w-full h-full lg:h-[860px] lg:max-h-[calc(100vh-32px)] flex flex-col bg-[#f5f7fb] dark:bg-background lg:rounded-xl lg:border lg:shadow-lg overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-[#f5f7fb] dark:bg-background overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-3 sm:px-6 py-3 bg-background border-b shrink-0">
         <Button variant="ghost" size="icon" onClick={() => navigate('/orders')} className="h-9 w-9">
@@ -502,7 +501,7 @@ export function OrderWizardPage() {
         </div>
 
         {/* Right rail (desktop) */}
-        <div className="hidden lg:flex flex-col gap-3 w-[340px] shrink-0">
+        <div className="hidden lg:flex flex-col gap-3 w-[300px] xl:w-[340px] shrink-0">
           {/* Client card */}
           <div className="bg-background rounded-xl border p-4 shadow-sm">
             <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">Клиент</div>
@@ -715,7 +714,6 @@ export function OrderWizardPage() {
           onClose={() => { setShowReceipt(false); navigate(`/orders/${createdOrder?.id ?? ''}`) }}
         />
       )}
-    </div>
     </div>
   )
 }
