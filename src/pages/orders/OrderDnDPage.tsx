@@ -17,6 +17,7 @@ import {
 } from '@/hooks/useCleaningOrders'
 import { useCleaningItemTypes, type CleaningItemType } from '@/hooks/useCleaningItemTypes'
 import { useClientsPaged, useCreateClient } from '@/hooks/useClients'
+import { useCleaningClientStats } from '@/hooks/useCleaningClientStats'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
@@ -127,24 +128,7 @@ export function OrderDnDPage() {
   const { data: clientsData } = useClientsPaged(clientQuery, 1, 12)
   const clients = clientsData?.items ?? []
 
-  const { data: clientStats } = useQuery({
-    queryKey: ['dnd_client_stats', clientId, PRODUCT],
-    queryFn: async () => {
-      if (!clientId) return null
-      const { data } = await supabase
-        .from('cleaning_orders')
-        .select('id, total_amount, payment_status, created_at')
-        .eq('client_id', clientId)
-        .eq('product', PRODUCT)
-        .order('created_at', { ascending: false })
-      const o = data ?? []
-      return {
-        count: o.length,
-        spent: o.filter(r => r.payment_status === 'paid').reduce((s, r) => s + (r.total_amount || 0), 0),
-      }
-    },
-    enabled: !!clientId,
-  })
+  const { data: clientStats } = useCleaningClientStats(clientId)
 
   // Зоны (drag & drop)
   const [zones, setZones] = useState<Record<ZoneId, CartLine[]>>({
@@ -222,6 +206,24 @@ export function OrderDnDPage() {
     }
   }
 
+  // Custom-позиция вне каталога
+  const [customDialog, setCustomDialog] = useState<ZoneId | null>(null)
+  function addCustomItem(zoneId: ZoneId, name: string, price: number) {
+    const fake: CleaningItemType = {
+      id: `custom:${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      product: PRODUCT,
+      name,
+      category: orderType,
+      subcategory: 'Своя позиция',
+      default_price: price,
+      default_days: 3,
+      sort_order: 999,
+      created_at: new Date().toISOString(),
+    }
+    setZones(z => ({ ...z, [zoneId]: [...z[zoneId], makeLine(fake)] }))
+    setCustomDialog(null)
+  }
+
   // Создание заказа → диалог Принят → печать
   const [createdOrder, setCreatedOrder] = useState<{ id: string; number: string } | null>(null)
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
@@ -229,7 +231,10 @@ export function OrderDnDPage() {
 
   // Оплата
   const [payment, setPayment] = useState('cash')
+  const [paymentCash, setPaymentCash] = useState('')
+  const [paymentCard, setPaymentCard] = useState('')
   const [discount, setDiscount] = useState(0)
+  const [visitAddress, setVisitAddress] = useState('')
 
   // Расчёты
   function lineSum(l: CartLine): number {
@@ -273,7 +278,7 @@ export function OrderDnDPage() {
           const h = parseFloat(l.length_m) || null
           const area = orderType === 'carpet' && w && h ? w * h : null
           return {
-            item_type_id: l.type.id,
+            item_type_id: l.type.id.startsWith('custom:') ? null : l.type.id,
             item_type_name: l.type.name,
             color: l.color || null,
             brand: l.brand || null,
@@ -295,8 +300,11 @@ export function OrderDnDPage() {
         ready_date: dayjs().add(zones.urgent.length > 0 ? 1 : 3, 'day').format('YYYY-MM-DD'),
         is_express: zones.urgent.length > 0,
         payment_method: payment,
+        payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : 0,
+        payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : 0,
         surcharge_percent: zones.urgent.length > 0 ? 50 : 0,
         surcharge_amount: surchargeAmt,
+        visit_address: orderType === 'furniture' ? (visitAddress || null) : null,
         tags,
         items,
       })
@@ -453,6 +461,16 @@ export function OrderDnDPage() {
           </div>
           <div className="flex-1 overflow-y-auto p-3">
             <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2.5">
+              {/* Своя позиция → подсказка: тащите в зону или жмите кнопку зоны */}
+              <button
+                onClick={() => setCustomDialog('normal')}
+                className="p-3 rounded-xl border-2 border-dashed border-primary/40 text-primary hover:bg-primary/5 transition-colors flex flex-col justify-center items-center min-h-[100px] gap-1.5"
+                title="Добавить позицию вне каталога в обычную зону"
+              >
+                <Plus className="h-5 w-5" />
+                <span className="text-sm font-semibold">Своя позиция</span>
+                <span className="text-[10px] text-muted-foreground">Не из каталога</span>
+              </button>
               {visibleTypes.length === 0 ? (
                 <div className="col-span-full text-sm text-muted-foreground italic text-center py-12">
                   Нет позиций
@@ -515,7 +533,9 @@ export function OrderDnDPage() {
                   <div className="text-sm font-semibold truncate">{clientName}</div>
                   <div className="text-[11px] opacity-80 font-mono truncate">
                     {clientPhone}
-                    {clientStats && <span> · {clientStats.count} заказов</span>}
+                    {clientStats && clientStats.count > 0 && (
+                      <span> · {clientStats.count} заказов · потрачено {formatCurrency(clientStats.spent)} {symbol}{clientStats.unpaidAmount > 0 && <span className="text-red-200"> · долг {formatCurrency(clientStats.unpaidAmount)}</span>}</span>
+                    )}
                   </div>
                 </>
               ) : (
@@ -568,6 +588,19 @@ export function OrderDnDPage() {
               </button>
             )}
           </div>
+
+          {/* Адрес выезда для мебели */}
+          {orderType === 'furniture' && (
+            <div className="bg-background rounded-2xl border shadow-sm p-2.5 shrink-0">
+              <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Адрес выезда</Label>
+              <Input
+                placeholder="ул. Пушкина, 10, кв. 5"
+                value={visitAddress}
+                onChange={e => setVisitAddress(e.target.value)}
+                className="mt-1 h-8 text-xs"
+              />
+            </div>
+          )}
 
           {/* Drop zones */}
           <div className="flex-1 grid grid-rows-3 gap-2.5 min-h-0 overflow-y-auto">
@@ -649,6 +682,31 @@ export function OrderDnDPage() {
               ))}
             </div>
 
+            {payment === 'mixed' && (
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                  <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Нал. ({symbol})</Label>
+                  <Input
+                    type="number" min={0}
+                    placeholder="0"
+                    value={paymentCash}
+                    onChange={e => setPaymentCash(e.target.value)}
+                    className="mt-1 h-8 text-xs"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Карта ({symbol})</Label>
+                  <Input
+                    type="number" min={0}
+                    placeholder="0"
+                    value={paymentCard}
+                    onChange={e => setPaymentCard(e.target.value)}
+                    className="mt-1 h-8 text-xs"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground">Скидка:</span>
               {[0, 5, 10, 15, 20].map(d => (
@@ -723,6 +781,15 @@ export function OrderDnDPage() {
             setClientPhone(c.phone || '')
             setShowAddClient(false)
           }}
+        />
+      )}
+
+      {/* Custom-позиция */}
+      {customDialog && (
+        <CustomItemDialog
+          symbol={symbol}
+          onClose={() => setCustomDialog(null)}
+          onConfirm={(name, price) => addCustomItem(customDialog, name, price)}
         />
       )}
 
@@ -1295,6 +1362,67 @@ function OrderCreatedDialog({ orderNumber, onPrint, onGoToOrder, onClose }: {
           </Button>
           <Button variant="ghost" onClick={onClose} className="w-full">
             К списку заказов
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Диалог «Своя позиция» (DnD) ─────────────────────────────────────────────
+
+function CustomItemDialog({ symbol, onClose, onConfirm }: {
+  symbol: string
+  onClose: () => void
+  onConfirm: (name: string, price: number) => void
+}) {
+  const [name, setName] = useState('')
+  const [price, setPrice] = useState('')
+  const valid = name.trim().length > 0 && parseFloat(price) > 0
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 grid place-items-center p-4" onClick={onClose}>
+      <div className="bg-background rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold flex items-center gap-2">
+            <Plus className="h-4 w-4 text-primary" />
+            Своя позиция
+          </h3>
+          <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground" /></button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <Label>Название *</Label>
+            <Input
+              autoFocus
+              placeholder="Например: Чехол для стула"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label>Цена ({symbol}) *</Label>
+            <Input
+              type="number" min={0} step={1}
+              placeholder="0"
+              value={price}
+              onChange={e => setPrice(e.target.value)}
+              className="mt-1"
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Эта позиция не сохранится в Справочнике, только в этом заказе.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
+          <Button
+            className="flex-1"
+            disabled={!valid}
+            onClick={() => onConfirm(name.trim(), parseFloat(price))}
+          >
+            <Check className="h-4 w-4 mr-1.5" />
+            Добавить
           </Button>
         </div>
       </div>
