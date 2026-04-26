@@ -91,17 +91,25 @@ const FALLBACK: Record<Event, Record<Lang, string>> = {
   },
 }
 
-async function sendTg(chatId: string, text: string) {
-  if (!chatId || !text || !BOT_TOKEN) return
+async function sendTg(chatId: string, text: string): Promise<{ ok: boolean; error?: string }> {
+  if (!chatId || !text) return { ok: false, error: 'missing_chat_or_text' }
+  if (!BOT_TOKEN) return { ok: false, error: 'missing_bot_token' }
   try {
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: String(chatId), text, parse_mode: 'HTML' }),
       signal: AbortSignal.timeout(8000),
     })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok || j?.ok === false) {
+      console.error('sendTg failed:', r.status, j?.description || '')
+      return { ok: false, error: `tg_${r.status}: ${j?.description || 'unknown'}` }
+    }
+    return { ok: true }
   } catch (err) {
     console.error('sendTg error:', err)
+    return { ok: false, error: (err as Error).message }
   }
 }
 
@@ -246,9 +254,15 @@ serve(async (req) => {
 
     if (!text) text = substitute(FALLBACK[event][lang], vars).trim()
 
-    await sendTg(tgChatId, text)
+    const sendRes = await sendTg(tgChatId, text)
 
-    return new Response(JSON.stringify({ sent: true, chat_id: tgChatId, event, lang }), {
+    return new Response(JSON.stringify({
+      sent: sendRes.ok,
+      chat_id: tgChatId,
+      event,
+      lang,
+      ...(sendRes.ok ? {} : { error: sendRes.error }),
+    }), {
       headers: { ...CORS, 'Content-Type': 'application/json' },
     })
   } catch (err) {
