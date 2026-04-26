@@ -2087,7 +2087,7 @@ export function AppointmentDialog({
                           {selectedSvcs.length > 0 ? (
                             <div className="space-y-2">
                               {selectedSvcs.map(svc => (
-                                <div key={svc.id} className="flex items-start gap-2 text-sm">
+                                <div key={svc.id} className="group flex items-start gap-2 text-sm">
                                   <div className="flex-1 min-w-0">
                                     <p className="leading-snug">{svc.name}</p>
                                     <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
@@ -2105,6 +2105,12 @@ export function AppointmentDialog({
                                       {t('appointments.specifyPrice')}
                                     </button>
                                   )}
+                                  <button type="button"
+                                    onClick={() => toggleSvc(svc)}
+                                    title={t('common.delete')}
+                                    className="shrink-0 h-5 w-5 -mr-1 rounded-md flex items-center justify-center text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors">
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
                                 </div>
                               ))}
                             </div>
