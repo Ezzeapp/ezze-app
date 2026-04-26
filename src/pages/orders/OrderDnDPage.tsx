@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Search, Plus, Minus, X, Loader2, Check,
   GripVertical, ShoppingBag, Zap, Truck, UserPlus,
-  Camera, Printer, CheckCircle2, Pencil,
+  Camera, Printer, CheckCircle2, Pencil, Star,
 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -18,6 +18,7 @@ import {
 import { useCleaningItemTypes, type CleaningItemType } from '@/hooks/useCleaningItemTypes'
 import { useClientsPaged, useCreateClient } from '@/hooks/useClients'
 import { useCleaningClientStats } from '@/hooks/useCleaningClientStats'
+import { useFavouriteItemTypes } from '@/hooks/useFavouriteItemTypes'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
@@ -103,6 +104,8 @@ export function OrderDnDPage() {
   }, [subgroups, activeSub])
   const [groupSearch, setGroupSearch] = useState('')
   const [itemSearch, setItemSearch] = useState('')
+  const [showFavsOnly, setShowFavsOnly] = useState(false)
+  const { isFavourite, toggle: toggleFav, favs } = useFavouriteItemTypes()
   const visibleSubgroups = useMemo(() => {
     if (!groupSearch) return subgroups
     const q = groupSearch.toLowerCase()
@@ -110,13 +113,14 @@ export function OrderDnDPage() {
   }, [subgroups, groupSearch])
   const visibleTypes = useMemo(() => {
     let arr = filteredTypes
-    if (activeSub && !itemSearch) arr = arr.filter(t => (t.subcategory || 'Другое') === activeSub)
+    if (showFavsOnly) arr = arr.filter(t => favs.has(t.id))
+    else if (activeSub && !itemSearch) arr = arr.filter(t => (t.subcategory || 'Другое') === activeSub)
     if (itemSearch) {
       const q = itemSearch.toLowerCase()
-      arr = filteredTypes.filter(t => t.name.toLowerCase().includes(q))
+      arr = (showFavsOnly ? arr : filteredTypes).filter(t => t.name.toLowerCase().includes(q))
     }
     return arr
-  }, [filteredTypes, activeSub, itemSearch])
+  }, [filteredTypes, activeSub, itemSearch, showFavsOnly, favs])
 
   // Клиент
   const [clientQuery, setClientQuery] = useState('')
@@ -141,6 +145,20 @@ export function OrderDnDPage() {
   // Активная зона для click-to-add (по умолчанию обычная)
   const [activeZone, setActiveZone] = useState<ZoneId>('normal')
   const [flashType, setFlashType] = useState<string | null>(null)
+
+  // Шорткаты: 1/2/3 = активная зона
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      const target = e.target as HTMLElement
+      const inField = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable
+      if (inField) return
+      if (e.key === '1') { e.preventDefault(); setActiveZone('normal') }
+      else if (e.key === '2') { e.preventDefault(); setActiveZone('urgent') }
+      else if (e.key === '3') { e.preventDefault(); setActiveZone('delivery') }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
   // Диалог размеров ковра при дропе
   const [carpetDialog, setCarpetDialog] = useState<{ type: CleaningItemType; zoneId: ZoneId } | null>(null)
   // Модалка деталей по клику на позицию
@@ -238,6 +256,10 @@ export function OrderDnDPage() {
   const [paymentCard, setPaymentCard] = useState('')
   const [discount, setDiscount] = useState(0)
   const [visitAddress, setVisitAddress] = useState('')
+  // Срочная надбавка — % или фикс
+  const [expressMode, setExpressMode] = useState<'percent' | 'fixed'>('percent')
+  const [expressValue, setExpressValue] = useState('50')
+  const [extraTags, setExtraTags] = useState<string[]>([])
 
   // Расчёты
   function lineSum(l: CartLine): number {
@@ -258,7 +280,9 @@ export function OrderDnDPage() {
     () => zones.urgent.reduce((s, l) => s + lineSum(l), 0),
     [zones.urgent, orderType]
   )
-  const surchargeAmt = Math.round(urgentTotal * 0.5)
+  const surchargeAmt = expressMode === 'percent'
+    ? Math.round(urgentTotal * (parseFloat(expressValue) || 0) / 100)
+    : (zones.urgent.length > 0 ? (parseFloat(expressValue) || 0) : 0)
   const discountAmt = Math.round((subtotal + surchargeAmt) * discount / 100)
   const deliveryAdd = zones.delivery.length > 0 ? 350 : 0
   const total = subtotal + surchargeAmt - discountAmt + deliveryAdd
@@ -268,12 +292,27 @@ export function OrderDnDPage() {
       toast.error('Перетащите хотя бы одну позицию в корзину')
       return
     }
+    if (orderType === 'carpet') {
+      const missing = allLines.find(l => !(parseFloat(l.width_m) > 0) || !(parseFloat(l.length_m) > 0))
+      if (missing) {
+        // открыть редактор пропавшей позиции
+        const zoneEntry = (Object.entries(zones) as [ZoneId, CartLine[]][])
+          .find(([, list]) => list.some(l => l.key === missing.key))
+        if (zoneEntry) setEditing({ zoneId: zoneEntry[0], key: missing.key })
+        toast.error(`Укажите размеры для «${missing.type.name}»`)
+        return
+      }
+    }
+    if (orderType === 'furniture' && !visitAddress.trim()) {
+      toast.error('Укажите адрес выезда (для мебели)')
+      return
+    }
     try {
       // Каждая зона → один заказ? Нет — один заказ, но с tags для зоны.
       // Решение: сохраняем как один заказ; срочный/доставка фиксируются через is_express и tags.
-      const tags: string[] = []
-      if (zones.urgent.length > 0) tags.push('Срочно')
-      if (zones.delivery.length > 0) tags.push('Доставка')
+      const tags: string[] = [...extraTags]
+      if (zones.urgent.length > 0 && !tags.includes('Срочно')) tags.push('Срочно')
+      if (zones.delivery.length > 0 && !tags.includes('Доставка')) tags.push('Доставка')
 
       const items = allLines.flatMap(l =>
         Array.from({ length: l.qty }, () => {
@@ -305,7 +344,7 @@ export function OrderDnDPage() {
         payment_method: payment,
         payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : 0,
         payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : 0,
-        surcharge_percent: zones.urgent.length > 0 ? 50 : 0,
+        surcharge_percent: zones.urgent.length > 0 && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
         surcharge_amount: surchargeAmt,
         visit_address: orderType === 'furniture' ? (visitAddress || null) : null,
         tags,
@@ -460,6 +499,20 @@ export function OrderDnDPage() {
                 </button>
               )}
             </div>
+            <button
+              onClick={() => setShowFavsOnly(!showFavsOnly)}
+              disabled={favs.size === 0}
+              className={cn(
+                'h-8 px-2.5 rounded-md border text-xs font-bold transition-colors flex items-center gap-1 shrink-0',
+                showFavsOnly
+                  ? 'border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200'
+                  : 'border-border hover:border-amber-400/50 disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+              title={favs.size === 0 ? 'Нет избранного — добавьте звёздочкой' : 'Только избранное'}
+            >
+              <Star className={cn('h-3.5 w-3.5', showFavsOnly && 'fill-current')} />
+              <span className="font-mono">{favs.size}</span>
+            </button>
           </div>
           <div className="flex-1 overflow-y-auto p-3">
             <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2.5">
@@ -501,11 +554,23 @@ export function OrderDnDPage() {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
-                    {t.default_days <= 1 && (
-                      <span className="text-[9.5px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">
-                        FAST
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {t.default_days <= 1 && (
+                        <span className="text-[9.5px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">
+                          FAST
+                        </span>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleFav(t.id) }}
+                        className={cn(
+                          'p-0.5 transition-colors',
+                          isFavourite(t.id) ? 'text-amber-400' : 'text-muted-foreground/40 hover:text-amber-400'
+                        )}
+                        title={isFavourite(t.id) ? 'Убрать из избранного' : 'В избранное'}
+                      >
+                        <Star className={cn('h-3 w-3', isFavourite(t.id) && 'fill-current')} />
+                      </button>
+                    </div>
                   </div>
                   <div className="text-sm font-semibold leading-tight min-h-[34px]">{t.name}</div>
                   <div className="flex justify-between items-baseline mt-2">
@@ -632,13 +697,14 @@ export function OrderDnDPage() {
               onEdit={(key) => setEditing({ zoneId: 'normal', key })}
               isActive={activeZone === 'normal'}
               onActivate={() => setActiveZone('normal')}
+              shortcut="1"
               orderType={orderType}
               lineSum={lineSum}
             />
             <DropZone
               id="urgent"
               label="Срочный заказ"
-              note="24 часа · +50% к стоимости"
+              note={`24 часа · ${expressMode === 'percent' ? `+${expressValue}%` : `+${expressValue} ${symbol}`}`}
               icon={Zap}
               accentClass="bg-red-500/15 text-red-600"
               borderActive="border-red-500"
@@ -653,6 +719,7 @@ export function OrderDnDPage() {
               onEdit={(key) => setEditing({ zoneId: 'urgent', key })}
               isActive={activeZone === 'urgent'}
               onActivate={() => setActiveZone('urgent')}
+              shortcut="2"
               orderType={orderType}
               lineSum={lineSum}
             />
@@ -674,6 +741,7 @@ export function OrderDnDPage() {
               onEdit={(key) => setEditing({ zoneId: 'delivery', key })}
               isActive={activeZone === 'delivery'}
               onActivate={() => setActiveZone('delivery')}
+              shortcut="3"
               orderType={orderType}
               lineSum={lineSum}
             />
@@ -681,6 +749,26 @@ export function OrderDnDPage() {
 
           {/* Totals + payment */}
           <div className="bg-background rounded-2xl border shadow-sm p-3.5 shrink-0">
+            <div className="flex gap-1 flex-wrap mb-3">
+              {['VIP','Повторная','С пятнами','Хрупкое'].map(tag => {
+                const on = extraTags.includes(tag)
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => setExtraTags(on ? extraTags.filter(t => t !== tag) : [...extraTags, tag])}
+                    className={cn(
+                      'h-6 px-2 rounded text-[10.5px] border transition-colors',
+                      on
+                        ? 'border-primary bg-primary/10 text-primary font-semibold'
+                        : 'border-border text-muted-foreground hover:border-primary/40'
+                    )}
+                  >
+                    {on && '✓ '}{tag}
+                  </button>
+                )
+              })}
+            </div>
+
             <div className="grid grid-cols-4 gap-1.5 mb-3">
               {[['cash','Нал.'], ['card','Карта'], ['transfer','Перевод'], ['mixed','Смеш.']].map(([k, label]) => (
                 <button
@@ -741,6 +829,39 @@ export function OrderDnDPage() {
               ))}
             </div>
 
+            {zones.urgent.length > 0 && (
+              <div className="mb-2 p-2 rounded-md border border-red-500/40 bg-red-50/40 dark:bg-red-950/20">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-red-700 dark:text-red-300">Срочно:</span>
+                  <div className="inline-flex bg-background rounded border border-red-200 dark:border-red-900/50 p-0.5">
+                    <button
+                      onClick={() => setExpressMode('percent')}
+                      className={cn(
+                        'h-6 px-2 rounded text-[10px] font-bold transition-colors',
+                        expressMode === 'percent' ? 'bg-red-500 text-white' : 'text-muted-foreground'
+                      )}
+                    >%</button>
+                    <button
+                      onClick={() => setExpressMode('fixed')}
+                      className={cn(
+                        'h-6 px-2 rounded text-[10px] font-bold transition-colors',
+                        expressMode === 'fixed' ? 'bg-red-500 text-white' : 'text-muted-foreground'
+                      )}
+                    >{symbol}</button>
+                  </div>
+                  <Input
+                    type="number" min={0}
+                    value={expressValue}
+                    onChange={e => setExpressValue(e.target.value)}
+                    className="h-6 w-14 text-[11px] font-mono font-bold px-1.5"
+                  />
+                  <span className="ml-auto font-mono text-[10.5px] text-red-700 dark:text-red-300 font-bold">
+                    + {formatCurrency(surchargeAmt)} {symbol}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="font-mono text-xs space-y-1">
               <div className="flex justify-between text-muted-foreground">
                 <span>Подытог ({allLines.reduce((s, l) => s + l.qty, 0)} шт)</span>
@@ -748,7 +869,7 @@ export function OrderDnDPage() {
               </div>
               {surchargeAmt > 0 && (
                 <div className="flex justify-between text-red-500">
-                  <span>Срочно +50%</span>
+                  <span>Срочно {expressMode === 'percent' ? `+${expressValue}%` : ''}</span>
                   <span>+ {formatCurrency(surchargeAmt)} {symbol}</span>
                 </div>
               )}
@@ -861,7 +982,7 @@ export function OrderDnDPage() {
 function DropZone({
   label, note, icon: Icon, accentClass, borderActive,
   lines, symbol, dropHot, orderType, lineSum,
-  isActive, onActivate,
+  isActive, onActivate, shortcut,
   onDragOver, onDragLeave, onDrop, onBumpQty, onRemove, onEdit,
 }: {
   id: ZoneId
@@ -878,6 +999,7 @@ function DropZone({
   lineSum: (l: CartLine) => number
   isActive: boolean
   onActivate: () => void
+  shortcut?: string
   onDragOver: (e: React.DragEvent) => void
   onDragLeave: () => void
   onDrop: () => void
@@ -911,6 +1033,11 @@ function DropZone({
         <div className="flex-1 min-w-0">
           <div className="text-[13px] font-bold leading-none flex items-center gap-1.5">
             {label}
+            {shortcut && (
+              <kbd className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground">
+                {shortcut}
+              </kbd>
+            )}
             {isActive && (
               <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-primary/15 text-primary">
                 ● Активна

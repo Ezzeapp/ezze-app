@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, ArrowRight, Search, Plus, Minus, Check, X, Loader2,
   User, ShoppingBag, Tag, CreditCard, UserPlus,
-  Clock, Zap, Truck, Package, Camera, Printer, CheckCircle2,
+  Clock, Zap, Truck, Package, Camera, Printer, CheckCircle2, Star,
 } from 'lucide-react'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,7 @@ import {
 import { useCleaningItemTypes, type CleaningItemType } from '@/hooks/useCleaningItemTypes'
 import { useClientsPaged, useCreateClient } from '@/hooks/useClients'
 import { useCleaningClientStats } from '@/hooks/useCleaningClientStats'
+import { useFavouriteItemTypes } from '@/hooks/useFavouriteItemTypes'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
@@ -129,15 +130,18 @@ export function OrderWizardPage() {
     if (!activeSub || !subgroups.find(g => g.name === activeSub)) setActiveSub(subgroups[0].name)
   }, [subgroups, activeSub])
   const [catalogQuery, setCatalogQuery] = useState('')
+  const [showFavsOnly, setShowFavsOnly] = useState(false)
+  const { isFavourite, toggle: toggleFav, favs } = useFavouriteItemTypes()
   const visibleTypes = useMemo(() => {
     let arr = filteredTypes
-    if (activeSub) arr = arr.filter(t => (t.subcategory || 'Другое') === activeSub)
+    if (showFavsOnly) arr = arr.filter(t => favs.has(t.id))
+    else if (activeSub) arr = arr.filter(t => (t.subcategory || 'Другое') === activeSub)
     if (catalogQuery) {
       const q = catalogQuery.toLowerCase()
-      arr = filteredTypes.filter(t => t.name.toLowerCase().includes(q))
+      arr = (showFavsOnly ? arr : filteredTypes).filter(t => t.name.toLowerCase().includes(q))
     }
     return arr
-  }, [filteredTypes, activeSub, catalogQuery])
+  }, [filteredTypes, activeSub, catalogQuery, showFavsOnly, favs])
 
   // Корзина
   const [defaultDays, setDefaultDays] = useState(3)
@@ -218,6 +222,7 @@ export function OrderWizardPage() {
   // Срочная надбавка: % или фикс. сумма
   const [expressMode, setExpressMode] = useState<'percent' | 'fixed'>('percent')
   const [expressValue, setExpressValue] = useState<string>('50')
+  const [tags, setTags] = useState<string[]>([])
   const [discount, setDiscount] = useState(0)
   const [prepayPct, setPrepayPct] = useState(0)
   const [notes, setNotes] = useState('')
@@ -260,10 +265,50 @@ export function OrderWizardPage() {
     return false
   }
 
+  // Шорткаты: Esc — назад, Ctrl/Cmd+Enter — далее/принять
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      const target = e.target as HTMLElement
+      const inField = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable
+      if (e.key === 'Escape' && step > 1 && !inField) {
+        e.preventDefault()
+        setStep((step - 1) as 1 | 2 | 3 | 4)
+      } else if ((e.key === 'Enter' && (e.metaKey || e.ctrlKey))) {
+        e.preventDefault()
+        if (step < 4 && canNext()) setStep((step + 1) as 1 | 2 | 3 | 4)
+        else if (step === 4) handleSubmit()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, cart.length])
+
   async function handleSubmit() {
     if (cart.length === 0) {
       toast.error('Добавьте хотя бы одну позицию')
+      setStep(2)
       return
+    }
+    if (orderType === 'carpet') {
+      const missing = cart.find(l => !(parseFloat(l.width_m) > 0) || !(parseFloat(l.length_m) > 0))
+      if (missing) {
+        toast.error(`Укажите размеры для «${missing.type.name}»`)
+        setStep(3)
+        setFocusedKey(missing.key)
+        return
+      }
+    }
+    if (orderType === 'furniture' && !visitAddress.trim()) {
+      toast.error('Укажите адрес выезда')
+      return
+    }
+    if (payment === 'mixed') {
+      const sum = (parseFloat(paymentCash) || 0) + (parseFloat(paymentCard) || 0)
+      if (Math.abs(sum - prepayAmt) > 1) {
+        toast.error(`Сумма наличные + карта (${sum}) не совпадает с предоплатой (${prepayAmt})`)
+        return
+      }
     }
     try {
       const order = await createOrder({
@@ -280,6 +325,7 @@ export function OrderWizardPage() {
         payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : (payment === 'card' ? prepayAmt : 0),
         surcharge_percent: urgency === 'urgent' && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
         surcharge_amount: surchargeAmt,
+        tags,
         pickup_date: orderType === 'carpet' ? (pickupDate || null) : null,
         delivery_date: orderType === 'carpet' ? (deliveryDate || null) : null,
         visit_address: orderType === 'furniture' ? (visitAddress || null) : null,
@@ -446,6 +492,11 @@ export function OrderWizardPage() {
               orderType={orderType}
               setOrderType={setOrderType}
               enabledOrderTypes={enabledOrderTypes}
+              isFavourite={isFavourite}
+              toggleFav={toggleFav}
+              showFavsOnly={showFavsOnly}
+              setShowFavsOnly={setShowFavsOnly}
+              favsCount={favs.size}
             />
           )}
 
@@ -496,6 +547,8 @@ export function OrderWizardPage() {
               expressValue={expressValue}
               setExpressValue={setExpressValue}
               surchargeAmt={surchargeAmt}
+              tags={tags}
+              setTags={setTags}
             />
           )}
         </div>
@@ -868,6 +921,7 @@ function Step2Items({
   catalogQuery, setCatalogQuery,
   visibleTypes, cart, addType, onAddCustom, symbol,
   orderType, setOrderType, enabledOrderTypes,
+  isFavourite, toggleFav, showFavsOnly, setShowFavsOnly, favsCount,
 }: {
   subgroups: { name: string; count: number }[]
   activeSub: string | null
@@ -882,6 +936,11 @@ function Step2Items({
   orderType: OrderType
   setOrderType: (t: OrderType) => void
   enabledOrderTypes: CleaningOrderTypeConfig[]
+  isFavourite: (id: string) => boolean
+  toggleFav: (id: string) => void
+  showFavsOnly: boolean
+  setShowFavsOnly: (b: boolean) => void
+  favsCount: number
 }) {
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -940,14 +999,30 @@ function Step2Items({
         <p className="text-sm text-muted-foreground mt-0.5 mb-3">
           Тапните по позиции, чтобы добавить. Количество и детали — на следующем шаге.
         </p>
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Найти позицию..."
-            value={catalogQuery}
-            onChange={e => setCatalogQuery(e.target.value)}
-            className="pl-9 h-10"
-          />
+        <div className="flex gap-2 mb-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Найти позицию..."
+              value={catalogQuery}
+              onChange={e => setCatalogQuery(e.target.value)}
+              className="pl-9 h-10"
+            />
+          </div>
+          <button
+            onClick={() => setShowFavsOnly(!showFavsOnly)}
+            disabled={favsCount === 0}
+            className={cn(
+              'h-10 px-3 rounded-md border-2 text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0',
+              showFavsOnly
+                ? 'border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200'
+                : 'border-border hover:border-amber-400/50 disabled:opacity-50 disabled:cursor-not-allowed'
+            )}
+            title={favsCount === 0 ? 'Нет избранного — добавьте звёздочкой на карточке' : 'Только избранное'}
+          >
+            <Star className={cn('h-4 w-4', showFavsOnly && 'fill-current')} />
+            <span className="hidden sm:inline">{favsCount}</span>
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto -mr-2 pr-2 min-h-0">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -967,28 +1042,43 @@ function Step2Items({
             )}
             {visibleTypes.map(t => {
               const inCart = cart.find(l => l.type.id === t.id)
+              const fav = isFavourite(t.id)
               return (
-                <button
+                <div
                   key={t.id}
-                  onClick={() => addType(t)}
                   className={cn(
-                    'relative p-3 rounded-xl border-2 transition-colors text-left',
+                    'relative p-3 rounded-xl border-2 transition-colors',
                     inCart ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
                   )}
                 >
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleFav(t.id) }}
+                    className={cn(
+                      'absolute top-1.5 left-1.5 p-1 rounded transition-colors',
+                      fav ? 'text-amber-400' : 'text-muted-foreground/40 hover:text-amber-400'
+                    )}
+                    title={fav ? 'Убрать из избранного' : 'В избранное'}
+                  >
+                    <Star className={cn('h-3.5 w-3.5', fav && 'fill-current')} />
+                  </button>
                   {inCart && (
                     <div className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-primary text-primary-foreground grid place-items-center font-bold text-xs font-mono">
                       {inCart.qty}
                     </div>
                   )}
-                  <div className="text-sm font-semibold leading-tight min-h-[36px]">{t.name}</div>
-                  <div className="font-mono text-base font-extrabold mt-2">
-                    {formatCurrency(t.default_price)} <span className="text-xs text-muted-foreground">{symbol}</span>
-                  </div>
-                  {t.subcategory && (
-                    <div className="text-[10px] text-muted-foreground mt-0.5 truncate">{t.subcategory}</div>
-                  )}
-                </button>
+                  <button
+                    onClick={() => addType(t)}
+                    className="text-left w-full pt-3"
+                  >
+                    <div className="text-sm font-semibold leading-tight min-h-[36px]">{t.name}</div>
+                    <div className="font-mono text-base font-extrabold mt-2">
+                      {formatCurrency(t.default_price)} <span className="text-xs text-muted-foreground">{symbol}</span>
+                    </div>
+                    {t.subcategory && (
+                      <div className="text-[10px] text-muted-foreground mt-0.5 truncate">{t.subcategory}</div>
+                    )}
+                  </button>
+                </div>
               )
             })}
           </div>
@@ -1128,23 +1218,29 @@ function Step3Details({
           {orderType === 'carpet' && (
             <>
               <div>
-                <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Ширина (м)</Label>
+                <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Ширина (м) *</Label>
                 <Input
                   type="number" min={0} step={0.1}
                   placeholder="2.0"
                   value={focused.width_m}
                   onChange={e => updateLine(focused.key, { width_m: e.target.value })}
-                  className="mt-1.5"
+                  className={cn(
+                    'mt-1.5',
+                    !(parseFloat(focused.width_m) > 0) && 'border-red-500/60 focus-visible:ring-red-500/40'
+                  )}
                 />
               </div>
               <div>
-                <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Длина (м)</Label>
+                <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Длина (м) *</Label>
                 <Input
                   type="number" min={0} step={0.1}
                   placeholder="3.0"
                   value={focused.length_m}
                   onChange={e => updateLine(focused.key, { length_m: e.target.value })}
-                  className="mt-1.5"
+                  className={cn(
+                    'mt-1.5',
+                    !(parseFloat(focused.length_m) > 0) && 'border-red-500/60 focus-visible:ring-red-500/40'
+                  )}
                 />
               </div>
             </>
@@ -1304,6 +1400,7 @@ function Step4Payment({
   defaultDays, setDefaultDays,
   prepayAmt, symbol,
   expressMode, setExpressMode, expressValue, setExpressValue, surchargeAmt,
+  tags, setTags,
 }: {
   urgency: 'normal' | 'urgent' | 'pickup' | 'delivery'
   setUrgency: (u: 'normal' | 'urgent' | 'pickup' | 'delivery') => void
@@ -1335,6 +1432,8 @@ function Step4Payment({
   expressValue: string
   setExpressValue: (s: string) => void
   surchargeAmt: number
+  tags: string[]
+  setTags: (t: string[]) => void
 }) {
   const urgencyOptions = [
     { k: 'normal',   label: 'Стандарт',  sub: '3–5 дней',         icon: Clock,  color: 'text-blue-600',    accent: 'border-blue-500'    },
@@ -1622,6 +1721,30 @@ function Step4Payment({
               {d} {d === 1 ? 'день' : 'дн'}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Теги заказа</Label>
+        <div className="flex gap-1.5 flex-wrap mt-1.5">
+          {['Срочно','VIP','Повторная','Самовывоз','Доставка','С пятнами','Хрупкое'].map(tag => {
+            const on = tags.includes(tag)
+            return (
+              <button
+                key={tag}
+                onClick={() => setTags(on ? tags.filter(t => t !== tag) : [...tags, tag])}
+                className={cn(
+                  'h-8 px-3 rounded-full text-xs border transition-colors flex items-center gap-1',
+                  on
+                    ? 'border-primary bg-primary/10 text-primary font-semibold'
+                    : 'border-border hover:border-primary/40'
+                )}
+              >
+                {on && <Check className="h-3 w-3" />}
+                {tag}
+              </button>
+            )
+          })}
         </div>
       </div>
 
