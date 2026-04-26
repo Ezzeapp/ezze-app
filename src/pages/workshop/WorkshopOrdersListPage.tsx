@@ -154,15 +154,21 @@ export function WorkshopOrdersListPage() {
             </Select>
 
             <Input
-              type="date"
+              type={dateFrom ? 'date' : 'text'}
+              placeholder="01.01.2000"
               value={dateFrom}
+              onFocus={e => { e.currentTarget.type = 'date'; e.currentTarget.showPicker?.() }}
+              onBlur={e => { if (!e.currentTarget.value) e.currentTarget.type = 'text' }}
               onChange={e => setDateFrom(e.target.value)}
               className="sm:w-40"
               aria-label="Дата с"
             />
             <Input
-              type="date"
+              type={dateTo ? 'date' : 'text'}
+              placeholder="01.01.2000"
               value={dateTo}
+              onFocus={e => { e.currentTarget.type = 'date'; e.currentTarget.showPicker?.() }}
+              onBlur={e => { if (!e.currentTarget.value) e.currentTarget.type = 'text' }}
               onChange={e => setDateTo(e.target.value)}
               className="sm:w-40"
               aria-label="Дата по"
