@@ -5,7 +5,11 @@ import {
   Plus, Search, ClipboardList, Loader2,
   AlertTriangle, Trash2, Download, CalendarRange, X,
   ArrowUpDown, ArrowUp, ArrowDown, List, Columns3, Truck,
+  ChevronDown, Wand2, MousePointerClick, FileText, LayoutDashboard,
 } from 'lucide-react'
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 import { PRODUCT } from '@/lib/config'
 import { DeliveryContent } from '@/pages/cleaning/DeliveryPage'
 import { Button } from '@/components/ui/button'
@@ -378,6 +382,104 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
   )
 }
 
+// ── Кнопка «Новый заказ» с выбором режима приёма ──────────────────────────────
+const ORDER_MODE_KEY = 'cleaning_order_intake_mode'
+type OrderMode = 'wizard' | 'dnd' | 'pos' | 'form'
+
+function getDefaultMode(): OrderMode {
+  if (typeof window === 'undefined') return 'wizard'
+  const saved = localStorage.getItem(ORDER_MODE_KEY) as OrderMode | null
+  if (saved && ['wizard','dnd','pos','form'].includes(saved)) return saved
+  return 'wizard'
+}
+
+function NewOrderSplitButton({ newOrderLabel }: { newOrderLabel: string }) {
+  const navigate = useNavigate()
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024
+  const [mode, setMode] = useState<OrderMode>(getDefaultMode)
+
+  function go(target: OrderMode) {
+    setMode(target)
+    localStorage.setItem(ORDER_MODE_KEY, target)
+    if (target === 'wizard') navigate('/orders/wizard')
+    else if (target === 'dnd') navigate('/orders/dnd')
+    else if (target === 'pos') navigate('/orders/pos')
+    else navigate('/orders/new')
+  }
+
+  // На мобильном — Wizard всегда (DnD не помещается, классическая форма как fallback в меню)
+  if (!isDesktop) {
+    return (
+      <Button onClick={() => go('wizard')} size="sm" className="shrink-0">
+        <Plus className="h-4 w-4 sm:mr-1" />
+        <span className="hidden sm:inline">{newOrderLabel}</span>
+      </Button>
+    )
+  }
+
+  const primaryTarget: OrderMode = mode === 'dnd' ? 'dnd' : 'wizard'
+  const primaryLabel = primaryTarget === 'dnd' ? 'Drag & Drop' : 'Wizard'
+  const PrimaryIcon = primaryTarget === 'dnd' ? MousePointerClick : Wand2
+
+  return (
+    <div className="inline-flex shrink-0 rounded-md overflow-hidden border border-primary">
+      <Button
+        onClick={() => go(primaryTarget)}
+        size="sm"
+        className="rounded-none border-0 shadow-none"
+      >
+        <PrimaryIcon className="h-4 w-4 mr-1.5" />
+        {newOrderLabel} · {primaryLabel}
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="sm"
+            className="rounded-none border-0 border-l border-primary-foreground/20 shadow-none px-2"
+            aria-label="Выбрать режим приёма"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuItem onClick={() => go('wizard')} className="gap-2.5 py-2.5">
+            <Wand2 className="h-4 w-4 text-primary shrink-0" />
+            <div className="flex-1">
+              <div className="text-sm font-semibold">Wizard</div>
+              <div className="text-[11px] text-muted-foreground">Пошагово · desktop + mobile</div>
+            </div>
+            {mode === 'wizard' && <span className="text-xs text-primary font-bold">●</span>}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => go('dnd')} className="gap-2.5 py-2.5">
+            <MousePointerClick className="h-4 w-4 text-primary shrink-0" />
+            <div className="flex-1">
+              <div className="text-sm font-semibold">Drag & Drop</div>
+              <div className="text-[11px] text-muted-foreground">Перетаскивание · только desktop</div>
+            </div>
+            {mode === 'dnd' && <span className="text-xs text-primary font-bold">●</span>}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => go('pos')} className="gap-2.5 py-2.5">
+            <LayoutDashboard className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="flex-1">
+              <div className="text-sm font-semibold">Классический POS</div>
+              <div className="text-[11px] text-muted-foreground">Плотный экран · опытный оператор</div>
+            </div>
+            {mode === 'pos' && <span className="text-xs text-primary font-bold">●</span>}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => go('form')} className="gap-2.5 py-2.5">
+            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="flex-1">
+              <div className="text-sm font-semibold">Простая форма</div>
+              <div className="text-[11px] text-muted-foreground">Старая форма (fallback)</div>
+            </div>
+            {mode === 'form' && <span className="text-xs text-primary font-bold">●</span>}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  )
+}
+
 // ── Главный компонент ──────────────────────────────────────────────────────────
 export function OrdersListPage() {
   const navigate = useNavigate()
@@ -569,14 +671,7 @@ export function OrdersListPage() {
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
-          <Button
-            onClick={() => navigate(window.innerWidth >= 1024 ? '/orders/pos' : '/orders/new')}
-            size="sm"
-            className="shrink-0"
-          >
-            <Plus className="h-4 w-4 sm:mr-1" />
-            <span className="hidden sm:inline">{t('orders.newOrder')}</span>
-          </Button>
+          <NewOrderSplitButton newOrderLabel={t('orders.newOrder')} />
         </div>
       </PageHeader>
       </div>
@@ -741,7 +836,7 @@ export function OrdersListPage() {
             icon={ClipboardList}
             title={t('orders.emptyTitle')}
             description={t('orders.emptyDesc')}
-            action={{ label: t('orders.newOrder'), onClick: () => navigate('/orders/new') }}
+            action={{ label: t('orders.newOrder'), onClick: () => navigate('/orders/wizard') }}
           />
         ) : isKanban ? (
           <KanbanView

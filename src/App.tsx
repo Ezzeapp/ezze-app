@@ -60,6 +60,8 @@ const OrdersListPage = lazy(() => import('@/pages/orders/OrdersListPage').then(m
 const OrderFormPage = lazy(() => import('@/pages/orders/OrderFormPage').then(m => ({ default: m.OrderFormPage })))
 const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage').then(m => ({ default: m.OrderDetailPage })))
 const POSPage = lazy(() => import('@/pages/orders/POSPage').then(m => ({ default: m.POSPage })))
+const OrderWizardPage = lazy(() => import('@/pages/orders/OrderWizardPage').then(m => ({ default: m.OrderWizardPage })))
+const OrderDnDPage = lazy(() => import('@/pages/orders/OrderDnDPage').then(m => ({ default: m.OrderDnDPage })))
 const CleaningStatsPage = lazy(() => import('@/pages/cleaning/CleaningStatsPage').then(m => ({ default: m.CleaningStatsPage })))
 const CleaningReportsPage = lazy(() => import('@/pages/cleaning/CleaningReportsPage').then(m => ({ default: m.CleaningReportsPage })))
 const CleaningTrackPage = lazy(() => import('@/pages/orders/CleaningTrackPage').then(m => ({ default: m.CleaningTrackPage })))
@@ -160,6 +162,8 @@ const router = createBrowserRouter([
       { path: 'orders',     element: PRODUCT === 'workshop' ? <WorkshopOrdersListPage /> : <OrdersListPage /> },
       { path: 'orders/new', element: PRODUCT === 'workshop' ? <WorkshopOrderFormPage /> : <OrderFormPage /> },
       { path: 'orders/pos', element: <POSPage /> },
+      { path: 'orders/wizard', element: <OrderWizardPage /> },
+      { path: 'orders/dnd', element: <OrderDnDPage /> },
       { path: 'orders/:id', element: PRODUCT === 'workshop' ? <WorkshopOrderDetailPage /> : <OrderDetailPage /> },
       ...(PRODUCT === 'cleaning' ? [
         { path: 'stats', element: <CleaningStatsPage /> },
