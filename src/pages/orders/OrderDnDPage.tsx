@@ -79,15 +79,22 @@ export function OrderDnDPage() {
     if (!subgroups.length) { setActiveSub(null); return }
     if (!activeSub || !subgroups.find(g => g.name === activeSub)) setActiveSub(subgroups[0].name)
   }, [subgroups, activeSub])
-  const [search, setSearch] = useState('')
+  const [groupSearch, setGroupSearch] = useState('')
+  const [itemSearch, setItemSearch] = useState('')
+  const visibleSubgroups = useMemo(() => {
+    if (!groupSearch) return subgroups
+    const q = groupSearch.toLowerCase()
+    return subgroups.filter(g => g.name.toLowerCase().includes(q))
+  }, [subgroups, groupSearch])
   const visibleTypes = useMemo(() => {
-    if (search) {
-      const q = search.toLowerCase()
-      return filteredTypes.filter(t => t.name.toLowerCase().includes(q))
+    let arr = filteredTypes
+    if (activeSub && !itemSearch) arr = arr.filter(t => (t.subcategory || 'Другое') === activeSub)
+    if (itemSearch) {
+      const q = itemSearch.toLowerCase()
+      arr = filteredTypes.filter(t => t.name.toLowerCase().includes(q))
     }
-    if (activeSub) return filteredTypes.filter(t => (t.subcategory || 'Другое') === activeSub)
-    return filteredTypes
-  }, [filteredTypes, activeSub, search])
+    return arr
+  }, [filteredTypes, activeSub, itemSearch])
 
   // Клиент
   const [clientQuery, setClientQuery] = useState('')
@@ -212,8 +219,8 @@ export function OrderDnDPage() {
   }
 
   return (
-    <div className="h-full w-full bg-muted/30 overflow-auto grid place-items-center p-4">
-    <div className="w-[1440px] h-[860px] max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] flex flex-col bg-[#eef1f7] dark:bg-background rounded-xl border shadow-lg overflow-hidden">
+    <div className="h-full w-full bg-muted/30 overflow-auto p-4">
+    <div className="w-full h-[860px] max-h-[calc(100vh-32px)] flex flex-col bg-[#eef1f7] dark:bg-background rounded-xl border shadow-lg overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 py-3 bg-background border-b shrink-0">
         <Button variant="ghost" size="icon" onClick={() => navigate('/orders')} className="h-9 w-9">
@@ -266,18 +273,18 @@ export function OrderDnDPage() {
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 placeholder="Поиск по группам..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
+                value={groupSearch}
+                onChange={e => setGroupSearch(e.target.value)}
                 className="pl-8 h-8 text-xs"
               />
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {subgroups.length === 0 ? (
+            {visibleSubgroups.length === 0 ? (
               <div className="text-xs text-muted-foreground italic text-center py-6">
-                Нет подгрупп. Добавьте позиции в Справочник.
+                {subgroups.length === 0 ? 'Нет подгрупп. Добавьте позиции в Справочник.' : 'Группы не найдены'}
               </div>
-            ) : subgroups.map(g => (
+            ) : visibleSubgroups.map(g => (
               <button
                 key={g.name}
                 onClick={() => setActiveSub(g.name)}
@@ -301,10 +308,28 @@ export function OrderDnDPage() {
         <div className="bg-background rounded-2xl border shadow-sm flex flex-col overflow-hidden">
           <div className="p-3.5 border-b flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold">{activeSub || 'Все позиции'}</div>
+              <div className="text-sm font-bold">{itemSearch ? `Поиск: «${itemSearch}»` : (activeSub || 'Все позиции')}</div>
               <div className="text-xs text-muted-foreground">
                 {visibleTypes.length} позиций · перетащите карточку в корзину
               </div>
+            </div>
+            <div className="relative w-56 shrink-0">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Поиск услуги в каталоге..."
+                value={itemSearch}
+                onChange={e => setItemSearch(e.target.value)}
+                className="pl-8 h-8 text-xs"
+              />
+              {itemSearch && (
+                <button
+                  onClick={() => setItemSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Очистить поиск"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-3">

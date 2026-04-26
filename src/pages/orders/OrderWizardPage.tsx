@@ -247,8 +247,8 @@ export function OrderWizardPage() {
   }
 
   return (
-    <div className="h-full w-full bg-muted/30 overflow-auto grid place-items-center p-0 lg:p-4">
-    <div className="w-full h-full lg:w-[1440px] lg:h-[860px] lg:max-h-[calc(100vh-32px)] lg:max-w-[calc(100vw-32px)] flex flex-col bg-[#f5f7fb] dark:bg-background lg:rounded-xl lg:border lg:shadow-lg overflow-hidden">
+    <div className="h-full w-full bg-muted/30 overflow-auto p-0 lg:p-4">
+    <div className="w-full h-full lg:h-[860px] lg:max-h-[calc(100vh-32px)] flex flex-col bg-[#f5f7fb] dark:bg-background lg:rounded-xl lg:border lg:shadow-lg overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-3 sm:px-6 py-3 bg-background border-b shrink-0">
         <Button variant="ghost" size="icon" onClick={() => navigate('/orders')} className="h-9 w-9">
