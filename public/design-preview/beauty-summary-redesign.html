@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Beauty — правая панель «Итог», варианты редизайна</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background:#f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  .col { width: 360px; }
+  .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #71717a; }
+  .muted { color: #a1a1aa; }
+  .ico { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .ico-sm { width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+</style>
+</head>
+<body class="p-8">
+
+<div class="max-w-[1300px] mx-auto">
+  <h1 class="text-2xl font-bold text-zinc-900 mb-1">Beauty · модалка «Новая запись» — правая панель</h1>
+  <p class="text-sm text-zinc-600 mb-2">Проблема: три «цены» рядом — <code>0</code> у услуги, <code>ИТОГО 0</code>, и пустой инпут «Введите цену». Глаз не понимает, какая из них главная.</p>
+  <p class="text-sm text-zinc-600 mb-8">Сравнение: слева <b>как сейчас</b>, в центре и справа — два варианта редизайна.</p>
+
+  <div class="flex gap-6 items-start justify-center">
+
+    <!-- ════════════ КАК СЕЙЧАС ════════════ -->
+    <div class="col">
+      <div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Сейчас</div>
+      <div class="rounded-xl bg-white border border-zinc-200 overflow-hidden shadow-sm">
+        <div class="px-5 py-3 border-b">
+          <p class="lbl">Итог</p>
+        </div>
+        <div class="p-5 space-y-5 text-sm">
+          <!-- клиент -->
+          <div class="flex items-center gap-2">
+            <div class="h-7 w-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold text-xs">К</div>
+            <div class="font-medium">клиент 3</div>
+          </div>
+          <!-- услуга со странным "0" -->
+          <div class="flex items-start justify-between border-t pt-3">
+            <div>
+              <div>Антицеллюлитный массаж</div>
+              <div class="text-xs muted mt-0.5">27 апр., 13:30 — 14:30</div>
+            </div>
+            <div class="text-right text-zinc-400">0</div>
+          </div>
+          <!-- ИТОГО + Введите цену -->
+          <div class="border-t pt-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="lbl">Итого</span>
+              <span class="text-xl font-bold">0</span>
+            </div>
+            <div class="relative">
+              <input class="w-full h-12 border rounded-lg px-3 text-2xl font-bold pr-10" placeholder="Введите цену">
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400">₽</span>
+            </div>
+          </div>
+          <!-- скидка -->
+          <div>
+            <p class="lbl mb-2">Скидка / Надбавка</p>
+            <div class="flex rounded-md overflow-hidden border mb-2">
+              <button class="flex-1 h-8 bg-emerald-500 text-white text-xs font-medium">Скидка</button>
+              <button class="flex-1 h-8 bg-white text-zinc-500 text-xs font-medium">Надбавка</button>
+            </div>
+            <div class="grid grid-cols-4 gap-1">
+              <button class="h-7 rounded-md bg-emerald-500 text-white text-xs font-medium">0%</button>
+              <button class="h-7 rounded-md border text-xs">5%</button>
+              <button class="h-7 rounded-md border text-xs">10%</button>
+              <button class="h-7 rounded-md border text-xs">15%</button>
+            </div>
+          </div>
+          <!-- оплата -->
+          <div>
+            <p class="lbl mb-2">Способ оплаты</p>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button class="h-8 rounded-md border text-xs flex items-center gap-1.5 px-2">
+                <svg class="ico-sm" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+                Наличные
+              </button>
+              <button class="h-8 rounded-md border text-xs flex items-center gap-1.5 px-2">
+                <svg class="ico-sm" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                Карта
+              </button>
+              <button class="h-8 rounded-md border text-xs flex items-center gap-1.5 px-2">
+                <svg class="ico-sm" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                Перевод
+              </button>
+              <button class="h-8 rounded-md border text-xs flex items-center gap-1.5 px-2">
+                <svg class="ico-sm" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+                Другое
+              </button>
+            </div>
+          </div>
+          <!-- заметка -->
+          <div>
+            <p class="lbl mb-2">Заметка</p>
+            <textarea class="w-full h-16 border rounded-lg px-3 py-2 text-sm" placeholder="Пожелания или вопросы..."></textarea>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-rose-700 mt-3 px-1 leading-relaxed">
+        ❌ <b>3 поля цены подряд:</b> «0» у услуги, «Итого 0», «Введите цену».<br>
+        ❌ Дата спрятана под услугой.<br>
+        ❌ Заголовок «Итог» дублируется через «Итого».
+      </p>
+    </div>
+
+    <!-- ════════════ ВАРИАНТ A — «Чек» ════════════ -->
+    <div class="col">
+      <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-2">Вариант A · «Чек»</div>
+      <div class="rounded-xl bg-white border border-emerald-300 overflow-hidden shadow-sm">
+        <!-- Шапка: клиент + дата/время одной строкой -->
+        <div class="px-5 py-3 border-b bg-zinc-50/60">
+          <div class="flex items-center gap-2 mb-1.5">
+            <div class="h-7 w-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold text-xs">К</div>
+            <div class="font-semibold text-sm">клиент 3</div>
+            <span class="ml-auto text-xs muted">+998 90 123-45-67</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs text-zinc-600">
+            <svg class="ico-sm text-zinc-400" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <span class="font-medium">пн, 27 апр</span>
+            <span class="muted">·</span>
+            <svg class="ico-sm text-zinc-400" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span class="font-medium">13:30 → 14:30</span>
+            <span class="muted">· 1 ч</span>
+          </div>
+        </div>
+
+        <div class="p-5 space-y-4 text-sm">
+          <!-- Услуги: строка-чек, клик по цене → inline-edit -->
+          <div>
+            <p class="lbl mb-2">Услуги · 1</p>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-3 group">
+                <div class="min-w-0">
+                  <div class="text-sm">Антицеллюлитный массаж</div>
+                  <div class="text-[11px] muted">1 ч</div>
+                </div>
+                <button class="shrink-0 flex items-center gap-1 text-sm text-zinc-400 hover:text-emerald-600 hover:underline decoration-dashed underline-offset-2 px-2 py-1 -mr-2 rounded">
+                  <span class="italic text-xs">указать цену</span>
+                  <svg class="ico-sm" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Скидка/надбавка -->
+          <div class="border-t pt-3">
+            <div class="flex items-center justify-between mb-2">
+              <p class="lbl">Скидка / Надбавка</p>
+              <span class="text-xs muted">—</span>
+            </div>
+            <div class="flex rounded-md overflow-hidden border mb-1.5">
+              <button class="flex-1 h-7 bg-emerald-500 text-white text-xs font-medium">Скидка</button>
+              <button class="flex-1 h-7 bg-white text-zinc-500 text-xs font-medium">Надбавка</button>
+            </div>
+            <div class="grid grid-cols-4 gap-1">
+              <button class="h-7 rounded-md bg-emerald-500 text-white text-xs font-medium">0%</button>
+              <button class="h-7 rounded-md border text-xs hover:border-emerald-400">5%</button>
+              <button class="h-7 rounded-md border text-xs hover:border-emerald-400">10%</button>
+              <button class="h-7 rounded-md border text-xs hover:border-emerald-400">15%</button>
+            </div>
+          </div>
+
+          <!-- Оплата -->
+          <div class="border-t pt-3">
+            <p class="lbl mb-2">Оплата</p>
+            <div class="grid grid-cols-4 gap-1">
+              <button class="h-9 rounded-md border text-[11px] flex flex-col items-center justify-center gap-0.5 hover:border-emerald-400">
+                <svg class="ico-sm" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+                Нал
+              </button>
+              <button class="h-9 rounded-md border-2 border-emerald-500 bg-emerald-50 text-emerald-700 text-[11px] flex flex-col items-center justify-center gap-0.5">
+                <svg class="ico-sm" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                Карта
+              </button>
+              <button class="h-9 rounded-md border text-[11px] flex flex-col items-center justify-center gap-0.5 hover:border-emerald-400">
+                <svg class="ico-sm" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                Перевод
+              </button>
+              <button class="h-9 rounded-md border text-[11px] flex flex-col items-center justify-center gap-0.5 hover:border-emerald-400">
+                <svg class="ico-sm" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+                Другое
+              </button>
+            </div>
+          </div>
+
+          <!-- Заметка -->
+          <div class="border-t pt-3">
+            <p class="lbl mb-2">Заметка</p>
+            <textarea class="w-full h-14 border rounded-lg px-3 py-2 text-xs" placeholder="Пожелания клиента, аллергии..."></textarea>
+          </div>
+        </div>
+
+        <!-- БОЛЬШОЕ «К ОПЛАТЕ» приклеено снизу -->
+        <div class="px-5 py-4 bg-emerald-50 border-t-2 border-emerald-300">
+          <div class="flex items-baseline justify-between mb-1">
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">К оплате</span>
+            <span class="text-xs muted">введите ↓</span>
+          </div>
+          <div class="relative">
+            <input class="w-full h-14 border-2 border-emerald-400 rounded-lg px-3 text-3xl font-bold pr-12 bg-white focus:border-emerald-600 outline-none" placeholder="0">
+            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-lg text-emerald-700 font-medium">₽</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-emerald-800 mt-3 px-1 leading-relaxed">
+        ✅ <b>Одна цена</b> — большая «К оплате» внизу.<br>
+        ✅ Услуга без цены = ссылка «указать цену» (не пугающий «0»).<br>
+        ✅ Дата + клиент + время — компактная шапка.<br>
+        ✅ Способ оплаты — иконки квадратами, видно выбранный.
+      </p>
+    </div>
+
+    <!-- ════════════ ВАРИАНТ B — «Минимал» ════════════ -->
+    <div class="col">
+      <div class="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-2">Вариант B · «Минимал»</div>
+      <div class="rounded-xl bg-white border border-blue-300 overflow-hidden shadow-sm">
+        <!-- БОЛЬШОЕ ИТОГО СВЕРХУ (как чек у врача) -->
+        <div class="px-5 pt-5 pb-4 bg-gradient-to-b from-blue-50 to-white border-b">
+          <p class="text-xs font-bold uppercase tracking-wider text-blue-600 mb-1.5">Итог</p>
+          <div class="flex items-baseline gap-2">
+            <input class="w-32 h-12 border-b-2 border-blue-400 text-3xl font-bold bg-transparent outline-none focus:border-blue-600" placeholder="0">
+            <span class="text-xl text-blue-600 font-medium">₽</span>
+            <span class="ml-auto text-[11px] muted self-end mb-1">авто из услуг<br>или вручную</span>
+          </div>
+        </div>
+
+        <div class="p-5 space-y-4 text-sm">
+          <!-- 1. Клиент -->
+          <div class="flex items-center gap-2">
+            <div class="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold text-sm">К</div>
+            <div class="min-w-0 flex-1">
+              <div class="font-medium text-sm">клиент 3</div>
+              <div class="text-xs muted">+998 90 123-45-67</div>
+            </div>
+          </div>
+
+          <!-- 2. Когда -->
+          <div class="border-t pt-3 flex items-start gap-2">
+            <svg class="ico text-blue-500 mt-0.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <div>
+              <div class="font-medium">пн, 27 апреля</div>
+              <div class="text-xs muted">13:30 → 14:30 · 1 ч</div>
+            </div>
+          </div>
+
+          <!-- 3. Что -->
+          <div class="border-t pt-3 flex items-start gap-2">
+            <svg class="ico text-blue-500 mt-0.5" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <div class="flex-1">
+              <div>Антицеллюлитный массаж</div>
+              <div class="text-xs muted">1 ч · цена услуги не задана</div>
+            </div>
+          </div>
+
+          <!-- 4. Скидка / Надбавка — компактно одной строкой -->
+          <div class="border-t pt-3">
+            <div class="flex items-center gap-1.5 mb-2">
+              <p class="lbl flex-1">Скидка</p>
+              <button class="text-[10px] muted hover:text-blue-600">+ надбавка</button>
+            </div>
+            <div class="flex gap-1">
+              <button class="flex-1 h-7 rounded-md bg-blue-500 text-white text-xs font-medium">—</button>
+              <button class="flex-1 h-7 rounded-md border text-xs hover:border-blue-400">5%</button>
+              <button class="flex-1 h-7 rounded-md border text-xs hover:border-blue-400">10%</button>
+              <button class="flex-1 h-7 rounded-md border text-xs hover:border-blue-400">15%</button>
+              <button class="flex-1 h-7 rounded-md border text-xs muted hover:border-blue-400">…</button>
+            </div>
+          </div>
+
+          <!-- 5. Оплата — пилюлями -->
+          <div class="border-t pt-3">
+            <p class="lbl mb-2">Оплата</p>
+            <div class="flex gap-1.5 flex-wrap">
+              <button class="h-7 px-3 rounded-full border-2 border-blue-500 bg-blue-50 text-blue-700 text-xs font-medium flex items-center gap-1">
+                <svg class="ico-sm" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                Карта
+              </button>
+              <button class="h-7 px-3 rounded-full border text-xs flex items-center gap-1 hover:border-blue-400">
+                <svg class="ico-sm" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+                Наличные
+              </button>
+              <button class="h-7 px-3 rounded-full border text-xs hover:border-blue-400">Перевод</button>
+              <button class="h-7 px-3 rounded-full border text-xs hover:border-blue-400">…</button>
+            </div>
+          </div>
+
+          <!-- 6. Заметка -->
+          <div class="border-t pt-3">
+            <p class="lbl mb-2">Заметка</p>
+            <textarea class="w-full h-14 border rounded-lg px-3 py-2 text-xs" placeholder="Пожелания клиента..."></textarea>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-blue-800 mt-3 px-1 leading-relaxed">
+        ✅ <b>Один большой инпут «Итог»</b> — сверху, главный акцент.<br>
+        ✅ «Цена услуги не задана» текстом, без пугающего «0».<br>
+        ✅ Скидка одной строкой, надбавка скрыта за «+» (редкое).<br>
+        ✅ Оплата — пилюли (быстрее визуально).
+      </p>
+    </div>
+
+  </div>
+
+  <!-- РЕКОМЕНДАЦИЯ -->
+  <div class="max-w-3xl mx-auto mt-10 p-5 rounded-xl bg-amber-50 border border-amber-200">
+    <h2 class="font-bold text-amber-900 mb-2">Что предлагаю</h2>
+    <ul class="text-sm text-amber-900 space-y-1.5 list-disc pl-5">
+      <li><b>Убрать «0»</b> у услуги, если цена не задана — или текст «указать цену», или вовсе ничего.</li>
+      <li><b>Оставить только одно поле цены</b> — большое «К оплате»/«Итог», а ввод и итог совмещены в одном инпуте.</li>
+      <li><b>Сократить блок «Скидка/Надбавка»</b> — переключатель режимов лишний для базового кейса (надбавки редки).</li>
+      <li><b>Дата + время</b> — выводим в шапку рядом с клиентом, а не прячем под услугой.</li>
+      <li><b>Скидка применяется live</b>: ввёл цену → процент перечеркнул её и показал итог. Сейчас именно так и работает, просто визуально неочевидно.</li>
+    </ul>
+    <p class="text-sm text-amber-900 mt-3">Я склоняюсь к <b>варианту A («Чек»)</b> — он максимально приближен к мысленной модели «закрываю кассу». Но финальный выбор за тобой — напиши, какой ближе, или какие элементы из A и B хочется смешать. После этого реализую в <code>AppointmentDialog.tsx</code> (правая панель десктопа + мобайл).</p>
+  </div>
+
+</div>
+</body>
+</html>

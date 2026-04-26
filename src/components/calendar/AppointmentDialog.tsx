@@ -279,6 +279,7 @@ export function AppointmentDialog({
   // ── Финансы ───────────────────────────────────────────────────────────────
   // Ref: ключ услуг при открытии редактирования — чтобы пропустить только инит, а не реальные смены
   const editInitSvcKeyRef = useRef('')
+  const priceInputRef = useRef<HTMLInputElement>(null)
   const [priceInput, setPriceInput]         = useState('')
   const [discount, setDiscount]             = useState(0)
   const [customDiscount, setCustomDiscount] = useState('')
@@ -2029,217 +2030,246 @@ export function AppointmentDialog({
                     </div>
                   </div>
 
-                  {/* ── ПРАВАЯ ПАНЕЛЬ: СВОДКА (320px) ── */}
+                  {/* ── ПРАВАЯ ПАНЕЛЬ: «ЧЕК» ── */}
                   <div className="w-[340px] flex flex-col overflow-hidden p-3 pl-0">
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 rounded-xl border bg-background">
+                    <div className="flex-1 flex flex-col overflow-hidden rounded-xl border bg-background">
 
-                      {/* Сводка */}
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                          {t('appointments.summary') || 'Сводка'}
-                        </p>
-
-                        {(selectedClient || (isGuest && guestName)) && (
-                          <div className="flex items-center gap-2.5 mb-3 pb-3 border-b">
-                            <div className="h-8 w-8 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0 text-[11px] font-semibold">
+                      {/* ── ШАПКА ЧЕКА: клиент + дата/время ── */}
+                      <div className="shrink-0 px-4 py-3 border-b bg-muted/40">
+                        {(selectedClient || (isGuest && guestName)) ? (
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <div className="h-7 w-7 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0 text-[11px] font-semibold">
                               {(selectedClient?.first_name || guestName || '?').charAt(0).toUpperCase()}
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate leading-tight">{clientLabel}</p>
-                              {(selectedClient?.phone || guestPhone) && (
-                                <p className="text-[11px] text-muted-foreground truncate leading-tight">
-                                  {selectedClient?.phone || guestPhone}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {selectedSvcs.length > 0 ? (
-                          <div className="space-y-2 mb-3">
-                            {selectedSvcs.map((svc, i) => (
-                              <div key={svc.id} className="flex items-start gap-2 text-sm">
-                                <div className="flex-1 min-w-0">
-                                  <p className="truncate leading-tight">{svc.name}</p>
-                                  {i === 0 && selectedDate && selectedTime && (
-                                    <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-                                      {dayjs(selectedDate).format('D MMM')}, {selectedTime}
-                                      {totalDuration > 0 && ` — ${minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)}`}
-                                    </p>
-                                  )}
-                                </div>
-                                <span className="shrink-0 text-sm font-medium">
-                                  {formatCurrency(svc.price || 0, currency, i18n.language)}
-                                </span>
-                              </div>
-                            ))}
+                            <p className="text-sm font-semibold truncate flex-1 min-w-0 leading-tight">{clientLabel}</p>
+                            {(selectedClient?.phone || guestPhone) && (
+                              <span className="text-[11px] text-muted-foreground truncate shrink-0 max-w-[140px]">
+                                {selectedClient?.phone || guestPhone}
+                              </span>
+                            )}
                           </div>
                         ) : (
-                          <p className="text-xs text-muted-foreground italic mb-3">{t('appointments.noServicesYet') || 'Услуги не выбраны'}</p>
+                          <p className="text-sm text-muted-foreground/40 italic mb-1.5">{t('appointments.guestClient')}</p>
                         )}
 
-                        {effectiveDiscount > 0 && basePrice > 0 && (
-                          <div className="flex items-center justify-between text-sm mb-1">
-                            <span className="text-muted-foreground">{t('appointments.discount')} {effectiveDiscount}%</span>
-                            <span className="text-emerald-600 font-medium">
-                              −{formatCurrency(Math.round(basePrice * effectiveDiscount / 100), currency, i18n.language)}
+                        {selectedDate && selectedTime ? (
+                          <div className="flex items-center gap-1.5 text-xs flex-wrap">
+                            <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+                            <span className="font-medium text-foreground/80">{dayjs(selectedDate).format('dd, D MMM')}</span>
+                            <span className="text-muted-foreground/40">·</span>
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+                            <span className="font-medium text-foreground/80">
+                              {selectedTime}
+                              {totalDuration > 0 && (
+                                <span className="text-muted-foreground/70"> → {minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)}</span>
+                              )}
+                            </span>
+                            {totalDuration > 0 && (
+                              <span className="text-muted-foreground/60">· {formatDuration(totalDuration, t)}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground/40 italic">{selectedDate ? dayjs(selectedDate).format('dd, D MMM') : t('appointments.time') + '…'}</p>
+                        )}
+                      </div>
+
+                      {/* ── СКРОЛЛИРУЕМАЯ СЕРЕДИНА ── */}
+                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+
+                        {/* Услуги */}
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                            {t('appointments.service')}
+                            {selectedSvcs.length > 0 && (
+                              <span className="bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">{selectedSvcs.length}</span>
+                            )}
+                          </p>
+                          {selectedSvcs.length > 0 ? (
+                            <div className="space-y-2">
+                              {selectedSvcs.map(svc => (
+                                <div key={svc.id} className="flex items-start gap-2 text-sm">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="leading-snug">{svc.name}</p>
+                                    <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                                      {formatDuration(svc.duration_min, t)}
+                                    </p>
+                                  </div>
+                                  {svc.price > 0 ? (
+                                    <span className="shrink-0 text-sm font-medium">
+                                      {formatCurrency(svc.price, currency, i18n.language)}
+                                    </span>
+                                  ) : (
+                                    <button type="button"
+                                      onClick={() => priceInputRef.current?.focus()}
+                                      className="shrink-0 text-[11px] italic text-muted-foreground hover:text-primary underline decoration-dashed underline-offset-2 transition-colors">
+                                      {t('appointments.specifyPrice')}
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground italic">{t('appointments.noServicesYet') || 'Услуги не выбраны'}</p>
+                          )}
+                        </div>
+
+                        {/* Скидка / Надбавка */}
+                        <div className="space-y-2 pt-3 border-t">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                              {t('appointments.addDiscount')}
+                            </p>
+                            <span className={`text-xs font-semibold ${effectiveSurcharge > 0 ? 'text-orange-500' : effectiveDiscount > 0 ? 'text-emerald-600' : 'text-muted-foreground/40'}`}>
+                              {effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : effectiveDiscount > 0 ? `−${effectiveDiscount}%` : '—'}
                             </span>
                           </div>
-                        )}
-                        {effectiveSurcharge > 0 && basePrice > 0 && (
-                          <div className="flex items-center justify-between text-sm mb-1">
-                            <span className="text-muted-foreground">{t('appointments.surcharge')} {effectiveSurcharge}%</span>
-                            <span className="text-orange-500 font-medium">
-                              +{formatCurrency(Math.round(basePrice * effectiveSurcharge / 100), currency, i18n.language)}
-                            </span>
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between pt-2 border-t">
-                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                            {t('appointments.total')}
-                          </span>
-                          <span className="text-xl font-bold">
-                            {formatCurrency(basePrice > 0 ? finalPrice : totalBasePrice, currency, i18n.language)}
-                          </span>
-                        </div>
-
-                        <div className="mt-2">
-                          <div className="relative">
-                            <Input type="number" min={0}
-                              className="h-9 w-full text-sm pr-10"
-                              placeholder={totalBasePrice > 0 ? `${t('appointments.overridePrice') || 'Своя цена'}: ${totalBasePrice}` : t('appointments.pricePlaceholder')}
-                              value={priceInput} onChange={e => setPriceInput(e.target.value)} />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Скидка / Наценка */}
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                          {t('appointments.addDiscount')}
-                        </p>
-                        <div className="flex rounded-lg border overflow-hidden">
-                          <button type="button" onClick={() => handleModeSwitch('discount')}
-                            className={`flex-1 h-8 text-xs font-medium transition-all border-r ${adjustMode === 'discount' ? 'bg-emerald-500 text-white' : 'bg-background text-muted-foreground hover:text-emerald-600'}`}>
-                            {t('appointments.discount')}
-                          </button>
-                          <button type="button" onClick={() => handleModeSwitch('surcharge')}
-                            className={`flex-1 h-8 text-xs font-medium transition-all ${adjustMode === 'surcharge' ? 'bg-orange-500 text-white' : 'bg-background text-muted-foreground hover:text-orange-500'}`}>
-                            {t('appointments.surcharge')}
-                          </button>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {PRESETS.map(p => (
-                            <button key={p} type="button" onClick={() => handlePresetClick(p)}
-                              className={`h-8 rounded-lg border text-xs font-medium transition-all flex-1 ${
-                                activePreset === p
-                                  ? adjustMode === 'discount'
-                                    ? 'bg-emerald-500 border-emerald-500 text-white'
-                                    : 'bg-orange-500 border-orange-500 text-white'
-                                  : adjustMode === 'discount'
-                                    ? 'border-border hover:border-emerald-400 hover:text-emerald-600'
-                                    : 'border-border hover:border-orange-400 hover:text-orange-500'
-                              }`}>
-                              {p}%
+                          <div className="flex rounded-lg border overflow-hidden">
+                            <button type="button" onClick={() => handleModeSwitch('discount')}
+                              className={`flex-1 h-7 text-xs font-medium transition-all border-r ${adjustMode === 'discount' ? 'bg-emerald-500 text-white' : 'bg-background text-muted-foreground hover:text-emerald-600'}`}>
+                              {t('appointments.discount')}
                             </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Способ оплаты */}
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                          {t('appointments.paymentMethod')}
-                        </p>
-                        <div className="grid grid-cols-2 gap-1">
-                          {([
-                            { key: 'cash',     label: t('appointments.paymentCash'),     Icon: Banknote },
-                            { key: 'card',     label: t('appointments.paymentCard'),     Icon: CreditCard },
-                            { key: 'transfer', label: t('appointments.paymentTransfer'), Icon: ArrowRightLeft },
-                            { key: 'other',    label: t('appointments.paymentOther'),    Icon: MoreHorizontal },
-                          ] as const).map(m => (
-                            <button key={m.key} type="button"
-                              onClick={() => setPaymentMethod(paymentMethod === m.key ? '' : m.key)}
-                              className={`flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-colors ${paymentMethod === m.key ? 'bg-foreground text-background' : 'bg-muted/40 text-muted-foreground hover:bg-muted'}`}>
-                              <m.Icon className="h-3.5 w-3.5 shrink-0" />
-                              {m.label}
+                            <button type="button" onClick={() => handleModeSwitch('surcharge')}
+                              className={`flex-1 h-7 text-xs font-medium transition-all ${adjustMode === 'surcharge' ? 'bg-orange-500 text-white' : 'bg-background text-muted-foreground hover:text-orange-500'}`}>
+                              {t('appointments.surcharge')}
                             </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Заметки */}
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-                          {t('appointments.tabNote')}
-                        </p>
-                        <Textarea rows={2} className="text-sm resize-none min-h-0"
-                          placeholder={t('booking.commentPlaceholder')}
-                          value={notes} onChange={e => setNotes(e.target.value)} />
-                      </div>
-
-                      {/* TG уведомление */}
-                      {!editAppt && hasTelegram && (
-                        <div className="flex items-center justify-between pt-1 border-t">
-                          <p className="text-xs">{t('appointments.notifyTelegram')}</p>
-                          <Switch checked={notifyTg} onCheckedChange={setNotifyTg} />
-                        </div>
-                      )}
-                      {/* Повтор (недели) */}
-                      {!editAppt && showRecurring && recurring && (
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-muted-foreground shrink-0">{t('appointments.recurringWeeks')}</p>
-                          <Input type="number" min={2} max={52} className="w-20 h-7 text-xs"
-                            value={recurringWeeks} onChange={e => setRecurringWeeks(Number(e.target.value))} />
-                        </div>
-                      )}
-
-                      {/* Статус (только редактирование) */}
-                      {editAppt && (
-                        <div className="space-y-2 pt-2 border-t">
-                          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('appointments.statusLabel')}</p>
-                          <div className="grid grid-cols-2 gap-1">
-                            {([
-                              { value: 'scheduled', label: t('appointments.status.scheduled'), color: 'text-blue-500 border-blue-500/40 bg-blue-500/10' },
-                              { value: 'done',      label: t('appointments.status.done'),      color: 'text-emerald-500 border-emerald-500/40 bg-emerald-500/10' },
-                              { value: 'cancelled', label: t('appointments.status.cancelled'), color: 'text-red-500 border-red-500/40 bg-red-500/10' },
-                              { value: 'no_show',   label: t('appointments.status.no_show'),   color: 'text-amber-500 border-amber-500/40 bg-amber-500/10' },
-                            ] as const).map(opt => (
-                              <button key={opt.value} type="button"
-                                onClick={() => setStatus(opt.value)}
-                                className={`px-2 py-1.5 rounded-lg border text-xs font-medium transition-all text-left ${
-                                  status === opt.value ? opt.color : 'border-border text-muted-foreground hover:bg-muted/60'
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {PRESETS.map(p => (
+                              <button key={p} type="button" onClick={() => handlePresetClick(p)}
+                                className={`h-7 rounded-lg border text-xs font-medium transition-all flex-1 ${
+                                  activePreset === p
+                                    ? adjustMode === 'discount'
+                                      ? 'bg-emerald-500 border-emerald-500 text-white'
+                                      : 'bg-orange-500 border-orange-500 text-white'
+                                    : adjustMode === 'discount'
+                                      ? 'border-border hover:border-emerald-400 hover:text-emerald-600'
+                                      : 'border-border hover:border-orange-400 hover:text-orange-500'
                                 }`}>
-                                {opt.label}
+                                {p}%
                               </button>
                             ))}
                           </div>
                         </div>
-                      )}
 
-                      {/* Баннер онлайн-подтверждения */}
-                      {editAppt?.booked_via === 'online' && !editAppt.confirmed_at && editAppt.status === 'scheduled' && !isConfirmedLocally && (
-                        <div className="p-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 flex items-start gap-2.5">
-                          <Clock className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-amber-700 dark:text-amber-300">Ожидает подтверждения</p>
-                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Онлайн-запись от клиента</p>
+                        {/* Способ оплаты */}
+                        <div className="pt-3 border-t">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
+                            {t('appointments.paymentMethod')}
+                          </p>
+                          <div className="grid grid-cols-4 gap-1">
+                            {([
+                              { key: 'cash',     label: t('appointments.paymentCash'),     Icon: Banknote },
+                              { key: 'card',     label: t('appointments.paymentCard'),     Icon: CreditCard },
+                              { key: 'transfer', label: t('appointments.paymentTransfer'), Icon: ArrowRightLeft },
+                              { key: 'other',    label: t('appointments.paymentOther'),    Icon: MoreHorizontal },
+                            ] as const).map(m => (
+                              <button key={m.key} type="button"
+                                onClick={() => setPaymentMethod(paymentMethod === m.key ? '' : m.key)}
+                                className={`flex flex-col items-center justify-center gap-1 py-2 rounded-lg border-2 text-[10px] font-medium leading-tight transition-colors ${paymentMethod === m.key ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-muted/40'}`}>
+                                <m.Icon className="h-4 w-4 shrink-0" />
+                                {m.label}
+                              </button>
+                            ))}
                           </div>
-                          <Button type="button" size="sm"
-                            className="shrink-0 h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white"
-                            onClick={async () => {
-                              await confirm.mutateAsync(editAppt.id)
-                              setIsConfirmedLocally(true)
-                              toast.success('Запись подтверждена')
-                            }}
-                            disabled={confirm.isPending}>
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Подтвердить
-                          </Button>
                         </div>
-                      )}
+
+                        {/* Заметка */}
+                        <div className="pt-3 border-t">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                            {t('appointments.tabNote')}
+                          </p>
+                          <Textarea rows={2} className="text-sm resize-none min-h-0"
+                            placeholder={t('booking.commentPlaceholder')}
+                            value={notes} onChange={e => setNotes(e.target.value)} />
+                        </div>
+
+                        {/* TG уведомление */}
+                        {!editAppt && hasTelegram && (
+                          <div className="flex items-center justify-between pt-3 border-t">
+                            <p className="text-xs">{t('appointments.notifyTelegram')}</p>
+                            <Switch checked={notifyTg} onCheckedChange={setNotifyTg} />
+                          </div>
+                        )}
+                        {/* Повтор (недели) */}
+                        {!editAppt && showRecurring && recurring && (
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-muted-foreground shrink-0">{t('appointments.recurringWeeks')}</p>
+                            <Input type="number" min={2} max={52} className="w-20 h-7 text-xs"
+                              value={recurringWeeks} onChange={e => setRecurringWeeks(Number(e.target.value))} />
+                          </div>
+                        )}
+
+                        {/* Статус (только редактирование) */}
+                        {editAppt && (
+                          <div className="space-y-2 pt-3 border-t">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('appointments.statusLabel')}</p>
+                            <div className="grid grid-cols-2 gap-1">
+                              {([
+                                { value: 'scheduled', label: t('appointments.status.scheduled'), color: 'text-blue-500 border-blue-500/40 bg-blue-500/10' },
+                                { value: 'done',      label: t('appointments.status.done'),      color: 'text-emerald-500 border-emerald-500/40 bg-emerald-500/10' },
+                                { value: 'cancelled', label: t('appointments.status.cancelled'), color: 'text-red-500 border-red-500/40 bg-red-500/10' },
+                                { value: 'no_show',   label: t('appointments.status.no_show'),   color: 'text-amber-500 border-amber-500/40 bg-amber-500/10' },
+                              ] as const).map(opt => (
+                                <button key={opt.value} type="button"
+                                  onClick={() => setStatus(opt.value)}
+                                  className={`px-2 py-1.5 rounded-lg border text-xs font-medium transition-all text-left ${
+                                    status === opt.value ? opt.color : 'border-border text-muted-foreground hover:bg-muted/60'
+                                  }`}>
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Баннер онлайн-подтверждения */}
+                        {editAppt?.booked_via === 'online' && !editAppt.confirmed_at && editAppt.status === 'scheduled' && !isConfirmedLocally && (
+                          <div className="p-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 flex items-start gap-2.5">
+                            <Clock className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-amber-700 dark:text-amber-300">Ожидает подтверждения</p>
+                              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Онлайн-запись от клиента</p>
+                            </div>
+                            <Button type="button" size="sm"
+                              className="shrink-0 h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white"
+                              onClick={async () => {
+                                await confirm.mutateAsync(editAppt.id)
+                                setIsConfirmedLocally(true)
+                                toast.success('Запись подтверждена')
+                              }}
+                              disabled={confirm.isPending}>
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Подтвердить
+                            </Button>
+                          </div>
+                        )}
+
+                      </div>
+
+                      {/* ── НИЖНЯЯ ПЛАШКА: К ОПЛАТЕ ── */}
+                      <div className="shrink-0 px-4 py-3 border-t-2 border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-950/30">
+                        <div className="flex items-baseline justify-between mb-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                            {t('appointments.total')}
+                          </span>
+                          {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
+                            <span className="text-[11px] flex items-baseline gap-1">
+                              <span className="text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
+                              <span className="text-muted-foreground/60">→</span>
+                              <span className={`font-semibold ${effectiveSurcharge > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                                {formatCurrency(finalPrice, currency, i18n.language)}
+                              </span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="relative">
+                          <Input ref={priceInputRef} type="number" min={0}
+                            className="h-12 w-full pr-12 text-2xl font-bold border-2 border-emerald-400/70 dark:border-emerald-700/60 focus-visible:border-emerald-600 dark:focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20 bg-white dark:bg-background placeholder:text-emerald-700/35 dark:placeholder:text-emerald-300/30"
+                            placeholder={totalBasePrice > 0 ? String(totalBasePrice) : '0'}
+                            value={priceInput} onChange={e => setPriceInput(e.target.value)} />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-base text-emerald-700 dark:text-emerald-400 font-semibold pointer-events-none select-none">{currencySymbol}</span>
+                        </div>
+                      </div>
 
                     </div>
                   </div>

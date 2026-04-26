@@ -532,6 +532,7 @@
     "total": "Жиыны",
     "selectSvcForAccuracy": "дәл есептеу үшін қызметті таңдаңыз",
     "pricePlaceholder": "Бағаны енгізіңіз",
+    "specifyPrice": "бағаны көрсету",
     "slotReasonBreak": "Шебердің үзілісі",
     "slotReasonAppointment": "Уақыт жеткіліксіз ({{dur}} қажет)",
     "slotReasonOutOfBounds": "Жұмыс күні аяқталғанша сыймайды ({{dur}} қажет)",

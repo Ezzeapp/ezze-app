@@ -555,6 +555,7 @@
     "total": "Total",
     "selectSvcForAccuracy": "select service for accurate slots",
     "pricePlaceholder": "Enter price",
+    "specifyPrice": "set price",
     "slotReasonBreak": "Master's break",
     "slotReasonAppointment": "Not enough time (need {{dur}})",
     "slotReasonOutOfBounds": "Doesn't fit before end of working day (need {{dur}})",

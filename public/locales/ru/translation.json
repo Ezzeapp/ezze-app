@@ -558,6 +558,7 @@
     "selectSvcForAccuracy": "выберите услугу для точного расчёта",
     "selectTimeFirst": "Сначала выберите время",
     "pricePlaceholder": "Введите цену",
+    "specifyPrice": "указать цену",
     "slotReasonBreak": "Перерыв мастера",
     "slotReasonAppointment": "Недостаточно времени (нужно {{dur}})",
     "slotReasonOutOfBounds": "Не вмещается до конца рабочего дня (нужно {{dur}})",

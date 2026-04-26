@@ -534,6 +534,7 @@
     "total": "Jami",
     "selectSvcForAccuracy": "aniq hisob uchun xizmatni tanlang",
     "pricePlaceholder": "Narxni kiriting",
+    "specifyPrice": "narxni belgilash",
     "slotReasonBreak": "Usta tanaffusi",
     "slotReasonAppointment": "Vaqt yetarli emas ({{dur}} kerak)",
     "slotReasonOutOfBounds": "Ish kuni oxirigacha sig'maydi ({{dur}} kerak)",
