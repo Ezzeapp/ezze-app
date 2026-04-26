@@ -1661,8 +1661,9 @@ function QuickAddClientDialog({ initialName, onCreated, onClose }: {
       } as any)
       toast.success('Клиент создан')
       onCreated(created as any)
-    } catch {
-      toast.error('Ошибка создания клиента')
+    } catch (e: any) {
+      console.error('Create client error:', e)
+      toast.error(e?.message || 'Ошибка создания клиента')
     }
   }
 

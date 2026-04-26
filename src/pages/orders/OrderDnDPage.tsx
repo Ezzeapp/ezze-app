@@ -138,6 +138,9 @@ export function OrderDnDPage() {
   })
   const [dragging, setDragging] = useState<string | null>(null)
   const [dropHot, setDropHot] = useState<ZoneId | null>(null)
+  // Активная зона для click-to-add (по умолчанию обычная)
+  const [activeZone, setActiveZone] = useState<ZoneId>('normal')
+  const [flashType, setFlashType] = useState<string | null>(null)
   // Диалог размеров ковра при дропе
   const [carpetDialog, setCarpetDialog] = useState<{ type: CleaningItemType; zoneId: ZoneId } | null>(null)
   // Модалка деталей по клику на позицию
@@ -480,13 +483,21 @@ export function OrderDnDPage() {
                   draggable
                   onDragStart={() => setDragging(t.id)}
                   onDragEnd={() => { setDragging(null); setDropHot(null) }}
+                  onClick={() => {
+                    dropTo(activeZone, t.id)
+                    setFlashType(t.id)
+                    setTimeout(() => setFlashType(f => f === t.id ? null : f), 400)
+                  }}
                   className={cn(
-                    'p-3 rounded-xl border-[1.5px] cursor-grab active:cursor-grabbing transition-all bg-background',
+                    'p-3 rounded-xl border-[1.5px] transition-all bg-background cursor-pointer hover:cursor-grab active:cursor-grabbing',
                     dragging === t.id
                       ? 'border-primary opacity-70 scale-[0.98] shadow-lg'
-                      : 'border-border hover:border-primary/40 hover:shadow-sm'
+                      : flashType === t.id
+                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 scale-[0.97]'
+                        : 'border-border hover:border-primary/40 hover:shadow-sm'
                   )}
                   style={dragging === t.id ? { boxShadow: '0 10px 24px -10px rgba(37,99,235,.5)' } : undefined}
+                  title={`Клик: добавить в «${activeZone === 'normal' ? 'Обычную' : activeZone === 'urgent' ? 'Срочный' : 'С доставкой'}» · Drag: в любую`}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
@@ -619,6 +630,8 @@ export function OrderDnDPage() {
               onBumpQty={(key, d) => bumpQty('normal', key, d)}
               onRemove={(key) => removeLine('normal', key)}
               onEdit={(key) => setEditing({ zoneId: 'normal', key })}
+              isActive={activeZone === 'normal'}
+              onActivate={() => setActiveZone('normal')}
               orderType={orderType}
               lineSum={lineSum}
             />
@@ -638,6 +651,8 @@ export function OrderDnDPage() {
               onBumpQty={(key, d) => bumpQty('urgent', key, d)}
               onRemove={(key) => removeLine('urgent', key)}
               onEdit={(key) => setEditing({ zoneId: 'urgent', key })}
+              isActive={activeZone === 'urgent'}
+              onActivate={() => setActiveZone('urgent')}
               orderType={orderType}
               lineSum={lineSum}
             />
@@ -657,6 +672,8 @@ export function OrderDnDPage() {
               onBumpQty={(key, d) => bumpQty('delivery', key, d)}
               onRemove={(key) => removeLine('delivery', key)}
               onEdit={(key) => setEditing({ zoneId: 'delivery', key })}
+              isActive={activeZone === 'delivery'}
+              onActivate={() => setActiveZone('delivery')}
               orderType={orderType}
               lineSum={lineSum}
             />
@@ -844,6 +861,7 @@ export function OrderDnDPage() {
 function DropZone({
   label, note, icon: Icon, accentClass, borderActive,
   lines, symbol, dropHot, orderType, lineSum,
+  isActive, onActivate,
   onDragOver, onDragLeave, onDrop, onBumpQty, onRemove, onEdit,
 }: {
   id: ZoneId
@@ -858,6 +876,8 @@ function DropZone({
   dropHot: boolean
   orderType: OrderType
   lineSum: (l: CartLine) => number
+  isActive: boolean
+  onActivate: () => void
   onDragOver: (e: React.DragEvent) => void
   onDragLeave: () => void
   onDrop: () => void
@@ -872,24 +892,41 @@ function DropZone({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       className={cn(
-        'rounded-2xl border-2 border-dashed p-3 flex flex-col bg-background transition-all min-h-[140px]',
-        dropHot ? `${borderActive} bg-muted/30 scale-[1.01]` : 'border-border'
+        'rounded-2xl border-2 p-3 flex flex-col bg-background transition-all min-h-[140px]',
+        dropHot
+          ? `border-dashed ${borderActive} bg-muted/30 scale-[1.01]`
+          : isActive
+            ? `${borderActive} shadow-md`
+            : 'border-dashed border-border'
       )}
     >
-      <div className="flex items-center gap-2 pb-2 border-b">
+      <button
+        onClick={onActivate}
+        className="flex items-center gap-2 pb-2 border-b w-full text-left hover:bg-muted/40 -mx-1 -mt-1 px-1 pt-1 rounded transition-colors"
+        title={isActive ? 'Активна — клик по услуге добавит сюда' : 'Сделать активной для click-to-add'}
+      >
         <div className={cn('h-7 w-7 rounded-lg grid place-items-center', accentClass)}>
           <Icon className="h-3.5 w-3.5" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-bold leading-none">{label}</div>
+          <div className="text-[13px] font-bold leading-none flex items-center gap-1.5">
+            {label}
+            {isActive && (
+              <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-primary/15 text-primary">
+                ● Активна
+              </span>
+            )}
+          </div>
           <div className="text-[10.5px] text-muted-foreground leading-none mt-1">{note}</div>
         </div>
         <div className="font-mono text-xs font-bold">{formatCurrency(total)} {symbol}</div>
-      </div>
+      </button>
 
       {lines.length === 0 ? (
         <div className="flex-1 grid place-items-center text-[11px] text-muted-foreground italic text-center py-3">
-          Перетащите сюда позиции<br />из каталога →
+          {isActive
+            ? <>Кликните по услуге слева<br />или перетащите сюда</>
+            : <>Перетащите сюда позиции<br />из каталога →</>}
         </div>
       ) : (
         <div className="flex flex-col gap-1.5 mt-2 overflow-y-auto">
@@ -977,8 +1014,9 @@ function QuickAddClientDialog({ initialName, onCreated, onClose }: {
       } as any)
       toast.success('Клиент создан')
       onCreated(created as any)
-    } catch {
-      toast.error('Ошибка создания клиента')
+    } catch (e: any) {
+      console.error('Create client error:', e)
+      toast.error(e?.message || 'Ошибка создания клиента')
     }
   }
 
