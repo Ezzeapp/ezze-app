@@ -212,7 +212,8 @@ export function OrderDnDPage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#eef1f7] dark:bg-background overflow-hidden">
+    <div className="h-full w-full bg-muted/30 overflow-auto grid place-items-center p-4">
+    <div className="w-[1440px] h-[860px] max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] flex flex-col bg-[#eef1f7] dark:bg-background rounded-xl border shadow-lg overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 py-3 bg-background border-b shrink-0">
         <Button variant="ghost" size="icon" onClick={() => navigate('/orders')} className="h-9 w-9">
@@ -571,6 +572,7 @@ export function OrderDnDPage() {
           }}
         />
       )}
+    </div>
     </div>
   )
 }
