@@ -191,6 +191,10 @@ export function AppointmentDialog({
 
   const [selectedSvcs, setSelectedSvcs] = useState<Service[]>([])
   const [svcBlockedWarning, setSvcBlockedWarning] = useState<string | null>(null)
+  const priceInputRef = useRef<HTMLInputElement>(null)
+  // Цена услуги, у которой в справочнике price=0 — задаётся прямо в строке справа.
+  // Сумма таких цен попадает в totalBasePrice, который автосинхронизируется в priceInput.
+  const [perSvcPrices, setPerSvcPrices] = useState<Record<string, string>>({})
 
   const toggleSvc = (svc: Service) => {
     setSvcBlockedWarning(null)
@@ -240,8 +244,11 @@ export function AppointmentDialog({
     [selectedSvcs]
   )
   const totalBasePrice = useMemo(
-    () => selectedSvcs.reduce((s, svc) => s + (svc.price || 0), 0),
-    [selectedSvcs]
+    () => selectedSvcs.reduce((s, svc) => {
+      if (svc.price > 0) return s + svc.price
+      return s + (parseFloat(perSvcPrices[svc.id] || '') || 0)
+    }, 0),
+    [selectedSvcs, perSvcPrices]
   )
 
   // ── Дата / слоты ──────────────────────────────────────────────────────────
@@ -279,7 +286,6 @@ export function AppointmentDialog({
   // ── Финансы ───────────────────────────────────────────────────────────────
   // Ref: ключ услуг при открытии редактирования — чтобы пропустить только инит, а не реальные смены
   const editInitSvcKeyRef = useRef('')
-  const priceInputRef = useRef<HTMLInputElement>(null)
   const [priceInput, setPriceInput]         = useState('')
   const [discount, setDiscount]             = useState(0)
   const [customDiscount, setCustomDiscount] = useState('')
@@ -367,6 +373,7 @@ export function AppointmentDialog({
       } else {
         setPriceInput('')
       }
+      setPerSvcPrices({})
       if (editAppt.client) {
         const c = clients.find(c => c.id === editAppt.client) || null
         setSelectedClient(c); setIsGuest(false)
@@ -425,7 +432,7 @@ export function AppointmentDialog({
       setSelectedTime(defaultTime || '')
       setWeekStart(dayjs(initDate).startOf('isoWeek'))
       setNotes(''); setStatus('scheduled')
-      setPriceInput(''); setDiscount(0); setCustomDiscount(''); setSurcharge(0); setCustomSurcharge(''); setAdjustMode('discount')
+      setPriceInput(''); setPerSvcPrices({}); setDiscount(0); setCustomDiscount(''); setSurcharge(0); setCustomSurcharge(''); setAdjustMode('discount')
       setPaymentMethod('')
       setSelectedClient(null); setIsGuest(true)
       setGuestName(''); setGuestPhone('')
@@ -2099,11 +2106,14 @@ export function AppointmentDialog({
                                       {formatCurrency(svc.price, currency, i18n.language)}
                                     </span>
                                   ) : (
-                                    <button type="button"
-                                      onClick={() => priceInputRef.current?.focus()}
-                                      className="shrink-0 text-[11px] italic text-muted-foreground hover:text-primary underline decoration-dashed underline-offset-2 transition-colors">
-                                      {t('appointments.specifyPrice')}
-                                    </button>
+                                    <div className="shrink-0 relative w-[96px]">
+                                      <Input type="number" min={0}
+                                        value={perSvcPrices[svc.id] || ''}
+                                        onChange={e => setPerSvcPrices(p => ({ ...p, [svc.id]: e.target.value }))}
+                                        placeholder={t('appointments.specifyPrice')}
+                                        className="h-7 text-xs pr-5 text-right placeholder:italic placeholder:text-[10px] placeholder:text-muted-foreground/60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                                      <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
+                                    </div>
                                   )}
                                   <button type="button"
                                     onClick={() => toggleSvc(svc)}
