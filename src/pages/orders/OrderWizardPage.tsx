@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, ArrowRight, Search, Plus, Minus, Check, X, Loader2,
   User, ShoppingBag, Tag, CreditCard, UserPlus,
-  Clock, Zap, Truck, Package,
+  Clock, Zap, Truck, Package, Camera, Printer, CheckCircle2,
 } from 'lucide-react'
+import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -39,6 +40,7 @@ interface CartLine {
   weight_kg: string
   notes: string
   ready_date: string
+  photos: string[]
 }
 
 const COLOR_PALETTE = [
@@ -56,6 +58,7 @@ function makeLine(t: CleaningItemType, readyDate: string): CartLine {
     color: '', size: 'M', defects: '', brand: '',
     width_m: '', length_m: '', weight_kg: '', notes: '',
     ready_date: readyDate,
+    photos: [],
   }
 }
 
@@ -158,6 +161,36 @@ export function OrderWizardPage() {
     if (focusedKey === key) setFocusedKey(null)
   }
 
+  // Загрузка фото
+  const [photoUploadingKey, setPhotoUploadingKey] = useState<number | null>(null)
+  async function uploadPhoto(key: number, file: File) {
+    setPhotoUploadingKey(key)
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+      const path = `${PRODUCT}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+      const { error } = await supabase.storage.from('cleaning-photos').upload(path, file, {
+        contentType: file.type, upsert: false,
+      })
+      if (error) throw error
+      const { data: { publicUrl } } = supabase.storage.from('cleaning-photos').getPublicUrl(path)
+      updateLine(key, { photos: [...(cart.find(l => l.key === key)?.photos ?? []), publicUrl] })
+    } catch {
+      toast.error('Ошибка загрузки фото')
+    } finally {
+      setPhotoUploadingKey(null)
+    }
+  }
+  function removePhoto(key: number, url: string) {
+    const line = cart.find(l => l.key === key)
+    if (!line) return
+    updateLine(key, { photos: line.photos.filter(p => p !== url) })
+  }
+
+  // Создание заказа → диалог Принят → печать
+  const [createdOrder, setCreatedOrder] = useState<{ id: string; number: string } | null>(null)
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
+  const [showReceipt, setShowReceipt] = useState(false)
+
   // Оплата
   const [urgency, setUrgency] = useState<'normal' | 'urgent' | 'pickup' | 'delivery'>('normal')
   const [payment, setPayment] = useState<string>('cash')
@@ -236,11 +269,42 @@ export function OrderWizardPage() {
             width_m: orderType === 'carpet' ? w : null,
             length_m: orderType === 'carpet' ? h : null,
             area_m2: orderType === 'carpet' && w && h ? w * h : null,
+            photos: l.photos.length > 0 ? l.photos : undefined,
           }
         })),
       })
-      toast.success('Заказ создан')
-      navigate(`/orders/${order.id}`)
+      const rData: ReceiptData = {
+        id: order.id,
+        number: order.number,
+        created_at: order.created_at,
+        order_type: orderType,
+        client: clientId ? {
+          first_name: clientName.split(' ')[0] ?? '',
+          last_name: clientName.split(' ').slice(1).join(' ') || null,
+          phone: clientPhone || null,
+        } : null,
+        items: cart.map(l => {
+          const w = parseFloat(l.width_m) || null
+          const h = parseFloat(l.length_m) || null
+          return {
+            item_type_name: l.type.name,
+            price: lineSum(l),
+            ready_date: l.ready_date || null,
+            color: l.color || null,
+            brand: l.brand || null,
+            defects: l.defects || null,
+            area_m2: orderType === 'carpet' && w && h ? w * h : null,
+            width_m: w,
+            length_m: h,
+          }
+        }),
+        total_amount: total,
+        prepaid_amount: prepayAmt,
+        notes: notes || null,
+      }
+      setReceiptData(rData)
+      setCreatedOrder({ id: order.id, number: order.number })
+      toast.success(`Заказ ${order.number} принят`)
     } catch (e: any) {
       toast.error(e.message || 'Ошибка создания заказа')
     }
@@ -366,7 +430,9 @@ export function OrderWizardPage() {
               removeLine={removeLine}
               orderType={orderType}
               symbol={symbol}
-              pricePerSqm={(focusedKey ? cart.find(l => l.key === focusedKey)?.type.default_price : 0) || 0}
+              uploadPhoto={uploadPhoto}
+              removePhoto={removePhoto}
+              photoUploadingKey={photoUploadingKey}
             />
           )}
 
@@ -560,7 +626,60 @@ export function OrderWizardPage() {
           }}
         />
       )}
+
+      {/* Заказ принят → диалог печати/перехода */}
+      {createdOrder && !showReceipt && (
+        <OrderCreatedDialog
+          orderNumber={createdOrder.number}
+          onPrint={() => setShowReceipt(true)}
+          onGoToOrder={() => navigate(`/orders/${createdOrder.id}`)}
+          onClose={() => navigate('/orders')}
+        />
+      )}
+      {showReceipt && receiptData && (
+        <ReceiptModal
+          data={receiptData}
+          onClose={() => { setShowReceipt(false); navigate(`/orders/${createdOrder?.id ?? ''}`) }}
+        />
+      )}
     </div>
+    </div>
+  )
+}
+
+// ── Диалог «Заказ принят» ───────────────────────────────────────────────────
+
+function OrderCreatedDialog({ orderNumber, onPrint, onGoToOrder, onClose }: {
+  orderNumber: string
+  onPrint: () => void
+  onGoToOrder: () => void
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 grid place-items-center p-4">
+      <div className="bg-background rounded-2xl shadow-2xl p-6 w-full max-w-xs space-y-4 text-center">
+        <div className="flex justify-center">
+          <div className="h-14 w-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 grid place-items-center">
+            <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+          </div>
+        </div>
+        <div>
+          <h3 className="font-bold text-lg">Заказ принят!</h3>
+          <p className="text-muted-foreground text-sm mt-1">№ {orderNumber}</p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Button onClick={onPrint} className="w-full">
+            <Printer className="h-4 w-4 mr-1.5" />
+            Печать квитанции
+          </Button>
+          <Button variant="outline" onClick={onGoToOrder} className="w-full">
+            Открыть заказ
+          </Button>
+          <Button variant="ghost" onClick={onClose} className="w-full">
+            К списку заказов
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -804,6 +923,7 @@ function Step2Items({
 function Step3Details({
   cart, focusedKey, setFocusedKey, updateLine, removeLine,
   orderType, symbol,
+  uploadPhoto, removePhoto, photoUploadingKey,
 }: {
   cart: CartLine[]
   focusedKey: number | null
@@ -812,7 +932,9 @@ function Step3Details({
   removeLine: (key: number) => void
   orderType: OrderType
   symbol: string
-  pricePerSqm: number
+  uploadPhoto: (key: number, file: File) => Promise<void>
+  removePhoto: (key: number, url: string) => void
+  photoUploadingKey: number | null
 }) {
   const focused = cart.find(l => l.key === focusedKey) ?? cart[0]
   useEffect(() => {
@@ -1037,6 +1159,51 @@ function Step3Details({
               onChange={e => updateLine(focused.key, { notes: e.target.value })}
               className="mt-1.5"
             />
+          </div>
+        </div>
+
+        {/* Фото изделий */}
+        <div className="mt-4">
+          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+            Фото изделия ({focused.photos.length})
+          </Label>
+          <div className="flex flex-wrap gap-2 mt-1.5">
+            {focused.photos.map(url => (
+              <div key={url} className="relative h-20 w-20 rounded-lg overflow-hidden border bg-muted">
+                <img src={url} alt="" className="h-full w-full object-cover" />
+                <button
+                  onClick={() => removePhoto(focused.key, url)}
+                  className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-black/60 text-white grid place-items-center hover:bg-black/80"
+                  aria-label="Удалить фото"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+            <label className={cn(
+              'h-20 w-20 rounded-lg border-2 border-dashed grid place-items-center cursor-pointer transition-colors',
+              photoUploadingKey === focused.key
+                ? 'border-primary bg-primary/5'
+                : 'border-border hover:border-primary/40 hover:bg-muted'
+            )}>
+              {photoUploadingKey === focused.key ? (
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              ) : (
+                <Camera className="h-5 w-5 text-muted-foreground" />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                disabled={photoUploadingKey === focused.key}
+                onChange={e => {
+                  const file = e.target.files?.[0]
+                  if (file) uploadPhoto(focused.key, file)
+                  e.target.value = ''
+                }}
+              />
+            </label>
           </div>
         </div>
       </div>

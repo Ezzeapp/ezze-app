@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Search, Plus, Minus, X, Loader2, Check,
   GripVertical, ShoppingBag, Zap, Truck, UserPlus,
+  Camera, Printer, CheckCircle2, Pencil,
 } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/shared/Toaster'
@@ -29,11 +33,28 @@ interface CartLine {
   type: CleaningItemType
   qty: number
   color: string
+  size: string
+  brand: string
+  defects: string
+  notes: string
+  width_m: string
+  length_m: string
+  photos: string[]
 }
+
+const COLOR_PALETTE = [
+  'Чёрный','Белый','Бежевый','Серый','Синий','Красный','Зелёный','Коричневый','Жёлтый','Розовый','Разноцвет',
+]
+const SIZES = ['S','M','L','XL','XXL']
+const COMMON_DEFECTS = ['Пятно','Потёртость','Дыра','Зацепка','Выцветший','Засаленный']
 
 let keySeq = 0
 function makeLine(t: CleaningItemType): CartLine {
-  return { key: ++keySeq, type: t, qty: 1, color: '' }
+  return {
+    key: ++keySeq, type: t, qty: 1,
+    color: '', size: 'M', brand: '', defects: '', notes: '',
+    width_m: '', length_m: '', photos: [],
+  }
 }
 
 // ── Главный компонент ───────────────────────────────────────────────────────
@@ -133,10 +154,20 @@ export function OrderDnDPage() {
   })
   const [dragging, setDragging] = useState<string | null>(null)
   const [dropHot, setDropHot] = useState<ZoneId | null>(null)
+  // Диалог размеров ковра при дропе
+  const [carpetDialog, setCarpetDialog] = useState<{ type: CleaningItemType; zoneId: ZoneId } | null>(null)
+  // Модалка деталей по клику на позицию
+  const [editing, setEditing] = useState<{ zoneId: ZoneId; key: number } | null>(null)
 
   function dropTo(zoneId: ZoneId, typeId: string) {
     const t = filteredTypes.find(x => x.id === typeId) || allTypes.find(x => x.id === typeId)
     if (!t) return
+    setDragging(null)
+    setDropHot(null)
+    if (orderType === 'carpet') {
+      setCarpetDialog({ type: t, zoneId })
+      return
+    }
     setZones(z => {
       const ex = z[zoneId].find(l => l.type.id === typeId)
       if (ex) {
@@ -144,8 +175,14 @@ export function OrderDnDPage() {
       }
       return { ...z, [zoneId]: [...z[zoneId], makeLine(t)] }
     })
-    setDragging(null)
-    setDropHot(null)
+  }
+
+  function addCarpetLine(zoneId: ZoneId, type: CleaningItemType, w: number, l: number) {
+    const line = makeLine(type)
+    line.width_m = String(w)
+    line.length_m = String(l)
+    setZones(z => ({ ...z, [zoneId]: [...z[zoneId], line] }))
+    setCarpetDialog(null)
   }
 
   function bumpQty(zoneId: ZoneId, key: number, delta: number) {
@@ -157,20 +194,61 @@ export function OrderDnDPage() {
   function removeLine(zoneId: ZoneId, key: number) {
     setZones(z => ({ ...z, [zoneId]: z[zoneId].filter(l => l.key !== key) }))
   }
+  function updateLine(zoneId: ZoneId, key: number, patch: Partial<CartLine>) {
+    setZones(z => ({
+      ...z,
+      [zoneId]: z[zoneId].map(l => l.key === key ? { ...l, ...patch } : l),
+    }))
+  }
+
+  // Загрузка фото для редактируемой позиции
+  const [photoUploading, setPhotoUploading] = useState(false)
+  async function uploadPhotoToLine(zoneId: ZoneId, key: number, file: File) {
+    setPhotoUploading(true)
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+      const path = `${PRODUCT}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+      const { error } = await supabase.storage.from('cleaning-photos').upload(path, file, {
+        contentType: file.type, upsert: false,
+      })
+      if (error) throw error
+      const { data: { publicUrl } } = supabase.storage.from('cleaning-photos').getPublicUrl(path)
+      const cur = zones[zoneId].find(l => l.key === key)
+      if (cur) updateLine(zoneId, key, { photos: [...cur.photos, publicUrl] })
+    } catch {
+      toast.error('Ошибка загрузки фото')
+    } finally {
+      setPhotoUploading(false)
+    }
+  }
+
+  // Создание заказа → диалог Принят → печать
+  const [createdOrder, setCreatedOrder] = useState<{ id: string; number: string } | null>(null)
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
+  const [showReceipt, setShowReceipt] = useState(false)
 
   // Оплата
   const [payment, setPayment] = useState('cash')
   const [discount, setDiscount] = useState(0)
 
   // Расчёты
+  function lineSum(l: CartLine): number {
+    if (orderType === 'carpet') {
+      const w = parseFloat(l.width_m) || 0
+      const h = parseFloat(l.length_m) || 0
+      const area = w * h
+      if (area > 0) return area * l.type.default_price * l.qty
+    }
+    return l.type.default_price * l.qty
+  }
   const allLines = useMemo(() => [...zones.normal, ...zones.urgent, ...zones.delivery], [zones])
   const subtotal = useMemo(
-    () => allLines.reduce((s, l) => s + l.type.default_price * l.qty, 0),
-    [allLines]
+    () => allLines.reduce((s, l) => s + lineSum(l), 0),
+    [allLines, orderType]
   )
   const urgentTotal = useMemo(
-    () => zones.urgent.reduce((s, l) => s + l.type.default_price * l.qty, 0),
-    [zones.urgent]
+    () => zones.urgent.reduce((s, l) => s + lineSum(l), 0),
+    [zones.urgent, orderType]
   )
   const surchargeAmt = Math.round(urgentTotal * 0.5)
   const discountAmt = Math.round((subtotal + surchargeAmt) * discount / 100)
@@ -190,13 +268,24 @@ export function OrderDnDPage() {
       if (zones.delivery.length > 0) tags.push('Доставка')
 
       const items = allLines.flatMap(l =>
-        Array.from({ length: l.qty }, () => ({
-          item_type_id: l.type.id,
-          item_type_name: l.type.name,
-          color: l.color || null,
-          price: l.type.default_price,
-          ready_date: dayjs().add(l.type.default_days || 3, 'day').format('YYYY-MM-DD'),
-        }))
+        Array.from({ length: l.qty }, () => {
+          const w = parseFloat(l.width_m) || null
+          const h = parseFloat(l.length_m) || null
+          const area = orderType === 'carpet' && w && h ? w * h : null
+          return {
+            item_type_id: l.type.id,
+            item_type_name: l.type.name,
+            color: l.color || null,
+            brand: l.brand || null,
+            defects: l.defects || null,
+            price: orderType === 'carpet' && w && h ? w * h * l.type.default_price : l.type.default_price,
+            ready_date: dayjs().add(l.type.default_days || 3, 'day').format('YYYY-MM-DD'),
+            width_m: orderType === 'carpet' ? w : null,
+            length_m: orderType === 'carpet' ? h : null,
+            area_m2: area,
+            photos: l.photos.length > 0 ? l.photos : undefined,
+          }
+        })
       )
       const order = await createOrder({
         order_type: orderType,
@@ -211,8 +300,38 @@ export function OrderDnDPage() {
         tags,
         items,
       })
-      toast.success('Заказ создан')
-      navigate(`/orders/${order.id}`)
+      const rData: ReceiptData = {
+        id: order.id,
+        number: order.number,
+        created_at: order.created_at,
+        order_type: orderType,
+        client: clientId ? {
+          first_name: clientName.split(' ')[0] ?? '',
+          last_name: clientName.split(' ').slice(1).join(' ') || null,
+          phone: clientPhone || null,
+        } : null,
+        items: allLines.map(l => {
+          const w = parseFloat(l.width_m) || null
+          const h = parseFloat(l.length_m) || null
+          return {
+            item_type_name: l.type.name,
+            price: lineSum(l),
+            ready_date: dayjs().add(l.type.default_days || 3, 'day').format('YYYY-MM-DD'),
+            color: l.color || null,
+            brand: l.brand || null,
+            defects: l.defects || null,
+            area_m2: orderType === 'carpet' && w && h ? w * h : null,
+            width_m: w,
+            length_m: h,
+          }
+        }),
+        total_amount: total,
+        prepaid_amount: 0,
+        notes: null,
+      }
+      setReceiptData(rData)
+      setCreatedOrder({ id: order.id, number: order.number })
+      toast.success(`Заказ ${order.number} принят`)
     } catch (e: any) {
       toast.error(e.message || 'Ошибка создания заказа')
     }
@@ -467,6 +586,9 @@ export function OrderDnDPage() {
               onDrop={() => dragging && dropTo('normal', dragging)}
               onBumpQty={(key, d) => bumpQty('normal', key, d)}
               onRemove={(key) => removeLine('normal', key)}
+              onEdit={(key) => setEditing({ zoneId: 'normal', key })}
+              orderType={orderType}
+              lineSum={lineSum}
             />
             <DropZone
               id="urgent"
@@ -483,6 +605,9 @@ export function OrderDnDPage() {
               onDrop={() => dragging && dropTo('urgent', dragging)}
               onBumpQty={(key, d) => bumpQty('urgent', key, d)}
               onRemove={(key) => removeLine('urgent', key)}
+              onEdit={(key) => setEditing({ zoneId: 'urgent', key })}
+              orderType={orderType}
+              lineSum={lineSum}
             />
             <DropZone
               id="delivery"
@@ -499,6 +624,9 @@ export function OrderDnDPage() {
               onDrop={() => dragging && dropTo('delivery', dragging)}
               onBumpQty={(key, d) => bumpQty('delivery', key, d)}
               onRemove={(key) => removeLine('delivery', key)}
+              onEdit={(key) => setEditing({ zoneId: 'delivery', key })}
+              orderType={orderType}
+              lineSum={lineSum}
             />
           </div>
 
@@ -597,6 +725,50 @@ export function OrderDnDPage() {
           }}
         />
       )}
+
+      {/* Диалог размеров ковра при дропе */}
+      {carpetDialog && (
+        <CarpetSizeDialog
+          typeName={carpetDialog.type.name}
+          pricePerSqm={carpetDialog.type.default_price}
+          symbol={symbol}
+          onClose={() => setCarpetDialog(null)}
+          onConfirm={(w, l) => addCarpetLine(carpetDialog.zoneId, carpetDialog.type, w, l)}
+        />
+      )}
+
+      {/* Модалка деталей позиции */}
+      {editing && (() => {
+        const line = zones[editing.zoneId].find(l => l.key === editing.key)
+        if (!line) return null
+        return (
+          <LineDetailsDialog
+            line={line}
+            orderType={orderType}
+            symbol={symbol}
+            photoUploading={photoUploading}
+            onClose={() => setEditing(null)}
+            onChange={(patch) => updateLine(editing.zoneId, editing.key, patch)}
+            onUploadPhoto={(file) => uploadPhotoToLine(editing.zoneId, editing.key, file)}
+          />
+        )
+      })()}
+
+      {/* Заказ принят → диалог печати */}
+      {createdOrder && !showReceipt && (
+        <OrderCreatedDialog
+          orderNumber={createdOrder.number}
+          onPrint={() => setShowReceipt(true)}
+          onGoToOrder={() => navigate(`/orders/${createdOrder.id}`)}
+          onClose={() => navigate('/orders')}
+        />
+      )}
+      {showReceipt && receiptData && (
+        <ReceiptModal
+          data={receiptData}
+          onClose={() => { setShowReceipt(false); navigate(`/orders/${createdOrder?.id ?? ''}`) }}
+        />
+      )}
     </div>
     </div>
   )
@@ -606,8 +778,8 @@ export function OrderDnDPage() {
 
 function DropZone({
   label, note, icon: Icon, accentClass, borderActive,
-  lines, symbol, dropHot,
-  onDragOver, onDragLeave, onDrop, onBumpQty, onRemove,
+  lines, symbol, dropHot, orderType, lineSum,
+  onDragOver, onDragLeave, onDrop, onBumpQty, onRemove, onEdit,
 }: {
   id: ZoneId
   label: string
@@ -619,13 +791,16 @@ function DropZone({
   lines: CartLine[]
   symbol: string
   dropHot: boolean
+  orderType: OrderType
+  lineSum: (l: CartLine) => number
   onDragOver: (e: React.DragEvent) => void
   onDragLeave: () => void
   onDrop: () => void
   onBumpQty: (key: number, delta: number) => void
   onRemove: (key: number) => void
+  onEdit: (key: number) => void
 }) {
-  const total = lines.reduce((s, l) => s + l.type.default_price * l.qty, 0)
+  const total = lines.reduce((s, l) => s + lineSum(l), 0)
   return (
     <div
       onDragOver={onDragOver}
@@ -653,40 +828,62 @@ function DropZone({
         </div>
       ) : (
         <div className="flex flex-col gap-1.5 mt-2 overflow-y-auto">
-          {lines.map(l => (
-            <div key={l.key} className="bg-muted/40 rounded-lg p-2 flex items-center gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-semibold truncate">{l.type.name}</div>
-                <div className="text-[10px] text-muted-foreground">
-                  {formatCurrency(l.type.default_price)} {symbol}/шт
+          {lines.map(l => {
+            const hasDetails = l.color || l.defects || l.brand || l.photos.length > 0
+            return (
+              <div key={l.key} className="bg-muted/40 rounded-lg p-2 flex items-center gap-2">
+                <button
+                  onClick={() => onEdit(l.key)}
+                  className="flex-1 min-w-0 text-left hover:bg-background/50 rounded p-0.5 -m-0.5"
+                  title="Редактировать детали"
+                >
+                  <div className="text-xs font-semibold truncate flex items-center gap-1.5">
+                    {l.type.name}
+                    {l.photos.length > 0 && <Camera className="h-3 w-3 text-muted-foreground shrink-0" />}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground truncate">
+                    {orderType === 'carpet' && l.width_m && l.length_m
+                      ? `${l.width_m}×${l.length_m} м · `
+                      : ''}
+                    {hasDetails
+                      ? [l.color, l.brand, l.defects].filter(Boolean).join(' · ').slice(0, 40)
+                      : `${formatCurrency(l.type.default_price)} ${symbol}/шт`}
+                  </div>
+                </button>
+                <button
+                  onClick={() => onEdit(l.key)}
+                  className="text-muted-foreground hover:text-primary p-1"
+                  title="Редактировать"
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
+                <div className="flex items-center bg-background rounded border">
+                  <button
+                    onClick={() => onBumpQty(l.key, -1)}
+                    className="px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
+                  >
+                    <Minus className="h-2.5 w-2.5" />
+                  </button>
+                  <span className="font-mono text-[11px] font-bold w-5 text-center">{l.qty}</span>
+                  <button
+                    onClick={() => onBumpQty(l.key, 1)}
+                    className="px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
+                  >
+                    <Plus className="h-2.5 w-2.5" />
+                  </button>
                 </div>
-              </div>
-              <div className="flex items-center bg-background rounded border">
+                <span className="font-mono text-xs font-bold w-16 text-right">
+                  {formatCurrency(lineSum(l))}
+                </span>
                 <button
-                  onClick={() => onBumpQty(l.key, -1)}
-                  className="px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
+                  onClick={() => onRemove(l.key)}
+                  className="text-muted-foreground hover:text-destructive p-0.5"
                 >
-                  <Minus className="h-2.5 w-2.5" />
-                </button>
-                <span className="font-mono text-[11px] font-bold w-5 text-center">{l.qty}</span>
-                <button
-                  onClick={() => onBumpQty(l.key, 1)}
-                  className="px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
-                >
-                  <Plus className="h-2.5 w-2.5" />
+                  <X className="h-3 w-3" />
                 </button>
               </div>
-              <span className="font-mono text-xs font-bold w-16 text-right">
-                {formatCurrency(l.type.default_price * l.qty)}
-              </span>
-              <button
-                onClick={() => onRemove(l.key)}
-                className="text-muted-foreground hover:text-destructive p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
@@ -748,6 +945,356 @@ function QuickAddClientDialog({ initialName, onCreated, onClose }: {
           <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
           <Button className="flex-1" disabled={isPending} onClick={handleCreate}>
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Создать'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Диалог размеров ковра ───────────────────────────────────────────────────
+
+function CarpetSizeDialog({ typeName, pricePerSqm, symbol, onConfirm, onClose }: {
+  typeName: string
+  pricePerSqm: number
+  symbol: string
+  onConfirm: (w: number, l: number) => void
+  onClose: () => void
+}) {
+  const [w, setW] = useState('')
+  const [l, setL] = useState('')
+  const area = (parseFloat(w) || 0) * (parseFloat(l) || 0)
+  const total = area * pricePerSqm
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 grid place-items-center p-4" onClick={onClose}>
+      <div className="bg-background rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold">{typeName}</h3>
+          <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground" /></button>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>Ширина (м)</Label>
+            <Input
+              autoFocus type="number" min={0} step={0.1}
+              placeholder="2.0" value={w}
+              onChange={e => setW(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label>Длина (м)</Label>
+            <Input
+              type="number" min={0} step={0.1}
+              placeholder="3.0" value={l}
+              onChange={e => setL(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+        </div>
+        {area > 0 && (
+          <div className="rounded-lg bg-muted p-3 space-y-1 text-sm font-mono">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Площадь</span>
+              <span className="font-bold">{area.toFixed(2)} м²</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Тариф</span>
+              <span>{formatCurrency(pricePerSqm)} {symbol}/м²</span>
+            </div>
+            <div className="flex justify-between border-t pt-1.5 mt-1">
+              <span className="font-bold">Итого</span>
+              <span className="font-bold">{formatCurrency(total)} {symbol}</span>
+            </div>
+          </div>
+        )}
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
+          <Button
+            className="flex-1"
+            disabled={area <= 0}
+            onClick={() => onConfirm(parseFloat(w), parseFloat(l))}
+          >
+            Добавить
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Модалка деталей позиции (DnD) ───────────────────────────────────────────
+
+function LineDetailsDialog({
+  line, orderType, symbol, photoUploading,
+  onClose, onChange, onUploadPhoto,
+}: {
+  line: CartLine
+  orderType: OrderType
+  symbol: string
+  photoUploading: boolean
+  onClose: () => void
+  onChange: (patch: Partial<CartLine>) => void
+  onUploadPhoto: (file: File) => void
+}) {
+  const sum = orderType === 'carpet'
+    ? ((parseFloat(line.width_m) || 0) * (parseFloat(line.length_m) || 0)) * line.type.default_price * line.qty
+    : line.type.default_price * line.qty
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 grid place-items-center p-4" onClick={onClose}>
+      <div className="bg-background rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="px-6 py-4 border-b flex items-center justify-between sticky top-0 bg-background z-10">
+          <div>
+            <div className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground">Детали позиции</div>
+            <h3 className="font-bold text-lg mt-0.5">{line.type.name}</h3>
+          </div>
+          <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {/* Количество и размер */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Количество</Label>
+              <div className="inline-flex items-center bg-muted rounded-lg p-1 mt-1.5">
+                <button
+                  onClick={() => onChange({ qty: Math.max(1, line.qty - 1) })}
+                  className="h-9 w-9 rounded-md bg-background border grid place-items-center hover:bg-muted"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="font-mono text-xl font-bold min-w-[56px] text-center">{line.qty}</span>
+                <button
+                  onClick={() => onChange({ qty: line.qty + 1 })}
+                  className="h-9 w-9 rounded-md bg-background border grid place-items-center hover:bg-muted"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            {orderType !== 'carpet' && (
+              <div>
+                <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Размер</Label>
+                <div className="flex gap-1.5 flex-wrap mt-1.5">
+                  {SIZES.map(s => (
+                    <button
+                      key={s}
+                      onClick={() => onChange({ size: s })}
+                      className={cn(
+                        'h-9 min-w-[44px] px-3 rounded-md text-sm font-semibold border transition-colors',
+                        line.size === s
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border hover:border-primary/40'
+                      )}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Размеры ковра */}
+          {orderType === 'carpet' && (
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Ширина (м)</Label>
+                <Input
+                  type="number" min={0} step={0.1}
+                  value={line.width_m}
+                  onChange={e => onChange({ width_m: e.target.value })}
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Длина (м)</Label>
+                <Input
+                  type="number" min={0} step={0.1}
+                  value={line.length_m}
+                  onChange={e => onChange({ length_m: e.target.value })}
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Площадь</Label>
+                <div className="mt-1.5 h-9 px-3 flex items-center rounded-md border bg-muted text-sm font-mono font-bold">
+                  {((parseFloat(line.width_m) || 0) * (parseFloat(line.length_m) || 0)).toFixed(2)} м²
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Цвет */}
+          <div>
+            <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Цвет</Label>
+            <div className="flex gap-1.5 flex-wrap mt-1.5">
+              {COLOR_PALETTE.map(col => (
+                <button
+                  key={col}
+                  onClick={() => onChange({ color: col })}
+                  className={cn(
+                    'h-8 px-3 rounded-full text-xs border transition-colors',
+                    line.color === col
+                      ? 'border-primary bg-primary/10 text-primary font-semibold'
+                      : 'border-border hover:border-primary/40'
+                  )}
+                >
+                  {col}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Бренд */}
+          <div>
+            <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Бренд</Label>
+            <Input
+              placeholder="Zara, IKEA..."
+              value={line.brand}
+              onChange={e => onChange({ brand: e.target.value })}
+              className="mt-1.5"
+            />
+          </div>
+
+          {/* Дефекты */}
+          <div>
+            <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Дефекты при приёме</Label>
+            <div className="flex gap-1.5 flex-wrap mt-1.5">
+              {COMMON_DEFECTS.map(d => {
+                const list = line.defects.split(',').map(s => s.trim()).filter(Boolean)
+                const on = list.includes(d)
+                return (
+                  <button
+                    key={d}
+                    onClick={() => {
+                      const next = on ? list.filter(x => x !== d) : [...list, d]
+                      onChange({ defects: next.join(', ') })
+                    }}
+                    className={cn(
+                      'h-8 px-3 rounded-md text-xs border transition-colors',
+                      on
+                        ? 'border-red-500 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 font-semibold'
+                        : 'border-border hover:border-primary/40'
+                    )}
+                  >
+                    {d}
+                  </button>
+                )
+              })}
+            </div>
+            <Textarea
+              placeholder="Дополнительно..."
+              value={line.defects}
+              onChange={e => onChange({ defects: e.target.value })}
+              className="mt-2 resize-none"
+              rows={2}
+            />
+          </div>
+
+          {/* Пожелания */}
+          <div>
+            <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Пожелания</Label>
+            <Input
+              placeholder="Без отпаривания..."
+              value={line.notes}
+              onChange={e => onChange({ notes: e.target.value })}
+              className="mt-1.5"
+            />
+          </div>
+
+          {/* Фото */}
+          <div>
+            <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+              Фото изделия ({line.photos.length})
+            </Label>
+            <div className="flex flex-wrap gap-2 mt-1.5">
+              {line.photos.map(url => (
+                <div key={url} className="relative h-20 w-20 rounded-lg overflow-hidden border bg-muted">
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <button
+                    onClick={() => onChange({ photos: line.photos.filter(p => p !== url) })}
+                    className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-black/60 text-white grid place-items-center hover:bg-black/80"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              <label className={cn(
+                'h-20 w-20 rounded-lg border-2 border-dashed grid place-items-center cursor-pointer transition-colors',
+                photoUploading
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/40 hover:bg-muted'
+              )}>
+                {photoUploading ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                ) : (
+                  <Camera className="h-5 w-5 text-muted-foreground" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  disabled={photoUploading}
+                  onChange={e => {
+                    const file = e.target.files?.[0]
+                    if (file) onUploadPhoto(file)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-between sticky bottom-0">
+          <div className="font-mono text-sm">
+            <span className="text-muted-foreground">Итого: </span>
+            <span className="font-bold text-base">{formatCurrency(sum)} {symbol}</span>
+          </div>
+          <Button onClick={onClose}>
+            <Check className="h-4 w-4 mr-1.5" />
+            Готово
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Диалог «Заказ принят» ───────────────────────────────────────────────────
+
+function OrderCreatedDialog({ orderNumber, onPrint, onGoToOrder, onClose }: {
+  orderNumber: string
+  onPrint: () => void
+  onGoToOrder: () => void
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 grid place-items-center p-4">
+      <div className="bg-background rounded-2xl shadow-2xl p-6 w-full max-w-xs space-y-4 text-center">
+        <div className="flex justify-center">
+          <div className="h-14 w-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 grid place-items-center">
+            <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+          </div>
+        </div>
+        <div>
+          <h3 className="font-bold text-lg">Заказ принят!</h3>
+          <p className="text-muted-foreground text-sm mt-1">№ {orderNumber}</p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Button onClick={onPrint} className="w-full">
+            <Printer className="h-4 w-4 mr-1.5" />
+            Печать квитанции
+          </Button>
+          <Button variant="outline" onClick={onGoToOrder} className="w-full">
+            Открыть заказ
+          </Button>
+          <Button variant="ghost" onClick={onClose} className="w-full">
+            К списку заказов
           </Button>
         </div>
       </div>
