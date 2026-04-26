@@ -412,9 +412,6 @@ export function OrderWizardPage() {
         <div className="flex-1 min-w-0 bg-background rounded-xl border shadow-sm p-4 sm:p-6 overflow-y-auto">
           {step === 1 && (
             <Step1Client
-              orderType={orderType}
-              setOrderType={setOrderType}
-              enabledOrderTypes={enabledOrderTypes}
               clientQuery={clientQuery}
               setClientQuery={setClientQuery}
               clients={clients}
@@ -446,6 +443,9 @@ export function OrderWizardPage() {
               addType={addType}
               onAddCustom={() => setCustomDialog(true)}
               symbol={symbol}
+              orderType={orderType}
+              setOrderType={setOrderType}
+              enabledOrderTypes={enabledOrderTypes}
             />
           )}
 
@@ -758,14 +758,10 @@ function OrderCreatedDialog({ orderNumber, onPrint, onGoToOrder, onClose }: {
 // ── Step 1: Клиент + тип заказа ─────────────────────────────────────────────
 
 function Step1Client({
-  orderType, setOrderType, enabledOrderTypes,
   clientQuery, setClientQuery, clients, clientId, clientName, clientPhone,
   onSelectClient, onClearClient, onAddClient,
   members, assignedTo, setAssignedTo,
 }: {
-  orderType: OrderType
-  setOrderType: (t: OrderType) => void
-  enabledOrderTypes: CleaningOrderTypeConfig[]
   clientQuery: string
   setClientQuery: (s: string) => void
   clients: any[]
@@ -781,31 +777,6 @@ function Step1Client({
 }) {
   return (
     <div className="space-y-6">
-      {/* Тип заказа */}
-      <div>
-        <h2 className="text-lg sm:text-xl font-bold tracking-tight">Что принимаете?</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">Выберите тип услуги — это определит каталог.</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-4">
-          {enabledOrderTypes.map(cfg => {
-            const Icon = getOrderTypeIcon(cfg.icon)
-            const sel = orderType === cfg.slug
-            return (
-              <button
-                key={cfg.slug}
-                onClick={() => setOrderType(cfg.slug)}
-                className={cn(
-                  'flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-colors text-sm font-semibold',
-                  sel ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
-                )}
-              >
-                <Icon className="h-6 w-6" />
-                {cfg.label}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
       {/* Клиент */}
       <div>
         <h2 className="text-lg sm:text-xl font-bold tracking-tight">Кто клиент?</h2>
@@ -896,6 +867,7 @@ function Step2Items({
   subgroups, activeSub, setActiveSub,
   catalogQuery, setCatalogQuery,
   visibleTypes, cart, addType, onAddCustom, symbol,
+  orderType, setOrderType, enabledOrderTypes,
 }: {
   subgroups: { name: string; count: number }[]
   activeSub: string | null
@@ -907,9 +879,35 @@ function Step2Items({
   addType: (t: CleaningItemType) => void
   onAddCustom: () => void
   symbol: string
+  orderType: OrderType
+  setOrderType: (t: OrderType) => void
+  enabledOrderTypes: CleaningOrderTypeConfig[]
 }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-4 lg:gap-5 h-full">
+    <div className="flex flex-col gap-4 h-full">
+      {/* Тип услуги — компактные пилюли */}
+      <div className="flex items-center gap-2 flex-wrap shrink-0">
+        <span className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground">Тип:</span>
+        {enabledOrderTypes.map(cfg => {
+          const Icon = getOrderTypeIcon(cfg.icon)
+          const sel = orderType === cfg.slug
+          return (
+            <button
+              key={cfg.slug}
+              onClick={() => setOrderType(cfg.slug)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 h-8 rounded-md text-xs font-semibold transition-colors',
+                sel ? 'bg-primary text-primary-foreground' : 'border border-border text-foreground hover:border-primary/40'
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {cfg.label}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-4 lg:gap-5 flex-1 min-h-0">
       {/* Subgroups */}
       <div>
         <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Группы</div>
@@ -995,6 +993,7 @@ function Step2Items({
             })}
           </div>
         </div>
+      </div>
       </div>
     </div>
   )
