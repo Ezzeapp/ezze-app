@@ -2498,5 +2498,26 @@
   "homeScreen": {
     "welcome": "Welcome",
     "back": "Home"
+  },
+  "wizard": {
+    "newOrder": "New order",
+    "client": "Client",
+    "items": "Items",
+    "details": "Details",
+    "payment": "Payment",
+    "step": "Step",
+    "back": "Back",
+    "next": "Next",
+    "restore": "Restore",
+    "startOver": "Start over",
+    "draftFound": "Unfinished order found",
+    "newClient": "New client",
+    "notSelected": "Not selected",
+    "pcs": "pcs",
+    "addItemsOnStep2": "Add items on step 2",
+    "subtotal": "Subtotal",
+    "total": "Total",
+    "acceptShort": "Accept",
+    "itemsShort": "items"
   }
 }

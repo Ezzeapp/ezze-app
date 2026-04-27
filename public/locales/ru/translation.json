@@ -2510,5 +2510,26 @@
   "homeScreen": {
     "welcome": "Добро пожаловать",
     "back": "Главная"
+  },
+  "wizard": {
+    "newOrder": "Новый заказ",
+    "client": "Клиент",
+    "items": "Позиции",
+    "details": "Детали",
+    "payment": "Оплата",
+    "step": "Шаг",
+    "back": "Назад",
+    "next": "Далее",
+    "restore": "Восстановить",
+    "startOver": "Начать заново",
+    "draftFound": "Найден незавершённый заказ",
+    "newClient": "Новый клиент",
+    "notSelected": "Не выбран",
+    "pcs": "шт",
+    "addItemsOnStep2": "Добавьте позиции на шаге 2",
+    "subtotal": "Подытог",
+    "total": "Итого",
+    "acceptShort": "Принять",
+    "itemsShort": "позиций"
   }
 }

@@ -1362,16 +1362,162 @@
       "advisor": "AI-maslahatchi",
       "reports": "Hisobotlar"
     },
-    "bulk": { "title": "Partiya", "subtitle": "Ketma-ket tamgalar bilan ko'p hayvon qo'shish", "count": "Bosh soni", "prefix": "Tamga prefiksi", "startFrom": "Boshlang'ich raqam", "padding": "Razryadlar", "tagsFormat": "Tamga formati", "preview": "Namuna", "totalCost": "Umumiy narx", "perHead": "Bosh uchun", "create": "{{count}} bosh yaratish" },
-    "reproduction": { "title": "Ko'payish", "subtitle": "Juftlashtirish, bo'g'ozlik, tug'ilish prognozi", "pregnant": "Bo'g'oz", "dueSoon": "Yaqin tug'iladi", "overdue": "Muddati o'tgan", "empty": "Juftlashmagan", "recordMating": "Juftlashtirish", "recordBirth": "Tug'ilish", "matingRecorded": "Juftlashtirish yozildi", "birthRecorded": "Tug'ilish yozildi", "daysPregnant": "{{days}} kun bo'g'oz", "birthIn": "tug'ilish {{days}} kun ichida ({{date}})", "overdueBy": "tug'ilish {{days}} kun kechikdi", "status": { "empty": "Juftlashmagan", "mated": "Juftlashgan", "pregnant": "Bo'g'oz", "due_soon": "Yaqin tug'iladi", "overdue": "Muddati o'tgan", "immature": "Yosh", "unsupported": "—" } },
-    "photo": { "upload": "Suratni yuklash", "change": "O'zgartirish" },
-    "vet": { "title": "Veterinariya kalendari", "subtitle": "Yosh va turga ko'ra tavsiya etilgan jadval", "overdue": "Muddati o'tgan", "soon": "7 kun ichida", "upcoming": "Kelgusida", "allDone": "Hammasi yaxshi, diqqat talab qilinmaydi", "overdueBy": "{{days}} kun kechikdi", "dueToday": "bugun", "dueIn": "{{days}} kundan so'ng", "markDone": "Bajarildi" },
-    "advisor": { "title": "AI-maslahatchi", "subtitle": "Ma'lumotlarni tahlil qilib tavsiyalar beradi", "allGood": "Hammasi tartibda", "allGoodDetail": "Joriy ma'lumotlar bo'yicha tavsiyalar yo'q. Shunday davom eting!", "disclaimer": "Tavsiyalar ma'lumotlaringiz asosida avtomatik shakllanadi. Veterinar yoki zooteknik maslahatini almashtirmaydi." },
-    "qr": { "title": "QR tamgalar", "subtitle": "Varaqlarni chop etish va kamera orqali skanerlash", "print": "Chop etish", "scan": "Skanerlash", "scanning": "Skanerlanmoqda…", "selectAll": "Hammasini tanlash", "deselectAll": "Tanlovni olib tashlash", "small": "Kichik", "medium": "O'rta", "large": "Katta", "noSupport": "Brauzer skanerni qo'llab-quvvatlamaydi", "noSupportDetail": "Android'da Chrome'ni oching yoki quyida qo'lda kiriting.", "cameraError": "Kamerani olishda xatolik", "manual": "Qo'lda kiritish", "enterTag": "Tamga yoki URL kiriting" },
-    "offspring": { "empty": "Nasl ro'yxatdan o'tmagan" },
-    "pastures": { "title": "Yaylovlar", "add": "Yaylov qo'shish", "empty": "Yaylovlar yo'q", "overloaded": "Ortiqcha yuk", "heads": "bosh", "fields": { "name": "Nomi", "areaHa": "Maydon (ga)", "capacityHeads": "Tavsiya (bosh)", "currentGroup": "Joriy guruh", "notes": "Izohlar" } },
-    "incubator": { "title": "Inkubator", "add": "Yangi partiya", "empty": "Partiyalar yo'q", "active": "Jarayonda", "completed": "Tugallangan", "ready": "Chiqishga tayyor", "totalLoaded": "Jami qo'yilgan", "totalHatched": "Chiqqan", "avgRate": "O'rtacha chiqish %", "fields": { "eggsLoaded": "Qo'yilgan tuxum", "startDate": "Qo'yish sanasi", "expectedHatchDate": "Kutilayotgan chiqish", "actualHatchDate": "Haqiqiy chiqish", "eggsHatched": "Chiqqan tuxum" } },
-    "sales": { "title": "Sotuvlar", "add": "Yangi sotuv", "edit": "Sotuvni tahrirlash", "empty": "Sotuvlar yo'q", "items": "Pozitsiyalar", "addItem": "Pozitsiya qo'shish", "noItems": "Pozitsiyalar yo'q", "itemType": "Turi", "itemRef": "Obyekt", "itemDesc": "Tavsif", "qty": "Miqdor", "price": "Narx", "total": "Jami", "totalRevenue": "Umumiy daromad", "paid": "To'langan", "debt": "Qarz", "fields": { "date": "Sana", "channel": "Kanal", "buyerName": "Xaridor", "buyerContact": "Aloqa", "paidAmount": "To'langan", "notes": "Izohlar" }, "channel": { "retail": "Chakana", "wholesale": "Ulgurji", "market": "Bozor", "direct": "To'g'ridan-to'g'ri", "other": "Boshqa" }, "type": { "animal": "Hayvon", "production": "Mahsulot", "crop": "Hosil", "other": "Boshqa" }, "payment": { "unpaid": "To'lanmagan", "partial": "Qisman", "paid": "To'langan" } },
+    "bulk": {
+      "title": "Partiya",
+      "subtitle": "Ketma-ket tamgalar bilan ko'p hayvon qo'shish",
+      "count": "Bosh soni",
+      "prefix": "Tamga prefiksi",
+      "startFrom": "Boshlang'ich raqam",
+      "padding": "Razryadlar",
+      "tagsFormat": "Tamga formati",
+      "preview": "Namuna",
+      "totalCost": "Umumiy narx",
+      "perHead": "Bosh uchun",
+      "create": "{{count}} bosh yaratish"
+    },
+    "reproduction": {
+      "title": "Ko'payish",
+      "subtitle": "Juftlashtirish, bo'g'ozlik, tug'ilish prognozi",
+      "pregnant": "Bo'g'oz",
+      "dueSoon": "Yaqin tug'iladi",
+      "overdue": "Muddati o'tgan",
+      "empty": "Juftlashmagan",
+      "recordMating": "Juftlashtirish",
+      "recordBirth": "Tug'ilish",
+      "matingRecorded": "Juftlashtirish yozildi",
+      "birthRecorded": "Tug'ilish yozildi",
+      "daysPregnant": "{{days}} kun bo'g'oz",
+      "birthIn": "tug'ilish {{days}} kun ichida ({{date}})",
+      "overdueBy": "tug'ilish {{days}} kun kechikdi",
+      "status": {
+        "empty": "Juftlashmagan",
+        "mated": "Juftlashgan",
+        "pregnant": "Bo'g'oz",
+        "due_soon": "Yaqin tug'iladi",
+        "overdue": "Muddati o'tgan",
+        "immature": "Yosh",
+        "unsupported": "—"
+      }
+    },
+    "photo": {
+      "upload": "Suratni yuklash",
+      "change": "O'zgartirish"
+    },
+    "vet": {
+      "title": "Veterinariya kalendari",
+      "subtitle": "Yosh va turga ko'ra tavsiya etilgan jadval",
+      "overdue": "Muddati o'tgan",
+      "soon": "7 kun ichida",
+      "upcoming": "Kelgusida",
+      "allDone": "Hammasi yaxshi, diqqat talab qilinmaydi",
+      "overdueBy": "{{days}} kun kechikdi",
+      "dueToday": "bugun",
+      "dueIn": "{{days}} kundan so'ng",
+      "markDone": "Bajarildi"
+    },
+    "advisor": {
+      "title": "AI-maslahatchi",
+      "subtitle": "Ma'lumotlarni tahlil qilib tavsiyalar beradi",
+      "allGood": "Hammasi tartibda",
+      "allGoodDetail": "Joriy ma'lumotlar bo'yicha tavsiyalar yo'q. Shunday davom eting!",
+      "disclaimer": "Tavsiyalar ma'lumotlaringiz asosida avtomatik shakllanadi. Veterinar yoki zooteknik maslahatini almashtirmaydi."
+    },
+    "qr": {
+      "title": "QR tamgalar",
+      "subtitle": "Varaqlarni chop etish va kamera orqali skanerlash",
+      "print": "Chop etish",
+      "scan": "Skanerlash",
+      "scanning": "Skanerlanmoqda…",
+      "selectAll": "Hammasini tanlash",
+      "deselectAll": "Tanlovni olib tashlash",
+      "small": "Kichik",
+      "medium": "O'rta",
+      "large": "Katta",
+      "noSupport": "Brauzer skanerni qo'llab-quvvatlamaydi",
+      "noSupportDetail": "Android'da Chrome'ni oching yoki quyida qo'lda kiriting.",
+      "cameraError": "Kamerani olishda xatolik",
+      "manual": "Qo'lda kiritish",
+      "enterTag": "Tamga yoki URL kiriting"
+    },
+    "offspring": {
+      "empty": "Nasl ro'yxatdan o'tmagan"
+    },
+    "pastures": {
+      "title": "Yaylovlar",
+      "add": "Yaylov qo'shish",
+      "empty": "Yaylovlar yo'q",
+      "overloaded": "Ortiqcha yuk",
+      "heads": "bosh",
+      "fields": {
+        "name": "Nomi",
+        "areaHa": "Maydon (ga)",
+        "capacityHeads": "Tavsiya (bosh)",
+        "currentGroup": "Joriy guruh",
+        "notes": "Izohlar"
+      }
+    },
+    "incubator": {
+      "title": "Inkubator",
+      "add": "Yangi partiya",
+      "empty": "Partiyalar yo'q",
+      "active": "Jarayonda",
+      "completed": "Tugallangan",
+      "ready": "Chiqishga tayyor",
+      "totalLoaded": "Jami qo'yilgan",
+      "totalHatched": "Chiqqan",
+      "avgRate": "O'rtacha chiqish %",
+      "fields": {
+        "eggsLoaded": "Qo'yilgan tuxum",
+        "startDate": "Qo'yish sanasi",
+        "expectedHatchDate": "Kutilayotgan chiqish",
+        "actualHatchDate": "Haqiqiy chiqish",
+        "eggsHatched": "Chiqqan tuxum"
+      }
+    },
+    "sales": {
+      "title": "Sotuvlar",
+      "add": "Yangi sotuv",
+      "edit": "Sotuvni tahrirlash",
+      "empty": "Sotuvlar yo'q",
+      "items": "Pozitsiyalar",
+      "addItem": "Pozitsiya qo'shish",
+      "noItems": "Pozitsiyalar yo'q",
+      "itemType": "Turi",
+      "itemRef": "Obyekt",
+      "itemDesc": "Tavsif",
+      "qty": "Miqdor",
+      "price": "Narx",
+      "total": "Jami",
+      "totalRevenue": "Umumiy daromad",
+      "paid": "To'langan",
+      "debt": "Qarz",
+      "fields": {
+        "date": "Sana",
+        "channel": "Kanal",
+        "buyerName": "Xaridor",
+        "buyerContact": "Aloqa",
+        "paidAmount": "To'langan",
+        "notes": "Izohlar"
+      },
+      "channel": {
+        "retail": "Chakana",
+        "wholesale": "Ulgurji",
+        "market": "Bozor",
+        "direct": "To'g'ridan-to'g'ri",
+        "other": "Boshqa"
+      },
+      "type": {
+        "animal": "Hayvon",
+        "production": "Mahsulot",
+        "crop": "Hosil",
+        "other": "Boshqa"
+      },
+      "payment": {
+        "unpaid": "To'lanmagan",
+        "partial": "Qisman",
+        "paid": "To'langan"
+      }
+    },
     "dashboard": {
       "title": "Ferma umumiy",
       "totalAnimals": "Jami hayvonlar",
@@ -1716,5 +1862,26 @@
     "item": {
       "unnamed": "Nomsiz"
     }
+  },
+  "wizard": {
+    "newOrder": "Yangi buyurtma",
+    "client": "Mijoz",
+    "items": "Mahsulotlar",
+    "details": "Tafsilotlar",
+    "payment": "To'lov",
+    "step": "Qadam",
+    "back": "Orqaga",
+    "next": "Keyingi",
+    "restore": "Tiklash",
+    "startOver": "Qaytadan boshlash",
+    "draftFound": "Tugallanmagan buyurtma topildi",
+    "newClient": "Yangi mijoz",
+    "notSelected": "Tanlanmagan",
+    "pcs": "dona",
+    "addItemsOnStep2": "Mahsulotlarni 2-qadamda qo'shing",
+    "subtotal": "Jami",
+    "total": "Umumiy",
+    "acceptShort": "Qabul",
+    "itemsShort": "mahsulot"
   }
 }

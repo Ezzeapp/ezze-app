@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { useReceiptConfig, DEFAULT_RECEIPT_CONFIG, type ReceiptConfig } from '@/hooks/useReceiptConfig'
+import { APP_URL } from '@/lib/config'
 import dayjs from 'dayjs'
 
 function getTrackUrl(orderNumber: string): string {
-  return `https://cleaning.ezze.site/track/${encodeURIComponent(orderNumber)}`
+  const origin = (typeof window !== 'undefined' && window.location?.origin) || APP_URL
+  return `${origin}/track/${encodeURIComponent(orderNumber)}`
 }
 
 // ── Типы данных для квитанции ─────────────────────────────────────────────────

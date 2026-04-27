@@ -472,12 +472,13 @@ export function OrderDnDPage() {
           }
         })
       )
+      const readyDate = dayjs().add(zones.urgent.length > 0 ? 1 : 3, 'day').format('YYYY-MM-DD')
       const order = await createOrder({
         order_type: orderType,
         client_id: clientId,
         prepaid_amount: 0,
         total_amount: total,
-        ready_date: dayjs().add(zones.urgent.length > 0 ? 1 : 3, 'day').format('YYYY-MM-DD'),
+        ready_date: readyDate,
         is_express: zones.urgent.length > 0,
         payment_method: payment,
         payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : 0,
@@ -485,6 +486,8 @@ export function OrderDnDPage() {
         surcharge_percent: zones.urgent.length > 0 && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
         surcharge_amount: surchargeAmt + markupAmt,
         visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? (visitAddress || null) : null,
+        pickup_date: deliveryMethod === 'pickup' ? dayjs().format('YYYY-MM-DD') : null,
+        delivery_date: deliveryMethod === 'delivery' ? readyDate : null,
         tags,
         items,
       })

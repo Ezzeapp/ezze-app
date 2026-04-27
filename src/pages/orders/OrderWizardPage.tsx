@@ -32,6 +32,7 @@ import { formatCurrency, cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { PRODUCT } from '@/lib/config'
+import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
 
 // ── Типы ────────────────────────────────────────────────────────────────────
@@ -77,6 +78,7 @@ function makeLine(t: CleaningItemType, readyDate: string): CartLine {
 
 export function OrderWizardPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { user } = useAuth()
   const { data: defaults } = useCleaningDefaults()
   const symbol = useCurrencySymbol()
@@ -399,10 +401,10 @@ export function OrderWizardPage() {
 
   // Шаги
   const steps: { n: 1 | 2 | 3 | 4; label: string; icon: typeof User }[] = [
-    { n: 1, label: 'Клиент', icon: User },
-    { n: 2, label: 'Позиции', icon: ShoppingBag },
-    { n: 3, label: 'Детали', icon: Tag },
-    { n: 4, label: 'Оплата', icon: CreditCard },
+    { n: 1, label: t('wizard.client', 'Клиент'), icon: User },
+    { n: 2, label: t('wizard.items', 'Позиции'), icon: ShoppingBag },
+    { n: 3, label: t('wizard.details', 'Детали'), icon: Tag },
+    { n: 4, label: t('wizard.payment', 'Оплата'), icon: CreditCard },
   ]
 
   function canNext(): boolean {
@@ -486,8 +488,8 @@ export function OrderWizardPage() {
           ...(markup > 0 ? [`Надбавка ${markup}%`] : []),
           ...(appliedPromo ? [`Промокод ${appliedPromo.code}`] : []),
         ],
-        pickup_date: orderType === 'carpet' ? (pickupDate || null) : null,
-        delivery_date: orderType === 'carpet' ? (deliveryDate || null) : null,
+        pickup_date: (deliveryMethod === 'pickup' || orderType === 'carpet') ? (pickupDate || null) : null,
+        delivery_date: (deliveryMethod === 'delivery' || orderType === 'carpet') ? (deliveryDate || null) : null,
         visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? (visitAddress || null) : null,
         items: cart.flatMap(l => Array.from({ length: l.qty }, () => {
           const w = parseFloat(l.width_m) || null
@@ -578,7 +580,7 @@ export function OrderWizardPage() {
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-md bg-primary text-primary-foreground grid place-items-center font-bold text-sm">E</div>
             <div className="flex flex-col">
-              <span className="text-sm sm:text-base font-semibold leading-none">Новый заказ</span>
+              <span className="text-sm sm:text-base font-semibold leading-none">{t('wizard.newOrder', 'Новый заказ')}</span>
               <span className="text-[10.5px] sm:text-xs text-muted-foreground font-mono leading-none mt-1 hidden xs:block">
                 {dayjs().format('DD.MM.YYYY · HH:mm')}
               </span>
@@ -601,7 +603,7 @@ export function OrderWizardPage() {
             className="h-8 text-xs"
             onClick={() => navigate('/orders')}
           >
-            <span className="hidden sm:inline">Отмена</span>
+            <span className="hidden sm:inline">{t('common.cancel', 'Отмена')}</span>
             <X className="h-4 w-4 sm:hidden" />
           </Button>
         </div>
@@ -612,14 +614,14 @@ export function OrderWizardPage() {
         <div className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900/50 shrink-0">
           <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-2 flex items-center gap-3">
             <div className="text-sm font-semibold text-amber-900 dark:text-amber-200 flex-1">
-              Найден незавершённый заказ ({restored.cart?.length || 0} позиций
-              {restored.clientName ? `, клиент ${restored.clientName}` : ''})
+              {t('wizard.draftFound', 'Найден незавершённый заказ')} ({restored.cart?.length || 0} {t('wizard.itemsShort', 'позиций')}
+              {restored.clientName ? `, ${t('wizard.client', 'клиент').toLowerCase()} ${restored.clientName}` : ''})
             </div>
             <Button size="sm" variant="default" onClick={() => applyDraft(restored)} className="h-8">
-              Восстановить
+              {t('wizard.restore', 'Восстановить')}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => { dismissDraft(); clearDraft() }} className="h-8">
-              Начать заново
+              {t('wizard.startOver', 'Начать заново')}
             </Button>
           </div>
         </div>
@@ -656,7 +658,7 @@ export function OrderWizardPage() {
                 </div>
                 <div className="min-w-0 hidden xs:block">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">
-                    Шаг {s.n}
+                    {t('wizard.step', 'Шаг')} {s.n}
                   </div>
                   <div className="text-sm font-semibold leading-tight mt-1 truncate">{s.label}</div>
                 </div>
@@ -703,6 +705,7 @@ export function OrderWizardPage() {
               visibleTypes={visibleTypes}
               cart={cart}
               addType={addType}
+              removeLine={removeLine}
               onAddCustom={() => setCustomDialog(true)}
               symbol={symbol}
               orderType={orderType}
@@ -791,7 +794,7 @@ export function OrderWizardPage() {
         <div className="hidden lg:flex flex-col gap-3 w-[300px] xl:w-[340px] shrink-0">
           {/* Client card */}
           <div className="bg-background rounded-xl border p-4 shadow-sm">
-            <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">Клиент</div>
+            <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">{t('wizard.client', 'Клиент')}</div>
             {clientId ? (
               <>
                 <div className="text-base font-semibold mt-1.5 truncate">{clientName}</div>
@@ -818,34 +821,43 @@ export function OrderWizardPage() {
                   </div>
                 )}
                 {clientStats && clientStats.count === 0 && (
-                  <div className="text-[11px] text-muted-foreground mt-2">Новый клиент</div>
+                  <div className="text-[11px] text-muted-foreground mt-2">{t('wizard.newClient', 'Новый клиент')}</div>
                 )}
               </>
             ) : (
-              <div className="text-sm text-muted-foreground italic mt-1.5">Не выбран</div>
+              <div className="text-sm text-muted-foreground italic mt-1.5">{t('wizard.notSelected', 'Не выбран')}</div>
             )}
           </div>
 
           {/* Cart summary */}
           <div className="flex-1 min-h-0 bg-background rounded-xl border shadow-sm p-4 flex flex-col">
             <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
-              Позиции · {cart.reduce((s, l) => s + l.qty, 0)} шт
+              {t('wizard.items', 'Позиции')} · {cart.reduce((s, l) => s + l.qty, 0)} {t('wizard.pcs', 'шт')}
             </div>
             <div className="flex-1 overflow-y-auto -mr-2 pr-2 min-h-0">
               {cart.length === 0 ? (
                 <div className="text-sm text-muted-foreground italic py-4 text-center">
-                  Добавьте позиции на шаге 2
+                  {t('wizard.addItemsOnStep2', 'Добавьте позиции на шаге 2')}
                 </div>
               ) : (
                 cart.map(l => (
-                  <div key={l.key} className="py-2 border-b last:border-0">
+                  <div key={l.key} className="py-2 border-b last:border-0 group">
                     <div className="flex items-baseline justify-between gap-2">
                       <div className="text-[13px] truncate">
                         {l.type.name}
                         <span className="text-muted-foreground font-mono text-[11px] ml-1">× {l.qty}</span>
                       </div>
-                      <div className="font-mono text-xs font-bold shrink-0">
-                        {formatCurrency(lineSum(l))} {symbol}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="font-mono text-xs font-bold">
+                          {formatCurrency(lineSum(l))} {symbol}
+                        </div>
+                        <button
+                          onClick={() => removeLine(l.key)}
+                          className="h-5 w-5 rounded-full grid place-items-center text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+                          title="Удалить позицию"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
                       </div>
                     </div>
                     {(l.color || l.defects) && (
@@ -860,7 +872,7 @@ export function OrderWizardPage() {
             </div>
             <div className="border-t mt-2 pt-3 font-mono text-xs space-y-1">
               <div className="flex justify-between text-muted-foreground">
-                <span>Подытог</span>
+                <span>{t('wizard.subtotal', 'Подытог')}</span>
                 <span>{formatCurrency(subtotal)} {symbol}</span>
               </div>
               {isUrgent && surchargeAmt > 0 && (
@@ -894,7 +906,7 @@ export function OrderWizardPage() {
                 </div>
               )}
               <div className="flex items-baseline justify-between pt-2 border-t mt-2">
-                <span className="font-sans font-bold text-base">Итого</span>
+                <span className="font-sans font-bold text-base">{t('wizard.total', 'Итого')}</span>
                 <span className="text-xl font-extrabold">{formatCurrency(total)} {symbol}</span>
               </div>
               {prepayAmt > 0 && (
@@ -915,7 +927,7 @@ export function OrderWizardPage() {
               className="px-4"
             >
               <ArrowLeft className="h-4 w-4 mr-1.5" />
-              Назад
+              {t('wizard.back', 'Назад')}
             </Button>
             {step < 4 ? (
               <Button
@@ -923,7 +935,7 @@ export function OrderWizardPage() {
                 onClick={() => setStep((step + 1) as 1|2|3|4)}
                 className="flex-1 bg-gradient-to-br from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white"
               >
-                Далее: {steps[step]?.label ?? ''}
+                {t('wizard.next', 'Далее')}: {steps[step]?.label ?? ''}
                 <ArrowRight className="h-4 w-4 ml-1.5" />
               </Button>
             ) : (
@@ -933,7 +945,7 @@ export function OrderWizardPage() {
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 {isPending ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Check className="h-4 w-4 mr-1.5" />}
-                Принять · {formatCurrency(total)} {symbol}
+                {t('wizard.acceptShort', 'Принять')} · {formatCurrency(total)} {symbol}
               </Button>
             )}
           </div>
@@ -944,7 +956,7 @@ export function OrderWizardPage() {
       <div className="lg:hidden bg-background border-t px-3 py-2.5 flex items-center gap-2 shrink-0">
         <div className="flex-1 min-w-0">
           <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground leading-none">
-            {cart.reduce((s, l) => s + l.qty, 0)} позиций
+            {cart.reduce((s, l) => s + l.qty, 0)} {t('wizard.itemsShort', 'позиций')}
           </div>
           <div className="text-base font-extrabold leading-tight mt-0.5 truncate">
             {formatCurrency(total)} {symbol}
@@ -966,7 +978,7 @@ export function OrderWizardPage() {
             onClick={() => setStep((step + 1) as 1|2|3|4)}
             className="h-10 px-4 bg-gradient-to-br from-blue-600 to-blue-500 text-white"
           >
-            Далее
+            {t('wizard.next', 'Далее')}
             <ArrowRight className="h-4 w-4 ml-1.5" />
           </Button>
         ) : (
@@ -1171,7 +1183,7 @@ function Step1Client({
 function Step2Items({
   subgroups, activeSub, setActiveSub,
   catalogQuery, setCatalogQuery,
-  visibleTypes, cart, addType, onAddCustom, symbol,
+  visibleTypes, cart, addType, removeLine, onAddCustom, symbol,
   orderType, setOrderType, enabledOrderTypes,
   isFavourite, toggleFav, showFavsOnly, setShowFavsOnly, favsCount,
 }: {
@@ -1183,6 +1195,7 @@ function Step2Items({
   visibleTypes: CleaningItemType[]
   cart: CartLine[]
   addType: (t: CleaningItemType) => void
+  removeLine: (key: number) => void
   onAddCustom: () => void
   symbol: string
   orderType: OrderType
@@ -1277,7 +1290,7 @@ function Step2Items({
           </button>
         </div>
         <div className="flex-1 overflow-y-auto -mr-2 pr-2 min-h-0">
-          <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(220px,1fr))]">
+          <div className="grid gap-2 grid-cols-2 sm:[grid-template-columns:repeat(auto-fill,minmax(220px,1fr))]">
             {/* Своя позиция вне каталога */}
             <button
               onClick={onAddCustom}
@@ -1314,8 +1327,17 @@ function Step2Items({
                     <Star className={cn('h-3.5 w-3.5', fav && 'fill-current')} />
                   </button>
                   {inCart && (
-                    <div className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-primary text-primary-foreground grid place-items-center font-bold text-xs font-mono">
-                      {inCart.qty}
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
+                      <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground grid place-items-center font-bold text-xs font-mono">
+                        {inCart.qty}
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeLine(inCart.key) }}
+                        className="h-6 w-6 rounded-full bg-red-500/90 hover:bg-red-600 text-white grid place-items-center"
+                        title="Удалить из заказа"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   )}
                   <button
@@ -2155,24 +2177,28 @@ function Step4Payment({
         </div>
       </div>
 
-      {orderType === 'carpet' && (
+      {(orderType === 'carpet' || deliveryMethod === 'pickup' || deliveryMethod === 'delivery') && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Дата забора</Label>
-            <DateInput
-              value={pickupDate}
-              onChange={e => setPickupDate(e.target.value)}
-              className="mt-1.5"
-            />
-          </div>
-          <div>
-            <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Дата доставки</Label>
-            <DateInput
-              value={deliveryDate}
-              onChange={e => setDeliveryDate(e.target.value)}
-              className="mt-1.5"
-            />
-          </div>
+          {(orderType === 'carpet' || deliveryMethod === 'pickup') && (
+            <div>
+              <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Дата забора</Label>
+              <DateInput
+                value={pickupDate}
+                onChange={e => setPickupDate(e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+          )}
+          {(orderType === 'carpet' || deliveryMethod === 'delivery') && (
+            <div>
+              <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Дата доставки</Label>
+              <DateInput
+                value={deliveryDate}
+                onChange={e => setDeliveryDate(e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+          )}
         </div>
       )}
 
