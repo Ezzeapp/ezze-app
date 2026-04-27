@@ -19,6 +19,8 @@ import { useCleaningItemTypes, type CleaningItemType } from '@/hooks/useCleaning
 import { useClientsPaged, useCreateClient } from '@/hooks/useClients'
 import { useCleaningClientStats } from '@/hooks/useCleaningClientStats'
 import { useFavouriteItemTypes } from '@/hooks/useFavouriteItemTypes'
+import { validatePromoCode } from '@/hooks/usePromoCodes'
+import { useAuth } from '@/contexts/AuthContext'
 import { DEFECT_MODIFIERS, defectsPctMultiplier } from '@/lib/cleaningDefects'
 import { useFormDraft } from '@/hooks/useFormDraft'
 import { compressDefect } from '@/lib/imageCompression'
@@ -71,6 +73,7 @@ function makeLine(t: CleaningItemType): CartLine {
 export function OrderDnDPage() {
   const navigate = useNavigate()
   const symbol = useCurrencySymbol()
+  const { user } = useAuth()
 
   // Mobile fallback → wizard (DnD только для desktop)
   useEffect(() => {
@@ -271,6 +274,10 @@ export function OrderDnDPage() {
   const [paymentCash, setPaymentCash] = useState('')
   const [paymentCard, setPaymentCard] = useState('')
   const [discount, setDiscount] = useState(0)
+  const [markup, setMarkup] = useState(0)
+  const [promoCode, setPromoCode] = useState('')
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; amount: number } | null>(null)
+  const [validatingPromo, setValidatingPromo] = useState(false)
   const [visitAddress, setVisitAddress] = useState('')
   // Срочная надбавка — % или фикс
   const [expressMode, setExpressMode] = useState<'percent' | 'fixed'>('percent')
@@ -298,6 +305,9 @@ export function OrderDnDPage() {
     expressValue: string
     extraTags: string[]
     applyDefectsPct: boolean
+    markup: number
+    promoCode: string
+    appliedPromo: { code: string; amount: number } | null
   }
   const { restored: restoredDnD, save: saveDraft, clear: clearDraft, dismiss: dismissDraft } = useFormDraft<DnDDraft>('cleaning_dnd_draft')
 
@@ -319,6 +329,9 @@ export function OrderDnDPage() {
     setExpressValue(d.expressValue || '50')
     setExtraTags(d.extraTags || [])
     setApplyDefectsPct(d.applyDefectsPct ?? true)
+    setMarkup(d.markup || 0)
+    setPromoCode(d.promoCode || '')
+    setAppliedPromo(d.appliedPromo || null)
     clearDraft()
   }
 
@@ -331,11 +344,13 @@ export function OrderDnDPage() {
       clientId, clientName, clientPhone, orderType,
       payment, paymentCash, paymentCard, discount, visitAddress,
       expressMode, expressValue, extraTags, applyDefectsPct,
+      markup, promoCode, appliedPromo,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zones, deliveryMethod, deliveryFee, activeZone, clientId, clientName, clientPhone, orderType,
       payment, paymentCash, paymentCard, discount, visitAddress,
-      expressMode, expressValue, extraTags, applyDefectsPct])
+      expressMode, expressValue, extraTags, applyDefectsPct,
+      markup, promoCode, appliedPromo])
 
   // Расчёты
   function unitPriceOf(l: CartLine): number {
@@ -366,9 +381,31 @@ export function OrderDnDPage() {
   const surchargeAmt = expressMode === 'percent'
     ? Math.round(urgentTotal * (parseFloat(expressValue) || 0) / 100)
     : (zones.urgent.length > 0 ? (parseFloat(expressValue) || 0) : 0)
-  const discountAmt = Math.round((subtotal + surchargeAmt) * discount / 100)
+  const markupAmt = Math.round(subtotal * markup / 100)
+  const discountAmt = Math.round((subtotal + surchargeAmt + markupAmt) * discount / 100)
+  const promoAmt = appliedPromo?.amount || 0
   const deliveryAdd = deliveryMethod === 'delivery' ? (parseFloat(deliveryFee) || 0) : 0
-  const total = subtotal + surchargeAmt - discountAmt + deliveryAdd
+  const total = Math.max(0, subtotal + surchargeAmt + markupAmt - discountAmt - promoAmt + deliveryAdd)
+
+  async function applyPromoCode() {
+    const code = promoCode.trim().toUpperCase()
+    if (!code) return
+    if (!user?.id) { toast.error('Не удалось определить мастера'); return }
+    if (subtotal <= 0) { toast.error('Добавьте позиции перед применением промокода'); return }
+    setValidatingPromo(true)
+    try {
+      const res = await validatePromoCode(user.id, code, subtotal + surchargeAmt + markupAmt)
+      if (!res.valid) { toast.error(res.error || 'Неверный промокод'); return }
+      setAppliedPromo({ code, amount: res.discountAmount || 0 })
+      setPromoCode('')
+      toast.success(`Промокод применён: -${(res.discountAmount || 0).toLocaleString('ru')} ${symbol}`)
+    } finally {
+      setValidatingPromo(false)
+    }
+  }
+  function removePromoCode() {
+    setAppliedPromo(null)
+  }
 
   async function handleSubmit() {
     if (allLines.length === 0) {
@@ -401,6 +438,8 @@ export function OrderDnDPage() {
       if (zones.urgent.length > 0 && !tags.includes('Срочно')) tags.push('Срочно')
       if (deliveryMethod === 'delivery' && !tags.includes('Доставка')) tags.push('Доставка')
       else if (deliveryMethod === 'pickup' && !tags.includes('Самовывоз')) tags.push('Самовывоз')
+      if (markup > 0) tags.push(`Надбавка ${markup}%`)
+      if (appliedPromo) tags.push(`Промокод ${appliedPromo.code}`)
 
       const items = allLines.flatMap(l =>
         Array.from({ length: l.qty }, () => {
@@ -435,7 +474,7 @@ export function OrderDnDPage() {
         payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : 0,
         payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : 0,
         surcharge_percent: zones.urgent.length > 0 && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
-        surcharge_amount: surchargeAmt,
+        surcharge_amount: surchargeAmt + markupAmt,
         visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? (visitAddress || null) : null,
         tags,
         items,
@@ -959,8 +998,26 @@ export function OrderDnDPage() {
               </div>
             )}
 
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground">Скидка:</span>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground w-16 shrink-0">Надбавка:</span>
+              {[0, 5, 10, 15, 20].map(d => (
+                <button
+                  key={d}
+                  onClick={() => setMarkup(d)}
+                  className={cn(
+                    'flex-1 h-7 rounded-md text-[10.5px] font-bold font-mono border transition-colors',
+                    markup === d
+                      ? 'border-amber-500 bg-amber-500 text-white'
+                      : 'border-border hover:border-amber-500/40'
+                  )}
+                >
+                  {d > 0 ? `+${d}%` : '0%'}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground w-16 shrink-0">Скидка:</span>
               {[0, 5, 10, 15, 20].map(d => (
                 <button
                   key={d}
@@ -975,6 +1032,46 @@ export function OrderDnDPage() {
                   {d}%
                 </button>
               ))}
+            </div>
+
+            {/* Промокод */}
+            <div className="mb-3">
+              {appliedPromo ? (
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded-md border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/30">
+                  <span className="text-[10.5px] uppercase tracking-wider font-bold text-blue-700 dark:text-blue-300 shrink-0">Промокод:</span>
+                  <span className="font-mono text-xs font-bold text-blue-700 dark:text-blue-300 flex-1">{appliedPromo.code}</span>
+                  <span className="font-mono text-[11px] font-bold text-blue-700 dark:text-blue-300">−{formatCurrency(appliedPromo.amount)} {symbol}</span>
+                  <button
+                    onClick={removePromoCode}
+                    className="text-blue-700 dark:text-blue-300 hover:text-destructive p-0.5"
+                    title="Убрать промокод"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    placeholder="Промокод"
+                    value={promoCode}
+                    onChange={e => setPromoCode(e.target.value.toUpperCase())}
+                    onKeyDown={e => { if (e.key === 'Enter') applyPromoCode() }}
+                    className="h-7 text-xs font-mono uppercase flex-1"
+                  />
+                  <button
+                    onClick={applyPromoCode}
+                    disabled={!promoCode.trim() || validatingPromo}
+                    className={cn(
+                      'h-7 px-2.5 rounded-md text-[10.5px] font-bold border transition-colors shrink-0',
+                      promoCode.trim() && !validatingPromo
+                        ? 'border-blue-500 bg-blue-500 text-white hover:bg-blue-600'
+                        : 'border-border bg-muted text-muted-foreground cursor-not-allowed'
+                    )}
+                  >
+                    {validatingPromo ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Применить'}
+                  </button>
+                </div>
+              )}
             </div>
 
             {zones.urgent.length > 0 && (
@@ -1021,6 +1118,12 @@ export function OrderDnDPage() {
                   <span>+ {formatCurrency(surchargeAmt)} {symbol}</span>
                 </div>
               )}
+              {markupAmt > 0 && (
+                <div className="flex justify-between text-amber-600">
+                  <span>Надбавка +{markup}%</span>
+                  <span>+ {formatCurrency(markupAmt)} {symbol}</span>
+                </div>
+              )}
               {deliveryAdd > 0 && (
                 <div className="flex justify-between text-violet-600">
                   <span>Доставка</span>
@@ -1031,6 +1134,12 @@ export function OrderDnDPage() {
                 <div className="flex justify-between text-emerald-600">
                   <span>Скидка {discount}%</span>
                   <span>− {formatCurrency(discountAmt)} {symbol}</span>
+                </div>
+              )}
+              {promoAmt > 0 && (
+                <div className="flex justify-between text-blue-600">
+                  <span>Промокод {appliedPromo?.code}</span>
+                  <span>− {formatCurrency(promoAmt)} {symbol}</span>
                 </div>
               )}
               <div className="flex justify-between items-baseline border-t pt-2 mt-2">

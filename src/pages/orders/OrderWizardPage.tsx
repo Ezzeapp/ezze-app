@@ -21,6 +21,8 @@ import { useClientsPaged, useCreateClient } from '@/hooks/useClients'
 import { useCleaningClientStats } from '@/hooks/useCleaningClientStats'
 import { useFavouriteItemTypes } from '@/hooks/useFavouriteItemTypes'
 import { useFormDraft } from '@/hooks/useFormDraft'
+import { validatePromoCode } from '@/hooks/usePromoCodes'
+import { useAuth } from '@/contexts/AuthContext'
 import { compressDefect } from '@/lib/imageCompression'
 
 const MAX_PHOTOS_PER_ITEM = 3
@@ -74,6 +76,7 @@ function makeLine(t: CleaningItemType, readyDate: string): CartLine {
 
 export function OrderWizardPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const symbol = useCurrencySymbol()
 
   const { data: enabledOrderTypes = DEFAULT_ENABLED_CONFIGS } = useCleaningEnabledOrderTypes()
@@ -243,6 +246,10 @@ export function OrderWizardPage() {
   const [tags, setTags] = useState<string[]>([])
   const [applyDefectsPct, setApplyDefectsPct] = useState(true)
   const [discount, setDiscount] = useState(0)
+  const [markup, setMarkup] = useState(0)
+  const [promoCode, setPromoCode] = useState('')
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; amount: number } | null>(null)
+  const [validatingPromo, setValidatingPromo] = useState(false)
   const [prepayPct, setPrepayPct] = useState(0)
   const [notes, setNotes] = useState('')
   const [pickupDate, setPickupDate] = useState('')
@@ -266,6 +273,9 @@ export function OrderWizardPage() {
     expressValue: string
     tags: string[]
     applyDefectsPct: boolean
+    markup: number
+    promoCode: string
+    appliedPromo: { code: string; amount: number } | null
     discount: number
     prepayPct: number
     notes: string
@@ -294,6 +304,9 @@ export function OrderWizardPage() {
     setExpressValue(d.expressValue || '50')
     setTags(d.tags || [])
     setApplyDefectsPct(d.applyDefectsPct ?? true)
+    setMarkup(d.markup || 0)
+    setPromoCode(d.promoCode || '')
+    setAppliedPromo(d.appliedPromo || null)
     setDiscount(d.discount || 0)
     setPrepayPct(d.prepayPct || 0)
     setNotes(d.notes || '')
@@ -315,12 +328,14 @@ export function OrderWizardPage() {
       isUrgent, deliveryMethod, deliveryFee, payment, paymentCash, paymentCard,
       expressMode, expressValue, tags, applyDefectsPct, discount, prepayPct, notes,
       pickupDate, deliveryDate, visitAddress, defaultDays, assignedTo, step,
+      markup, promoCode, appliedPromo,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart, clientId, clientName, clientPhone, orderType,
       isUrgent, deliveryMethod, deliveryFee, payment, paymentCash, paymentCard,
       expressMode, expressValue, tags, applyDefectsPct, discount, prepayPct, notes,
-      pickupDate, deliveryDate, visitAddress, defaultDays, assignedTo, step])
+      pickupDate, deliveryDate, visitAddress, defaultDays, assignedTo, step,
+      markup, promoCode, appliedPromo])
 
   // Расчёты
   function unitPriceOf(l: CartLine): number {
@@ -345,10 +360,32 @@ export function OrderWizardPage() {
       ? Math.round(subtotal * (parseFloat(expressValue) || 0) / 100)
       : (parseFloat(expressValue) || 0)
     : 0
-  const discountAmt = Math.round((subtotal + surchargeAmt) * discount / 100)
+  const markupAmt = Math.round(subtotal * markup / 100)
+  const discountAmt = Math.round((subtotal + surchargeAmt + markupAmt) * discount / 100)
+  const promoAmt = appliedPromo?.amount || 0
   const deliveryAdd = deliveryMethod === 'delivery' ? (parseFloat(deliveryFee) || 0) : 0
-  const total = Math.round(subtotal + surchargeAmt - discountAmt + deliveryAdd)
+  const total = Math.max(0, Math.round(subtotal + surchargeAmt + markupAmt - discountAmt - promoAmt + deliveryAdd))
   const prepayAmt = Math.round(total * prepayPct / 100)
+
+  async function applyPromoCode() {
+    const code = promoCode.trim().toUpperCase()
+    if (!code) return
+    if (!user?.id) { toast.error('Не удалось определить мастера'); return }
+    if (subtotal <= 0) { toast.error('Добавьте позиции перед применением промокода'); return }
+    setValidatingPromo(true)
+    try {
+      const res = await validatePromoCode(user.id, code, subtotal + surchargeAmt + markupAmt)
+      if (!res.valid) { toast.error(res.error || 'Неверный промокод'); return }
+      setAppliedPromo({ code, amount: res.discountAmount || 0 })
+      setPromoCode('')
+      toast.success(`Промокод применён: -${(res.discountAmount || 0).toLocaleString('ru')} ${symbol}`)
+    } finally {
+      setValidatingPromo(false)
+    }
+  }
+  function removePromoCode() {
+    setAppliedPromo(null)
+  }
 
   // Шаги
   const steps: { n: 1 | 2 | 3 | 4; label: string; icon: typeof User }[] = [
@@ -430,12 +467,14 @@ export function OrderWizardPage() {
         payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : (payment === 'cash' ? prepayAmt : 0),
         payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : (payment === 'card' ? prepayAmt : 0),
         surcharge_percent: isUrgent && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
-        surcharge_amount: surchargeAmt,
+        surcharge_amount: surchargeAmt + markupAmt,
         tags: [
           ...tags,
           ...(isUrgent && !tags.includes('Срочно') ? ['Срочно'] : []),
           ...(deliveryMethod === 'delivery' && !tags.includes('Доставка') ? ['Доставка'] : []),
           ...(deliveryMethod === 'pickup' && !tags.includes('Самовывоз') ? ['Самовывоз'] : []),
+          ...(markup > 0 ? [`Надбавка ${markup}%`] : []),
+          ...(appliedPromo ? [`Промокод ${appliedPromo.code}`] : []),
         ],
         pickup_date: orderType === 'carpet' ? (pickupDate || null) : null,
         delivery_date: orderType === 'carpet' ? (deliveryDate || null) : null,
@@ -697,6 +736,14 @@ export function OrderWizardPage() {
               surchargeAmt={surchargeAmt}
               tags={tags}
               setTags={setTags}
+              markup={markup}
+              setMarkup={setMarkup}
+              promoCode={promoCode}
+              setPromoCode={setPromoCode}
+              appliedPromo={appliedPromo}
+              applyPromoCode={applyPromoCode}
+              removePromoCode={removePromoCode}
+              validatingPromo={validatingPromo}
             />
           )}
         </div>
@@ -783,6 +830,12 @@ export function OrderWizardPage() {
                   <span>+ {formatCurrency(surchargeAmt)} {symbol}</span>
                 </div>
               )}
+              {markupAmt > 0 && (
+                <div className="flex justify-between text-amber-600">
+                  <span>Надбавка +{markup}%</span>
+                  <span>+ {formatCurrency(markupAmt)} {symbol}</span>
+                </div>
+              )}
               {deliveryAdd > 0 && (
                 <div className="flex justify-between text-violet-600">
                   <span>Доставка</span>
@@ -793,6 +846,12 @@ export function OrderWizardPage() {
                 <div className="flex justify-between text-emerald-600">
                   <span>Скидка {discount}%</span>
                   <span>− {formatCurrency(discountAmt)} {symbol}</span>
+                </div>
+              )}
+              {promoAmt > 0 && (
+                <div className="flex justify-between text-blue-600">
+                  <span>Промокод {appliedPromo?.code}</span>
+                  <span>− {formatCurrency(promoAmt)} {symbol}</span>
                 </div>
               )}
               <div className="flex items-baseline justify-between pt-2 border-t mt-2">
@@ -1621,6 +1680,8 @@ function Step4Payment({
   prepayAmt, symbol,
   expressMode, setExpressMode, expressValue, setExpressValue, surchargeAmt,
   tags, setTags,
+  markup, setMarkup,
+  promoCode, setPromoCode, appliedPromo, applyPromoCode, removePromoCode, validatingPromo,
 }: {
   isUrgent: boolean
   setIsUrgent: (b: boolean) => void
@@ -1658,6 +1719,14 @@ function Step4Payment({
   surchargeAmt: number
   tags: string[]
   setTags: (t: string[]) => void
+  markup: number
+  setMarkup: (n: number) => void
+  promoCode: string
+  setPromoCode: (s: string) => void
+  appliedPromo: { code: string; amount: number } | null
+  applyPromoCode: () => void
+  removePromoCode: () => void
+  validatingPromo: boolean
 }) {
   const paymentOptions = [
     { k: 'cash',     label: 'Наличные' },
@@ -1922,6 +1991,26 @@ function Step4Payment({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="p-3 rounded-xl border bg-muted/40">
+          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Надбавка</Label>
+          <div className="grid grid-cols-5 gap-1 mt-2">
+            {[0, 5, 10, 15, 20].map(d => (
+              <button
+                key={d}
+                onClick={() => setMarkup(d)}
+                className={cn(
+                  'h-9 rounded-md text-xs font-bold font-mono border transition-colors',
+                  markup === d
+                    ? 'border-amber-500 bg-amber-500 text-white'
+                    : 'border-border hover:border-amber-500/40'
+                )}
+              >
+                {d > 0 ? `+${d}%` : '0%'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-3 rounded-xl border bg-muted/40">
           <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Скидка</Label>
           <div className="grid grid-cols-5 gap-1 mt-2">
             {[0, 5, 10, 15, 20].map(d => (
@@ -1959,6 +2048,42 @@ function Step4Payment({
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="p-3 rounded-xl border bg-muted/40">
+          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Промокод</Label>
+          {appliedPromo ? (
+            <div className="flex items-center gap-2 mt-2 px-2 py-1.5 rounded-md border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/30">
+              <span className="font-mono text-sm font-bold text-blue-700 dark:text-blue-300 flex-1">{appliedPromo.code}</span>
+              <span className="font-mono text-xs font-bold text-blue-700 dark:text-blue-300">−{formatCurrency(appliedPromo.amount)} {symbol}</span>
+              <button
+                onClick={removePromoCode}
+                className="text-blue-700 dark:text-blue-300 hover:text-destructive p-0.5"
+                title="Убрать промокод"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 mt-2">
+              <Input
+                placeholder="WELCOME10"
+                value={promoCode}
+                onChange={e => setPromoCode(e.target.value.toUpperCase())}
+                onKeyDown={e => { if (e.key === 'Enter') applyPromoCode() }}
+                className="h-9 text-sm font-mono uppercase flex-1"
+              />
+              <Button
+                onClick={applyPromoCode}
+                disabled={!promoCode.trim() || validatingPromo}
+                size="sm"
+                className="h-9 shrink-0"
+                variant="default"
+              >
+                {validatingPromo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Применить'}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
