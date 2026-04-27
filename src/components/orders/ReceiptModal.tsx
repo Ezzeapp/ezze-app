@@ -51,6 +51,7 @@ export interface ReceiptData {
   payment_provider?: string | null  // 'click' | 'payme' | 'uzum' — детализация card-оплаты
   payment_cash?: number          // если mixed — сумма наличных
   payment_card?: number          // если mixed — сумма картой
+  payment_aggregator_amount?: number  // если mixed — сумма через агрегатор (Click/Payme/Uzum)
   ready_date?: string | null     // общий срок готовности заказа (YYYY-MM-DD)
   visit_address?: string | null  // адрес доставки/выезда
   tags?: string[]                // теги заказа
@@ -180,13 +181,21 @@ function buildReceiptCopyHtml(
             <span>Срок готовности:</span>
             <span>${dayjs(data.ready_date).format('DD.MM.YYYY')}</span>
           </div>` : ''}
-        ${data.payment_method === 'mixed' && (data.payment_cash || data.payment_card) ? `
+        ${data.payment_method === 'mixed' && (data.payment_cash || data.payment_card || data.payment_aggregator_amount) ? `
+          ${(data.payment_cash || 0) > 0 ? `
           <div style="display:flex;justify-content:space-between;margin-top:1px;color:#666;font-size:${narrow ? '9px' : '11px'};">
             <span>· Наличные:</span><span>${num(data.payment_cash || 0)} ${symbol}</span>
-          </div>
+          </div>` : ''}
+          ${(data.payment_card || 0) > 0 ? `
           <div style="display:flex;justify-content:space-between;color:#666;font-size:${narrow ? '9px' : '11px'};">
             <span>· Картой:</span><span>${num(data.payment_card || 0)} ${symbol}</span>
           </div>` : ''}
+          ${(data.payment_aggregator_amount || 0) > 0 ? `
+          <div style="display:flex;justify-content:space-between;color:#666;font-size:${narrow ? '9px' : '11px'};">
+            <span>· ${data.payment_provider === 'click' ? 'Click' : data.payment_provider === 'payme' ? 'Payme' : data.payment_provider === 'uzum' ? 'Uzum' : 'Агрегатор'}:</span>
+            <span>${num(data.payment_aggregator_amount || 0)} ${symbol}</span>
+          </div>` : ''}
+        ` : ''}
         <div style="display:flex;justify-content:space-between;margin-top:3px;">
           <span>Предоплата:</span><span>${num(data.prepaid_amount)} ${symbol}</span>
         </div>
@@ -401,14 +410,24 @@ function ReceiptPreview({ data, config, symbol, format }: {
                 <span>{dayjs(data.ready_date).format('DD.MM.YYYY')}</span>
               </div>
             )}
-            {data.payment_method === 'mixed' && (data.payment_cash || data.payment_card) ? (
+            {data.payment_method === 'mixed' && (data.payment_cash || data.payment_card || data.payment_aggregator_amount) ? (
               <>
-                <div className="flex justify-between text-gray-500 text-[10px]">
-                  <span>· Наличные:</span><span>{num(data.payment_cash || 0)} {symbol}</span>
-                </div>
-                <div className="flex justify-between text-gray-500 text-[10px]">
-                  <span>· Картой:</span><span>{num(data.payment_card || 0)} {symbol}</span>
-                </div>
+                {(data.payment_cash || 0) > 0 && (
+                  <div className="flex justify-between text-gray-500 text-[10px]">
+                    <span>· Наличные:</span><span>{num(data.payment_cash || 0)} {symbol}</span>
+                  </div>
+                )}
+                {(data.payment_card || 0) > 0 && (
+                  <div className="flex justify-between text-gray-500 text-[10px]">
+                    <span>· Картой:</span><span>{num(data.payment_card || 0)} {symbol}</span>
+                  </div>
+                )}
+                {(data.payment_aggregator_amount || 0) > 0 && (
+                  <div className="flex justify-between text-gray-500 text-[10px]">
+                    <span>· {data.payment_provider === 'click' ? 'Click' : data.payment_provider === 'payme' ? 'Payme' : data.payment_provider === 'uzum' ? 'Uzum' : 'Агрегатор'}:</span>
+                    <span>{num(data.payment_aggregator_amount || 0)} {symbol}</span>
+                  </div>
+                )}
               </>
             ) : null}
             <div className="flex justify-between mt-1">

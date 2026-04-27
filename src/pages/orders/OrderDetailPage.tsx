@@ -255,6 +255,7 @@ export function OrderDetailPage() {
     payment_provider: (order as any).payment_provider,
     payment_cash:     (order as any).payment_cash,
     payment_card:     (order as any).payment_card,
+    payment_aggregator_amount: (order as any).payment_aggregator_amount,
     ready_date:       order.ready_date,
     visit_address:    (order as any).visit_address,
     tags:             order.tags,
@@ -800,16 +801,26 @@ export function OrderDetailPage() {
                       </span>
                     </div>
                   )}
-                  {(order as any).payment_method === 'mixed' && (((order as any).payment_cash || 0) > 0 || ((order as any).payment_card || 0) > 0) && (
+                  {(order as any).payment_method === 'mixed' && (((order as any).payment_cash || 0) > 0 || ((order as any).payment_card || 0) > 0 || ((order as any).payment_aggregator_amount || 0) > 0) && (
                     <>
-                      <div className="flex justify-between text-xs text-muted-foreground/80 pl-3">
-                        <span>· Наличные</span>
-                        <span>{formatCurrency((order as any).payment_cash || 0)} {symbol}</span>
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground/80 pl-3">
-                        <span>· Картой</span>
-                        <span>{formatCurrency((order as any).payment_card || 0)} {symbol}</span>
-                      </div>
+                      {((order as any).payment_cash || 0) > 0 && (
+                        <div className="flex justify-between text-xs text-muted-foreground/80 pl-3">
+                          <span>· Наличные</span>
+                          <span>{formatCurrency((order as any).payment_cash || 0)} {symbol}</span>
+                        </div>
+                      )}
+                      {((order as any).payment_card || 0) > 0 && (
+                        <div className="flex justify-between text-xs text-muted-foreground/80 pl-3">
+                          <span>· Картой</span>
+                          <span>{formatCurrency((order as any).payment_card || 0)} {symbol}</span>
+                        </div>
+                      )}
+                      {((order as any).payment_aggregator_amount || 0) > 0 && (
+                        <div className="flex justify-between text-xs text-muted-foreground/80 pl-3">
+                          <span>· {(order as any).payment_provider === 'click' ? 'Click' : (order as any).payment_provider === 'payme' ? 'Payme' : (order as any).payment_provider === 'uzum' ? 'Uzum' : 'Агрегатор'}</span>
+                          <span>{formatCurrency((order as any).payment_aggregator_amount || 0)} {symbol}</span>
+                        </div>
+                      )}
                     </>
                   )}
                   {order.prepaid_amount > 0 && (

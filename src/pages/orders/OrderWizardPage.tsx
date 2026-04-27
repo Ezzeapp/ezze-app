@@ -163,7 +163,8 @@ export function OrderWizardPage() {
 
   // Корзина
   const [defaultDays, setDefaultDays] = useState(3)
-  const defaultReady = dayjs().add(defaultDays, 'day').format('YYYY-MM-DD')
+  const [customReadyDate, setCustomReadyDate] = useState('')
+  const defaultReady = customReadyDate || dayjs().add(defaultDays, 'day').format('YYYY-MM-DD')
   const [cart, setCart] = useState<CartLine[]>([])
   const [focusedKey, setFocusedKey] = useState<number | null>(null)
 
@@ -253,6 +254,7 @@ export function OrderWizardPage() {
   const [paymentProvider, setPaymentProvider] = useState<string | null>(null)
   const [paymentCash, setPaymentCash] = useState('')
   const [paymentCard, setPaymentCard] = useState('')
+  const [paymentAggregator, setPaymentAggregator] = useState('')
   // Срочная надбавка: % или фикс. сумма
   const [expressMode, setExpressMode] = useState<'percent' | 'fixed'>('percent')
   const [expressValue, setExpressValue] = useState<string>('50')
@@ -482,7 +484,8 @@ export function OrderWizardPage() {
         payment_method: payment,
         payment_provider: paymentProvider,
         payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : (payment === 'cash' ? prepayAmt : 0),
-        payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : (payment === 'card' ? prepayAmt : 0),
+        payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : (payment === 'card' && !paymentProvider ? prepayAmt : 0),
+        payment_aggregator_amount: payment === 'mixed' ? (parseFloat(paymentAggregator) || 0) : (payment === 'card' && paymentProvider ? prepayAmt : 0),
         surcharge_percent: isUrgent && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
         surcharge_amount: surchargeAmt + markupAmt,
         promo_code: appliedPromo?.code ?? null,
@@ -565,6 +568,7 @@ export function OrderWizardPage() {
         payment_provider: paymentProvider,
         payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : undefined,
         payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : undefined,
+        payment_aggregator_amount: payment === 'mixed' ? (parseFloat(paymentAggregator) || 0) : undefined,
         ready_date: defaultReady,
         visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? visitAddress : null,
         tags: tags,
@@ -762,6 +766,8 @@ export function OrderWizardPage() {
               setPaymentCash={setPaymentCash}
               paymentCard={paymentCard}
               setPaymentCard={setPaymentCard}
+              paymentAggregator={paymentAggregator}
+              setPaymentAggregator={setPaymentAggregator}
               discount={discount}
               setDiscount={setDiscount}
               prepayPct={prepayPct}
@@ -777,6 +783,8 @@ export function OrderWizardPage() {
               setVisitAddress={setVisitAddress}
               defaultDays={defaultDays}
               setDefaultDays={setDefaultDays}
+              customReadyDate={customReadyDate}
+              setCustomReadyDate={setCustomReadyDate}
               prepayAmt={prepayAmt}
               total={total}
               symbol={symbol}
@@ -1745,11 +1753,13 @@ function Step4Payment({
   deliveryFee, setDeliveryFee,
   payment, setPayment, paymentProvider, setPaymentProvider,
   paymentCash, setPaymentCash, paymentCard, setPaymentCard,
+  paymentAggregator, setPaymentAggregator,
   discount, setDiscount, prepayPct, setPrepayPct,
   notes, setNotes,
   orderType, pickupDate, setPickupDate, deliveryDate, setDeliveryDate,
   visitAddress, setVisitAddress,
   defaultDays, setDefaultDays,
+  customReadyDate, setCustomReadyDate,
   prepayAmt, total, symbol,
   expressMode, setExpressMode, expressValue, setExpressValue, surchargeAmt,
   tags, setTags,
@@ -1770,6 +1780,8 @@ function Step4Payment({
   setPaymentCash: (s: string) => void
   paymentCard: string
   setPaymentCard: (s: string) => void
+  paymentAggregator: string
+  setPaymentAggregator: (s: string) => void
   discount: number
   setDiscount: (n: number) => void
   prepayPct: number
@@ -1785,6 +1797,8 @@ function Step4Payment({
   setVisitAddress: (s: string) => void
   defaultDays: number
   setDefaultDays: (n: number) => void
+  customReadyDate: string
+  setCustomReadyDate: (s: string) => void
   prepayAmt: number
   total: number
   symbol: string
@@ -2029,14 +2043,15 @@ function Step4Payment({
         {payment === 'mixed' && (() => {
           const cash = parseFloat(paymentCash) || 0
           const card = parseFloat(paymentCard) || 0
-          const sum = cash + card
+          const aggr = parseFloat(paymentAggregator) || 0
+          const sum = cash + card + aggr
           const remaining = total - sum
           return (
             <div className="mt-3 p-3 rounded-xl border bg-muted/30">
               <div className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground mb-1.5">
                 Оплачено сейчас (можно частично)
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Наличными ({symbol})</Label>
                   <Input
@@ -2056,6 +2071,38 @@ function Step4Payment({
                     onChange={e => setPaymentCard(e.target.value)}
                     className="mt-1.5 font-mono font-bold"
                   />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+                    Click/Payme/Uzum ({symbol})
+                  </Label>
+                  <Input
+                    type="number" min={0}
+                    placeholder="0"
+                    value={paymentAggregator}
+                    onChange={e => setPaymentAggregator(e.target.value)}
+                    className="mt-1.5 font-mono font-bold"
+                  />
+                  {aggr > 0 && (
+                    <div className="grid grid-cols-3 gap-1 mt-1.5">
+                      {(['click','payme','uzum'] as const).map(p => (
+                        <button
+                          key={p}
+                          onClick={() => setPaymentProvider(p)}
+                          className={cn(
+                            'h-7 rounded text-[11px] font-bold border-2 transition-colors capitalize',
+                            paymentProvider === p
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : p === 'click' ? 'border-sky-300 text-sky-600 hover:border-sky-500'
+                              : p === 'payme' ? 'border-emerald-300 text-emerald-600 hover:border-emerald-500'
+                              : 'border-violet-300 text-violet-600 hover:border-violet-500'
+                          )}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="font-mono text-xs mt-2 grid grid-cols-2 gap-2">
@@ -2241,16 +2288,16 @@ function Step4Payment({
 
       <div>
         <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
-          Срок готовности по умолчанию
+          Срок готовности
         </Label>
         <div className="grid grid-cols-5 gap-2 mt-2">
           {[1, 2, 3, 5, 7].map(d => (
             <button
               key={d}
-              onClick={() => setDefaultDays(d)}
+              onClick={() => { setDefaultDays(d); setCustomReadyDate('') }}
               className={cn(
                 'h-10 rounded-md text-sm font-bold border transition-colors',
-                defaultDays === d
+                !customReadyDate && defaultDays === d
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border hover:border-primary/40'
               )}
@@ -2258,6 +2305,27 @@ function Step4Payment({
               {d} {d === 1 ? 'день' : 'дн'}
             </button>
           ))}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <Label className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground shrink-0">
+            или к дате:
+          </Label>
+          <DateInput
+            value={customReadyDate}
+            onChange={e => setCustomReadyDate(e.target.value)}
+            min={dayjs().format('YYYY-MM-DD')}
+            className={cn('h-9 flex-1', customReadyDate && 'border-primary ring-1 ring-primary/30')}
+          />
+          {customReadyDate && (
+            <Button
+              size="sm" variant="ghost"
+              onClick={() => setCustomReadyDate('')}
+              className="h-9 px-2"
+              title="Сбросить кастомную дату"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </div>
 

@@ -96,6 +96,7 @@ export interface CleaningOrder {
   payment_provider?: string | null
   payment_cash?: number | null
   payment_card?: number | null
+  payment_aggregator_amount?: number | null
   // промокод
   promo_code?: string | null
   promo_amount?: number | null
@@ -333,6 +334,7 @@ export interface CreateOrderPayload {
   surcharge_amount?: number
   payment_cash?: number
   payment_card?: number
+  payment_aggregator_amount?: number
   // промокод
   promo_code?: string | null
   promo_amount?: number
@@ -391,6 +393,7 @@ export function useCreateOrder() {
           surcharge_amount:  payload.surcharge_amount ?? 0,
           payment_cash:      payload.payment_cash ?? 0,
           payment_card:      payload.payment_card ?? 0,
+          payment_aggregator_amount: payload.payment_aggregator_amount ?? 0,
           promo_code:        payload.promo_code ?? null,
           promo_amount:      payload.promo_amount ?? 0,
           pickup_date:       payload.pickup_date ?? null,

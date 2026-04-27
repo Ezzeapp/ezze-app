@@ -279,11 +279,15 @@ export function OrderDnDPage() {
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
   const [showReceipt, setShowReceipt] = useState(false)
 
+  // Кастомная дата готовности (перебивает пресет 3-5/1-2 дней)
+  const [customReadyDate, setCustomReadyDate] = useState('')
+
   // Оплата
   const [payment, setPayment] = useState('cash')
   const [paymentProvider, setPaymentProvider] = useState<string | null>(null)
   const [paymentCash, setPaymentCash] = useState('')
   const [paymentCard, setPaymentCard] = useState('')
+  const [paymentAggregator, setPaymentAggregator] = useState('')
   const [discount, setDiscount] = useState(0)
   const [markup, setMarkup] = useState(0)
   const [discMode, setDiscMode] = useState<'discount' | 'markup'>('discount')
@@ -475,7 +479,7 @@ export function OrderDnDPage() {
           }
         })
       )
-      const readyDate = dayjs().add(zones.urgent.length > 0 ? 1 : 3, 'day').format('YYYY-MM-DD')
+      const readyDate = customReadyDate || dayjs().add(zones.urgent.length > 0 ? 1 : 3, 'day').format('YYYY-MM-DD')
       const order = await createOrder({
         order_type: orderType,
         client_id: clientId,
@@ -487,6 +491,7 @@ export function OrderDnDPage() {
         payment_provider: paymentProvider,
         payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : 0,
         payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : 0,
+        payment_aggregator_amount: payment === 'mixed' ? (parseFloat(paymentAggregator) || 0) : 0,
         surcharge_percent: zones.urgent.length > 0 && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
         surcharge_amount: surchargeAmt + markupAmt,
         visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? (visitAddress || null) : null,
@@ -542,6 +547,7 @@ export function OrderDnDPage() {
         payment_provider: paymentProvider,
         payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : undefined,
         payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : undefined,
+        payment_aggregator_amount: payment === 'mixed' ? (parseFloat(paymentAggregator) || 0) : undefined,
         ready_date: readyDate,
         visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? visitAddress : null,
         tags: tags,
@@ -941,6 +947,34 @@ export function OrderDnDPage() {
             )}
           </div>
 
+          {/* Custom ready date (опционально) */}
+          <div className="bg-background rounded-2xl border shadow-sm p-2.5 shrink-0 flex items-center gap-2">
+            <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground shrink-0">
+              Готов к:
+            </Label>
+            <Input
+              type="date"
+              value={customReadyDate}
+              onChange={e => setCustomReadyDate(e.target.value)}
+              min={dayjs().format('YYYY-MM-DD')}
+              className={cn('h-7 flex-1 text-xs font-mono', customReadyDate && 'border-primary ring-1 ring-primary/30')}
+              placeholder="auto"
+            />
+            {customReadyDate ? (
+              <button
+                onClick={() => setCustomReadyDate('')}
+                className="h-7 px-2 rounded text-[11px] text-muted-foreground hover:text-destructive border"
+                title="Сбросить — использовать пресет"
+              >
+                сброс
+              </button>
+            ) : (
+              <span className="text-[10px] text-muted-foreground shrink-0">
+                {zones.urgent.length > 0 ? '1-2 дн' : '3-5 дн'}
+              </span>
+            )}
+          </div>
+
           {/* Drop zones */}
           <div className="flex-1 grid grid-rows-2 gap-2.5 min-h-0 overflow-y-auto">
             <DropZone
@@ -1053,7 +1087,7 @@ export function OrderDnDPage() {
             </div>
 
             {payment === 'mixed' && (
-              <div className="grid grid-cols-2 gap-2 mb-3">
+              <div className="grid grid-cols-3 gap-2 mb-3">
                 <div>
                   <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Нал. ({symbol})</Label>
                   <Input
@@ -1073,6 +1107,36 @@ export function OrderDnDPage() {
                     onChange={e => setPaymentCard(e.target.value)}
                     className="mt-1 h-8 text-xs"
                   />
+                </div>
+                <div>
+                  <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Агрегатор ({symbol})</Label>
+                  <Input
+                    type="number" min={0}
+                    placeholder="0"
+                    value={paymentAggregator}
+                    onChange={e => setPaymentAggregator(e.target.value)}
+                    className="mt-1 h-8 text-xs"
+                  />
+                  {(parseFloat(paymentAggregator) || 0) > 0 && (
+                    <div className="grid grid-cols-3 gap-1 mt-1">
+                      {(['click','payme','uzum'] as const).map(p => (
+                        <button
+                          key={p}
+                          onClick={() => setPaymentProvider(p)}
+                          className={cn(
+                            'h-6 rounded text-[10px] font-bold border transition-colors capitalize',
+                            paymentProvider === p
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : p === 'click' ? 'border-sky-300 text-sky-600'
+                              : p === 'payme' ? 'border-emerald-300 text-emerald-600'
+                              : 'border-violet-300 text-violet-600'
+                          )}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
