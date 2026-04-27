@@ -21,6 +21,11 @@ interface TrackOrder {
   ready_date: string | null
   created_at: string
   notes: string | null
+  payment_method: string | null
+  payment_provider: string | null
+  surcharge_amount: number | null
+  promo_code: string | null
+  promo_amount: number | null
   items: { id: string; item_type_name: string; price: number; status: string; ready_date: string | null }[]
 }
 
@@ -79,7 +84,7 @@ export function CleaningTrackPage() {
     try {
       const { data } = await supabase
         .from('cleaning_orders')
-        .select('id, number, status, order_type, total_amount, paid_amount, prepaid_amount, payment_status, ready_date, created_at, notes, items:cleaning_order_items(id, item_type_name, price, status, ready_date)')
+        .select('id, number, status, order_type, total_amount, paid_amount, prepaid_amount, payment_status, ready_date, created_at, notes, payment_method, payment_provider, surcharge_amount, promo_code, promo_amount, items:cleaning_order_items(id, item_type_name, price, status, ready_date)')
         .eq('number', trimmed)
         .maybeSingle()
       if (data) setOrder(data as TrackOrder)
@@ -201,21 +206,77 @@ export function CleaningTrackPage() {
                 </div>
               )}
 
-              {/* Payment */}
-              {remaining > 0 && (
-                <div className="rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 px-4 py-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">К оплате:</span>
-                    <span className="font-bold text-orange-600 dark:text-orange-400">{formatCurrency(remaining)}</span>
-                  </div>
-                </div>
-              )}
+              {/* Payment details */}
+              <div className="rounded-lg border bg-muted/30 px-4 py-3 space-y-1.5 text-sm">
+                <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Оплата</div>
 
-              {order.payment_status === 'paid' && (
-                <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3 text-center">
-                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Полностью оплачен</span>
+                {/* Подытог = сумма позиций */}
+                {order.items.length > 0 && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Подытог</span>
+                    <span>{formatCurrency(order.items.reduce((s, i) => s + (i.price || 0), 0))}</span>
+                  </div>
+                )}
+
+                {/* Надбавка / срочно */}
+                {(order.surcharge_amount ?? 0) > 0 && (
+                  <div className="flex justify-between text-amber-600 dark:text-amber-400">
+                    <span>Надбавка</span>
+                    <span>+ {formatCurrency(order.surcharge_amount || 0)}</span>
+                  </div>
+                )}
+
+                {/* Промокод */}
+                {(order.promo_amount ?? 0) > 0 && (
+                  <div className="flex justify-between text-blue-600 dark:text-blue-400">
+                    <span>Промокод {order.promo_code ? `· ${order.promo_code}` : ''}</span>
+                    <span>− {formatCurrency(order.promo_amount || 0)}</span>
+                  </div>
+                )}
+
+                {/* Способ оплаты */}
+                {order.payment_method && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Способ</span>
+                    <span>
+                      {order.payment_provider === 'click' ? 'Click'
+                      : order.payment_provider === 'payme' ? 'Payme'
+                      : order.payment_provider === 'uzum' ? 'Uzum'
+                      : order.payment_method === 'cash' ? 'Наличные'
+                      : order.payment_method === 'card' ? 'Карта'
+                      : order.payment_method === 'transfer' ? 'Перевод'
+                      : order.payment_method === 'mixed' ? 'Смешанная'
+                      : order.payment_method}
+                    </span>
+                  </div>
+                )}
+
+                {/* Итого */}
+                <div className="flex justify-between font-bold pt-1.5 border-t">
+                  <span>Итого</span>
+                  <span>{formatCurrency(order.total_amount)}</span>
                 </div>
-              )}
+
+                {/* Предоплата */}
+                {order.prepaid_amount > 0 && (
+                  <div className="flex justify-between text-emerald-700 dark:text-emerald-400">
+                    <span>Предоплата</span>
+                    <span>{formatCurrency(order.prepaid_amount)}</span>
+                  </div>
+                )}
+
+                {/* К доплате / оплачен */}
+                {remaining > 0 ? (
+                  <div className="flex justify-between font-bold text-orange-600 dark:text-orange-400 pt-1.5 border-t">
+                    <span>К оплате</span>
+                    <span>{formatCurrency(remaining)}</span>
+                  </div>
+                ) : (
+                  <div className="text-center text-emerald-700 dark:text-emerald-400 font-medium pt-1.5 border-t">
+                    Полностью оплачен ✓
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

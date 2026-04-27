@@ -4,8 +4,10 @@ import {
   ArrowLeft, CheckCircle2, Loader2, Package, User, Calendar,
   AlertCircle, Printer, Phone, MessageCircle, AlertTriangle,
   Clock, Banknote, X, Trash2, Pencil, Plus, Check, Search,
-  Bell, MapPin, Copy, Truck,
+  Bell, MapPin, Copy, Truck, QrCode,
 } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
+import { APP_URL } from '@/lib/config'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 import { DeliverySlipModal, type DeliverySlipData } from '@/components/orders/DeliverySlipModal'
 import { Button } from '@/components/ui/button'
@@ -219,6 +221,7 @@ export function OrderDetailPage() {
 
   const [issueOpen,      setIssueOpen]      = useState(false)
   const [showReceipt,    setShowReceipt]    = useState(false)
+  const [showQr,         setShowQr]         = useState(false)
   const [showSlip,       setShowSlip]       = useState(false)
   const [payDialogOpen,  setPayDialogOpen]  = useState(false)
   const [payAmount,      setPayAmount]      = useState('')
@@ -429,6 +432,10 @@ export function OrderDetailPage() {
           <Button variant="outline" size="sm" onClick={() => setShowReceipt(true)}>
             <Printer className="h-4 w-4 sm:mr-1.5" />
             <span className="hidden sm:inline">Квитанция</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowQr(true)} title="QR-код отслеживания заказа">
+            <QrCode className="h-4 w-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">QR</span>
           </Button>
           {hasDelivery && (
             <Button variant="outline" size="sm" onClick={() => setShowSlip(true)}>
@@ -993,6 +1000,57 @@ export function OrderDetailPage() {
       {showSlip && slipData && (
         <DeliverySlipModal data={slipData} onClose={() => setShowSlip(false)} />
       )}
+
+      {/* QR-код отслеживания */}
+      {showQr && (() => {
+        const origin = (typeof window !== 'undefined' && window.location?.origin) || APP_URL
+        const trackUrl = `${origin}/track/${encodeURIComponent(order.number)}`
+        return (
+          <div
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowQr(false)}
+          >
+            <div
+              className="bg-background rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold">Отслеживание заказа</h3>
+                <Button variant="ghost" size="icon" onClick={() => setShowQr(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Покажите этот QR-код клиенту — он отсканирует и увидит статус, оплату и срок готовности заказа {order.number}.
+              </p>
+              <div className="grid place-items-center bg-white rounded-xl p-4">
+                <QRCodeSVG value={trackUrl} size={220} level="M" />
+              </div>
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground">Прямая ссылка:</div>
+                <div className="flex gap-2">
+                  <input
+                    readOnly
+                    value={trackUrl}
+                    className="flex-1 h-9 px-3 text-xs rounded-md border bg-muted/40 font-mono"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(trackUrl)
+                      toast.success('Ссылка скопирована')
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
