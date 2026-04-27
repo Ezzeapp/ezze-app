@@ -2291,27 +2291,46 @@ export function AppointmentDialog({
 
                       {/* ── НИЖНЯЯ ПЛАШКА: К ОПЛАТЕ ── */}
                       <div className="shrink-0 px-4 py-3 border-t-2 border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-950/30">
-                        <div className="flex items-baseline justify-between mb-1.5">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-                            {t('appointments.total')}
-                          </span>
-                          {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 && (
-                            <span className="text-[11px] flex items-baseline gap-1">
-                              <span className="text-muted-foreground line-through">{formatCurrency(basePrice, currency, i18n.language)}</span>
-                              <span className="text-muted-foreground/60">→</span>
-                              <span className={`font-semibold ${effectiveSurcharge > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                        {(effectiveDiscount > 0 || effectiveSurcharge > 0) && basePrice > 0 ? (
+                          // Со скидкой/надбавкой: крупно итог, мелкий инпут с базой
+                          <>
+                            <div className="flex items-baseline justify-between">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                                {t('appointments.total')}
+                              </span>
+                              <span className={`text-2xl font-bold tabular-nums ${effectiveSurcharge > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                                 {formatCurrency(finalPrice, currency, i18n.language)}
                               </span>
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground shrink-0">База</span>
+                              <div className="relative flex-1">
+                                <Input ref={priceInputRef} type="number" min={0}
+                                  className="h-8 text-sm pr-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  placeholder={totalBasePrice > 0 ? String(totalBasePrice) : '0'}
+                                  value={priceInput} onChange={e => setPriceInput(e.target.value)} />
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none select-none">{currencySymbol}</span>
+                              </div>
+                              <span className={`text-xs font-semibold tabular-nums shrink-0 ${effectiveSurcharge > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                {effectiveSurcharge > 0 ? `+${effectiveSurcharge}%` : `−${effectiveDiscount}%`}
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          // Без скидки/надбавки: большой инпут = итог
+                          <>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 mb-1.5 block">
+                              {t('appointments.total')}
                             </span>
-                          )}
-                        </div>
-                        <div className="relative">
-                          <Input ref={priceInputRef} type="number" min={0}
-                            className="h-12 w-full pr-12 text-2xl font-bold border-2 border-emerald-400/70 dark:border-emerald-700/60 focus-visible:border-emerald-600 dark:focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20 bg-white dark:bg-background placeholder:text-emerald-700/35 dark:placeholder:text-emerald-300/30"
-                            placeholder={totalBasePrice > 0 ? String(totalBasePrice) : '0'}
-                            value={priceInput} onChange={e => setPriceInput(e.target.value)} />
-                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-base text-emerald-700 dark:text-emerald-400 font-semibold pointer-events-none select-none">{currencySymbol}</span>
-                        </div>
+                            <div className="relative">
+                              <Input ref={priceInputRef} type="number" min={0}
+                                className="h-12 w-full pr-12 text-2xl font-bold border-2 border-emerald-400/70 dark:border-emerald-700/60 focus-visible:border-emerald-600 dark:focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20 bg-white dark:bg-background placeholder:text-emerald-700/35 dark:placeholder:text-emerald-300/30"
+                                placeholder={totalBasePrice > 0 ? String(totalBasePrice) : '0'}
+                                value={priceInput} onChange={e => setPriceInput(e.target.value)} />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-base text-emerald-700 dark:text-emerald-400 font-semibold pointer-events-none select-none">{currencySymbol}</span>
+                            </div>
+                          </>
+                        )}
                       </div>
 
                     </div>
