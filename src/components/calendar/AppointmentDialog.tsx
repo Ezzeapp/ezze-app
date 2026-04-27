@@ -315,6 +315,8 @@ export function AppointmentDialog({
     return saved === 'wizard' ? 'wizard' : 'classic'
   })
   useEffect(() => { localStorage.setItem('appt_layout', apptLayout) }, [apptLayout])
+  // В режиме редактирования всегда показываем классику — wizard заточен под создание
+  const effectiveLayout = editAppt ? 'classic' : apptLayout
   const [wizardStep, setWizardStep] = useState(0)
   // Сброс шага при открытии новой записи
   useEffect(() => { if (open && !editAppt) setWizardStep(0) }, [open, editAppt])
@@ -1737,7 +1739,7 @@ export function AppointmentDialog({
 
               {/* ── БОЛЬШОЙ ДЕСКТОП (≥ lg) ─── */}
               <div className="hidden lg:flex flex-col flex-1 overflow-hidden">
-              {apptLayout === 'classic' && (<>
+              {effectiveLayout === 'classic' && (<>
                 {/* L-форма + Правая панель сводки */}
                 <div className="flex-1 flex overflow-hidden bg-muted/20">
 
@@ -2396,7 +2398,7 @@ export function AppointmentDialog({
                 </div>
               </>)}{/* end classic */}
 
-              {apptLayout === 'wizard' && (() => {
+              {effectiveLayout === 'wizard' && (() => {
                 const wizSteps = [
                   { label: 'Услуга', value: selectedSvcs.length === 0 ? '' : selectedSvcs.length === 1 ? selectedSvcs[0].name : `${selectedSvcs.length} услуги` },
                   { label: 'Время',  value: selectedDate && selectedTime ? `${dayjs(selectedDate).format('D MMM')} · ${selectedTime}` : '' },
