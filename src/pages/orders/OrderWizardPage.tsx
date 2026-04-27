@@ -20,6 +20,7 @@ import { useCleaningItemTypes, type CleaningItemType } from '@/hooks/useCleaning
 import { useClientsPaged, useCreateClient } from '@/hooks/useClients'
 import { useCleaningClientStats } from '@/hooks/useCleaningClientStats'
 import { useFavouriteItemTypes } from '@/hooks/useFavouriteItemTypes'
+import { useFormDraft } from '@/hooks/useFormDraft'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
@@ -49,7 +50,7 @@ const COLOR_PALETTE = [
   'Чёрный','Белый','Бежевый','Серый','Синий','Красный','Зелёный','Коричневый','Жёлтый','Розовый','Разноцвет',
 ]
 const SIZES = ['S','M','L','XL','XXL']
-const COMMON_DEFECTS = ['Пятно','Потёртость','Дыра','Зацепка','Выцветший','Засаленный']
+import { DEFECT_MODIFIERS, defectsPctMultiplier } from '@/lib/cleaningDefects'
 
 let keySeq = 0
 function makeLine(t: CleaningItemType, readyDate: string): CartLine {
@@ -219,7 +220,8 @@ export function OrderWizardPage() {
   const [showReceipt, setShowReceipt] = useState(false)
 
   // Оплата
-  const [urgency, setUrgency] = useState<'normal' | 'urgent' | 'pickup' | 'delivery'>('normal')
+  const [isUrgent, setIsUrgent] = useState(false)
+  const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [payment, setPayment] = useState<string>('cash')
   const [paymentCash, setPaymentCash] = useState('')
   const [paymentCard, setPaymentCard] = useState('')
@@ -234,18 +236,88 @@ export function OrderWizardPage() {
   const [deliveryDate, setDeliveryDate] = useState('')
   const [visitAddress, setVisitAddress] = useState('')
 
+  // Черновик в localStorage
+  interface WizardDraft {
+    cart: CartLine[]
+    clientId: string | null
+    clientName: string
+    clientPhone: string
+    orderType: OrderType
+    isUrgent: boolean
+    deliveryMethod: 'pickup' | 'delivery'
+    payment: string
+    paymentCash: string
+    paymentCard: string
+    expressMode: 'percent' | 'fixed'
+    expressValue: string
+    tags: string[]
+    discount: number
+    prepayPct: number
+    notes: string
+    pickupDate: string
+    deliveryDate: string
+    visitAddress: string
+    defaultDays: number
+    assignedTo: string | null
+    step: 1 | 2 | 3 | 4
+  }
+  const { restored, save: saveDraft, clear: clearDraft, dismiss: dismissDraft } = useFormDraft<WizardDraft>('cleaning_wizard_draft')
+
+  function applyDraft(d: WizardDraft) {
+    setCart(d.cart || [])
+    setClientId(d.clientId)
+    setClientName(d.clientName || '')
+    setClientPhone(d.clientPhone || '')
+    setOrderType(d.orderType || 'clothing')
+    setIsUrgent(!!d.isUrgent)
+    setDeliveryMethod(d.deliveryMethod || 'pickup')
+    setPayment(d.payment || 'cash')
+    setPaymentCash(d.paymentCash || '')
+    setPaymentCard(d.paymentCard || '')
+    setExpressMode(d.expressMode || 'percent')
+    setExpressValue(d.expressValue || '50')
+    setTags(d.tags || [])
+    setDiscount(d.discount || 0)
+    setPrepayPct(d.prepayPct || 0)
+    setNotes(d.notes || '')
+    setPickupDate(d.pickupDate || '')
+    setDeliveryDate(d.deliveryDate || '')
+    setVisitAddress(d.visitAddress || '')
+    setDefaultDays(d.defaultDays || 3)
+    setAssignedTo(d.assignedTo)
+    setStep(d.step || 1)
+    clearDraft()
+  }
+
+  // Авто-сохранение черновика
+  useEffect(() => {
+    // не сохраняем пустую форму
+    if (cart.length === 0 && !clientId && !notes && tags.length === 0) return
+    saveDraft({
+      cart, clientId, clientName, clientPhone, orderType,
+      isUrgent, deliveryMethod, payment, paymentCash, paymentCard,
+      expressMode, expressValue, tags, discount, prepayPct, notes,
+      pickupDate, deliveryDate, visitAddress, defaultDays, assignedTo, step,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart, clientId, clientName, clientPhone, orderType,
+      isUrgent, deliveryMethod, payment, paymentCash, paymentCard,
+      expressMode, expressValue, tags, discount, prepayPct, notes,
+      pickupDate, deliveryDate, visitAddress, defaultDays, assignedTo, step])
+
   // Расчёты
   function lineSum(l: CartLine) {
+    const mul = defectsPctMultiplier(l.defects)
     if (orderType === 'carpet') {
       const w = parseFloat(l.width_m) || 0
       const h = parseFloat(l.length_m) || 0
       const area = w * h
-      if (area > 0) return area * l.type.default_price * l.qty
+      if (area > 0) return area * l.type.default_price * l.qty * mul
     }
-    return l.type.default_price * l.qty
+    return l.type.default_price * l.qty * mul
   }
   const subtotal = cart.reduce((s, l) => s + lineSum(l), 0)
-  const surchargeAmt = urgency === 'urgent'
+  const surchargeAmt = isUrgent
     ? expressMode === 'percent'
       ? Math.round(subtotal * (parseFloat(expressValue) || 0) / 100)
       : (parseFloat(expressValue) || 0)
@@ -305,6 +377,12 @@ export function OrderWizardPage() {
     }
     if (orderType === 'furniture' && !visitAddress.trim()) {
       toast.error('Укажите адрес выезда')
+      setStep(4)
+      return
+    }
+    if (deliveryMethod === 'delivery' && !visitAddress.trim()) {
+      toast.error('Укажите адрес доставки')
+      setStep(4)
       return
     }
     if (payment === 'mixed') {
@@ -323,26 +401,32 @@ export function OrderWizardPage() {
         total_amount: total,
         ready_date: defaultReady,
         notes: notes || null,
-        is_express: urgency === 'urgent',
+        is_express: isUrgent,
         payment_method: payment,
         payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : (payment === 'cash' ? prepayAmt : 0),
         payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : (payment === 'card' ? prepayAmt : 0),
-        surcharge_percent: urgency === 'urgent' && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
+        surcharge_percent: isUrgent && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
         surcharge_amount: surchargeAmt,
-        tags,
+        tags: [
+          ...tags,
+          ...(isUrgent && !tags.includes('Срочно') ? ['Срочно'] : []),
+          ...(deliveryMethod === 'delivery' && !tags.includes('Доставка') ? ['Доставка'] : []),
+          ...(deliveryMethod === 'pickup' && !tags.includes('Самовывоз') ? ['Самовывоз'] : []),
+        ],
         pickup_date: orderType === 'carpet' ? (pickupDate || null) : null,
         delivery_date: orderType === 'carpet' ? (deliveryDate || null) : null,
-        visit_address: orderType === 'furniture' ? (visitAddress || null) : null,
+        visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? (visitAddress || null) : null,
         items: cart.flatMap(l => Array.from({ length: l.qty }, () => {
           const w = parseFloat(l.width_m) || null
           const h = parseFloat(l.length_m) || null
+          const mul = defectsPctMultiplier(l.defects)
           return {
             item_type_id: l.type.id.startsWith('custom:') ? null : l.type.id,
             item_type_name: l.type.name,
             color: l.color || null,
             brand: l.brand || null,
             defects: l.defects || null,
-            price: orderType === 'carpet' && w && h ? w * h * l.type.default_price : l.type.default_price,
+            price: (orderType === 'carpet' && w && h ? w * h * l.type.default_price : l.type.default_price) * mul,
             ready_date: l.ready_date || null,
             width_m: orderType === 'carpet' ? w : null,
             length_m: orderType === 'carpet' ? h : null,
@@ -382,6 +466,7 @@ export function OrderWizardPage() {
       }
       setReceiptData(rData)
       setCreatedOrder({ id: order.id, number: order.number })
+      clearDraft()
       toast.success(`Заказ ${order.number} принят`)
     } catch (e: any) {
       toast.error(e.message || 'Ошибка создания заказа')
@@ -414,6 +499,22 @@ export function OrderWizardPage() {
           <X className="h-4 w-4 sm:hidden" />
         </Button>
       </div>
+
+      {/* ── Restore draft banner ───────────────────────────────── */}
+      {restored && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900/50 px-3 sm:px-6 py-2 flex items-center gap-3 shrink-0">
+          <div className="text-sm font-semibold text-amber-900 dark:text-amber-200 flex-1">
+            Найден незавершённый заказ ({restored.cart?.length || 0} позиций
+            {restored.clientName ? `, клиент ${restored.clientName}` : ''})
+          </div>
+          <Button size="sm" variant="default" onClick={() => applyDraft(restored)} className="h-8">
+            Восстановить
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => { dismissDraft(); clearDraft() }} className="h-8">
+            Начать заново
+          </Button>
+        </div>
+      )}
 
       {/* ── Progress ───────────────────────────────────────────── */}
       <div className="bg-background border-b px-3 sm:px-6 py-3 flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none shrink-0">
@@ -513,6 +614,7 @@ export function OrderWizardPage() {
               removeLine={removeLine}
               orderType={orderType}
               symbol={symbol}
+              lineSum={lineSum}
               uploadPhoto={uploadPhoto}
               removePhoto={removePhoto}
               photoUploadingKey={photoUploadingKey}
@@ -521,8 +623,10 @@ export function OrderWizardPage() {
 
           {step === 4 && (
             <Step4Payment
-              urgency={urgency}
-              setUrgency={setUrgency}
+              isUrgent={isUrgent}
+              setIsUrgent={setIsUrgent}
+              deliveryMethod={deliveryMethod}
+              setDeliveryMethod={setDeliveryMethod}
               payment={payment}
               setPayment={setPayment}
               paymentCash={paymentCash}
@@ -633,7 +737,7 @@ export function OrderWizardPage() {
                 <span>Подытог</span>
                 <span>{formatCurrency(subtotal)} {symbol}</span>
               </div>
-              {urgency === 'urgent' && surchargeAmt > 0 && (
+              {isUrgent && surchargeAmt > 0 && (
                 <div className="flex justify-between text-red-500">
                   <span>Срочно {expressMode === 'percent' ? `+${expressValue}%` : ''}</span>
                   <span>+ {formatCurrency(surchargeAmt)} {symbol}</span>
@@ -1097,7 +1201,7 @@ function Step2Items({
 
 function Step3Details({
   cart, focusedKey, setFocusedKey, updateLine, removeLine,
-  orderType, symbol,
+  orderType, symbol, lineSum,
   uploadPhoto, removePhoto, photoUploadingKey,
 }: {
   cart: CartLine[]
@@ -1107,6 +1211,7 @@ function Step3Details({
   removeLine: (key: number) => void
   orderType: OrderType
   symbol: string
+  lineSum: (l: CartLine) => number
   uploadPhoto: (key: number, file: File) => Promise<void>
   removePhoto: (key: number, url: string) => void
   photoUploadingKey: number | null
@@ -1290,26 +1395,36 @@ function Step3Details({
         </div>
 
         <div className="mb-4">
-          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Дефекты при приёме</Label>
+          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+            Дефекты при приёме
+            <span className="text-[9px] ml-2 normal-case text-muted-foreground/70 tracking-normal">
+              (некоторые увеличивают цену — смотрите %)
+            </span>
+          </Label>
           <div className="flex gap-1.5 flex-wrap mt-1.5">
-            {COMMON_DEFECTS.map(d => {
+            {DEFECT_MODIFIERS.map(d => {
               const list = focused.defects.split(',').map(s => s.trim()).filter(Boolean)
-              const on = list.includes(d)
+              const on = list.includes(d.name)
               return (
                 <button
-                  key={d}
+                  key={d.id}
                   onClick={() => {
-                    const next = on ? list.filter(x => x !== d) : [...list, d]
+                    const next = on ? list.filter(x => x !== d.name) : [...list, d.name]
                     updateLine(focused.key, { defects: next.join(', ') })
                   }}
                   className={cn(
-                    'h-9 px-3 rounded-md text-sm border transition-colors',
+                    'h-9 px-3 rounded-md text-sm border transition-colors flex items-center gap-1.5',
                     on
                       ? 'border-red-500 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 font-semibold'
                       : 'border-border hover:border-primary/40'
                   )}
                 >
-                  {d}
+                  {d.name}
+                  {d.pct > 0 && (
+                    <span className={cn('font-mono text-[10.5px]', on ? 'text-red-600' : 'text-muted-foreground')}>
+                      +{d.pct}%
+                    </span>
+                  )}
                 </button>
               )
             })}
@@ -1395,7 +1510,8 @@ function Step3Details({
 // ── Step 4: Оплата ──────────────────────────────────────────────────────────
 
 function Step4Payment({
-  urgency, setUrgency, payment, setPayment,
+  isUrgent, setIsUrgent, deliveryMethod, setDeliveryMethod,
+  payment, setPayment,
   paymentCash, setPaymentCash, paymentCard, setPaymentCard,
   discount, setDiscount, prepayPct, setPrepayPct,
   notes, setNotes,
@@ -1406,8 +1522,10 @@ function Step4Payment({
   expressMode, setExpressMode, expressValue, setExpressValue, surchargeAmt,
   tags, setTags,
 }: {
-  urgency: 'normal' | 'urgent' | 'pickup' | 'delivery'
-  setUrgency: (u: 'normal' | 'urgent' | 'pickup' | 'delivery') => void
+  isUrgent: boolean
+  setIsUrgent: (b: boolean) => void
+  deliveryMethod: 'pickup' | 'delivery'
+  setDeliveryMethod: (m: 'pickup' | 'delivery') => void
   payment: string
   setPayment: (s: string) => void
   paymentCash: string
@@ -1439,12 +1557,6 @@ function Step4Payment({
   tags: string[]
   setTags: (t: string[]) => void
 }) {
-  const urgencyOptions = [
-    { k: 'normal',   label: 'Стандарт',  sub: '3–5 дней',         icon: Clock,  color: 'text-blue-600',    accent: 'border-blue-500'    },
-    { k: 'urgent',   label: 'Срочный',   sub: 'за 24 часа · +50%', icon: Zap,    color: 'text-red-600',     accent: 'border-red-500'     },
-    { k: 'pickup',   label: 'Самовывоз', sub: 'бесплатно',         icon: Package, color: 'text-emerald-600', accent: 'border-emerald-500' },
-    { k: 'delivery', label: 'Доставка',  sub: 'курьер',            icon: Truck,  color: 'text-violet-600',  accent: 'border-violet-500'  },
-  ] as const
   const paymentOptions = [
     { k: 'cash',     label: 'Наличные' },
     { k: 'card',     label: 'Карта' },
@@ -1461,35 +1573,97 @@ function Step4Payment({
         </p>
       </div>
 
-      <div>
-        <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Срочность</Label>
-        <div className="grid grid-cols-2 gap-2 mt-2">
-          {urgencyOptions.map(u => {
-            const Icon = u.icon
-            const sel = urgency === u.k
-            return (
-              <button
-                key={u.k}
-                onClick={() => setUrgency(u.k as any)}
-                className={cn(
-                  'flex items-center gap-3 p-3 sm:p-4 rounded-xl border-2 text-left transition-colors',
-                  sel ? `${u.accent} bg-muted/40` : 'border-border hover:border-primary/40'
-                )}
-              >
-                <div className={cn('h-10 w-10 rounded-lg grid place-items-center bg-muted', u.color)}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="font-bold text-sm sm:text-base">{u.label}</div>
-                  <div className="text-xs text-muted-foreground">{u.sub}</div>
-                </div>
-              </button>
-            )
-          })}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Срочность */}
+        <div>
+          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Срочность</Label>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <button
+              onClick={() => setIsUrgent(false)}
+              className={cn(
+                'flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-colors',
+                !isUrgent ? 'border-blue-500 bg-blue-500/5' : 'border-border hover:border-primary/40'
+              )}
+            >
+              <div className="h-10 w-10 rounded-lg grid place-items-center bg-muted text-blue-600">
+                <Clock className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="font-bold text-sm">Стандарт</div>
+                <div className="text-xs text-muted-foreground">3–5 дней</div>
+              </div>
+            </button>
+            <button
+              onClick={() => setIsUrgent(true)}
+              className={cn(
+                'flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-colors',
+                isUrgent ? 'border-red-500 bg-red-500/5' : 'border-border hover:border-primary/40'
+              )}
+            >
+              <div className="h-10 w-10 rounded-lg grid place-items-center bg-muted text-red-600">
+                <Zap className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="font-bold text-sm">Срочный</div>
+                <div className="text-xs text-muted-foreground">за 24 часа</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Способ выдачи */}
+        <div>
+          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Способ выдачи</Label>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <button
+              onClick={() => setDeliveryMethod('pickup')}
+              className={cn(
+                'flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-colors',
+                deliveryMethod === 'pickup' ? 'border-emerald-500 bg-emerald-500/5' : 'border-border hover:border-primary/40'
+              )}
+            >
+              <div className="h-10 w-10 rounded-lg grid place-items-center bg-muted text-emerald-600">
+                <Package className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="font-bold text-sm">Самовывоз</div>
+                <div className="text-xs text-muted-foreground">бесплатно</div>
+              </div>
+            </button>
+            <button
+              onClick={() => setDeliveryMethod('delivery')}
+              className={cn(
+                'flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-colors',
+                deliveryMethod === 'delivery' ? 'border-violet-500 bg-violet-500/5' : 'border-border hover:border-primary/40'
+              )}
+            >
+              <div className="h-10 w-10 rounded-lg grid place-items-center bg-muted text-violet-600">
+                <Truck className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="font-bold text-sm">Доставка</div>
+                <div className="text-xs text-muted-foreground">курьер</div>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 
-      {urgency === 'urgent' && (
+      {(deliveryMethod === 'delivery' || orderType === 'furniture') && (
+        <div>
+          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+            {orderType === 'furniture' ? 'Адрес выезда' : 'Адрес доставки'} *
+          </Label>
+          <Input
+            placeholder="ул. Пушкина, 10, кв. 5"
+            value={visitAddress}
+            onChange={e => setVisitAddress(e.target.value)}
+            className="mt-1.5"
+          />
+        </div>
+      )}
+
+      {isUrgent && (
         <div className="p-3 rounded-xl border-2 border-red-500/40 bg-red-50/40 dark:bg-red-950/20">
           <Label className="text-xs uppercase tracking-wider font-bold text-red-700 dark:text-red-300">
             Размер срочной надбавки
@@ -1691,18 +1865,6 @@ function Step4Payment({
               className="mt-1.5"
             />
           </div>
-        </div>
-      )}
-
-      {orderType === 'furniture' && (
-        <div>
-          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Адрес выезда</Label>
-          <Input
-            placeholder="ул. Пушкина, 10, кв. 5"
-            value={visitAddress}
-            onChange={e => setVisitAddress(e.target.value)}
-            className="mt-1.5"
-          />
         </div>
       )}
 

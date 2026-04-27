@@ -19,6 +19,8 @@ import { useCleaningItemTypes, type CleaningItemType } from '@/hooks/useCleaning
 import { useClientsPaged, useCreateClient } from '@/hooks/useClients'
 import { useCleaningClientStats } from '@/hooks/useCleaningClientStats'
 import { useFavouriteItemTypes } from '@/hooks/useFavouriteItemTypes'
+import { DEFECT_MODIFIERS, defectsPctMultiplier } from '@/lib/cleaningDefects'
+import { useFormDraft } from '@/hooks/useFormDraft'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
@@ -28,7 +30,8 @@ import dayjs from 'dayjs'
 
 // ── Типы ────────────────────────────────────────────────────────────────────
 
-type ZoneId = 'normal' | 'urgent' | 'delivery'
+type ZoneId = 'normal' | 'urgent'
+type DeliveryMethod = 'pickup' | 'delivery'
 
 interface CartLine {
   key: number
@@ -48,7 +51,6 @@ const COLOR_PALETTE = [
   'Чёрный','Белый','Бежевый','Серый','Синий','Красный','Зелёный','Коричневый','Жёлтый','Розовый','Разноцвет',
 ]
 const SIZES = ['S','M','L','XL','XXL']
-const COMMON_DEFECTS = ['Пятно','Потёртость','Дыра','Зацепка','Выцветший','Засаленный']
 
 let keySeq = 0
 function makeLine(t: CleaningItemType): CartLine {
@@ -141,8 +143,8 @@ export function OrderDnDPage() {
   const [zones, setZones] = useState<Record<ZoneId, CartLine[]>>({
     normal: [],
     urgent: [],
-    delivery: [],
   })
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('pickup')
   const [dragging, setDragging] = useState<string | null>(null)
   const [dropHot, setDropHot] = useState<ZoneId | null>(null)
   // Активная зона для click-to-add (по умолчанию обычная)
@@ -157,7 +159,6 @@ export function OrderDnDPage() {
       if (inField) return
       if (e.key === '1') { e.preventDefault(); setActiveZone('normal') }
       else if (e.key === '2') { e.preventDefault(); setActiveZone('urgent') }
-      else if (e.key === '3') { e.preventDefault(); setActiveZone('delivery') }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -264,17 +265,72 @@ export function OrderDnDPage() {
   const [expressValue, setExpressValue] = useState('50')
   const [extraTags, setExtraTags] = useState<string[]>([])
 
+  // Черновик в localStorage
+  interface DnDDraft {
+    zones: Record<ZoneId, CartLine[]>
+    deliveryMethod: DeliveryMethod
+    activeZone: ZoneId
+    clientId: string | null
+    clientName: string
+    clientPhone: string
+    orderType: OrderType
+    payment: string
+    paymentCash: string
+    paymentCard: string
+    discount: number
+    visitAddress: string
+    expressMode: 'percent' | 'fixed'
+    expressValue: string
+    extraTags: string[]
+  }
+  const { restored: restoredDnD, save: saveDraft, clear: clearDraft, dismiss: dismissDraft } = useFormDraft<DnDDraft>('cleaning_dnd_draft')
+
+  function applyDnDDraft(d: DnDDraft) {
+    setZones(d.zones || { normal: [], urgent: [] })
+    setDeliveryMethod(d.deliveryMethod || 'pickup')
+    setActiveZone(d.activeZone || 'normal')
+    setClientId(d.clientId)
+    setClientName(d.clientName || '')
+    setClientPhone(d.clientPhone || '')
+    setOrderType(d.orderType || 'clothing')
+    setPayment(d.payment || 'cash')
+    setPaymentCash(d.paymentCash || '')
+    setPaymentCard(d.paymentCard || '')
+    setDiscount(d.discount || 0)
+    setVisitAddress(d.visitAddress || '')
+    setExpressMode(d.expressMode || 'percent')
+    setExpressValue(d.expressValue || '50')
+    setExtraTags(d.extraTags || [])
+    clearDraft()
+  }
+
+  // Авто-сохранение
+  useEffect(() => {
+    const allLinesCount = zones.normal.length + zones.urgent.length
+    if (allLinesCount === 0 && !clientId && extraTags.length === 0) return
+    saveDraft({
+      zones, deliveryMethod, activeZone,
+      clientId, clientName, clientPhone, orderType,
+      payment, paymentCash, paymentCard, discount, visitAddress,
+      expressMode, expressValue, extraTags,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zones, deliveryMethod, activeZone, clientId, clientName, clientPhone, orderType,
+      payment, paymentCash, paymentCard, discount, visitAddress,
+      expressMode, expressValue, extraTags])
+
   // Расчёты
   function lineSum(l: CartLine): number {
+    const mul = defectsPctMultiplier(l.defects)
     if (orderType === 'carpet') {
       const w = parseFloat(l.width_m) || 0
       const h = parseFloat(l.length_m) || 0
       const area = w * h
-      if (area > 0) return area * l.type.default_price * l.qty
+      if (area > 0) return area * l.type.default_price * l.qty * mul
     }
-    return l.type.default_price * l.qty
+    return l.type.default_price * l.qty * mul
   }
-  const allLines = useMemo(() => [...zones.normal, ...zones.urgent, ...zones.delivery], [zones])
+  const allLines = useMemo(() => [...zones.normal, ...zones.urgent], [zones])
   const subtotal = useMemo(
     () => allLines.reduce((s, l) => s + lineSum(l), 0),
     [allLines, orderType]
@@ -287,7 +343,7 @@ export function OrderDnDPage() {
     ? Math.round(urgentTotal * (parseFloat(expressValue) || 0) / 100)
     : (zones.urgent.length > 0 ? (parseFloat(expressValue) || 0) : 0)
   const discountAmt = Math.round((subtotal + surchargeAmt) * discount / 100)
-  const deliveryAdd = zones.delivery.length > 0 ? 350 : 0
+  const deliveryAdd = deliveryMethod === 'delivery' ? 350 : 0
   const total = subtotal + surchargeAmt - discountAmt + deliveryAdd
 
   async function handleSubmit() {
@@ -310,25 +366,31 @@ export function OrderDnDPage() {
       toast.error('Укажите адрес выезда (для мебели)')
       return
     }
+    if (deliveryMethod === 'delivery' && !visitAddress.trim()) {
+      toast.error('Укажите адрес доставки')
+      return
+    }
     try {
       // Каждая зона → один заказ? Нет — один заказ, но с tags для зоны.
       // Решение: сохраняем как один заказ; срочный/доставка фиксируются через is_express и tags.
       const tags: string[] = [...extraTags]
       if (zones.urgent.length > 0 && !tags.includes('Срочно')) tags.push('Срочно')
-      if (zones.delivery.length > 0 && !tags.includes('Доставка')) tags.push('Доставка')
+      if (deliveryMethod === 'delivery' && !tags.includes('Доставка')) tags.push('Доставка')
+      else if (deliveryMethod === 'pickup' && !tags.includes('Самовывоз')) tags.push('Самовывоз')
 
       const items = allLines.flatMap(l =>
         Array.from({ length: l.qty }, () => {
           const w = parseFloat(l.width_m) || null
           const h = parseFloat(l.length_m) || null
           const area = orderType === 'carpet' && w && h ? w * h : null
+          const mul = defectsPctMultiplier(l.defects)
           return {
             item_type_id: l.type.id.startsWith('custom:') ? null : l.type.id,
             item_type_name: l.type.name,
             color: l.color || null,
             brand: l.brand || null,
             defects: l.defects || null,
-            price: orderType === 'carpet' && w && h ? w * h * l.type.default_price : l.type.default_price,
+            price: (orderType === 'carpet' && w && h ? w * h * l.type.default_price : l.type.default_price) * mul,
             ready_date: dayjs().add(l.type.default_days || 3, 'day').format('YYYY-MM-DD'),
             width_m: orderType === 'carpet' ? w : null,
             length_m: orderType === 'carpet' ? h : null,
@@ -349,7 +411,7 @@ export function OrderDnDPage() {
         payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : 0,
         surcharge_percent: zones.urgent.length > 0 && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
         surcharge_amount: surchargeAmt,
-        visit_address: orderType === 'furniture' ? (visitAddress || null) : null,
+        visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? (visitAddress || null) : null,
         tags,
         items,
       })
@@ -384,6 +446,7 @@ export function OrderDnDPage() {
       }
       setReceiptData(rData)
       setCreatedOrder({ id: order.id, number: order.number })
+      clearDraft()
       toast.success(`Заказ ${order.number} принят`)
     } catch (e: any) {
       toast.error(e.message || 'Ошибка создания заказа')
@@ -429,6 +492,22 @@ export function OrderDnDPage() {
           Wizard
         </Button>
       </div>
+
+      {/* ── Restore draft banner ──────────────────────────────── */}
+      {restoredDnD && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900/50 px-4 py-2 flex items-center gap-3 shrink-0">
+          <div className="text-sm font-semibold text-amber-900 dark:text-amber-200 flex-1">
+            Найден незавершённый заказ ({(restoredDnD.zones?.normal?.length || 0) + (restoredDnD.zones?.urgent?.length || 0)} позиций
+            {restoredDnD.clientName ? `, клиент ${restoredDnD.clientName}` : ''})
+          </div>
+          <Button size="sm" onClick={() => applyDnDDraft(restoredDnD)} className="h-8">
+            Восстановить
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => { dismissDraft(); clearDraft() }} className="h-8">
+            Начать заново
+          </Button>
+        </div>
+      )}
 
       {/* ── Body — 3 колонки ──────────────────────────────────── */}
       <div className="flex-1 grid grid-cols-[240px_1fr_minmax(360px,400px)] xl:grid-cols-[300px_1fr_minmax(380px,420px)] gap-3.5 p-3.5 overflow-hidden min-h-0">
@@ -677,21 +756,49 @@ export function OrderDnDPage() {
             )}
           </div>
 
-          {/* Адрес выезда для мебели */}
-          {orderType === 'furniture' && (
-            <div className="bg-background rounded-2xl border shadow-sm p-2.5 shrink-0">
-              <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Адрес выезда</Label>
+          {/* Способ выдачи + адрес */}
+          <div className="bg-background rounded-2xl border shadow-sm p-2.5 shrink-0 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground shrink-0">Выдача:</span>
+              <div className="flex gap-1 flex-1">
+                <button
+                  onClick={() => setDeliveryMethod('pickup')}
+                  className={cn(
+                    'flex-1 h-8 rounded-md text-xs font-bold border transition-colors flex items-center justify-center gap-1.5',
+                    deliveryMethod === 'pickup'
+                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                      : 'border-border hover:border-emerald-500/40'
+                  )}
+                >
+                  <ShoppingBag className="h-3.5 w-3.5" />
+                  Самовывоз
+                </button>
+                <button
+                  onClick={() => setDeliveryMethod('delivery')}
+                  className={cn(
+                    'flex-1 h-8 rounded-md text-xs font-bold border transition-colors flex items-center justify-center gap-1.5',
+                    deliveryMethod === 'delivery'
+                      ? 'border-violet-500 bg-violet-500/10 text-violet-700 dark:text-violet-400'
+                      : 'border-border hover:border-violet-500/40'
+                  )}
+                >
+                  <Truck className="h-3.5 w-3.5" />
+                  Доставка +350 {symbol}
+                </button>
+              </div>
+            </div>
+            {(deliveryMethod === 'delivery' || orderType === 'furniture') && (
               <Input
-                placeholder="ул. Пушкина, 10, кв. 5"
+                placeholder={orderType === 'furniture' ? 'Адрес выезда: ул. Пушкина, 10, кв. 5' : 'Адрес доставки: ул. Пушкина, 10, кв. 5'}
                 value={visitAddress}
                 onChange={e => setVisitAddress(e.target.value)}
-                className="mt-1 h-8 text-xs"
+                className="h-8 text-xs"
               />
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Drop zones */}
-          <div className="flex-1 grid grid-rows-3 gap-2.5 min-h-0 overflow-y-auto">
+          <div className="flex-1 grid grid-rows-2 gap-2.5 min-h-0 overflow-y-auto">
             <DropZone
               id="normal"
               label="Обычная приёмка"
@@ -733,28 +840,6 @@ export function OrderDnDPage() {
               isActive={activeZone === 'urgent'}
               onActivate={() => setActiveZone('urgent')}
               shortcut="2"
-              orderType={orderType}
-              lineSum={lineSum}
-            />
-            <DropZone
-              id="delivery"
-              label="С доставкой"
-              note="Курьер · +350"
-              icon={Truck}
-              accentClass="bg-emerald-500/15 text-emerald-600"
-              borderActive="border-emerald-500"
-              lines={zones.delivery}
-              symbol={symbol}
-              dropHot={dropHot === 'delivery'}
-              onDragOver={(e) => { e.preventDefault(); setDropHot('delivery') }}
-              onDragLeave={() => setDropHot(h => h === 'delivery' ? null : h)}
-              onDrop={() => dragging && dropTo('delivery', dragging)}
-              onBumpQty={(key, d) => bumpQty('delivery', key, d)}
-              onRemove={(key) => removeLine('delivery', key)}
-              onEdit={(key) => setEditing({ zoneId: 'delivery', key })}
-              isActive={activeZone === 'delivery'}
-              onActivate={() => setActiveZone('delivery')}
-              shortcut="3"
               orderType={orderType}
               lineSum={lineSum}
             />
@@ -1404,26 +1489,36 @@ function LineDetailsDialog({
 
           {/* Дефекты */}
           <div>
-            <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Дефекты при приёме</Label>
+            <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+              Дефекты при приёме
+              <span className="text-[9px] ml-2 normal-case text-muted-foreground/70 tracking-normal">
+                (некоторые увеличивают цену)
+              </span>
+            </Label>
             <div className="flex gap-1.5 flex-wrap mt-1.5">
-              {COMMON_DEFECTS.map(d => {
+              {DEFECT_MODIFIERS.map(d => {
                 const list = line.defects.split(',').map(s => s.trim()).filter(Boolean)
-                const on = list.includes(d)
+                const on = list.includes(d.name)
                 return (
                   <button
-                    key={d}
+                    key={d.id}
                     onClick={() => {
-                      const next = on ? list.filter(x => x !== d) : [...list, d]
+                      const next = on ? list.filter(x => x !== d.name) : [...list, d.name]
                       onChange({ defects: next.join(', ') })
                     }}
                     className={cn(
-                      'h-8 px-3 rounded-md text-xs border transition-colors',
+                      'h-8 px-3 rounded-md text-xs border transition-colors flex items-center gap-1.5',
                       on
                         ? 'border-red-500 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 font-semibold'
                         : 'border-border hover:border-primary/40'
                     )}
                   >
-                    {d}
+                    {d.name}
+                    {d.pct > 0 && (
+                      <span className={cn('font-mono text-[9.5px]', on ? 'text-red-600' : 'text-muted-foreground')}>
+                        +{d.pct}%
+                      </span>
+                    )}
                   </button>
                 )
               })}
