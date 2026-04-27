@@ -74,6 +74,51 @@ function usePublicProducts(userId: string | undefined) {
   })
 }
 
+interface CleaningItemRow { id: string; name: string; default_price: number; category: string | null; sort_order: number }
+
+function usePublicCleaningPrices() {
+  return useQuery({
+    queryKey: ['public-cleaning-prices', PRODUCT],
+    queryFn: async (): Promise<CleaningItemRow[]> => {
+      const { data } = await supabase
+        .from('cleaning_item_types')
+        .select('id, name, default_price, category, sort_order')
+        .eq('product', PRODUCT)
+        .order('category', { ascending: true })
+        .order('sort_order', { ascending: true })
+      return (data ?? []) as CleaningItemRow[]
+    },
+    enabled: PRODUCT === 'cleaning',
+    staleTime: 300_000,
+  })
+}
+
+interface PublicPromoCode { id: string; code: string; discount_type: 'percent' | 'fixed'; discount_value: number; valid_until: string | null }
+
+function usePublicPromoCodes(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['public-promo-codes', userId, PRODUCT],
+    queryFn: async (): Promise<PublicPromoCode[]> => {
+      const today = new Date().toISOString().slice(0, 10)
+      const { data } = await supabase
+        .from('promo_codes')
+        .select('id, code, discount_type, discount_value, valid_until, valid_from, max_uses, use_count, is_active')
+        .eq('master_id', userId!)
+        .eq('is_active', true)
+        .or(`valid_until.is.null,valid_until.gte.${today}`)
+        .or(`valid_from.is.null,valid_from.lte.${today}`)
+        .order('discount_value', { ascending: false })
+        .limit(6)
+      const rows = (data ?? []) as Array<PublicPromoCode & { max_uses: number | null; use_count: number | null }>
+      return rows
+        .filter(r => !r.max_uses || (r.use_count ?? 0) < r.max_uses)
+        .map(({ id, code, discount_type, discount_value, valid_until }) => ({ id, code, discount_type, discount_value, valid_until }))
+    },
+    enabled: !!userId,
+    staleTime: 300_000,
+  })
+}
+
 // -- Social links -------------------------------------------------------------
 
 interface SocialLink { icon: React.ComponentType<{className?:string}>; href: string; label: string }
@@ -165,6 +210,8 @@ export function PublicProfilePage() {
   const { data: profile, isLoading } = usePublicMasterProfile(slug ?? '')
   const { data: services = [] } = usePublicServices(profile?.user)
   const { data: products = [] } = usePublicProducts(profile?.user)
+  const { data: cleaningPrices = [] } = usePublicCleaningPrices()
+  const { data: promoCodes = [] } = usePublicPromoCodes(profile?.user)
 
   // Loading state
   if (isLoading) {
@@ -365,6 +412,86 @@ export function PublicProfilePage() {
           >
             {t('publicPage.bookOnline', 'Записаться онлайн')}
           </Link>
+        </Section>
+      )}
+
+      {/* -- Cleaning prices (только для cleaning) -- */}
+      {PRODUCT === 'cleaning' && cleaningPrices.length > 0 && (() => {
+        const groups = cleaningPrices.reduce((acc, p) => {
+          const key = p.category || 'Прочее'
+          if (!acc[key]) acc[key] = []
+          acc[key].push(p)
+          return acc
+        }, {} as Record<string, CleaningItemRow[]>)
+        const CATEGORY_LABELS: Record<string, string> = {
+          clothing: 'Одежда',
+          carpet: 'Ковры',
+          furniture: 'Мебель',
+          shoes: 'Обувь',
+          curtains: 'Шторы',
+          bedding: 'Постельное',
+        }
+        return (
+          <Section title={t('publicPage.priceList', 'Услуги и цены')}>
+            <div className="space-y-4">
+              {Object.entries(groups).map(([cat, items]) => (
+                <div key={cat}>
+                  <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--page-subtext)' }}>
+                    {CATEGORY_LABELS[cat] ?? cat}
+                  </p>
+                  <div className="space-y-1">
+                    {items.slice(0, 8).map(it => (
+                      <div
+                        key={it.id}
+                        className="flex items-center justify-between py-2 px-3"
+                        style={{ backgroundColor: 'var(--page-card)', borderRadius: 'var(--btn-radius)' }}
+                      >
+                        <span className="text-sm truncate" style={{ color: 'var(--page-text)' }}>{it.name}</span>
+                        <span className="text-sm font-bold shrink-0 ml-2" style={{ color: 'var(--page-accent)' }}>
+                          {formatCurrency(it.default_price, 'UZS', i18n.language)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )
+      })()}
+
+      {/* -- Promo codes -- */}
+      {promoCodes.length > 0 && (
+        <Section title={t('publicPage.promoCodes', 'Активные промокоды')}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {promoCodes.map(p => (
+              <div
+                key={p.id}
+                className="flex items-center justify-between p-3 border-2 border-dashed"
+                style={{
+                  borderColor: 'var(--page-accent)',
+                  borderRadius: 'var(--btn-radius)',
+                  backgroundColor: 'var(--page-card)',
+                }}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="font-mono font-bold text-base" style={{ color: 'var(--page-accent)' }}>
+                    {p.code}
+                  </div>
+                  {p.valid_until && (
+                    <div className="text-[11px] mt-0.5" style={{ color: 'var(--page-subtext)' }}>
+                      {t('publicPage.until', 'до')} {new Date(p.valid_until).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+                <div className="text-right shrink-0 ml-2">
+                  <div className="text-lg font-extrabold" style={{ color: 'var(--page-accent)' }}>
+                    {p.discount_type === 'percent' ? `−${p.discount_value}%` : `−${formatCurrency(p.discount_value, 'UZS', i18n.language)}`}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </Section>
       )}
 

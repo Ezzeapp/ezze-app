@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Globe, Copy, Check, Instagram, Send, Phone, Youtube, Link2, MapPin, ShoppingBag, Plus, Pencil, Trash2, X, ExternalLink } from 'lucide-react'
+import { Globe, Copy, Check, Instagram, Send, Phone, Youtube, Link2, MapPin, ShoppingBag, Plus, Pencil, Trash2, X, ExternalLink, Share2, QrCode } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -153,6 +154,7 @@ export function PublicPageTab() {
   const { data: products = [], isLoading: productsLoading } = useMyProducts()
   const deleteProduct = useDeleteProduct()
   const [copied, setCopied] = useState(false)
+  const [showBigQr, setShowBigQr] = useState(false)
   const [editProduct, setEditProduct] = useState<Partial<MasterProduct> | null>(null)
   const [coverUploading, setCoverUploading] = useState(false)
   const coverFileRef = useRef<HTMLInputElement>(null)
@@ -195,6 +197,20 @@ export function PublicPageTab() {
     navigator.clipboard.writeText(pageUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const sharePage = async () => {
+    if (typeof navigator !== 'undefined' && (navigator as any).share) {
+      try {
+        await (navigator as any).share({
+          title: profile?.display_name || 'Ezze',
+          text: t('publicPage.shareText', 'Посмотрите мою страницу'),
+          url: pageUrl,
+        })
+      } catch { /* user cancelled */ }
+    } else {
+      copyLink()
+    }
   }
 
   const up = (data: Record<string, unknown>) =>
@@ -273,27 +289,75 @@ export function PublicPageTab() {
             <span className={['inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm', profile?.page_enabled !== false ? 'translate-x-6' : 'translate-x-1'].join(' ')} />
           </button>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 px-3 py-2 bg-muted rounded-lg text-xs text-muted-foreground truncate font-mono">{pageUrl}</div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex-1 min-w-0 px-3 py-2 bg-muted rounded-lg text-xs text-muted-foreground truncate font-mono">{pageUrl}</div>
           <Button size="sm" variant="outline" onClick={copyLink} className="gap-1.5 flex-shrink-0">
             {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? t('common.copied', 'Скопировано') : t('publicPage.copyLink', 'Скопировать')}
+          </Button>
+          <Button size="sm" variant="outline" onClick={sharePage} className="gap-1.5 flex-shrink-0">
+            <Share2 className="h-3.5 w-3.5" />
+            {t('publicPage.share', 'Поделиться')}
           </Button>
           <a href={pageUrl} target="_blank" rel="noopener noreferrer">
             <Button size="sm" variant="outline"><ExternalLink className="h-3.5 w-3.5" /></Button>
           </a>
         </div>
         <div className="flex items-center gap-4">
-          <img
-            src={'https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=' + encodeURIComponent(pageUrl)}
-            alt="QR"
-            className="h-24 w-24 rounded-lg border"
-          />
-          <p className="text-xs text-muted-foreground">
-            {t('publicPage.qrHint', 'Разместите QR-код в своём Instagram или распечатайте для клиентов')}
-          </p>
+          <button
+            onClick={() => setShowBigQr(true)}
+            className="bg-white p-1.5 rounded-lg border hover:border-primary transition-colors"
+            title={t('publicPage.openBigQr', 'Открыть большой QR')}
+          >
+            <QRCodeSVG value={pageUrl} size={96} level="M" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-muted-foreground">
+              {t('publicPage.qrHint', 'Разместите QR-код в своём Instagram или распечатайте для клиентов')}
+            </p>
+            <Button size="sm" variant="link" onClick={() => setShowBigQr(true)} className="h-auto p-0 mt-1 gap-1">
+              <QrCode className="h-3.5 w-3.5" />
+              {t('publicPage.openBigQr', 'Открыть большой QR')}
+            </Button>
+          </div>
         </div>
       </Card>
+
+      {/* Большой QR */}
+      {showBigQr && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowBigQr(false)}
+        >
+          <div
+            className="bg-background rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">{t('publicPage.qrShare', 'QR-код страницы')}</h3>
+              <Button variant="ghost" size="icon" onClick={() => setShowBigQr(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {t('publicPage.qrShareHint', 'Покажите клиенту экран — он отсканирует и откроет вашу страницу.')}
+            </p>
+            <div className="grid place-items-center bg-white rounded-xl p-4">
+              <QRCodeSVG value={pageUrl} size={260} level="M" />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={copyLink} className="flex-1 gap-1.5">
+                {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? t('common.copied', 'Скопировано') : t('publicPage.copyLink', 'Скопировать')}
+              </Button>
+              <Button size="sm" variant="outline" onClick={sharePage} className="flex-1 gap-1.5">
+                <Share2 className="h-3.5 w-3.5" />
+                {t('publicPage.share', 'Поделиться')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       <Card title={t('publicPage.design', 'Дизайн страницы')} icon={Globe}>
         <div>
           <p className="text-xs text-muted-foreground mb-2">{t('publicPage.template', 'Шаблон')}</p>
