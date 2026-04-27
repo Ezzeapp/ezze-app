@@ -1,6 +1,6 @@
-﻿import { useState, useEffect, useMemo, useRef } from 'react'
+﻿import { useState, useEffect, useMemo, useRef, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Search, Clock, X, Percent, User, UserPlus, CalendarCheck, ChevronLeft, ChevronRight, Copy, ArrowRightLeft, Plus, CreditCard, StickyNote, Repeat, Info, Printer, CheckCircle2, Banknote, MoreHorizontal } from 'lucide-react'
+import { Search, Clock, X, Percent, User, UserPlus, CalendarCheck, ChevronLeft, ChevronRight, Copy, ArrowRightLeft, Plus, CreditCard, StickyNote, Repeat, Info, Printer, CheckCircle2, Banknote, MoreHorizontal, Check } from 'lucide-react'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import { supabase } from '@/lib/supabase'
@@ -307,6 +307,17 @@ export function AppointmentDialog({
 
   // ── UI-раскрытие секций на шаге 4 ─────────────────────────────────────────
   const [activeSection4, setActiveSection4] = useState<'discount' | 'payment' | 'notes' | 'recurring' | null>(null)
+
+  // ── Layout-режим десктопа: классика (L-форма) или wizard (4 шага) ──────────
+  const [apptLayout, setApptLayout] = useState<'classic' | 'wizard'>(() => {
+    if (typeof window === 'undefined') return 'classic'
+    const saved = localStorage.getItem('appt_layout')
+    return saved === 'wizard' ? 'wizard' : 'classic'
+  })
+  useEffect(() => { localStorage.setItem('appt_layout', apptLayout) }, [apptLayout])
+  const [wizardStep, setWizardStep] = useState(0)
+  // Сброс шага при открытии новой записи
+  useEffect(() => { if (open && !editAppt) setWizardStep(0) }, [open, editAppt])
 
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1131,6 +1142,19 @@ export function AppointmentDialog({
         <DialogHeader className="px-5 pt-4 pb-3 border-b shrink-0">
           <DialogTitle className="flex items-center gap-3">
             {editAppt ? t('appointments.edit') : t('appointments.add')}
+            {/* Переключатель компоновки (только десктоп, только новая запись) */}
+            {!editAppt && (
+              <div className="hidden lg:inline-flex items-center rounded-lg border bg-muted/40 p-0.5 ml-3">
+                <button type="button" onClick={() => setApptLayout('classic')}
+                  className={`px-2.5 h-6 text-[11px] font-medium rounded-md transition-colors ${apptLayout === 'classic' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                  Классика
+                </button>
+                <button type="button" onClick={() => setApptLayout('wizard')}
+                  className={`px-2.5 h-6 text-[11px] font-medium rounded-md transition-colors ${apptLayout === 'wizard' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                  Мастер
+                </button>
+              </div>
+            )}
             <span className="hidden lg:flex items-center gap-1.5 text-xs font-normal text-muted-foreground/60 ml-auto pr-6">
               ESC — закрыть · ⌘S — сохранить
             </span>
@@ -1713,6 +1737,7 @@ export function AppointmentDialog({
 
               {/* ── БОЛЬШОЙ ДЕСКТОП (≥ lg) ─── */}
               <div className="hidden lg:flex flex-col flex-1 overflow-hidden">
+              {apptLayout === 'classic' && (<>
                 {/* L-форма + Правая панель сводки */}
                 <div className="flex-1 flex overflow-hidden bg-muted/20">
 
@@ -2369,6 +2394,421 @@ export function AppointmentDialog({
                     </Button>
                   </div>
                 </div>
+              </>)}{/* end classic */}
+
+              {apptLayout === 'wizard' && (() => {
+                const wizSteps = [
+                  { label: 'Услуга', value: selectedSvcs.length === 0 ? '' : selectedSvcs.length === 1 ? selectedSvcs[0].name : `${selectedSvcs.length} услуги` },
+                  { label: 'Время',  value: selectedDate && selectedTime ? `${dayjs(selectedDate).format('D MMM')} · ${selectedTime}` : '' },
+                  { label: 'Клиент', value: selectedClient ? `${selectedClient.first_name}${selectedClient.last_name ? ' ' + selectedClient.last_name : ''}` : guestName.trim() || '' },
+                  { label: 'Оплата', value: (basePrice > 0 ? finalPrice : totalBasePrice) > 0 ? formatCurrency(basePrice > 0 ? finalPrice : totalBasePrice, currency, i18n.language) : '' },
+                ]
+                const wizCanNext = [
+                  selectedSvcs.length > 0,
+                  !!selectedDate && !!selectedTime,
+                  !!(selectedClient || guestName.trim() || isGuest),
+                  canSave,
+                ]
+                const goToStep = (i: number) => {
+                  if (i <= wizardStep) { setWizardStep(i); return }
+                  for (let k = 0; k < i; k++) if (!wizCanNext[k]) return
+                  setWizardStep(i)
+                }
+                const finalTotal = basePrice > 0 ? finalPrice : totalBasePrice
+
+                return (
+                  <div className="flex-1 flex flex-col overflow-hidden bg-muted/20">
+
+                    {/* Степпер */}
+                    <div className="shrink-0 px-6 py-3 border-b bg-background flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        {wizSteps.map((s, i) => {
+                          const isActive = wizardStep === i
+                          const isDone   = wizardStep > i
+                          return (
+                            <Fragment key={i}>
+                              <button type="button" onClick={() => goToStep(i)}
+                                className={`flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full transition-colors ${
+                                  isActive ? 'bg-primary text-primary-foreground'
+                                  : isDone ? 'text-emerald-700 hover:bg-emerald-50'
+                                  : 'text-muted-foreground hover:bg-muted'
+                                }`}>
+                                <span className={`h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                                  isActive ? 'bg-white/20 text-white'
+                                  : isDone ? 'bg-emerald-500 text-white'
+                                  : 'bg-muted-foreground/15'
+                                }`}>
+                                  {isDone ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                                </span>
+                                <span className="flex flex-col items-start leading-tight pr-1">
+                                  <span className="text-[12px] font-semibold">{s.label}</span>
+                                  {isDone && s.value && <span className="text-[10px] opacity-75 font-normal">{s.value}</span>}
+                                </span>
+                              </button>
+                              {i < 3 && <div className="w-5 h-px bg-border" />}
+                            </Fragment>
+                          )
+                        })}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Шаг {wizardStep + 1} из 4</div>
+                    </div>
+
+                    {/* Контент шага */}
+                    <div className="flex-1 overflow-y-auto p-6">
+
+                      {/* ── Шаг 0: Услуга ── */}
+                      {wizardStep === 0 && (
+                        <div className="max-w-3xl mx-auto">
+                          <h3 className="text-2xl font-semibold tracking-tight mb-1.5">Какая услуга?</h3>
+                          <p className="text-sm text-muted-foreground mb-5">Выберите из каталога или введите название</p>
+                          <div className="relative max-w-md mb-4">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                            <Input className="pl-9 h-10 text-sm" placeholder={t('appointments.searchService')}
+                              value={svcSearch} onChange={e => setSvcSearch(e.target.value)} />
+                          </div>
+                          <div className="grid grid-cols-3 gap-2.5">
+                            {filteredSvcs.map(svc => {
+                              const isSel = !!selectedSvcs.find(s => s.id === svc.id)
+                              const catColor = svc.expand?.category?.color
+                              const catName  = svc.expand?.category?.name
+                              return (
+                                <button key={svc.id} type="button" onClick={() => toggleSvc(svc)}
+                                  className={`relative p-4 rounded-2xl border-2 text-left transition-all ${
+                                    isSel ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/40'
+                                  }`}>
+                                  {isSel && (
+                                    <div className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                                      <Check className="h-3 w-3" />
+                                    </div>
+                                  )}
+                                  <div className="h-8 w-8 rounded-xl mb-3 flex items-center justify-center"
+                                       style={{ background: catColor ? `${catColor}33` : 'rgba(0,0,0,0.06)' }}>
+                                    <div className="h-3.5 w-3.5 rounded" style={{ background: catColor || 'currentColor', opacity: catColor ? 1 : 0.4 }} />
+                                  </div>
+                                  {catName && <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 truncate">{catName}</div>}
+                                  <div className="text-sm font-medium mb-2 leading-tight line-clamp-2 min-h-[2.5em]">{svc.name}</div>
+                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span>{formatDuration(svc.duration_min, t)}</span>
+                                    {svc.price > 0 && <span className="font-semibold text-foreground tabular-nums">{formatCurrency(svc.price, currency, i18n.language)}</span>}
+                                  </div>
+                                </button>
+                              )
+                            })}
+                            {filteredSvcs.length === 0 && (
+                              <p className="col-span-3 text-sm text-muted-foreground text-center py-8">{t('booking.noServices')}</p>
+                            )}
+                          </div>
+                          {selectedSvcs.length > 1 && (
+                            <div className="mt-4 p-3 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Выбрано: <b className="text-foreground">{selectedSvcs.length}</b> · {formatDuration(totalDuration, t)}</span>
+                              {totalBasePrice > 0 && <span className="font-semibold tabular-nums">{formatCurrency(totalBasePrice, currency, i18n.language)}</span>}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* ── Шаг 1: Время ── */}
+                      {wizardStep === 1 && (
+                        <div className="max-w-4xl mx-auto">
+                          <h3 className="text-2xl font-semibold tracking-tight mb-1.5">Когда удобно?</h3>
+                          <p className="text-sm text-muted-foreground mb-5">
+                            {selectedSvcs.length === 1 ? selectedSvcs[0].name : `${selectedSvcs.length} услуги`} · {formatDuration(totalDuration, t)}
+                          </p>
+                          <div className="grid grid-cols-[340px_1fr] gap-8">
+                            {/* Календарь */}
+                            <div>
+                              <div className="flex items-center justify-between mb-3">
+                                <button type="button" onClick={() => setDesktopMonth(m => m.subtract(1, 'month'))}
+                                  disabled={desktopMonth.isBefore(dayjs().startOf('month'))}
+                                  className="h-7 w-7 rounded-md border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                                  <ChevronLeft className="h-3.5 w-3.5" />
+                                </button>
+                                <span className="text-sm font-semibold capitalize">{desktopMonth.format('MMMM YYYY')}</span>
+                                <button type="button" onClick={() => setDesktopMonth(m => m.add(1, 'month'))}
+                                  className="h-7 w-7 rounded-md border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors">
+                                  <ChevronRight className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-7 mb-1">
+                                {Array.from({length: 7}, (_, i) => dayjs().startOf('isoWeek').add(i, 'day').format('dd')).map((d, i) => (
+                                  <div key={i} className="text-center text-[10px] text-muted-foreground py-0.5">{d}</div>
+                                ))}
+                              </div>
+                              <div className="grid grid-cols-7 gap-0.5">
+                                {desktopMonthDays.map((d, i) => {
+                                  if (!d) return <div key={`e${i}`} />
+                                  const dateStr   = d.format('YYYY-MM-DD')
+                                  const isToday   = d.isSame(dayjs(), 'day')
+                                  const isPast    = d.isBefore(dayjs(), 'day')
+                                  const isWeekend = d.day() === 0 || d.day() === 6
+                                  const isWorking = availableDates.includes(dateStr)
+                                  const isSel     = dateStr === selectedDate
+                                  return (
+                                    <button key={dateStr} type="button" disabled={isPast || !isWorking}
+                                      onClick={() => { setSelectedDate(dateStr); setSelectedTime(''); setSvcBlockedWarning(null) }}
+                                      className={`h-9 w-full text-xs rounded-md transition-all font-medium
+                                        ${isSel ? 'bg-primary text-primary-foreground scale-105'
+                                          : isToday ? 'ring-1 ring-primary text-primary hover:bg-muted'
+                                          : isPast || !isWorking ? 'opacity-30 cursor-not-allowed'
+                                          : isWeekend ? 'text-red-500 hover:bg-muted' : 'hover:bg-muted'}`}>
+                                      {d.date()}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Слоты */}
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+                                Свободное время
+                                {slotsLoading && <span><div className="h-3 w-3 border-2 border-primary border-t-transparent rounded-full animate-spin" /></span>}
+                              </p>
+                              <div className={`relative transition-opacity ${slotsLoading ? 'opacity-40 pointer-events-none' : ''}`}>
+                                {slots.length === 0 && !slotsLoading ? (
+                                  <p className="text-sm text-muted-foreground italic">{t('schedule.dayOff')}</p>
+                                ) : (
+                                  <div className="grid grid-cols-4 gap-1.5">
+                                    {slots.map(slot => {
+                                      const isChosen = selectedTime === slot.time
+                                      const isDisabled = slot.busy
+                                      return (
+                                        <button key={slot.time} type="button"
+                                          onClick={() => { if (isDisabled) return; setSelectedTime(slot.time); setSvcBlockedWarning(null) }}
+                                          className={`py-2 rounded-lg border text-sm font-medium transition-all
+                                            ${isDisabled ? 'border-border bg-muted/40 text-muted-foreground/40 cursor-not-allowed line-through'
+                                              : isChosen ? 'border-primary bg-primary text-primary-foreground shadow-sm scale-105'
+                                              : 'border-border hover:border-primary/60 hover:bg-primary/5'}`}>
+                                          {slot.time}
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                              {selectedTime && totalDuration > 0 && (
+                                <div className="mt-4 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-background border text-sm">
+                                  <Clock className="h-4 w-4 text-primary" />
+                                  С <b>{selectedTime}</b> — длится <b>{formatDuration(totalDuration, t)}</b>
+                                  <span className="text-muted-foreground">→ {minutesToTime(parseTimeToMinutes(selectedTime) + totalDuration)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Шаг 2: Клиент ── */}
+                      {wizardStep === 2 && (
+                        <div className="max-w-xl mx-auto">
+                          <h3 className="text-2xl font-semibold tracking-tight mb-1.5">Кто записывается?</h3>
+                          <p className="text-sm text-muted-foreground mb-5">Найдите существующего клиента или создайте нового</p>
+                          <div className="flex gap-2 mb-3">
+                            <div className="relative flex-1">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                              <Input className="pl-9 h-10 text-sm" placeholder={t('appointments.searchClient')}
+                                value={clientSearch} onChange={e => setClientSearch(e.target.value)} />
+                            </div>
+                            <Button type="button" variant="outline" className="h-10 gap-1.5"
+                              onClick={() => { setShowNewClient(true); setSelectedClient(null); setIsGuest(false) }}>
+                              <UserPlus className="h-4 w-4" />Новый
+                            </Button>
+                          </div>
+
+                          {showNewClient ? (
+                            <div className="border rounded-2xl p-4 space-y-3 bg-background">
+                              <p className="text-sm font-semibold">{t('appointments.newClientTitle')}</p>
+                              <Input className="h-9 text-sm" placeholder={`${t('clients.firstName')} *`}
+                                value={newFirstName} onChange={e => setNewFirstName(e.target.value)} autoFocus />
+                              <Input className="h-9 text-sm" placeholder={t('clients.phone')}
+                                value={newPhone} onChange={e => setNewPhone(e.target.value)} />
+                              <Input className="h-9 text-sm" placeholder={t('clients.email')}
+                                value={newEmail} onChange={e => setNewEmail(e.target.value)} />
+                              <div className="flex gap-2 pt-1">
+                                <Button type="button" size="sm"
+                                  loading={savingClient} disabled={!newFirstName.trim()} onClick={handleAddClient}>
+                                  {t('common.save')}
+                                </Button>
+                                <Button type="button" size="sm" variant="ghost"
+                                  onClick={() => { setShowNewClient(false); setIsGuest(true) }}>
+                                  {t('common.cancel')}
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground mb-2">
+                                {clientSearch ? 'Результаты' : 'Недавние'}
+                              </p>
+                              <div className="space-y-1 max-h-[320px] overflow-y-auto pr-1">
+                                {clientsForList.length === 0 && clientSearch && (
+                                  <p className="text-sm text-muted-foreground text-center py-4">{t('appointments.noClientsFound') || 'Ничего не найдено'}</p>
+                                )}
+                                {clientsForList.map(c => {
+                                  const isSel = selectedClient?.id === c.id
+                                  const initials = (c.first_name?.charAt(0) || '').toUpperCase() + (c.last_name?.charAt(0) || '').toUpperCase()
+                                  const visits = clientVisitCounts[c.id] ?? c.total_visits ?? 0
+                                  return (
+                                    <button key={c.id} type="button"
+                                      onClick={() => { setSelectedClient(c); setIsGuest(false); setClientSearch('') }}
+                                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 transition-all text-left ${
+                                        isSel ? 'bg-primary/5 border-primary' : 'border-transparent hover:bg-muted/50'
+                                      }`}>
+                                      <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold ${
+                                        isSel ? 'bg-primary text-primary-foreground' : 'bg-primary/15 text-primary'
+                                      }`}>{initials || '?'}</div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium truncate">{c.first_name}{c.last_name ? ' ' + c.last_name : ''}</p>
+                                        {c.phone && <p className="text-xs text-muted-foreground truncate">{c.phone}</p>}
+                                      </div>
+                                      {visits > 0 && (
+                                        <span className="text-xs text-muted-foreground shrink-0">{visits} виз.</span>
+                                      )}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {/* ── Шаг 3: Оплата ── */}
+                      {wizardStep === 3 && (
+                        <div className="grid grid-cols-2 gap-8 max-w-4xl mx-auto">
+                          {/* Левый блок: скидка + оплата */}
+                          <div>
+                            <h3 className="text-2xl font-semibold tracking-tight mb-1.5">Оплата</h3>
+                            <p className="text-sm text-muted-foreground mb-5">Цена, скидка и способ</p>
+
+                            <p className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground mb-2">{t('appointments.total')}</p>
+                            <div className="relative mb-5">
+                              <Input ref={priceInputRef} type="number" min={0}
+                                className="h-14 text-2xl font-bold pr-12"
+                                placeholder={totalBasePrice > 0 ? String(totalBasePrice) : '0'}
+                                value={priceInput} onChange={e => setPriceInput(e.target.value)} />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-base text-muted-foreground font-medium pointer-events-none">{currencySymbol}</span>
+                            </div>
+
+                            <p className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground mb-2">{t('appointments.addDiscount')}</p>
+                            <div className="flex rounded-lg border overflow-hidden mb-2">
+                              <button type="button" onClick={() => handleModeSwitch('discount')}
+                                className={`flex-1 h-8 text-xs font-medium transition-all border-r ${adjustMode === 'discount' ? 'bg-emerald-500 text-white' : 'bg-background text-muted-foreground hover:text-emerald-600'}`}>
+                                {t('appointments.discount')}
+                              </button>
+                              <button type="button" onClick={() => handleModeSwitch('surcharge')}
+                                className={`flex-1 h-8 text-xs font-medium transition-all ${adjustMode === 'surcharge' ? 'bg-orange-500 text-white' : 'bg-background text-muted-foreground hover:text-orange-500'}`}>
+                                {t('appointments.surcharge')}
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-4 gap-1 mb-5">
+                              {PRESETS.map(p => (
+                                <button key={p} type="button" onClick={() => handlePresetClick(p)}
+                                  className={`h-8 rounded-lg border text-xs font-medium transition-all ${
+                                    activePreset === p
+                                      ? adjustMode === 'discount' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-orange-500 border-orange-500 text-white'
+                                      : adjustMode === 'discount' ? 'border-border hover:border-emerald-400 hover:text-emerald-600' : 'border-border hover:border-orange-400 hover:text-orange-500'
+                                  }`}>{p}%</button>
+                              ))}
+                            </div>
+
+                            <p className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground mb-2">{t('appointments.paymentMethod')}</p>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              {([
+                                { key: 'cash',     label: t('appointments.paymentCash'),     Icon: Banknote },
+                                { key: 'card',     label: t('appointments.paymentCard'),     Icon: CreditCard },
+                                { key: 'transfer', label: t('appointments.paymentTransfer'), Icon: ArrowRightLeft },
+                                { key: 'other',    label: t('appointments.paymentOther'),    Icon: MoreHorizontal },
+                              ] as const).map(m => (
+                                <button key={m.key} type="button"
+                                  onClick={() => setPaymentMethod(paymentMethod === m.key ? '' : m.key)}
+                                  className={`flex items-center gap-2 h-11 px-3 rounded-lg border-2 text-sm font-medium transition-colors ${paymentMethod === m.key ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
+                                  <m.Icon className="h-4 w-4 shrink-0" />{m.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Правый блок: сводка */}
+                          <div className="rounded-2xl border bg-background p-5">
+                            <p className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground mb-3">Сводка</p>
+                            <div className="space-y-2.5 text-sm">
+                              {selectedSvcs.map(svc => (
+                                <div key={svc.id} className="flex items-baseline justify-between gap-2">
+                                  <span className="text-muted-foreground truncate">{svc.name}</span>
+                                  <span className="font-medium tabular-nums shrink-0">
+                                    {svc.price > 0 ? formatCurrency(svc.price, currency, i18n.language) : <span className="text-muted-foreground/60 italic text-xs">—</span>}
+                                  </span>
+                                </div>
+                              ))}
+                              {selectedDate && selectedTime && (
+                                <div className="flex items-baseline justify-between gap-2 pt-1.5 border-t border-dashed">
+                                  <span className="text-muted-foreground">{dayjs(selectedDate).format('D MMM, dddd')}, {selectedTime}</span>
+                                  <span className="text-xs text-muted-foreground tabular-nums">{formatDuration(totalDuration, t)}</span>
+                                </div>
+                              )}
+                              {(selectedClient || guestName) && (
+                                <div className="flex items-baseline justify-between gap-2">
+                                  <span className="text-muted-foreground">{selectedClient ? `${selectedClient.first_name}${selectedClient.last_name ? ' ' + selectedClient.last_name : ''}` : guestName}</span>
+                                </div>
+                              )}
+                              {effectiveDiscount > 0 && basePrice > 0 && (
+                                <div className="flex items-baseline justify-between gap-2 pt-1.5 border-t border-dashed">
+                                  <span className="text-muted-foreground">{t('appointments.discount')} {effectiveDiscount}%</span>
+                                  <span className="text-emerald-600 font-medium tabular-nums">−{formatCurrency(Math.round(basePrice * effectiveDiscount / 100), currency, i18n.language)}</span>
+                                </div>
+                              )}
+                              {effectiveSurcharge > 0 && basePrice > 0 && (
+                                <div className="flex items-baseline justify-between gap-2 pt-1.5 border-t border-dashed">
+                                  <span className="text-muted-foreground">{t('appointments.surcharge')} {effectiveSurcharge}%</span>
+                                  <span className="text-orange-500 font-medium tabular-nums">+{formatCurrency(Math.round(basePrice * effectiveSurcharge / 100), currency, i18n.language)}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-baseline justify-between mt-4 pt-3 border-t-2">
+                              <span className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground">К оплате</span>
+                              <span className="text-2xl font-bold tabular-nums">{formatCurrency(finalTotal, currency, i18n.language)}</span>
+                            </div>
+
+                            <div className="mt-4">
+                              <p className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground mb-1.5">{t('appointments.tabNote')}</p>
+                              <Textarea rows={2} className="text-sm resize-none min-h-0"
+                                placeholder={t('booking.commentPlaceholder')}
+                                value={notes} onChange={e => setNotes(e.target.value)} />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
+
+                    {/* Футер мастера */}
+                    <div className="shrink-0 border-t bg-background px-5 py-3 flex items-center justify-between">
+                      <Button type="button" variant="ghost"
+                        disabled={wizardStep === 0}
+                        onClick={() => setWizardStep(s => Math.max(0, s - 1))}
+                        className={wizardStep === 0 ? 'opacity-40' : ''}>
+                        <ChevronLeft className="h-4 w-4 mr-1" />{t('common.back') || 'Назад'}
+                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
+                        {wizardStep < 3 ? (
+                          <Button type="button" disabled={!wizCanNext[wizardStep]}
+                            onClick={() => setWizardStep(s => Math.min(3, s + 1))}>
+                            {t('common.next') || 'Далее'}<ChevronRight className="h-4 w-4 ml-1" />
+                          </Button>
+                        ) : (
+                          <Button type="button" loading={isLoading} disabled={!canSave} onClick={handleSubmit} className="gap-2">
+                            {editAppt ? t('common.save') : (t('appointments.createAppt') || 'Создать запись')}
+                            {finalTotal > 0 && <span className="font-bold">· {formatCurrency(finalTotal, currency, i18n.language)}</span>}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
+                )
+              })()}
 
               </div>{/* end desktop */}
 
