@@ -11,6 +11,15 @@ const PRESET_AVATAR = {
   initialQuality: 0.82,
 }
 
+/** Фото дефекта изделия при приёме — максимально компактное */
+const PRESET_DEFECT = {
+  maxSizeMB: 0.12,          // 120 KB максимум
+  maxWidthOrHeight: 1024,   // 1024px по большей стороне
+  useWebWorker: true,
+  fileType: 'image/webp',
+  initialQuality: 0.7,      // агрессивное сжатие
+}
+
 /** Фото услуги / товара — среднее */
 const PRESET_SERVICE = {
   maxSizeMB: 0.3,           // 300 KB максимум
@@ -49,7 +58,7 @@ const PRESET_DOCUMENT = {
 
 // ─── Основная функция ─────────────────────────────────────────────────────────
 
-type CompressionPreset = 'avatar' | 'service' | 'logo' | 'banner' | 'document'
+type CompressionPreset = 'avatar' | 'service' | 'logo' | 'banner' | 'document' | 'defect'
 
 const PRESETS = {
   avatar:   PRESET_AVATAR,
@@ -57,6 +66,7 @@ const PRESETS = {
   logo:     PRESET_LOGO,
   banner:   PRESET_BANNER,
   document: PRESET_DOCUMENT,
+  defect:   PRESET_DEFECT,
 }
 
 /**
@@ -109,6 +119,9 @@ export async function compressImage(
 
 /** Аватар мастера / клиента */
 export const compressAvatar   = (f: File) => compressImage(f, 'avatar')
+
+/** Фото дефекта изделия при приёме (агрессивное сжатие) */
+export const compressDefect   = (f: File) => compressImage(f, 'defect')
 
 /** Фото услуги или товара */
 export const compressService  = (f: File) => compressImage(f, 'service')

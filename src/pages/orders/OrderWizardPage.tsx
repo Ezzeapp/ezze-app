@@ -21,6 +21,9 @@ import { useClientsPaged, useCreateClient } from '@/hooks/useClients'
 import { useCleaningClientStats } from '@/hooks/useCleaningClientStats'
 import { useFavouriteItemTypes } from '@/hooks/useFavouriteItemTypes'
 import { useFormDraft } from '@/hooks/useFormDraft'
+import { compressDefect } from '@/lib/imageCompression'
+
+const MAX_PHOTOS_PER_ITEM = 3
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
@@ -44,6 +47,7 @@ interface CartLine {
   notes: string
   ready_date: string
   photos: string[]
+  unitPrice: string
 }
 
 const COLOR_PALETTE = [
@@ -62,6 +66,7 @@ function makeLine(t: CleaningItemType, readyDate: string): CartLine {
     width_m: '', length_m: '', weight_kg: '', notes: '',
     ready_date: readyDate,
     photos: [],
+    unitPrice: '',
   }
 }
 
@@ -192,18 +197,24 @@ export function OrderWizardPage() {
   // Загрузка фото
   const [photoUploadingKey, setPhotoUploadingKey] = useState<number | null>(null)
   async function uploadPhoto(key: number, file: File) {
+    const cur = cart.find(l => l.key === key)
+    if ((cur?.photos.length ?? 0) >= MAX_PHOTOS_PER_ITEM) {
+      toast.error(`Максимум ${MAX_PHOTOS_PER_ITEM} фото на позицию`)
+      return
+    }
     setPhotoUploadingKey(key)
     try {
-      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-      const path = `${PRODUCT}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
-      const { error } = await supabase.storage.from('cleaning-photos').upload(path, file, {
-        contentType: file.type, upsert: false,
+      const compressed = await compressDefect(file)
+      const path = `${PRODUCT}/${Date.now()}_${Math.random().toString(36).slice(2)}.webp`
+      const { error } = await supabase.storage.from('cleaning-photos').upload(path, compressed, {
+        contentType: compressed.type || 'image/webp', upsert: false,
       })
       if (error) throw error
       const { data: { publicUrl } } = supabase.storage.from('cleaning-photos').getPublicUrl(path)
       updateLine(key, { photos: [...(cart.find(l => l.key === key)?.photos ?? []), publicUrl] })
-    } catch {
-      toast.error('Ошибка загрузки фото')
+    } catch (e: any) {
+      console.error('Photo upload error:', e)
+      toast.error(e?.message || 'Ошибка загрузки фото')
     } finally {
       setPhotoUploadingKey(null)
     }
@@ -230,6 +241,7 @@ export function OrderWizardPage() {
   const [expressMode, setExpressMode] = useState<'percent' | 'fixed'>('percent')
   const [expressValue, setExpressValue] = useState<string>('50')
   const [tags, setTags] = useState<string[]>([])
+  const [applyDefectsPct, setApplyDefectsPct] = useState(true)
   const [discount, setDiscount] = useState(0)
   const [prepayPct, setPrepayPct] = useState(0)
   const [notes, setNotes] = useState('')
@@ -253,6 +265,7 @@ export function OrderWizardPage() {
     expressMode: 'percent' | 'fixed'
     expressValue: string
     tags: string[]
+    applyDefectsPct: boolean
     discount: number
     prepayPct: number
     notes: string
@@ -280,6 +293,7 @@ export function OrderWizardPage() {
     setExpressMode(d.expressMode || 'percent')
     setExpressValue(d.expressValue || '50')
     setTags(d.tags || [])
+    setApplyDefectsPct(d.applyDefectsPct ?? true)
     setDiscount(d.discount || 0)
     setPrepayPct(d.prepayPct || 0)
     setNotes(d.notes || '')
@@ -299,25 +313,31 @@ export function OrderWizardPage() {
     saveDraft({
       cart, clientId, clientName, clientPhone, orderType,
       isUrgent, deliveryMethod, deliveryFee, payment, paymentCash, paymentCard,
-      expressMode, expressValue, tags, discount, prepayPct, notes,
+      expressMode, expressValue, tags, applyDefectsPct, discount, prepayPct, notes,
       pickupDate, deliveryDate, visitAddress, defaultDays, assignedTo, step,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart, clientId, clientName, clientPhone, orderType,
       isUrgent, deliveryMethod, deliveryFee, payment, paymentCash, paymentCard,
-      expressMode, expressValue, tags, discount, prepayPct, notes,
+      expressMode, expressValue, tags, applyDefectsPct, discount, prepayPct, notes,
       pickupDate, deliveryDate, visitAddress, defaultDays, assignedTo, step])
 
   // Расчёты
+  function unitPriceOf(l: CartLine): number {
+    const override = parseFloat(l.unitPrice)
+    if (Number.isFinite(override) && override >= 0 && l.unitPrice !== '') return override
+    return l.type.default_price
+  }
   function lineSum(l: CartLine) {
-    const mul = defectsPctMultiplier(l.defects)
+    const mul = applyDefectsPct ? defectsPctMultiplier(l.defects) : 1
+    const unit = unitPriceOf(l)
     if (orderType === 'carpet') {
       const w = parseFloat(l.width_m) || 0
       const h = parseFloat(l.length_m) || 0
       const area = w * h
-      if (area > 0) return area * l.type.default_price * l.qty * mul
+      if (area > 0) return area * unit * l.qty * mul
     }
-    return l.type.default_price * l.qty * mul
+    return unit * l.qty * mul
   }
   const subtotal = cart.reduce((s, l) => s + lineSum(l), 0)
   const surchargeAmt = isUrgent
@@ -423,14 +443,15 @@ export function OrderWizardPage() {
         items: cart.flatMap(l => Array.from({ length: l.qty }, () => {
           const w = parseFloat(l.width_m) || null
           const h = parseFloat(l.length_m) || null
-          const mul = defectsPctMultiplier(l.defects)
+          const mul = applyDefectsPct ? defectsPctMultiplier(l.defects) : 1
+          const unit = unitPriceOf(l)
           return {
             item_type_id: l.type.id.startsWith('custom:') ? null : l.type.id,
             item_type_name: l.type.name,
             color: l.color || null,
             brand: l.brand || null,
             defects: l.defects || null,
-            price: (orderType === 'carpet' && w && h ? w * h * l.type.default_price : l.type.default_price) * mul,
+            price: (orderType === 'carpet' && w && h ? w * h * unit : unit) * mul,
             ready_date: l.ready_date || null,
             width_m: orderType === 'carpet' ? w : null,
             length_m: orderType === 'carpet' ? h : null,
@@ -494,6 +515,17 @@ export function OrderWizardPage() {
           </div>
         </div>
         <div className="flex-1" />
+        <Button
+          variant="outline" size="sm"
+          disabled={cart.length > 0 || !!clientId}
+          onClick={() => navigate('/orders/dnd')}
+          className="h-8 text-xs hidden lg:inline-flex"
+          title={cart.length > 0 || clientId
+            ? 'Сначала очистите форму или примите заказ'
+            : 'Переключиться на Drag & Drop (быстрый режим)'}
+        >
+          → Drag & Drop
+        </Button>
         <Button
           variant="outline" size="sm"
           className="h-8 text-xs"
@@ -622,6 +654,8 @@ export function OrderWizardPage() {
               uploadPhoto={uploadPhoto}
               removePhoto={removePhoto}
               photoUploadingKey={photoUploadingKey}
+              applyDefectsPct={applyDefectsPct}
+              setApplyDefectsPct={setApplyDefectsPct}
             />
           )}
 
@@ -1215,6 +1249,7 @@ function Step3Details({
   cart, focusedKey, setFocusedKey, updateLine, removeLine,
   orderType, symbol, lineSum,
   uploadPhoto, removePhoto, photoUploadingKey,
+  applyDefectsPct, setApplyDefectsPct,
 }: {
   cart: CartLine[]
   focusedKey: number | null
@@ -1227,6 +1262,8 @@ function Step3Details({
   uploadPhoto: (key: number, file: File) => Promise<void>
   removePhoto: (key: number, url: string) => void
   photoUploadingKey: number | null
+  applyDefectsPct: boolean
+  setApplyDefectsPct: (b: boolean) => void
 }) {
   const focused = cart.find(l => l.key === focusedKey) ?? cart[0]
   useEffect(() => {
@@ -1297,7 +1334,7 @@ function Step3Details({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
             <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Количество</Label>
-            <div className="inline-flex items-center bg-muted rounded-lg p-1 mt-1.5">
+            <div className="flex items-center bg-muted rounded-lg p-1 mt-1.5 w-fit">
               <button
                 onClick={() => updateLine(focused.key, { qty: Math.max(1, focused.qty - 1) })}
                 className="h-9 w-9 rounded-md bg-background border grid place-items-center hover:bg-muted"
@@ -1368,11 +1405,46 @@ function Step3Details({
           )}
         </div>
 
+        {/* Цена за единицу */}
+        <div className="mb-4">
+          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+            Цена за единицу ({symbol})
+            {focused.type.default_price === 0 && (
+              <span className="ml-2 text-[10px] normal-case text-amber-600 font-bold">
+                ⚠ В справочнике 0 — укажите вручную
+              </span>
+            )}
+          </Label>
+          <div className="flex items-center gap-2 mt-1.5">
+            <Input
+              type="number" min={0} step={1}
+              placeholder={String(focused.type.default_price || 0)}
+              value={focused.unitPrice}
+              onChange={e => updateLine(focused.key, { unitPrice: e.target.value })}
+              className={cn(
+                'w-40 font-mono font-bold text-base',
+                focused.type.default_price === 0 && !focused.unitPrice && 'border-amber-500/60'
+              )}
+            />
+            {focused.unitPrice && focused.unitPrice !== String(focused.type.default_price) && (
+              <button
+                onClick={() => updateLine(focused.key, { unitPrice: '' })}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Сбросить к {formatCurrency(focused.type.default_price)} {symbol}
+              </button>
+            )}
+            {!focused.unitPrice && focused.type.default_price > 0 && (
+              <span className="text-xs text-muted-foreground">из справочника</span>
+            )}
+          </div>
+        </div>
+
         {orderType === 'carpet' && (focused.width_m || focused.length_m) && (
           <div className="mb-4 p-3 rounded-lg bg-muted text-sm font-mono">
             Площадь: {((parseFloat(focused.width_m) || 0) * (parseFloat(focused.length_m) || 0)).toFixed(2)} м²
             <span className="mx-2">·</span>
-            Стоимость: {formatCurrency(((parseFloat(focused.width_m) || 0) * (parseFloat(focused.length_m) || 0)) * focused.type.default_price * focused.qty)} {symbol}
+            Стоимость: {formatCurrency(lineSum(focused))} {symbol}
           </div>
         )}
 
@@ -1407,12 +1479,22 @@ function Step3Details({
         </div>
 
         <div className="mb-4">
-          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
-            Дефекты при приёме
-            <span className="text-[9px] ml-2 normal-case text-muted-foreground/70 tracking-normal">
-              (некоторые увеличивают цену — смотрите %)
-            </span>
-          </Label>
+          <div className="flex items-center justify-between mb-1.5">
+            <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+              Дефекты при приёме
+            </Label>
+            <label className="flex items-center gap-2 cursor-pointer text-xs">
+              <input
+                type="checkbox"
+                checked={applyDefectsPct}
+                onChange={e => setApplyDefectsPct(e.target.checked)}
+                className="h-3.5 w-3.5 accent-primary cursor-pointer"
+              />
+              <span className={cn('font-semibold', applyDefectsPct ? 'text-foreground' : 'text-muted-foreground')}>
+                Применять % надбавки
+              </span>
+            </label>
+          </div>
           <div className="flex gap-1.5 flex-wrap mt-1.5">
             {DEFECT_MODIFIERS.map(d => {
               const list = focused.defects.split(',').map(s => s.trim()).filter(Boolean)
@@ -1432,7 +1514,7 @@ function Step3Details({
                   )}
                 >
                   {d.name}
-                  {d.pct > 0 && (
+                  {d.pct > 0 && applyDefectsPct && (
                     <span className={cn('font-mono text-[10.5px]', on ? 'text-red-600' : 'text-muted-foreground')}>
                       +{d.pct}%
                     </span>
@@ -1473,7 +1555,10 @@ function Step3Details({
         {/* Фото изделий */}
         <div className="mt-4">
           <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
-            Фото изделия ({focused.photos.length})
+            Фото изделия ({focused.photos.length}/3)
+            <span className="text-[9px] ml-2 normal-case text-muted-foreground/70 tracking-normal">
+              сжимаются автоматически
+            </span>
           </Label>
           <div className="flex flex-wrap gap-2 mt-1.5">
             {focused.photos.map(url => (
@@ -1488,6 +1573,7 @@ function Step3Details({
                 </button>
               </div>
             ))}
+            {focused.photos.length < 3 && (
             <label className={cn(
               'h-20 w-20 rounded-lg border-2 border-dashed grid place-items-center cursor-pointer transition-colors',
               photoUploadingKey === focused.key
@@ -1512,6 +1598,7 @@ function Step3Details({
                 }}
               />
             </label>
+            )}
           </div>
         </div>
       </div>

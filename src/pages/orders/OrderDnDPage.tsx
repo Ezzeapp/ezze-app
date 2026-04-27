@@ -21,6 +21,9 @@ import { useCleaningClientStats } from '@/hooks/useCleaningClientStats'
 import { useFavouriteItemTypes } from '@/hooks/useFavouriteItemTypes'
 import { DEFECT_MODIFIERS, defectsPctMultiplier } from '@/lib/cleaningDefects'
 import { useFormDraft } from '@/hooks/useFormDraft'
+import { compressDefect } from '@/lib/imageCompression'
+
+const MAX_PHOTOS_PER_ITEM = 3
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
@@ -45,6 +48,7 @@ interface CartLine {
   width_m: string
   length_m: string
   photos: string[]
+  unitPrice: string  // override default_price; пустая строка = использовать дефолт
 }
 
 const COLOR_PALETTE = [
@@ -58,6 +62,7 @@ function makeLine(t: CleaningItemType): CartLine {
     key: ++keySeq, type: t, qty: 1,
     color: '', size: 'M', brand: '', defects: '', notes: '',
     width_m: '', length_m: '', photos: [],
+    unitPrice: '',
   }
 }
 
@@ -214,19 +219,25 @@ export function OrderDnDPage() {
   // Загрузка фото для редактируемой позиции
   const [photoUploading, setPhotoUploading] = useState(false)
   async function uploadPhotoToLine(zoneId: ZoneId, key: number, file: File) {
+    const cur = zones[zoneId].find(l => l.key === key)
+    if ((cur?.photos.length ?? 0) >= MAX_PHOTOS_PER_ITEM) {
+      toast.error(`Максимум ${MAX_PHOTOS_PER_ITEM} фото на позицию`)
+      return
+    }
     setPhotoUploading(true)
     try {
-      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-      const path = `${PRODUCT}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
-      const { error } = await supabase.storage.from('cleaning-photos').upload(path, file, {
-        contentType: file.type, upsert: false,
+      const compressed = await compressDefect(file)
+      const path = `${PRODUCT}/${Date.now()}_${Math.random().toString(36).slice(2)}.webp`
+      const { error } = await supabase.storage.from('cleaning-photos').upload(path, compressed, {
+        contentType: compressed.type || 'image/webp', upsert: false,
       })
       if (error) throw error
       const { data: { publicUrl } } = supabase.storage.from('cleaning-photos').getPublicUrl(path)
-      const cur = zones[zoneId].find(l => l.key === key)
-      if (cur) updateLine(zoneId, key, { photos: [...cur.photos, publicUrl] })
-    } catch {
-      toast.error('Ошибка загрузки фото')
+      const cur2 = zones[zoneId].find(l => l.key === key)
+      if (cur2) updateLine(zoneId, key, { photos: [...cur2.photos, publicUrl] })
+    } catch (e: any) {
+      console.error('Photo upload error:', e)
+      toast.error(e?.message || 'Ошибка загрузки фото')
     } finally {
       setPhotoUploading(false)
     }
@@ -265,6 +276,8 @@ export function OrderDnDPage() {
   const [expressMode, setExpressMode] = useState<'percent' | 'fixed'>('percent')
   const [expressValue, setExpressValue] = useState('50')
   const [extraTags, setExtraTags] = useState<string[]>([])
+  // Тумблер: применять % надбавки от дефектов
+  const [applyDefectsPct, setApplyDefectsPct] = useState(true)
 
   // Черновик в localStorage
   interface DnDDraft {
@@ -284,6 +297,7 @@ export function OrderDnDPage() {
     expressMode: 'percent' | 'fixed'
     expressValue: string
     extraTags: string[]
+    applyDefectsPct: boolean
   }
   const { restored: restoredDnD, save: saveDraft, clear: clearDraft, dismiss: dismissDraft } = useFormDraft<DnDDraft>('cleaning_dnd_draft')
 
@@ -304,6 +318,7 @@ export function OrderDnDPage() {
     setExpressMode(d.expressMode || 'percent')
     setExpressValue(d.expressValue || '50')
     setExtraTags(d.extraTags || [])
+    setApplyDefectsPct(d.applyDefectsPct ?? true)
     clearDraft()
   }
 
@@ -315,23 +330,29 @@ export function OrderDnDPage() {
       zones, deliveryMethod, deliveryFee, activeZone,
       clientId, clientName, clientPhone, orderType,
       payment, paymentCash, paymentCard, discount, visitAddress,
-      expressMode, expressValue, extraTags,
+      expressMode, expressValue, extraTags, applyDefectsPct,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zones, deliveryMethod, deliveryFee, activeZone, clientId, clientName, clientPhone, orderType,
       payment, paymentCash, paymentCard, discount, visitAddress,
-      expressMode, expressValue, extraTags])
+      expressMode, expressValue, extraTags, applyDefectsPct])
 
   // Расчёты
+  function unitPriceOf(l: CartLine): number {
+    const override = parseFloat(l.unitPrice)
+    if (Number.isFinite(override) && override >= 0 && l.unitPrice !== '') return override
+    return l.type.default_price
+  }
   function lineSum(l: CartLine): number {
-    const mul = defectsPctMultiplier(l.defects)
+    const mul = applyDefectsPct ? defectsPctMultiplier(l.defects) : 1
+    const unit = unitPriceOf(l)
     if (orderType === 'carpet') {
       const w = parseFloat(l.width_m) || 0
       const h = parseFloat(l.length_m) || 0
       const area = w * h
-      if (area > 0) return area * l.type.default_price * l.qty * mul
+      if (area > 0) return area * unit * l.qty * mul
     }
-    return l.type.default_price * l.qty * mul
+    return unit * l.qty * mul
   }
   const allLines = useMemo(() => [...zones.normal, ...zones.urgent], [zones])
   const subtotal = useMemo(
@@ -386,14 +407,15 @@ export function OrderDnDPage() {
           const w = parseFloat(l.width_m) || null
           const h = parseFloat(l.length_m) || null
           const area = orderType === 'carpet' && w && h ? w * h : null
-          const mul = defectsPctMultiplier(l.defects)
+          const mul = applyDefectsPct ? defectsPctMultiplier(l.defects) : 1
+          const unit = unitPriceOf(l)
           return {
             item_type_id: l.type.id.startsWith('custom:') ? null : l.type.id,
             item_type_name: l.type.name,
             color: l.color || null,
             brand: l.brand || null,
             defects: l.defects || null,
-            price: (orderType === 'carpet' && w && h ? w * h * l.type.default_price : l.type.default_price) * mul,
+            price: (orderType === 'carpet' && w && h ? w * h * unit : unit) * mul,
             ready_date: dayjs().add(l.type.default_days || 3, 'day').format('YYYY-MM-DD'),
             width_m: orderType === 'carpet' ? w : null,
             length_m: orderType === 'carpet' ? h : null,
@@ -491,8 +513,17 @@ export function OrderDnDPage() {
 
         <div className="flex-1" />
 
-        <Button variant="outline" size="sm" onClick={() => navigate('/orders/wizard')} className="h-9">
-          Wizard
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={zones.normal.length + zones.urgent.length > 0 || !!clientId}
+          onClick={() => navigate('/orders/wizard')}
+          className="h-9"
+          title={zones.normal.length + zones.urgent.length > 0 || clientId
+            ? 'Сначала очистите форму или примите заказ'
+            : 'Переключиться на Wizard (пошаговый режим)'}
+        >
+          → Wizard
         </Button>
       </div>
 
@@ -1068,6 +1099,9 @@ export function OrderDnDPage() {
             orderType={orderType}
             symbol={symbol}
             photoUploading={photoUploading}
+            applyDefectsPct={applyDefectsPct}
+            setApplyDefectsPct={setApplyDefectsPct}
+            lineSum={lineSum}
             onClose={() => setEditing(null)}
             onChange={(patch) => updateLine(editing.zoneId, editing.key, patch)}
             onUploadPhoto={(file) => uploadPhotoToLine(editing.zoneId, editing.key, file)}
@@ -1392,19 +1426,21 @@ function CarpetSizeDialog({ typeName, pricePerSqm, symbol, onConfirm, onClose }:
 
 function LineDetailsDialog({
   line, orderType, symbol, photoUploading,
+  applyDefectsPct, setApplyDefectsPct, lineSum,
   onClose, onChange, onUploadPhoto,
 }: {
   line: CartLine
   orderType: OrderType
   symbol: string
   photoUploading: boolean
+  applyDefectsPct: boolean
+  setApplyDefectsPct: (b: boolean) => void
+  lineSum: (l: CartLine) => number
   onClose: () => void
   onChange: (patch: Partial<CartLine>) => void
   onUploadPhoto: (file: File) => void
 }) {
-  const sum = orderType === 'carpet'
-    ? ((parseFloat(line.width_m) || 0) * (parseFloat(line.length_m) || 0)) * line.type.default_price * line.qty
-    : line.type.default_price * line.qty
+  const sum = lineSum(line)
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 grid place-items-center p-4" onClick={onClose}>
@@ -1422,7 +1458,7 @@ function LineDetailsDialog({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Количество</Label>
-              <div className="inline-flex items-center bg-muted rounded-lg p-1 mt-1.5">
+              <div className="flex items-center bg-muted rounded-lg p-1 mt-1.5 w-fit">
                 <button
                   onClick={() => onChange({ qty: Math.max(1, line.qty - 1) })}
                   className="h-9 w-9 rounded-md bg-background border grid place-items-center hover:bg-muted"
@@ -1459,6 +1495,41 @@ function LineDetailsDialog({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Цена за единицу */}
+          <div>
+            <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+              Цена за единицу ({symbol})
+              {line.type.default_price === 0 && (
+                <span className="ml-2 text-[10px] normal-case text-amber-600 font-bold">
+                  ⚠ В справочнике 0 — укажите вручную
+                </span>
+              )}
+            </Label>
+            <div className="flex items-center gap-2 mt-1.5">
+              <Input
+                type="number" min={0} step={1}
+                placeholder={String(line.type.default_price || 0)}
+                value={line.unitPrice}
+                onChange={e => onChange({ unitPrice: e.target.value })}
+                className={cn(
+                  'w-40 font-mono font-bold text-base',
+                  line.type.default_price === 0 && !line.unitPrice && 'border-amber-500/60'
+                )}
+              />
+              {line.unitPrice && line.unitPrice !== String(line.type.default_price) && (
+                <button
+                  onClick={() => onChange({ unitPrice: '' })}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Сбросить к {formatCurrency(line.type.default_price)} {symbol}
+                </button>
+              )}
+              {!line.unitPrice && line.type.default_price > 0 && (
+                <span className="text-xs text-muted-foreground">из справочника</span>
+              )}
+            </div>
           </div>
 
           {/* Размеры ковра */}
@@ -1525,12 +1596,22 @@ function LineDetailsDialog({
 
           {/* Дефекты */}
           <div>
-            <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
-              Дефекты при приёме
-              <span className="text-[9px] ml-2 normal-case text-muted-foreground/70 tracking-normal">
-                (некоторые увеличивают цену)
-              </span>
-            </Label>
+            <div className="flex items-center justify-between mb-1.5">
+              <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+                Дефекты при приёме
+              </Label>
+              <label className="flex items-center gap-2 cursor-pointer text-[11px]">
+                <input
+                  type="checkbox"
+                  checked={applyDefectsPct}
+                  onChange={e => setApplyDefectsPct(e.target.checked)}
+                  className="h-3.5 w-3.5 accent-primary cursor-pointer"
+                />
+                <span className={cn('font-semibold', applyDefectsPct ? 'text-foreground' : 'text-muted-foreground')}>
+                  Применять % надбавки
+                </span>
+              </label>
+            </div>
             <div className="flex gap-1.5 flex-wrap mt-1.5">
               {DEFECT_MODIFIERS.map(d => {
                 const list = line.defects.split(',').map(s => s.trim()).filter(Boolean)
@@ -1550,7 +1631,7 @@ function LineDetailsDialog({
                     )}
                   >
                     {d.name}
-                    {d.pct > 0 && (
+                    {d.pct > 0 && applyDefectsPct && (
                       <span className={cn('font-mono text-[9.5px]', on ? 'text-red-600' : 'text-muted-foreground')}>
                         +{d.pct}%
                       </span>
@@ -1582,7 +1663,10 @@ function LineDetailsDialog({
           {/* Фото */}
           <div>
             <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
-              Фото изделия ({line.photos.length})
+              Фото изделия ({line.photos.length}/3)
+              <span className="text-[9px] ml-2 normal-case text-muted-foreground/70 tracking-normal">
+                сжимаются автоматически
+              </span>
             </Label>
             <div className="flex flex-wrap gap-2 mt-1.5">
               {line.photos.map(url => (
@@ -1596,6 +1680,7 @@ function LineDetailsDialog({
                   </button>
                 </div>
               ))}
+              {line.photos.length < 3 && (
               <label className={cn(
                 'h-20 w-20 rounded-lg border-2 border-dashed grid place-items-center cursor-pointer transition-colors',
                 photoUploading
@@ -1620,6 +1705,7 @@ function LineDetailsDialog({
                   }}
                 />
               </label>
+              )}
             </div>
           </div>
         </div>

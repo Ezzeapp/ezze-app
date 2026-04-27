@@ -5,7 +5,6 @@ import {
   Plus, Search, ClipboardList, Loader2,
   AlertTriangle, Trash2, Download, CalendarRange, X,
   ArrowUpDown, ArrowUp, ArrowDown, List, Columns3, Truck,
-  Wand2, MousePointerClick,
 } from 'lucide-react'
 import { PRODUCT } from '@/lib/config'
 import { DeliveryContent } from '@/pages/cleaning/DeliveryPage'
@@ -379,32 +378,19 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
   )
 }
 
-// ── Кнопки «Новый заказ» — Wizard и Drag & Drop рядом ─────────────────────────
+// ── Единственная кнопка «Новый заказ» — DnD по умолчанию (Wizard на мобиле) ──
 function NewOrderButtons({ newOrderLabel }: { newOrderLabel: string }) {
   const navigate = useNavigate()
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024
 
-  // На мобильном — только Wizard (DnD не помещается)
-  if (!isDesktop) {
-    return (
-      <Button onClick={() => navigate('/orders/wizard')} size="sm" className="shrink-0">
-        <Plus className="h-4 w-4 sm:mr-1" />
-        <span className="hidden sm:inline">{newOrderLabel}</span>
-      </Button>
-    )
-  }
+  // Mobile → wizard (DnD не помещается). Desktop → DnD по умолчанию.
+  const target = isDesktop ? '/orders/dnd' : '/orders/wizard'
 
   return (
-    <div className="inline-flex shrink-0 gap-1.5">
-      <Button onClick={() => navigate('/orders/wizard')} size="sm">
-        <Wand2 className="h-4 w-4 mr-1.5" />
-        Wizard
-      </Button>
-      <Button onClick={() => navigate('/orders/dnd')} size="sm" variant="outline">
-        <MousePointerClick className="h-4 w-4 mr-1.5" />
-        Drag & Drop
-      </Button>
-    </div>
+    <Button onClick={() => navigate(target)} size="sm" className="shrink-0">
+      <Plus className="h-4 w-4 sm:mr-1" />
+      <span className="hidden sm:inline">{newOrderLabel}</span>
+    </Button>
   )
 }
 
