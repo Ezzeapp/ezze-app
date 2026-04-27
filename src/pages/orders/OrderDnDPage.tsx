@@ -145,6 +145,7 @@ export function OrderDnDPage() {
     urgent: [],
   })
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('pickup')
+  const [deliveryFee, setDeliveryFee] = useState<string>('350')
   const [dragging, setDragging] = useState<string | null>(null)
   const [dropHot, setDropHot] = useState<ZoneId | null>(null)
   // Активная зона для click-to-add (по умолчанию обычная)
@@ -269,6 +270,7 @@ export function OrderDnDPage() {
   interface DnDDraft {
     zones: Record<ZoneId, CartLine[]>
     deliveryMethod: DeliveryMethod
+    deliveryFee: string
     activeZone: ZoneId
     clientId: string | null
     clientName: string
@@ -288,6 +290,7 @@ export function OrderDnDPage() {
   function applyDnDDraft(d: DnDDraft) {
     setZones(d.zones || { normal: [], urgent: [] })
     setDeliveryMethod(d.deliveryMethod || 'pickup')
+    setDeliveryFee(d.deliveryFee || '350')
     setActiveZone(d.activeZone || 'normal')
     setClientId(d.clientId)
     setClientName(d.clientName || '')
@@ -309,13 +312,13 @@ export function OrderDnDPage() {
     const allLinesCount = zones.normal.length + zones.urgent.length
     if (allLinesCount === 0 && !clientId && extraTags.length === 0) return
     saveDraft({
-      zones, deliveryMethod, activeZone,
+      zones, deliveryMethod, deliveryFee, activeZone,
       clientId, clientName, clientPhone, orderType,
       payment, paymentCash, paymentCard, discount, visitAddress,
       expressMode, expressValue, extraTags,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zones, deliveryMethod, activeZone, clientId, clientName, clientPhone, orderType,
+  }, [zones, deliveryMethod, deliveryFee, activeZone, clientId, clientName, clientPhone, orderType,
       payment, paymentCash, paymentCard, discount, visitAddress,
       expressMode, expressValue, extraTags])
 
@@ -343,7 +346,7 @@ export function OrderDnDPage() {
     ? Math.round(urgentTotal * (parseFloat(expressValue) || 0) / 100)
     : (zones.urgent.length > 0 ? (parseFloat(expressValue) || 0) : 0)
   const discountAmt = Math.round((subtotal + surchargeAmt) * discount / 100)
-  const deliveryAdd = deliveryMethod === 'delivery' ? 350 : 0
+  const deliveryAdd = deliveryMethod === 'delivery' ? (parseFloat(deliveryFee) || 0) : 0
   const total = subtotal + surchargeAmt - discountAmt + deliveryAdd
 
   async function handleSubmit() {
@@ -783,17 +786,31 @@ export function OrderDnDPage() {
                   )}
                 >
                   <Truck className="h-3.5 w-3.5" />
-                  Доставка +350 {symbol}
+                  Доставка
                 </button>
               </div>
             </div>
             {(deliveryMethod === 'delivery' || orderType === 'furniture') && (
-              <Input
-                placeholder={orderType === 'furniture' ? 'Адрес выезда: ул. Пушкина, 10, кв. 5' : 'Адрес доставки: ул. Пушкина, 10, кв. 5'}
-                value={visitAddress}
-                onChange={e => setVisitAddress(e.target.value)}
-                className="h-8 text-xs"
-              />
+              <>
+                <Input
+                  placeholder={orderType === 'furniture' ? 'Адрес выезда: ул. Пушкина, 10, кв. 5' : 'Адрес доставки: ул. Пушкина, 10, кв. 5'}
+                  value={visitAddress}
+                  onChange={e => setVisitAddress(e.target.value)}
+                  className="h-8 text-xs"
+                />
+                {deliveryMethod === 'delivery' && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground shrink-0">Цена доставки:</span>
+                    <Input
+                      type="number" min={0}
+                      value={deliveryFee}
+                      onChange={e => setDeliveryFee(e.target.value)}
+                      className="h-7 w-24 text-xs font-mono"
+                    />
+                    <span className="text-xs text-muted-foreground">{symbol}</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -818,6 +835,7 @@ export function OrderDnDPage() {
               isActive={activeZone === 'normal'}
               onActivate={() => setActiveZone('normal')}
               shortcut="1"
+              onClear={() => setZones(z => ({ ...z, normal: [] }))}
               orderType={orderType}
               lineSum={lineSum}
             />
@@ -840,6 +858,7 @@ export function OrderDnDPage() {
               isActive={activeZone === 'urgent'}
               onActivate={() => setActiveZone('urgent')}
               shortcut="2"
+              onClear={() => setZones(z => ({ ...z, urgent: [] }))}
               orderType={orderType}
               lineSum={lineSum}
             />
@@ -1080,7 +1099,7 @@ export function OrderDnDPage() {
 function DropZone({
   label, note, icon: Icon, accentClass, borderActive,
   lines, symbol, dropHot, orderType, lineSum,
-  isActive, onActivate, shortcut,
+  isActive, onActivate, shortcut, onClear,
   onDragOver, onDragLeave, onDrop, onBumpQty, onRemove, onEdit,
 }: {
   id: ZoneId
@@ -1098,6 +1117,7 @@ function DropZone({
   isActive: boolean
   onActivate: () => void
   shortcut?: string
+  onClear: () => void
   onDragOver: (e: React.DragEvent) => void
   onDragLeave: () => void
   onDrop: () => void
@@ -1120,32 +1140,43 @@ function DropZone({
             : 'border-dashed border-border'
       )}
     >
-      <button
-        onClick={onActivate}
-        className="flex items-center gap-2 pb-2 border-b w-full text-left hover:bg-muted/40 -mx-1 -mt-1 px-1 pt-1 rounded transition-colors"
-        title={isActive ? 'Активна — клик по услуге добавит сюда' : 'Сделать активной для click-to-add'}
-      >
-        <div className={cn('h-7 w-7 rounded-lg grid place-items-center', accentClass)}>
-          <Icon className="h-3.5 w-3.5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-bold leading-none flex items-center gap-1.5">
-            {label}
-            {shortcut && (
-              <kbd className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground">
-                {shortcut}
-              </kbd>
-            )}
-            {isActive && (
-              <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-primary/15 text-primary">
-                ● Активна
-              </span>
-            )}
+      <div className="flex items-center gap-2 pb-2 border-b -mx-1 -mt-1 px-1 pt-1 rounded">
+        <div
+          onClick={onActivate}
+          className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:bg-muted/40 rounded p-1 -m-1"
+          title={isActive ? 'Активна — клик по услуге добавит сюда' : 'Сделать активной для click-to-add'}
+        >
+          <div className={cn('h-7 w-7 rounded-lg grid place-items-center shrink-0', accentClass)}>
+            <Icon className="h-3.5 w-3.5" />
           </div>
-          <div className="text-[10.5px] text-muted-foreground leading-none mt-1">{note}</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-bold leading-none flex items-center gap-1.5">
+              {label}
+              {shortcut && (
+                <kbd className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground">
+                  {shortcut}
+                </kbd>
+              )}
+              {isActive && (
+                <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-primary/15 text-primary">
+                  ● Активна
+                </span>
+              )}
+            </div>
+            <div className="text-[10.5px] text-muted-foreground leading-none mt-1">{note}</div>
+          </div>
         </div>
         <div className="font-mono text-xs font-bold">{formatCurrency(total)} {symbol}</div>
-      </button>
+        {lines.length > 0 && (
+          <button
+            onClick={onClear}
+            className="text-muted-foreground hover:text-destructive p-1 rounded shrink-0"
+            title="Очистить зону"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
 
       {lines.length === 0 ? (
         <div className="flex-1 grid place-items-center text-[11px] text-muted-foreground italic text-center py-3">
@@ -1158,56 +1189,61 @@ function DropZone({
           {lines.map(l => {
             const hasDetails = l.color || l.defects || l.brand || l.photos.length > 0
             return (
-              <div key={l.key} className="bg-muted/40 rounded-lg p-2 flex items-center gap-2">
-                <button
-                  onClick={() => onEdit(l.key)}
-                  className="flex-1 min-w-0 text-left hover:bg-background/50 rounded p-0.5 -m-0.5"
-                  title="Редактировать детали"
-                >
-                  <div className="text-xs font-semibold truncate flex items-center gap-1.5">
-                    {l.type.name}
-                    {l.photos.length > 0 && <Camera className="h-3 w-3 text-muted-foreground shrink-0" />}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground truncate">
-                    {orderType === 'carpet' && l.width_m && l.length_m
-                      ? `${l.width_m}×${l.length_m} м · `
-                      : ''}
-                    {hasDetails
-                      ? [l.color, l.brand, l.defects].filter(Boolean).join(' · ').slice(0, 40)
-                      : `${formatCurrency(l.type.default_price)} ${symbol}/шт`}
-                  </div>
-                </button>
-                <button
-                  onClick={() => onEdit(l.key)}
-                  className="text-muted-foreground hover:text-primary p-1"
-                  title="Редактировать"
-                >
-                  <Pencil className="h-3 w-3" />
-                </button>
-                <div className="flex items-center bg-background rounded border">
+              <div key={l.key} className="bg-muted/40 rounded-lg p-2 flex flex-col gap-1.5">
+                <div className="flex items-start gap-2">
                   <button
-                    onClick={() => onBumpQty(l.key, -1)}
-                    className="px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
+                    onClick={() => onEdit(l.key)}
+                    className="flex-1 min-w-0 text-left hover:bg-background/50 rounded p-0.5 -m-0.5"
+                    title="Редактировать детали"
                   >
-                    <Minus className="h-2.5 w-2.5" />
+                    <div className="text-xs font-semibold flex items-center gap-1.5">
+                      <span className="truncate">{l.type.name}</span>
+                      {l.photos.length > 0 && <Camera className="h-3 w-3 text-muted-foreground shrink-0" />}
+                    </div>
+                    {(hasDetails || (orderType === 'carpet' && l.width_m && l.length_m)) && (
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        {orderType === 'carpet' && l.width_m && l.length_m ? `${l.width_m}×${l.length_m} м · ` : ''}
+                        {[l.color, l.brand, l.defects].filter(Boolean).join(' · ').slice(0, 60)}
+                      </div>
+                    )}
                   </button>
-                  <span className="font-mono text-[11px] font-bold w-5 text-center">{l.qty}</span>
                   <button
-                    onClick={() => onBumpQty(l.key, 1)}
-                    className="px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
+                    onClick={() => onRemove(l.key)}
+                    className="text-muted-foreground hover:text-destructive p-1 shrink-0"
+                    title="Удалить позицию"
                   >
-                    <Plus className="h-2.5 w-2.5" />
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
-                <span className="font-mono text-xs font-bold w-16 text-right">
-                  {formatCurrency(lineSum(l))}
-                </span>
-                <button
-                  onClick={() => onRemove(l.key)}
-                  className="text-muted-foreground hover:text-destructive p-0.5"
-                >
-                  <X className="h-3 w-3" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center bg-background rounded border">
+                    <button
+                      onClick={() => onBumpQty(l.key, -1)}
+                      className="px-2 py-0.5 text-muted-foreground hover:text-foreground"
+                      title="Уменьшить"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="font-mono text-[11px] font-bold w-6 text-center">{l.qty}</span>
+                    <button
+                      onClick={() => onBumpQty(l.key, 1)}
+                      className="px-2 py-0.5 text-muted-foreground hover:text-foreground"
+                      title="Увеличить"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => onEdit(l.key)}
+                    className="text-muted-foreground hover:text-primary p-1"
+                    title="Редактировать детали"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                  <span className="ml-auto font-mono text-xs font-bold">
+                    {formatCurrency(lineSum(l))} {symbol}
+                  </span>
+                </div>
               </div>
             )
           })}

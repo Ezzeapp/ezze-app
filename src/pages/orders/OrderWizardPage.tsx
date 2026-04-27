@@ -222,6 +222,7 @@ export function OrderWizardPage() {
   // Оплата
   const [isUrgent, setIsUrgent] = useState(false)
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
+  const [deliveryFee, setDeliveryFee] = useState<string>('350')
   const [payment, setPayment] = useState<string>('cash')
   const [paymentCash, setPaymentCash] = useState('')
   const [paymentCard, setPaymentCard] = useState('')
@@ -245,6 +246,7 @@ export function OrderWizardPage() {
     orderType: OrderType
     isUrgent: boolean
     deliveryMethod: 'pickup' | 'delivery'
+    deliveryFee: string
     payment: string
     paymentCash: string
     paymentCard: string
@@ -271,6 +273,7 @@ export function OrderWizardPage() {
     setOrderType(d.orderType || 'clothing')
     setIsUrgent(!!d.isUrgent)
     setDeliveryMethod(d.deliveryMethod || 'pickup')
+    setDeliveryFee(d.deliveryFee || '350')
     setPayment(d.payment || 'cash')
     setPaymentCash(d.paymentCash || '')
     setPaymentCard(d.paymentCard || '')
@@ -295,13 +298,13 @@ export function OrderWizardPage() {
     if (cart.length === 0 && !clientId && !notes && tags.length === 0) return
     saveDraft({
       cart, clientId, clientName, clientPhone, orderType,
-      isUrgent, deliveryMethod, payment, paymentCash, paymentCard,
+      isUrgent, deliveryMethod, deliveryFee, payment, paymentCash, paymentCard,
       expressMode, expressValue, tags, discount, prepayPct, notes,
       pickupDate, deliveryDate, visitAddress, defaultDays, assignedTo, step,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart, clientId, clientName, clientPhone, orderType,
-      isUrgent, deliveryMethod, payment, paymentCash, paymentCard,
+      isUrgent, deliveryMethod, deliveryFee, payment, paymentCash, paymentCard,
       expressMode, expressValue, tags, discount, prepayPct, notes,
       pickupDate, deliveryDate, visitAddress, defaultDays, assignedTo, step])
 
@@ -323,7 +326,8 @@ export function OrderWizardPage() {
       : (parseFloat(expressValue) || 0)
     : 0
   const discountAmt = Math.round((subtotal + surchargeAmt) * discount / 100)
-  const total = Math.round(subtotal + surchargeAmt - discountAmt)
+  const deliveryAdd = deliveryMethod === 'delivery' ? (parseFloat(deliveryFee) || 0) : 0
+  const total = Math.round(subtotal + surchargeAmt - discountAmt + deliveryAdd)
   const prepayAmt = Math.round(total * prepayPct / 100)
 
   // Шаги
@@ -627,6 +631,8 @@ export function OrderWizardPage() {
               setIsUrgent={setIsUrgent}
               deliveryMethod={deliveryMethod}
               setDeliveryMethod={setDeliveryMethod}
+              deliveryFee={deliveryFee}
+              setDeliveryFee={setDeliveryFee}
               payment={payment}
               setPayment={setPayment}
               paymentCash={paymentCash}
@@ -741,6 +747,12 @@ export function OrderWizardPage() {
                 <div className="flex justify-between text-red-500">
                   <span>Срочно {expressMode === 'percent' ? `+${expressValue}%` : ''}</span>
                   <span>+ {formatCurrency(surchargeAmt)} {symbol}</span>
+                </div>
+              )}
+              {deliveryAdd > 0 && (
+                <div className="flex justify-between text-violet-600">
+                  <span>Доставка</span>
+                  <span>+ {formatCurrency(deliveryAdd)} {symbol}</span>
                 </div>
               )}
               {discount > 0 && (
@@ -1511,6 +1523,7 @@ function Step3Details({
 
 function Step4Payment({
   isUrgent, setIsUrgent, deliveryMethod, setDeliveryMethod,
+  deliveryFee, setDeliveryFee,
   payment, setPayment,
   paymentCash, setPaymentCash, paymentCard, setPaymentCard,
   discount, setDiscount, prepayPct, setPrepayPct,
@@ -1526,6 +1539,8 @@ function Step4Payment({
   setIsUrgent: (b: boolean) => void
   deliveryMethod: 'pickup' | 'delivery'
   setDeliveryMethod: (m: 'pickup' | 'delivery') => void
+  deliveryFee: string
+  setDeliveryFee: (s: string) => void
   payment: string
   setPayment: (s: string) => void
   paymentCash: string
@@ -1650,16 +1665,29 @@ function Step4Payment({
       </div>
 
       {(deliveryMethod === 'delivery' || orderType === 'furniture') && (
-        <div>
-          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
-            {orderType === 'furniture' ? 'Адрес выезда' : 'Адрес доставки'} *
-          </Label>
-          <Input
-            placeholder="ул. Пушкина, 10, кв. 5"
-            value={visitAddress}
-            onChange={e => setVisitAddress(e.target.value)}
-            className="mt-1.5"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
+          <div>
+            <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+              {orderType === 'furniture' ? 'Адрес выезда' : 'Адрес доставки'} *
+            </Label>
+            <Input
+              placeholder="ул. Пушкина, 10, кв. 5"
+              value={visitAddress}
+              onChange={e => setVisitAddress(e.target.value)}
+              className="mt-1.5"
+            />
+          </div>
+          {deliveryMethod === 'delivery' && (
+            <div>
+              <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Цена доставки ({symbol})</Label>
+              <Input
+                type="number" min={0}
+                value={deliveryFee}
+                onChange={e => setDeliveryFee(e.target.value)}
+                className="mt-1.5 sm:w-28 font-mono font-bold"
+              />
+            </div>
+          )}
         </div>
       )}
 
