@@ -20,6 +20,7 @@ import { useClientsPaged, useCreateClient } from '@/hooks/useClients'
 import { useCleaningClientStats } from '@/hooks/useCleaningClientStats'
 import { useFavouriteItemTypes } from '@/hooks/useFavouriteItemTypes'
 import { validatePromoCode } from '@/hooks/usePromoCodes'
+import { useCleaningDefaults } from '@/hooks/useCleaningDefaults'
 import { useAuth } from '@/contexts/AuthContext'
 import { DEFECT_MODIFIERS, defectsPctMultiplier } from '@/lib/cleaningDefects'
 import { useFormDraft } from '@/hooks/useFormDraft'
@@ -74,6 +75,7 @@ export function OrderDnDPage() {
   const navigate = useNavigate()
   const symbol = useCurrencySymbol()
   const { user } = useAuth()
+  const { data: defaults } = useCleaningDefaults()
 
   // Mobile fallback → wizard (DnD только для desktop)
   useEffect(() => {
@@ -154,6 +156,12 @@ export function OrderDnDPage() {
   })
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('pickup')
   const [deliveryFee, setDeliveryFee] = useState<string>('350')
+  const [deliveryFeeTouched, setDeliveryFeeTouched] = useState(false)
+  useEffect(() => {
+    if (!deliveryFeeTouched && defaults?.delivery_fee != null) {
+      setDeliveryFee(String(defaults.delivery_fee))
+    }
+  }, [defaults?.delivery_fee, deliveryFeeTouched])
   const [dragging, setDragging] = useState<string | null>(null)
   const [dropHot, setDropHot] = useState<ZoneId | null>(null)
   // Активная зона для click-to-add (по умолчанию обычная)
@@ -507,6 +515,26 @@ export function OrderDnDPage() {
         total_amount: total,
         prepaid_amount: 0,
         notes: null,
+        subtotal,
+        surcharge_amount: surchargeAmt + markupAmt,
+        surcharge_label: surchargeAmt > 0 && markupAmt > 0
+          ? `Срочно + Надбавка ${markup}%`
+          : surchargeAmt > 0
+            ? `Срочно ${expressMode === 'percent' ? `+${expressValue}%` : ''}`
+            : markupAmt > 0
+              ? `Надбавка +${markup}%`
+              : '',
+        delivery_fee: deliveryAdd,
+        delivery_label: 'Доставка',
+        discount_amount: discountAmt,
+        discount_label: discount > 0 ? `Скидка ${discount}%` : '',
+        promo_code: appliedPromo?.code,
+        promo_amount: appliedPromo?.amount,
+        payment_method: payment,
+        payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : undefined,
+        payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : undefined,
+        visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? visitAddress : null,
+        tags: tags,
       }
       setReceiptData(rData)
       setCreatedOrder({ id: order.id, number: order.number })
@@ -874,7 +902,7 @@ export function OrderDnDPage() {
                     <Input
                       type="number" min={0}
                       value={deliveryFee}
-                      onChange={e => setDeliveryFee(e.target.value)}
+                      onChange={e => { setDeliveryFee(e.target.value); setDeliveryFeeTouched(true) }}
                       className="h-7 w-24 text-xs font-mono"
                     />
                     <span className="text-xs text-muted-foreground">{symbol}</span>
@@ -998,40 +1026,52 @@ export function OrderDnDPage() {
               </div>
             )}
 
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground w-16 shrink-0">Надбавка:</span>
-              {[0, 5, 10, 15, 20].map(d => (
+            <div className="mb-2">
+              <div className="flex bg-muted rounded-md p-0.5 mb-1.5">
                 <button
-                  key={d}
-                  onClick={() => setMarkup(d)}
+                  onClick={() => { if (markup > 0) { setDiscount(markup); setMarkup(0) } }}
                   className={cn(
-                    'flex-1 h-7 rounded-md text-[10.5px] font-bold font-mono border transition-colors',
-                    markup === d
-                      ? 'border-amber-500 bg-amber-500 text-white'
-                      : 'border-border hover:border-amber-500/40'
+                    'flex-1 h-6 rounded text-[10.5px] font-bold transition-colors',
+                    markup === 0 ? 'bg-emerald-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
-                  {d > 0 ? `+${d}%` : '0%'}
+                  Скидка
                 </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground w-16 shrink-0">Скидка:</span>
-              {[0, 5, 10, 15, 20].map(d => (
                 <button
-                  key={d}
-                  onClick={() => setDiscount(d)}
+                  onClick={() => { if (discount > 0) { setMarkup(discount); setDiscount(0) } }}
                   className={cn(
-                    'flex-1 h-7 rounded-md text-[10.5px] font-bold font-mono border transition-colors',
-                    discount === d
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border hover:border-primary/40'
+                    'flex-1 h-6 rounded text-[10.5px] font-bold transition-colors',
+                    markup > 0 ? 'bg-amber-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
-                  {d}%
+                  Надбавка
                 </button>
-              ))}
+              </div>
+              <div className="grid grid-cols-5 gap-1">
+                {[0, 5, 10, 15, 20].map(d => {
+                  const useMarkup = markup > 0
+                  const active = useMarkup ? markup === d : discount === d
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => {
+                        if (useMarkup) { setMarkup(d); setDiscount(0) }
+                        else { setDiscount(d); setMarkup(0) }
+                      }}
+                      className={cn(
+                        'h-7 rounded-md text-[10.5px] font-bold font-mono border transition-colors',
+                        active
+                          ? useMarkup
+                            ? 'border-amber-500 bg-amber-500 text-white'
+                            : 'border-emerald-500 bg-emerald-500 text-white'
+                          : 'border-border hover:border-primary/40'
+                      )}
+                    >
+                      {useMarkup && d > 0 ? `+${d}%` : `${d}%`}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             {/* Промокод */}

@@ -35,6 +35,21 @@ export interface ReceiptData {
   total_amount: number
   prepaid_amount: number
   notes?: string | null
+  // Расширенные поля
+  subtotal?: number              // сумма позиций до скидок/надбавок
+  surcharge_amount?: number      // надбавка/срочно
+  surcharge_label?: string       // например "Срочно +50%" или "Надбавка +10%"
+  delivery_fee?: number          // стоимость доставки
+  delivery_label?: string        // "Доставка"
+  discount_amount?: number       // % скидка
+  discount_label?: string        // "Скидка 10%"
+  promo_code?: string            // применённый промокод
+  promo_amount?: number          // скидка от промокода
+  payment_method?: string        // 'cash' | 'card' | 'transfer' | 'mixed'
+  payment_cash?: number          // если mixed — сумма наличных
+  payment_card?: number          // если mixed — сумма картой
+  visit_address?: string | null  // адрес доставки/выезда
+  tags?: string[]                // теги заказа
 }
 
 // ── Генерация HTML-строки квитанции (для окна печати) ─────────────────────────
@@ -112,18 +127,62 @@ function buildReceiptCopyHtml(
         <tbody>${itemRows}</tbody>
       </table>
 
+      <!-- Расшифровка стоимости -->
+      <div style="border-top:1px dashed #999;padding-top:4px;margin-bottom:6px;font-size:${narrow ? '10px' : '12px'};">
+        ${data.subtotal != null ? `
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px;color:#555;">
+            <span>Подытог</span><span>${num(data.subtotal)} ${symbol}</span>
+          </div>` : ''}
+        ${data.surcharge_amount && data.surcharge_amount > 0 ? `
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px;color:#b91c1c;">
+            <span>${data.surcharge_label || 'Надбавка'}</span><span>+ ${num(data.surcharge_amount)} ${symbol}</span>
+          </div>` : ''}
+        ${data.delivery_fee && data.delivery_fee > 0 ? `
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px;color:#7c3aed;">
+            <span>${data.delivery_label || 'Доставка'}</span><span>+ ${num(data.delivery_fee)} ${symbol}</span>
+          </div>` : ''}
+        ${data.discount_amount && data.discount_amount > 0 ? `
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px;color:#059669;">
+            <span>${data.discount_label || 'Скидка'}</span><span>− ${num(data.discount_amount)} ${symbol}</span>
+          </div>` : ''}
+        ${data.promo_amount && data.promo_amount > 0 ? `
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px;color:#2563eb;">
+            <span>Промокод ${data.promo_code || ''}</span><span>− ${num(data.promo_amount)} ${symbol}</span>
+          </div>` : ''}
+      </div>
+
       <!-- Итого -->
       <div style="border-top:2px solid #000;padding-top:6px;margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:${narrow ? '13px' : '15px'};">
           <span>ИТОГО:</span>
           <span>${num(data.total_amount)} ${symbol}</span>
         </div>
+        ${data.payment_method ? `
+          <div style="display:flex;justify-content:space-between;margin-top:3px;color:#555;">
+            <span>Способ оплаты:</span>
+            <span>${data.payment_method === 'cash' ? 'Наличные' : data.payment_method === 'card' ? 'Карта' : data.payment_method === 'transfer' ? 'Перевод' : data.payment_method === 'mixed' ? 'Смешанная' : data.payment_method}</span>
+          </div>` : ''}
+        ${data.payment_method === 'mixed' && (data.payment_cash || data.payment_card) ? `
+          <div style="display:flex;justify-content:space-between;margin-top:1px;color:#666;font-size:${narrow ? '9px' : '11px'};">
+            <span>· Наличные:</span><span>${num(data.payment_cash || 0)} ${symbol}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;color:#666;font-size:${narrow ? '9px' : '11px'};">
+            <span>· Картой:</span><span>${num(data.payment_card || 0)} ${symbol}</span>
+          </div>` : ''}
         ${data.prepaid_amount > 0 ? `
           <div style="display:flex;justify-content:space-between;margin-top:3px;">
             <span>Предоплата:</span><span>${num(data.prepaid_amount)} ${symbol}</span>
           </div>
           <div style="display:flex;justify-content:space-between;margin-top:3px;font-weight:bold;">
             <span>К оплате при выдаче:</span><span>${num(rem)} ${symbol}</span>
+          </div>` : ''}
+        ${data.tags && data.tags.length > 0 ? `
+          <div style="margin-top:6px;font-size:${narrow ? '9px' : '11px'};color:#555;">
+            ${data.tags.map(t => `<span style="display:inline-block;border:1px solid #ccc;border-radius:3px;padding:0 4px;margin:1px;">${t}</span>`).join('')}
+          </div>` : ''}
+        ${data.visit_address ? `
+          <div style="margin-top:6px;font-size:${narrow ? '9px' : '11px'};color:#555;">
+            <strong>Адрес:</strong> ${data.visit_address}
           </div>` : ''}
       </div>
 
@@ -266,12 +325,65 @@ function ReceiptPreview({ data, config, symbol, format }: {
             </tbody>
           </table>
 
+          {/* Расшифровка */}
+          {(data.subtotal != null || data.surcharge_amount || data.delivery_fee || data.discount_amount || data.promo_amount) && (
+            <div className="border-t border-dashed border-gray-400 pt-1 mb-1.5 text-[10px]">
+              {data.subtotal != null && (
+                <div className="flex justify-between text-gray-600 mb-0.5">
+                  <span>Подытог</span><span>{num(data.subtotal)} {symbol}</span>
+                </div>
+              )}
+              {data.surcharge_amount && data.surcharge_amount > 0 && (
+                <div className="flex justify-between text-red-700 mb-0.5">
+                  <span>{data.surcharge_label || 'Надбавка'}</span><span>+ {num(data.surcharge_amount)} {symbol}</span>
+                </div>
+              )}
+              {data.delivery_fee && data.delivery_fee > 0 && (
+                <div className="flex justify-between text-violet-700 mb-0.5">
+                  <span>{data.delivery_label || 'Доставка'}</span><span>+ {num(data.delivery_fee)} {symbol}</span>
+                </div>
+              )}
+              {data.discount_amount && data.discount_amount > 0 && (
+                <div className="flex justify-between text-emerald-700 mb-0.5">
+                  <span>{data.discount_label || 'Скидка'}</span><span>− {num(data.discount_amount)} {symbol}</span>
+                </div>
+              )}
+              {data.promo_amount && data.promo_amount > 0 && (
+                <div className="flex justify-between text-blue-700 mb-0.5">
+                  <span>Промокод {data.promo_code}</span><span>− {num(data.promo_amount)} {symbol}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Итого */}
           <div className="border-t-2 border-black pt-1.5 mb-2.5">
             <div className="flex justify-between font-bold" style={{ fontSize: narrow ? '13px' : '15px' }}>
               <span>ИТОГО:</span>
               <span>{num(data.total_amount)} {symbol}</span>
             </div>
+            {data.payment_method && (
+              <div className="flex justify-between mt-1 text-gray-700">
+                <span>Способ оплаты:</span>
+                <span>
+                  {data.payment_method === 'cash' ? 'Наличные'
+                  : data.payment_method === 'card' ? 'Карта'
+                  : data.payment_method === 'transfer' ? 'Перевод'
+                  : data.payment_method === 'mixed' ? 'Смешанная'
+                  : data.payment_method}
+                </span>
+              </div>
+            )}
+            {data.payment_method === 'mixed' && (data.payment_cash || data.payment_card) ? (
+              <>
+                <div className="flex justify-between text-gray-500 text-[10px]">
+                  <span>· Наличные:</span><span>{num(data.payment_cash || 0)} {symbol}</span>
+                </div>
+                <div className="flex justify-between text-gray-500 text-[10px]">
+                  <span>· Картой:</span><span>{num(data.payment_card || 0)} {symbol}</span>
+                </div>
+              </>
+            ) : null}
             {data.prepaid_amount > 0 && (
               <>
                 <div className="flex justify-between mt-1">
@@ -283,6 +395,18 @@ function ReceiptPreview({ data, config, symbol, format }: {
                   <span>{num(rem)} {symbol}</span>
                 </div>
               </>
+            )}
+            {data.tags && data.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2 text-[10px] text-gray-700">
+                {data.tags.map(t => (
+                  <span key={t} className="border border-gray-300 rounded px-1.5 py-0.5">{t}</span>
+                ))}
+              </div>
+            )}
+            {data.visit_address && (
+              <div className="mt-1.5 text-[10px] text-gray-700">
+                <strong>Адрес:</strong> {data.visit_address}
+              </div>
             )}
           </div>
 

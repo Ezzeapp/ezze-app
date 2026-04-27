@@ -244,6 +244,15 @@ export function OrderDetailPage() {
     total_amount:   order.total_amount,
     prepaid_amount: order.prepaid_amount,
     notes:          order.notes,
+    surcharge_amount: (order as any).surcharge_amount,
+    surcharge_label: (order as any).is_express
+      ? `Срочно${(order as any).surcharge_percent ? ` +${(order as any).surcharge_percent}%` : ''}`
+      : 'Надбавка',
+    payment_method:   (order as any).payment_method,
+    payment_cash:     (order as any).payment_cash,
+    payment_card:     (order as any).payment_card,
+    visit_address:    (order as any).visit_address,
+    tags:             order.tags,
   } : null
 
   const slipData: DeliverySlipData | null = order ? {
@@ -601,6 +610,33 @@ export function OrderDetailPage() {
                       <span className="text-muted-foreground">Оплата</span>
                       <PaymentStatusBadge status={order.payment_status} />
                     </div>
+                    {(order as any).is_express && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Срочный</span>
+                        <span className="text-red-600 font-medium">⚡ Да</span>
+                      </div>
+                    )}
+                    {(order as any).visit_address && (
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-muted-foreground shrink-0">Адрес</span>
+                        <span className="text-right text-xs">{(order as any).visit_address}</span>
+                      </div>
+                    )}
+                    {order.tags && order.tags.length > 0 && (
+                      <div className="pt-1">
+                        <div className="text-muted-foreground mb-1.5">Теги</div>
+                        <div className="flex flex-wrap gap-1">
+                          {order.tags.map((tag: string) => (
+                            <span
+                              key={tag}
+                              className="text-[11px] font-semibold px-2 py-0.5 rounded-full border bg-muted/50"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -730,10 +766,40 @@ export function OrderDetailPage() {
 
                 {/* Итого */}
                 <div className="space-y-1 text-sm">
+                  {(order as any).surcharge_amount > 0 && (
+                    <div className="flex justify-between text-red-500">
+                      <span>{(order as any).is_express ? `Срочная надбавка${(order as any).surcharge_percent ? ` +${(order as any).surcharge_percent}%` : ''}` : 'Надбавка'}</span>
+                      <span>+ {formatCurrency((order as any).surcharge_amount)} {symbol}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Итого</span>
                     <span className="font-semibold">{formatCurrency(order.total_amount)} {symbol}</span>
                   </div>
+                  {(order as any).payment_method && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Способ оплаты</span>
+                      <span>
+                        {(order as any).payment_method === 'cash' ? 'Наличные'
+                        : (order as any).payment_method === 'card' ? 'Карта'
+                        : (order as any).payment_method === 'transfer' ? 'Перевод'
+                        : (order as any).payment_method === 'mixed' ? 'Смешанная'
+                        : (order as any).payment_method}
+                      </span>
+                    </div>
+                  )}
+                  {(order as any).payment_method === 'mixed' && (((order as any).payment_cash || 0) > 0 || ((order as any).payment_card || 0) > 0) && (
+                    <>
+                      <div className="flex justify-between text-xs text-muted-foreground/80 pl-3">
+                        <span>· Наличные</span>
+                        <span>{formatCurrency((order as any).payment_cash || 0)} {symbol}</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground/80 pl-3">
+                        <span>· Картой</span>
+                        <span>{formatCurrency((order as any).payment_card || 0)} {symbol}</span>
+                      </div>
+                    </>
+                  )}
                   {order.prepaid_amount > 0 && (
                     <div className="flex justify-between text-muted-foreground">
                       <span>Предоплата</span>

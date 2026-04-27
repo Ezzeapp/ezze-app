@@ -8,8 +8,11 @@ import {
   useCleaningOrderTypesConfig, useUpdateCleaningOrderTypesConfig, getOrderTypeIcon, CLEANING_ICON_NAMES,
 } from '@/hooks/useCleaningOrders'
 import type { CleaningOrderTypeConfig } from '@/hooks/useCleaningOrders'
+import { useCleaningDefaults, useUpdateCleaningDefaults } from '@/hooks/useCleaningDefaults'
 import { toast } from '@/components/shared/Toaster'
 import { cn } from '@/lib/utils'
+import { Truck } from 'lucide-react'
+import { useEffect } from 'react'
 
 function slugify(label: string): string {
   return label.trim().toLowerCase()
@@ -89,6 +92,8 @@ export function OrderTypesSettingsTab() {
   }
 
   return (
+    <div className="space-y-4">
+    <CleaningDefaultsCard />
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
@@ -187,6 +192,92 @@ export function OrderTypesSettingsTab() {
               <Plus className="h-3.5 w-3.5" />
               Добавить тип
             </button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+    </div>
+  )
+}
+
+// ── Дефолты приёма (цена доставки, % срочной) ───────────────────────────────
+
+function CleaningDefaultsCard() {
+  const { data: defaults } = useCleaningDefaults()
+  const update = useUpdateCleaningDefaults()
+  const [deliveryFee, setDeliveryFee] = useState('')
+  const [expressPct, setExpressPct] = useState('')
+
+  useEffect(() => {
+    if (defaults) {
+      setDeliveryFee(String(defaults.delivery_fee ?? 350))
+      setExpressPct(String(defaults.default_express_pct ?? 50))
+    }
+  }, [defaults])
+
+  const dirty = defaults &&
+    (parseFloat(deliveryFee) !== defaults.delivery_fee ||
+     parseFloat(expressPct) !== defaults.default_express_pct)
+
+  const handleSave = async () => {
+    try {
+      await update.mutateAsync({
+        delivery_fee: parseFloat(deliveryFee) || 0,
+        default_express_pct: parseFloat(expressPct) || 0,
+      })
+      toast.success('Сохранено')
+    } catch {
+      toast.error('Ошибка сохранения')
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Truck className="h-4 w-4" />
+          Дефолты приёма заказа
+        </CardTitle>
+        <CardDescription>
+          Эти значения подставляются по умолчанию при создании нового заказа. Оператор может их изменить вручную в форме.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+              Цена доставки по умолчанию
+            </label>
+            <div className="flex items-center gap-2 mt-1.5">
+              <Input
+                type="number" min={0}
+                value={deliveryFee}
+                onChange={e => setDeliveryFee(e.target.value)}
+                className="font-mono font-bold w-32"
+              />
+              <span className="text-xs text-muted-foreground">валюта проекта</span>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+              Срочная надбавка по умолчанию (%)
+            </label>
+            <div className="flex items-center gap-2 mt-1.5">
+              <Input
+                type="number" min={0} max={500}
+                value={expressPct}
+                onChange={e => setExpressPct(e.target.value)}
+                className="font-mono font-bold w-24"
+              />
+              <span className="text-xs text-muted-foreground">% от стоимости срочных позиций</span>
+            </div>
+          </div>
+        </div>
+        {dirty && (
+          <div className="pt-1">
+            <Button size="sm" disabled={update.isPending} onClick={handleSave}>
+              Сохранить
+            </Button>
           </div>
         )}
       </CardContent>

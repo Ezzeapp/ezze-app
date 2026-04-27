@@ -22,6 +22,7 @@ import { useCleaningClientStats } from '@/hooks/useCleaningClientStats'
 import { useFavouriteItemTypes } from '@/hooks/useFavouriteItemTypes'
 import { useFormDraft } from '@/hooks/useFormDraft'
 import { validatePromoCode } from '@/hooks/usePromoCodes'
+import { useCleaningDefaults } from '@/hooks/useCleaningDefaults'
 import { useAuth } from '@/contexts/AuthContext'
 import { compressDefect } from '@/lib/imageCompression'
 
@@ -77,6 +78,7 @@ function makeLine(t: CleaningItemType, readyDate: string): CartLine {
 export function OrderWizardPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { data: defaults } = useCleaningDefaults()
   const symbol = useCurrencySymbol()
 
   const { data: enabledOrderTypes = DEFAULT_ENABLED_CONFIGS } = useCleaningEnabledOrderTypes()
@@ -237,6 +239,13 @@ export function OrderWizardPage() {
   const [isUrgent, setIsUrgent] = useState(false)
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [deliveryFee, setDeliveryFee] = useState<string>('350')
+  const [deliveryFeeTouched, setDeliveryFeeTouched] = useState(false)
+  // Подтянуть дефолт из settings, если оператор не менял вручную
+  useEffect(() => {
+    if (!deliveryFeeTouched && defaults?.delivery_fee != null) {
+      setDeliveryFee(String(defaults.delivery_fee))
+    }
+  }, [defaults?.delivery_fee, deliveryFeeTouched])
   const [payment, setPayment] = useState<string>('cash')
   const [paymentCash, setPaymentCash] = useState('')
   const [paymentCard, setPaymentCard] = useState('')
@@ -527,6 +536,26 @@ export function OrderWizardPage() {
         total_amount: total,
         prepaid_amount: prepayAmt,
         notes: notes || null,
+        subtotal,
+        surcharge_amount: surchargeAmt + markupAmt,
+        surcharge_label: surchargeAmt > 0 && markupAmt > 0
+          ? `Срочно + Надбавка ${markup}%`
+          : surchargeAmt > 0
+            ? `Срочно ${expressMode === 'percent' ? `+${expressValue}%` : ''}`
+            : markupAmt > 0
+              ? `Надбавка +${markup}%`
+              : '',
+        delivery_fee: deliveryAdd,
+        delivery_label: 'Доставка',
+        discount_amount: discountAmt,
+        discount_label: discount > 0 ? `Скидка ${discount}%` : '',
+        promo_code: appliedPromo?.code,
+        promo_amount: appliedPromo?.amount,
+        payment_method: payment,
+        payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : undefined,
+        payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : undefined,
+        visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? visitAddress : null,
+        tags: tags,
       }
       setReceiptData(rData)
       setCreatedOrder({ id: order.id, number: order.number })
@@ -705,7 +734,7 @@ export function OrderWizardPage() {
               deliveryMethod={deliveryMethod}
               setDeliveryMethod={setDeliveryMethod}
               deliveryFee={deliveryFee}
-              setDeliveryFee={setDeliveryFee}
+              setDeliveryFee={(v: string) => { setDeliveryFee(v); setDeliveryFeeTouched(true) }}
               payment={payment}
               setPayment={setPayment}
               paymentCash={paymentCash}
@@ -1991,42 +2020,52 @@ function Step4Payment({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="p-3 rounded-xl border bg-muted/40">
-          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Надбавка</Label>
-          <div className="grid grid-cols-5 gap-1 mt-2">
-            {[0, 5, 10, 15, 20].map(d => (
-              <button
-                key={d}
-                onClick={() => setMarkup(d)}
-                className={cn(
-                  'h-9 rounded-md text-xs font-bold font-mono border transition-colors',
-                  markup === d
-                    ? 'border-amber-500 bg-amber-500 text-white'
-                    : 'border-border hover:border-amber-500/40'
-                )}
-              >
-                {d > 0 ? `+${d}%` : '0%'}
-              </button>
-            ))}
+          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Скидка / Надбавка</Label>
+          <div className="flex bg-background rounded-md p-0.5 mt-2 border">
+            <button
+              onClick={() => { if (markup > 0) { setDiscount(markup); setMarkup(0) } }}
+              className={cn(
+                'flex-1 h-8 rounded text-xs font-bold transition-colors',
+                markup === 0 ? 'bg-emerald-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Скидка
+            </button>
+            <button
+              onClick={() => { if (discount > 0) { setMarkup(discount); setDiscount(0) } }}
+              className={cn(
+                'flex-1 h-8 rounded text-xs font-bold transition-colors',
+                markup > 0 ? 'bg-amber-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Надбавка
+            </button>
           </div>
-        </div>
-
-        <div className="p-3 rounded-xl border bg-muted/40">
-          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Скидка</Label>
           <div className="grid grid-cols-5 gap-1 mt-2">
-            {[0, 5, 10, 15, 20].map(d => (
-              <button
-                key={d}
-                onClick={() => setDiscount(d)}
-                className={cn(
-                  'h-9 rounded-md text-xs font-bold font-mono border transition-colors',
-                  discount === d
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border hover:border-primary/40'
-                )}
-              >
-                {d}%
-              </button>
-            ))}
+            {[0, 5, 10, 15, 20].map(d => {
+              const isMarkupMode = markup > 0 || (discount === 0 && markup === 0 && false)
+              const active = markup > 0 ? markup === d : discount === d
+              const useMarkup = markup > 0
+              return (
+                <button
+                  key={d}
+                  onClick={() => {
+                    if (useMarkup) { setMarkup(d); setDiscount(0) }
+                    else { setDiscount(d); setMarkup(0) }
+                  }}
+                  className={cn(
+                    'h-9 rounded-md text-xs font-bold font-mono border transition-colors',
+                    active
+                      ? useMarkup
+                        ? 'border-amber-500 bg-amber-500 text-white'
+                        : 'border-emerald-500 bg-emerald-500 text-white'
+                      : 'border-border hover:border-primary/40'
+                  )}
+                >
+                  {useMarkup && d > 0 ? `+${d}%` : `${d}%`}
+                </button>
+              )
+            })}
           </div>
         </div>
 
