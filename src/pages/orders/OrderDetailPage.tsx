@@ -249,8 +249,10 @@ export function OrderDetailPage() {
       ? `Срочно${(order as any).surcharge_percent ? ` +${(order as any).surcharge_percent}%` : ''}`
       : 'Надбавка',
     payment_method:   (order as any).payment_method,
+    payment_provider: (order as any).payment_provider,
     payment_cash:     (order as any).payment_cash,
     payment_card:     (order as any).payment_card,
+    ready_date:       order.ready_date,
     visit_address:    (order as any).visit_address,
     tags:             order.tags,
   } : null
@@ -780,7 +782,10 @@ export function OrderDetailPage() {
                     <div className="flex justify-between text-muted-foreground">
                       <span>Способ оплаты</span>
                       <span>
-                        {(order as any).payment_method === 'cash' ? 'Наличные'
+                        {(order as any).payment_provider === 'click' ? 'Click'
+                        : (order as any).payment_provider === 'payme' ? 'Payme'
+                        : (order as any).payment_provider === 'uzum' ? 'Uzum'
+                        : (order as any).payment_method === 'cash' ? 'Наличные'
                         : (order as any).payment_method === 'card' ? 'Карта'
                         : (order as any).payment_method === 'transfer' ? 'Перевод'
                         : (order as any).payment_method === 'mixed' ? 'Смешанная'

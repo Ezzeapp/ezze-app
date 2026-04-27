@@ -279,6 +279,7 @@ export function OrderDnDPage() {
 
   // Оплата
   const [payment, setPayment] = useState('cash')
+  const [paymentProvider, setPaymentProvider] = useState<string | null>(null)
   const [paymentCash, setPaymentCash] = useState('')
   const [paymentCard, setPaymentCard] = useState('')
   const [discount, setDiscount] = useState(0)
@@ -481,6 +482,7 @@ export function OrderDnDPage() {
         ready_date: readyDate,
         is_express: zones.urgent.length > 0,
         payment_method: payment,
+        payment_provider: paymentProvider,
         payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : 0,
         payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : 0,
         surcharge_percent: zones.urgent.length > 0 && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
@@ -535,8 +537,10 @@ export function OrderDnDPage() {
         promo_code: appliedPromo?.code,
         promo_amount: appliedPromo?.amount,
         payment_method: payment,
+        payment_provider: paymentProvider,
         payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : undefined,
         payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : undefined,
+        ready_date: readyDate,
         visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? visitAddress : null,
         tags: tags,
       }
@@ -988,14 +992,14 @@ export function OrderDnDPage() {
               })}
             </div>
 
-            <div className="grid grid-cols-4 gap-1.5 mb-3">
+            <div className="grid grid-cols-4 gap-1.5 mb-2">
               {[['cash','Нал.'], ['card','Карта'], ['transfer','Перевод'], ['mixed','Смеш.']].map(([k, label]) => (
                 <button
                   key={k}
-                  onClick={() => setPayment(k)}
+                  onClick={() => { setPayment(k); setPaymentProvider(null) }}
                   className={cn(
                     'h-8 rounded-md text-xs font-bold border transition-colors',
-                    payment === k
+                    payment === k && !paymentProvider
                       ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-border hover:border-primary/40'
                   )}
@@ -1003,6 +1007,28 @@ export function OrderDnDPage() {
                   {label}
                 </button>
               ))}
+            </div>
+
+            <div className="grid grid-cols-3 gap-1.5 mb-3">
+              {[
+                { k: 'click', label: 'Click', cls: 'text-sky-600 border-sky-300 hover:border-sky-500' },
+                { k: 'payme', label: 'Payme', cls: 'text-emerald-600 border-emerald-300 hover:border-emerald-500' },
+                { k: 'uzum',  label: 'Uzum',  cls: 'text-violet-600 border-violet-300 hover:border-violet-500' },
+              ].map(p => {
+                const sel = paymentProvider === p.k
+                return (
+                  <button
+                    key={p.k}
+                    onClick={() => { setPayment('card'); setPaymentProvider(p.k) }}
+                    className={cn(
+                      'h-8 rounded-md text-xs font-bold border-2 transition-colors',
+                      sel ? 'border-primary bg-primary text-primary-foreground' : `bg-background ${p.cls}`
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                )
+              })}
             </div>
 
             {payment === 'mixed' && (

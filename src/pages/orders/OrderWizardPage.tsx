@@ -249,6 +249,7 @@ export function OrderWizardPage() {
     }
   }, [defaults?.delivery_fee, deliveryFeeTouched])
   const [payment, setPayment] = useState<string>('cash')
+  const [paymentProvider, setPaymentProvider] = useState<string | null>(null)
   const [paymentCash, setPaymentCash] = useState('')
   const [paymentCard, setPaymentCard] = useState('')
   // Срочная надбавка: % или фикс. сумма
@@ -279,6 +280,7 @@ export function OrderWizardPage() {
     deliveryMethod: 'pickup' | 'delivery'
     deliveryFee: string
     payment: string
+    paymentProvider?: string | null
     paymentCash: string
     paymentCard: string
     expressMode: 'percent' | 'fixed'
@@ -310,6 +312,7 @@ export function OrderWizardPage() {
     setDeliveryMethod(d.deliveryMethod || 'pickup')
     setDeliveryFee(d.deliveryFee || '350')
     setPayment(d.payment || 'cash')
+    setPaymentProvider(d.paymentProvider ?? null)
     setPaymentCash(d.paymentCash || '')
     setPaymentCard(d.paymentCard || '')
     setExpressMode(d.expressMode || 'percent')
@@ -337,14 +340,14 @@ export function OrderWizardPage() {
     if (cart.length === 0 && !clientId && !notes && tags.length === 0) return
     saveDraft({
       cart, clientId, clientName, clientPhone, orderType,
-      isUrgent, deliveryMethod, deliveryFee, payment, paymentCash, paymentCard,
+      isUrgent, deliveryMethod, deliveryFee, payment, paymentProvider, paymentCash, paymentCard,
       expressMode, expressValue, tags, applyDefectsPct, discount, prepayPct, notes,
       pickupDate, deliveryDate, visitAddress, defaultDays, assignedTo, step,
       markup, promoCode, appliedPromo,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart, clientId, clientName, clientPhone, orderType,
-      isUrgent, deliveryMethod, deliveryFee, payment, paymentCash, paymentCard,
+      isUrgent, deliveryMethod, deliveryFee, payment, paymentProvider, paymentCash, paymentCard,
       expressMode, expressValue, tags, applyDefectsPct, discount, prepayPct, notes,
       pickupDate, deliveryDate, visitAddress, defaultDays, assignedTo, step,
       markup, promoCode, appliedPromo])
@@ -476,10 +479,13 @@ export function OrderWizardPage() {
         notes: notes || null,
         is_express: isUrgent,
         payment_method: payment,
+        payment_provider: paymentProvider,
         payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : (payment === 'cash' ? prepayAmt : 0),
         payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : (payment === 'card' ? prepayAmt : 0),
         surcharge_percent: isUrgent && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
         surcharge_amount: surchargeAmt + markupAmt,
+        promo_code: appliedPromo?.code ?? null,
+        promo_amount: promoAmt || 0,
         tags: [
           ...tags,
           ...(isUrgent && !tags.includes('Срочно') ? ['Срочно'] : []),
@@ -555,8 +561,10 @@ export function OrderWizardPage() {
         promo_code: appliedPromo?.code,
         promo_amount: appliedPromo?.amount,
         payment_method: payment,
+        payment_provider: paymentProvider,
         payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : undefined,
         payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : undefined,
+        ready_date: defaultReady,
         visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? visitAddress : null,
         tags: tags,
       }
@@ -747,6 +755,8 @@ export function OrderWizardPage() {
               setDeliveryFee={(v: string) => { setDeliveryFee(v); setDeliveryFeeTouched(true) }}
               payment={payment}
               setPayment={setPayment}
+              paymentProvider={paymentProvider}
+              setPaymentProvider={setPaymentProvider}
               paymentCash={paymentCash}
               setPaymentCash={setPaymentCash}
               paymentCard={paymentCard}
@@ -1731,7 +1741,7 @@ function Step3Details({
 function Step4Payment({
   isUrgent, setIsUrgent, deliveryMethod, setDeliveryMethod,
   deliveryFee, setDeliveryFee,
-  payment, setPayment,
+  payment, setPayment, paymentProvider, setPaymentProvider,
   paymentCash, setPaymentCash, paymentCard, setPaymentCard,
   discount, setDiscount, prepayPct, setPrepayPct,
   notes, setNotes,
@@ -1752,6 +1762,8 @@ function Step4Payment({
   setDeliveryFee: (s: string) => void
   payment: string
   setPayment: (s: string) => void
+  paymentProvider: string | null
+  setPaymentProvider: (s: string | null) => void
   paymentCash: string
   setPaymentCash: (s: string) => void
   paymentCard: string
@@ -1976,10 +1988,10 @@ function Step4Payment({
           {paymentOptions.map(p => (
             <button
               key={p.k}
-              onClick={() => setPayment(p.k)}
+              onClick={() => { setPayment(p.k); setPaymentProvider(null) }}
               className={cn(
                 'h-12 rounded-lg border-2 text-sm font-bold transition-colors',
-                payment === p.k
+                payment === p.k && !paymentProvider
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border hover:border-primary/40'
               )}
@@ -1987,6 +1999,29 @@ function Step4Payment({
               {p.label}
             </button>
           ))}
+        </div>
+
+        {/* Агрегаторы (Click / Payme / Uzum) */}
+        <div className="grid grid-cols-3 gap-2 mt-2">
+          {[
+            { k: 'click', label: 'Click', cls: 'text-sky-600 border-sky-300 hover:border-sky-500' },
+            { k: 'payme', label: 'Payme', cls: 'text-emerald-600 border-emerald-300 hover:border-emerald-500' },
+            { k: 'uzum',  label: 'Uzum',  cls: 'text-violet-600 border-violet-300 hover:border-violet-500' },
+          ].map(p => {
+            const sel = paymentProvider === p.k
+            return (
+              <button
+                key={p.k}
+                onClick={() => { setPayment('card'); setPaymentProvider(p.k) }}
+                className={cn(
+                  'h-10 rounded-lg border-2 text-sm font-bold transition-colors',
+                  sel ? 'border-primary bg-primary text-primary-foreground' : `bg-background ${p.cls}`
+                )}
+              >
+                {p.label}
+              </button>
+            )
+          })}
         </div>
 
         {payment === 'mixed' && (() => {

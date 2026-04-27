@@ -91,6 +91,14 @@ export interface CleaningOrder {
   paid_amount: number
   ready_date: string | null
   notes: string | null
+  // оплата
+  payment_method?: string | null
+  payment_provider?: string | null
+  payment_cash?: number | null
+  payment_card?: number | null
+  // промокод
+  promo_code?: string | null
+  promo_amount?: number | null
   // ковры
   pickup_date: string | null
   delivery_date: string | null
@@ -320,10 +328,14 @@ export interface CreateOrderPayload {
   // оплата
   is_express?: boolean
   payment_method?: string
+  payment_provider?: string | null
   surcharge_percent?: number
   surcharge_amount?: number
   payment_cash?: number
   payment_card?: number
+  // промокод
+  promo_code?: string | null
+  promo_amount?: number
   // ковры
   pickup_date?: string | null
   delivery_date?: string | null
@@ -374,10 +386,13 @@ export function useCreateOrder() {
           tags:              payload.tags ?? [],
           is_express:        payload.is_express ?? false,
           payment_method:    payload.payment_method ?? 'cash',
+          payment_provider:  payload.payment_provider ?? null,
           surcharge_percent: payload.surcharge_percent ?? 0,
           surcharge_amount:  payload.surcharge_amount ?? 0,
           payment_cash:      payload.payment_cash ?? 0,
           payment_card:      payload.payment_card ?? 0,
+          promo_code:        payload.promo_code ?? null,
+          promo_amount:      payload.promo_amount ?? 0,
           pickup_date:       payload.pickup_date ?? null,
           delivery_date:     payload.delivery_date ?? null,
           visit_address:     payload.visit_address ?? null,

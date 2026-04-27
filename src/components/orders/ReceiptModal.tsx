@@ -48,8 +48,10 @@ export interface ReceiptData {
   promo_code?: string            // применённый промокод
   promo_amount?: number          // скидка от промокода
   payment_method?: string        // 'cash' | 'card' | 'transfer' | 'mixed'
+  payment_provider?: string | null  // 'click' | 'payme' | 'uzum' — детализация card-оплаты
   payment_cash?: number          // если mixed — сумма наличных
   payment_card?: number          // если mixed — сумма картой
+  ready_date?: string | null     // общий срок готовности заказа (YYYY-MM-DD)
   visit_address?: string | null  // адрес доставки/выезда
   tags?: string[]                // теги заказа
 }
@@ -162,7 +164,21 @@ function buildReceiptCopyHtml(
         ${data.payment_method ? `
           <div style="display:flex;justify-content:space-between;margin-top:3px;color:#555;">
             <span>Способ оплаты:</span>
-            <span>${data.payment_method === 'cash' ? 'Наличные' : data.payment_method === 'card' ? 'Карта' : data.payment_method === 'transfer' ? 'Перевод' : data.payment_method === 'mixed' ? 'Смешанная' : data.payment_method}</span>
+            <span>${
+              data.payment_provider === 'click' ? 'Click'
+              : data.payment_provider === 'payme' ? 'Payme'
+              : data.payment_provider === 'uzum' ? 'Uzum'
+              : data.payment_method === 'cash' ? 'Наличные'
+              : data.payment_method === 'card' ? 'Карта'
+              : data.payment_method === 'transfer' ? 'Перевод'
+              : data.payment_method === 'mixed' ? 'Смешанная'
+              : data.payment_method
+            }</span>
+          </div>` : ''}
+        ${data.ready_date ? `
+          <div style="display:flex;justify-content:space-between;margin-top:3px;color:#555;">
+            <span>Срок готовности:</span>
+            <span>${dayjs(data.ready_date).format('DD.MM.YYYY')}</span>
           </div>` : ''}
         ${data.payment_method === 'mixed' && (data.payment_cash || data.payment_card) ? `
           <div style="display:flex;justify-content:space-between;margin-top:1px;color:#666;font-size:${narrow ? '9px' : '11px'};">
@@ -368,12 +384,21 @@ function ReceiptPreview({ data, config, symbol, format }: {
               <div className="flex justify-between mt-1 text-gray-700">
                 <span>Способ оплаты:</span>
                 <span>
-                  {data.payment_method === 'cash' ? 'Наличные'
+                  {data.payment_provider === 'click' ? 'Click'
+                  : data.payment_provider === 'payme' ? 'Payme'
+                  : data.payment_provider === 'uzum' ? 'Uzum'
+                  : data.payment_method === 'cash' ? 'Наличные'
                   : data.payment_method === 'card' ? 'Карта'
                   : data.payment_method === 'transfer' ? 'Перевод'
                   : data.payment_method === 'mixed' ? 'Смешанная'
                   : data.payment_method}
                 </span>
+              </div>
+            )}
+            {data.ready_date && (
+              <div className="flex justify-between mt-1 text-gray-700">
+                <span>Срок готовности:</span>
+                <span>{dayjs(data.ready_date).format('DD.MM.YYYY')}</span>
               </div>
             )}
             {data.payment_method === 'mixed' && (data.payment_cash || data.payment_card) ? (
