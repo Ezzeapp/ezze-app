@@ -570,99 +570,105 @@ export function OrderWizardPage() {
   return (
     <div className="flex flex-col h-full w-full bg-[#f5f7fb] dark:bg-background overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-3 sm:px-6 py-3 bg-background border-b shrink-0">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/orders')} className="h-9 w-9">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md bg-primary text-primary-foreground grid place-items-center font-bold text-sm">E</div>
-          <div className="flex flex-col">
-            <span className="text-sm sm:text-base font-semibold leading-none">Новый заказ</span>
-            <span className="text-[10.5px] sm:text-xs text-muted-foreground font-mono leading-none mt-1 hidden xs:block">
-              {dayjs().format('DD.MM.YYYY · HH:mm')}
-            </span>
+      <div className="bg-background border-b shrink-0">
+        <div className="max-w-[1600px] mx-auto flex items-center gap-3 px-3 sm:px-6 py-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/orders')} className="h-9 w-9">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-md bg-primary text-primary-foreground grid place-items-center font-bold text-sm">E</div>
+            <div className="flex flex-col">
+              <span className="text-sm sm:text-base font-semibold leading-none">Новый заказ</span>
+              <span className="text-[10.5px] sm:text-xs text-muted-foreground font-mono leading-none mt-1 hidden xs:block">
+                {dayjs().format('DD.MM.YYYY · HH:mm')}
+              </span>
+            </div>
           </div>
+          <div className="flex-1" />
+          <Button
+            variant="outline" size="sm"
+            disabled={cart.length > 0 || !!clientId}
+            onClick={() => navigate('/orders/dnd')}
+            className="h-8 text-xs hidden lg:inline-flex"
+            title={cart.length > 0 || clientId
+              ? 'Сначала очистите форму или примите заказ'
+              : 'Переключиться на Drag & Drop (быстрый режим)'}
+          >
+            → Drag & Drop
+          </Button>
+          <Button
+            variant="outline" size="sm"
+            className="h-8 text-xs"
+            onClick={() => navigate('/orders')}
+          >
+            <span className="hidden sm:inline">Отмена</span>
+            <X className="h-4 w-4 sm:hidden" />
+          </Button>
         </div>
-        <div className="flex-1" />
-        <Button
-          variant="outline" size="sm"
-          disabled={cart.length > 0 || !!clientId}
-          onClick={() => navigate('/orders/dnd')}
-          className="h-8 text-xs hidden lg:inline-flex"
-          title={cart.length > 0 || clientId
-            ? 'Сначала очистите форму или примите заказ'
-            : 'Переключиться на Drag & Drop (быстрый режим)'}
-        >
-          → Drag & Drop
-        </Button>
-        <Button
-          variant="outline" size="sm"
-          className="h-8 text-xs"
-          onClick={() => navigate('/orders')}
-        >
-          <span className="hidden sm:inline">Отмена</span>
-          <X className="h-4 w-4 sm:hidden" />
-        </Button>
       </div>
 
       {/* ── Restore draft banner ───────────────────────────────── */}
       {restored && (
-        <div className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900/50 px-3 sm:px-6 py-2 flex items-center gap-3 shrink-0">
-          <div className="text-sm font-semibold text-amber-900 dark:text-amber-200 flex-1">
-            Найден незавершённый заказ ({restored.cart?.length || 0} позиций
-            {restored.clientName ? `, клиент ${restored.clientName}` : ''})
+        <div className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900/50 shrink-0">
+          <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-2 flex items-center gap-3">
+            <div className="text-sm font-semibold text-amber-900 dark:text-amber-200 flex-1">
+              Найден незавершённый заказ ({restored.cart?.length || 0} позиций
+              {restored.clientName ? `, клиент ${restored.clientName}` : ''})
+            </div>
+            <Button size="sm" variant="default" onClick={() => applyDraft(restored)} className="h-8">
+              Восстановить
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { dismissDraft(); clearDraft() }} className="h-8">
+              Начать заново
+            </Button>
           </div>
-          <Button size="sm" variant="default" onClick={() => applyDraft(restored)} className="h-8">
-            Восстановить
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => { dismissDraft(); clearDraft() }} className="h-8">
-            Начать заново
-          </Button>
         </div>
       )}
 
       {/* ── Progress ───────────────────────────────────────────── */}
-      <div className="bg-background border-b px-3 sm:px-6 py-3 flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none shrink-0">
-        {steps.map((s) => {
-          const done = step > s.n
-          const active = step === s.n
-          const Icon = s.icon
-          return (
-            <button
-              key={s.n}
-              onClick={() => { if (s.n < step || (s.n === step + 1 && canNext())) setStep(s.n as 1|2|3|4) }}
-              className={cn(
-                'flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-2 rounded-lg border text-left transition-colors shrink-0',
-                active
-                  ? 'border-primary bg-primary/10'
-                  : done
-                    ? 'border-emerald-500/40 bg-emerald-500/5'
-                    : 'border-border bg-muted/40',
-                'flex-1 min-w-[110px] sm:min-w-0'
-              )}
-            >
-              <div className={cn(
-                'h-7 w-7 sm:h-8 sm:w-8 rounded-full grid place-items-center text-xs font-bold shrink-0',
-                done ? 'bg-emerald-500 text-white'
-                : active ? 'bg-gradient-to-br from-blue-500 to-blue-400 text-white'
-                : 'bg-muted text-muted-foreground'
-              )}>
-                {done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
-              </div>
-              <div className="min-w-0 hidden xs:block">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">
-                  Шаг {s.n}
+      <div className="bg-background border-b shrink-0">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-3 flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none sm:justify-center">
+          {steps.map((s) => {
+            const done = step > s.n
+            const active = step === s.n
+            const Icon = s.icon
+            return (
+              <button
+                key={s.n}
+                onClick={() => { if (s.n < step || (s.n === step + 1 && canNext())) setStep(s.n as 1|2|3|4) }}
+                className={cn(
+                  'flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-2 rounded-lg border text-left transition-colors shrink-0',
+                  active
+                    ? 'border-primary bg-primary/10'
+                    : done
+                      ? 'border-emerald-500/40 bg-emerald-500/5'
+                      : 'border-border bg-muted/40',
+                  'flex-1 min-w-[110px] sm:flex-none sm:min-w-0'
+                )}
+              >
+                <div className={cn(
+                  'h-7 w-7 sm:h-8 sm:w-8 rounded-full grid place-items-center text-xs font-bold shrink-0',
+                  done ? 'bg-emerald-500 text-white'
+                  : active ? 'bg-gradient-to-br from-blue-500 to-blue-400 text-white'
+                  : 'bg-muted text-muted-foreground'
+                )}>
+                  {done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                 </div>
-                <div className="text-sm font-semibold leading-tight mt-1 truncate">{s.label}</div>
-              </div>
-              <div className="text-sm font-semibold xs:hidden">{s.label}</div>
-            </button>
-          )
-        })}
+                <div className="min-w-0 hidden xs:block">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">
+                    Шаг {s.n}
+                  </div>
+                  <div className="text-sm font-semibold leading-tight mt-1 truncate">{s.label}</div>
+                </div>
+                <div className="text-sm font-semibold xs:hidden">{s.label}</div>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* ── Body ───────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-3 lg:gap-5 px-3 sm:px-6 py-3 sm:py-5 overflow-hidden min-h-0">
+      <div className="flex-1 flex flex-col lg:flex-row gap-3 lg:gap-5 px-3 sm:px-6 py-3 sm:py-5 overflow-hidden min-h-0 max-w-[1600px] w-full mx-auto">
 
         {/* Main panel */}
         <div className="flex-1 min-w-0 bg-background rounded-xl border shadow-sm p-4 sm:p-6 overflow-y-auto">
@@ -1113,7 +1119,7 @@ function Step1Client({
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4 max-h-96 overflow-y-auto">
+            <div className="grid gap-2 mt-4 max-h-96 overflow-y-auto [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
               {clients.length === 0 ? (
                 <div className="col-span-full text-sm text-muted-foreground italic text-center py-6">
                   {clientQuery ? 'Никого не найдено' : 'Начните вводить имя или телефон'}
@@ -1271,7 +1277,7 @@ function Step2Items({
           </button>
         </div>
         <div className="flex-1 overflow-y-auto -mr-2 pr-2 min-h-0">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+          <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(220px,1fr))]">
             {/* Своя позиция вне каталога */}
             <button
               onClick={onAddCustom}
