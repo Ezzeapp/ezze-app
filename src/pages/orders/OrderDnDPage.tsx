@@ -106,6 +106,9 @@ export function OrderDnDPage() {
   const [itemSearch, setItemSearch] = useState('')
   const [showFavsOnly, setShowFavsOnly] = useState(false)
   const { isFavourite, toggle: toggleFav, favs } = useFavouriteItemTypes()
+  useEffect(() => {
+    if (showFavsOnly && favs.size === 0) setShowFavsOnly(false)
+  }, [favs.size, showFavsOnly])
   const visibleSubgroups = useMemo(() => {
     if (!groupSearch) return subgroups
     const q = groupSearch.toLowerCase()
@@ -614,13 +617,23 @@ export function OrderDnDPage() {
                   </div>
                 </>
               ) : (
-                <Input
-                  placeholder="Поиск клиента..."
-                  value={clientQuery}
-                  onChange={e => { setClientQuery(e.target.value); setShowClientSearch(true) }}
-                  onFocus={() => setShowClientSearch(true)}
-                  className="h-8 text-xs bg-white/20 border-white/30 text-white placeholder:text-white/70"
-                />
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    placeholder="Поиск клиента..."
+                    value={clientQuery}
+                    onChange={e => { setClientQuery(e.target.value); setShowClientSearch(true) }}
+                    onFocus={() => setShowClientSearch(true)}
+                    className="h-8 text-xs bg-white/20 border-white/30 text-white placeholder:text-white/70 flex-1"
+                  />
+                  <button
+                    onClick={() => { setShowClientSearch(false); setShowAddClient(true) }}
+                    className="h-8 px-2 rounded border border-white/30 bg-white/10 hover:bg-white/20 text-white shrink-0 flex items-center gap-1 text-xs font-semibold"
+                    title="Создать нового клиента"
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Новый
+                  </button>
+                </div>
               )}
               {showClientSearch && !clientId && clientQuery && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-background text-foreground border shadow-xl rounded-lg z-50 overflow-hidden max-h-72 overflow-y-auto">

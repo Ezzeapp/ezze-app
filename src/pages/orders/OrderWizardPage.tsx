@@ -132,6 +132,10 @@ export function OrderWizardPage() {
   const [catalogQuery, setCatalogQuery] = useState('')
   const [showFavsOnly, setShowFavsOnly] = useState(false)
   const { isFavourite, toggle: toggleFav, favs } = useFavouriteItemTypes()
+  // Авто-выключение фильтра при удалении последнего избранного
+  useEffect(() => {
+    if (showFavsOnly && favs.size === 0) setShowFavsOnly(false)
+  }, [favs.size, showFavsOnly])
   const visibleTypes = useMemo(() => {
     let arr = filteredTypes
     if (showFavsOnly) arr = arr.filter(t => favs.has(t.id))
