@@ -1064,27 +1064,29 @@ export function OrderDnDPage() {
               ))}
             </div>
 
-            <div className="grid grid-cols-3 gap-1.5 mb-3">
-              {[
-                { k: 'click', label: 'Click', cls: 'text-sky-600 border-sky-300 hover:border-sky-500' },
-                { k: 'payme', label: 'Payme', cls: 'text-emerald-600 border-emerald-300 hover:border-emerald-500' },
-                { k: 'uzum',  label: 'Uzum',  cls: 'text-violet-600 border-violet-300 hover:border-violet-500' },
-              ].map(p => {
-                const sel = paymentProvider === p.k
-                return (
-                  <button
-                    key={p.k}
-                    onClick={() => { setPayment('card'); setPaymentProvider(p.k) }}
-                    className={cn(
-                      'h-8 rounded-md text-xs font-bold border-2 transition-colors',
-                      sel ? 'border-primary bg-primary text-primary-foreground' : `bg-background ${p.cls}`
-                    )}
-                  >
-                    {p.label}
-                  </button>
-                )
-              })}
-            </div>
+            {payment !== 'mixed' && (
+              <div className="grid grid-cols-3 gap-1.5 mb-3">
+                {[
+                  { k: 'click', label: 'Click', cls: 'text-sky-600 border-sky-300 hover:border-sky-500' },
+                  { k: 'payme', label: 'Payme', cls: 'text-emerald-600 border-emerald-300 hover:border-emerald-500' },
+                  { k: 'uzum',  label: 'Uzum',  cls: 'text-violet-600 border-violet-300 hover:border-violet-500' },
+                ].map(p => {
+                  const sel = paymentProvider === p.k
+                  return (
+                    <button
+                      key={p.k}
+                      onClick={() => { setPayment('card'); setPaymentProvider(p.k) }}
+                      className={cn(
+                        'h-8 rounded-md text-xs font-bold border-2 transition-colors',
+                        sel ? 'border-primary bg-primary text-primary-foreground' : `bg-background ${p.cls}`
+                      )}
+                    >
+                      {p.label}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
 
             {payment === 'mixed' && (
               <div className="grid grid-cols-3 gap-2 mb-3">
