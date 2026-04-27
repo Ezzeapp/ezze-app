@@ -504,91 +504,76 @@ export function MobileCalendar({
           </div>
       )}
 
-      {/* Speed Dial FAB */}
+      {/* FAB + bottom-sheet с действиями */}
       {!limitReached && (
         <>
-          {/* Backdrop — закрывает Speed Dial при тапе мимо */}
+          {/* Затемнённый фон — тап закрывает шит */}
           <div
             className={cn(
-              'fixed inset-0 z-10 transition-opacity duration-200',
+              'fixed inset-0 z-40 bg-black/40 transition-opacity duration-200',
               fabOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             )}
             onClick={closeFab}
           />
 
-          {/* Speed Dial контейнер */}
+          {/* Bottom-sheet */}
           <div
-            className="fixed right-4 z-20 flex flex-col items-end"
-            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 92px)' }}
+            className={cn(
+              'fixed inset-x-0 bottom-0 z-50 bg-background rounded-t-3xl shadow-2xl border-t transition-transform duration-200 ease-out',
+              fabOpen ? 'translate-y-0' : 'translate-y-full'
+            )}
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 4px)' }}
           >
-            {/* Мини-кнопки (всегда в DOM, скрываются через opacity) */}
-            <div className="flex flex-col items-end gap-3 mb-3">
-
-              {/* QR-код — дальняя, появляется последней */}
-              <div
-                className={cn('flex items-center gap-2 transition-all duration-150', fabOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none')}
-                style={{ transitionDelay: fabOpen ? '100ms' : '0ms' }}
-              >
-                <span className="bg-background border text-foreground text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
-                  QR-код записи
-                </span>
-                <button
-                  onClick={handleQR}
-                  className="flex items-center justify-center rounded-full bg-background border shadow-md text-foreground transition-all active:scale-95 hover:bg-muted"
-                  style={{ width: 40, height: 40 }}
-                  aria-label="QR-код записи"
-                >
-                  <QrCode className="h-4 w-4" />
-                </button>
-              </div>
-
-              {/* Блокировка времени */}
-              <div
-                className={cn('flex items-center gap-2 transition-all duration-150', fabOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none')}
-                style={{ transitionDelay: fabOpen ? '50ms' : '0ms' }}
-              >
-                <span className="bg-background border text-foreground text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
-                  Заблокировать время
-                </span>
-                <button
-                  onClick={handleBlock}
-                  className="flex items-center justify-center rounded-full bg-background border shadow-md text-foreground transition-all active:scale-95 hover:bg-muted"
-                  style={{ width: 40, height: 40 }}
-                  aria-label="Заблокировать время"
-                >
-                  <Ban className="h-4 w-4" />
-                </button>
-              </div>
-
-              {/* Новая запись — ближайшая, появляется первой */}
-              <div
-                className={cn('flex items-center gap-2 transition-all duration-150', fabOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none')}
-                style={{ transitionDelay: '0ms' }}
-              >
-                <span className="bg-background border text-foreground text-xs font-medium px-3 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
-                  Новая запись
-                </span>
+            {/* Хэндл */}
+            <div className="flex justify-center pt-2 pb-1">
+              <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
+            </div>
+            <div className="px-5 pt-1 pb-2">
+              <p className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground mb-3">
+                Действия
+              </p>
+              <div className="space-y-2">
+                {/* Главная — Новая запись */}
                 <button
                   onClick={handleNewAppt}
-                  className="flex items-center justify-center rounded-full bg-background border shadow-md text-foreground transition-all active:scale-95 hover:bg-muted"
-                  style={{ width: 40, height: 40 }}
-                  aria-label="Новая запись"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-primary text-primary-foreground active:scale-[0.98] transition-transform shadow-md shadow-primary/30"
                 >
-                  <CalendarPlus className="h-4 w-4" />
+                  <CalendarPlus className="h-5 w-5 shrink-0" />
+                  <span className="font-semibold flex-1 text-left">Новая запись</span>
+                </button>
+                <button
+                  onClick={handleBlock}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-muted active:scale-[0.98] transition-transform"
+                >
+                  <Ban className="h-5 w-5 text-orange-500 shrink-0" />
+                  <span className="font-semibold flex-1 text-left text-foreground">Заблокировать время</span>
+                </button>
+                <button
+                  onClick={handleQR}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-muted active:scale-[0.98] transition-transform"
+                >
+                  <QrCode className="h-5 w-5 text-emerald-500 shrink-0" />
+                  <span className="font-semibold flex-1 text-left text-foreground">QR-код записи</span>
                 </button>
               </div>
+              <button
+                onClick={closeFab}
+                className="w-full mt-3 py-3 text-sm font-semibold text-muted-foreground active:bg-muted/60 rounded-xl transition-colors"
+              >
+                {t('common.cancel')}
+              </button>
             </div>
-
-            {/* Главная FAB-кнопка */}
-            <button
-              onClick={() => setFabOpen(v => !v)}
-              className="flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all active:scale-95 hover:brightness-110"
-              style={{ width: 52, height: 52 }}
-              aria-label={t('appointments.add')}
-            >
-              <Plus className={cn('h-5 w-5 transition-transform duration-200', fabOpen && 'rotate-45')} />
-            </button>
           </div>
+
+          {/* Главная FAB-кнопка */}
+          <button
+            onClick={() => setFabOpen(v => !v)}
+            className="fixed right-4 z-30 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all active:scale-95 hover:brightness-110"
+            style={{ width: 52, height: 52, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 92px)' }}
+            aria-label={t('appointments.add')}
+          >
+            <Plus className={cn('h-5 w-5 transition-transform duration-200', fabOpen && 'rotate-45')} />
+          </button>
         </>
       )}
     </div>
