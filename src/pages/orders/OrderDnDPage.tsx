@@ -395,7 +395,7 @@ export function OrderDnDPage() {
             width_m: orderType === 'carpet' ? w : null,
             length_m: orderType === 'carpet' ? h : null,
             area_m2: area,
-            photos: l.photos.length > 0 ? l.photos : undefined,
+            photos: l.photos,
           }
         })
       )

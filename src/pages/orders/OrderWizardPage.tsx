@@ -431,7 +431,7 @@ export function OrderWizardPage() {
             width_m: orderType === 'carpet' ? w : null,
             length_m: orderType === 'carpet' ? h : null,
             area_m2: orderType === 'carpet' && w && h ? w * h : null,
-            photos: l.photos.length > 0 ? l.photos : undefined,
+            photos: l.photos,
           }
         })),
       })
