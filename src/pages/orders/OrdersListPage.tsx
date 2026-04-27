@@ -275,6 +275,8 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
                 </button>
               </th>
               <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.paid')}</th>
+              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Долг</th>
+              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Скидка/Надб.</th>
               <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">
                 <button className={thBtn} onClick={() => onSort('deadline')}>
                   {t('orders.col.date')}
@@ -331,6 +333,24 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
                       : <span className="text-muted-foreground/50">—</span>
                     }
                   </td>
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap font-mono">
+                    {(() => {
+                      const debt = Math.max(0, order.total_amount - order.paid_amount)
+                      if (debt === 0) return <span className="text-emerald-600 font-medium">0</span>
+                      return <span className="text-red-600 font-medium">{formatCurrency(debt)}</span>
+                    })()}
+                  </td>
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap font-mono text-xs">
+                    {(() => {
+                      const surcharge = (order as any).surcharge_amount || 0
+                      const tags = order.tags || []
+                      const hasDiscount = tags.some((t: string) => t.startsWith('Скидка'))
+                      const discountTag = tags.find((t: string) => t.startsWith('Скидка'))
+                      if (surcharge > 0) return <span className="text-amber-600">+{formatCurrency(surcharge)}</span>
+                      if (hasDiscount) return <span className="text-emerald-600">{discountTag}</span>
+                      return <span className="text-muted-foreground/40">—</span>
+                    })()}
+                  </td>
                   <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
                     <div>{dayjs(order.created_at).format('DD.MM.YY')}</div>
                     {order.ready_date && (
@@ -368,6 +388,10 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
                 <td className="px-3 py-2.5 text-right whitespace-nowrap text-green-600 dark:text-green-400">
                   {formatCurrency(totalPaid)} {symbol}
                 </td>
+                <td className="px-3 py-2.5 text-right whitespace-nowrap text-red-600 font-mono">
+                  {formatCurrency(Math.max(0, totalAmount - totalPaid))}
+                </td>
+                <td />
                 <td colSpan={2} />
               </tr>
             </tfoot>

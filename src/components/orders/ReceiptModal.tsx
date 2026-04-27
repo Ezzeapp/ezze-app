@@ -169,13 +169,13 @@ function buildReceiptCopyHtml(
           <div style="display:flex;justify-content:space-between;color:#666;font-size:${narrow ? '9px' : '11px'};">
             <span>· Картой:</span><span>${num(data.payment_card || 0)} ${symbol}</span>
           </div>` : ''}
-        ${data.prepaid_amount > 0 ? `
-          <div style="display:flex;justify-content:space-between;margin-top:3px;">
-            <span>Предоплата:</span><span>${num(data.prepaid_amount)} ${symbol}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;margin-top:3px;font-weight:bold;">
-            <span>К оплате при выдаче:</span><span>${num(rem)} ${symbol}</span>
-          </div>` : ''}
+        <div style="display:flex;justify-content:space-between;margin-top:3px;">
+          <span>Предоплата:</span><span>${num(data.prepaid_amount)} ${symbol}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;font-weight:bold;font-size:${narrow ? '12px' : '14px'};color:${rem > 0 ? '#b91c1c' : '#059669'};">
+          <span>${rem > 0 ? 'К ОПЛАТЕ ПРИ ВЫДАЧЕ:' : 'ОПЛАЧЕНО ПОЛНОСТЬЮ ✓'}</span>
+          <span>${num(rem)} ${symbol}</span>
+        </div>
         ${data.tags && data.tags.length > 0 ? `
           <div style="margin-top:6px;font-size:${narrow ? '9px' : '11px'};color:#555;">
             ${data.tags.map(t => `<span style="display:inline-block;border:1px solid #ccc;border-radius:3px;padding:0 4px;margin:1px;">${t}</span>`).join('')}
@@ -384,18 +384,17 @@ function ReceiptPreview({ data, config, symbol, format }: {
                 </div>
               </>
             ) : null}
-            {data.prepaid_amount > 0 && (
-              <>
-                <div className="flex justify-between mt-1">
-                  <span>Предоплата:</span>
-                  <span>{num(data.prepaid_amount)} {symbol}</span>
-                </div>
-                <div className="flex justify-between mt-1 font-bold">
-                  <span>К оплате при выдаче:</span>
-                  <span>{num(rem)} {symbol}</span>
-                </div>
-              </>
-            )}
+            <div className="flex justify-between mt-1">
+              <span>Предоплата:</span>
+              <span>{num(data.prepaid_amount)} {symbol}</span>
+            </div>
+            <div className={cn(
+              'flex justify-between mt-1 font-bold',
+              rem > 0 ? 'text-red-700' : 'text-emerald-700'
+            )}>
+              <span>{rem > 0 ? 'К оплате при выдаче:' : 'Оплачено полностью ✓'}</span>
+              <span>{num(rem)} {symbol}</span>
+            </div>
             {data.tags && data.tags.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2 text-[10px] text-gray-700">
                 {data.tags.map(t => (

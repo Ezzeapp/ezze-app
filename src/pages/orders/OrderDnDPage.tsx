@@ -283,6 +283,7 @@ export function OrderDnDPage() {
   const [paymentCard, setPaymentCard] = useState('')
   const [discount, setDiscount] = useState(0)
   const [markup, setMarkup] = useState(0)
+  const [discMode, setDiscMode] = useState<'discount' | 'markup'>('discount')
   const [promoCode, setPromoCode] = useState('')
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; amount: number } | null>(null)
   const [validatingPromo, setValidatingPromo] = useState(false)
@@ -1029,19 +1030,19 @@ export function OrderDnDPage() {
             <div className="mb-2">
               <div className="flex bg-muted rounded-md p-0.5 mb-1.5">
                 <button
-                  onClick={() => { if (markup > 0) { setDiscount(markup); setMarkup(0) } }}
+                  onClick={() => { setDiscMode('discount'); if (markup > 0) { setDiscount(markup); setMarkup(0) } }}
                   className={cn(
                     'flex-1 h-6 rounded text-[10.5px] font-bold transition-colors',
-                    markup === 0 ? 'bg-emerald-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
+                    discMode === 'discount' ? 'bg-emerald-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
                   Скидка
                 </button>
                 <button
-                  onClick={() => { if (discount > 0) { setMarkup(discount); setDiscount(0) } }}
+                  onClick={() => { setDiscMode('markup'); if (discount > 0) { setMarkup(discount); setDiscount(0) } }}
                   className={cn(
                     'flex-1 h-6 rounded text-[10.5px] font-bold transition-colors',
-                    markup > 0 ? 'bg-amber-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
+                    discMode === 'markup' ? 'bg-amber-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
                   Надбавка
@@ -1049,25 +1050,25 @@ export function OrderDnDPage() {
               </div>
               <div className="grid grid-cols-5 gap-1">
                 {[0, 5, 10, 15, 20].map(d => {
-                  const useMarkup = markup > 0
-                  const active = useMarkup ? markup === d : discount === d
+                  const isMarkup = discMode === 'markup'
+                  const active = isMarkup ? markup === d : discount === d
                   return (
                     <button
                       key={d}
                       onClick={() => {
-                        if (useMarkup) { setMarkup(d); setDiscount(0) }
+                        if (isMarkup) { setMarkup(d); setDiscount(0) }
                         else { setDiscount(d); setMarkup(0) }
                       }}
                       className={cn(
                         'h-7 rounded-md text-[10.5px] font-bold font-mono border transition-colors',
                         active
-                          ? useMarkup
+                          ? isMarkup
                             ? 'border-amber-500 bg-amber-500 text-white'
                             : 'border-emerald-500 bg-emerald-500 text-white'
                           : 'border-border hover:border-primary/40'
                       )}
                     >
-                      {useMarkup && d > 0 ? `+${d}%` : `${d}%`}
+                      {isMarkup && d > 0 ? `+${d}%` : `${d}%`}
                     </button>
                   )
                 })}

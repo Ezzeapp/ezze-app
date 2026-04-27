@@ -256,6 +256,7 @@ export function OrderWizardPage() {
   const [applyDefectsPct, setApplyDefectsPct] = useState(true)
   const [discount, setDiscount] = useState(0)
   const [markup, setMarkup] = useState(0)
+  const [discMode, setDiscMode] = useState<'discount' | 'markup'>('discount')
   const [promoCode, setPromoCode] = useState('')
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; amount: number } | null>(null)
   const [validatingPromo, setValidatingPromo] = useState(false)
@@ -757,6 +758,7 @@ export function OrderWizardPage() {
               defaultDays={defaultDays}
               setDefaultDays={setDefaultDays}
               prepayAmt={prepayAmt}
+              total={total}
               symbol={symbol}
               expressMode={expressMode}
               setExpressMode={setExpressMode}
@@ -767,6 +769,8 @@ export function OrderWizardPage() {
               setTags={setTags}
               markup={markup}
               setMarkup={setMarkup}
+              discMode={discMode}
+              setDiscMode={setDiscMode}
               promoCode={promoCode}
               setPromoCode={setPromoCode}
               appliedPromo={appliedPromo}
@@ -1706,10 +1710,10 @@ function Step4Payment({
   orderType, pickupDate, setPickupDate, deliveryDate, setDeliveryDate,
   visitAddress, setVisitAddress,
   defaultDays, setDefaultDays,
-  prepayAmt, symbol,
+  prepayAmt, total, symbol,
   expressMode, setExpressMode, expressValue, setExpressValue, surchargeAmt,
   tags, setTags,
-  markup, setMarkup,
+  markup, setMarkup, discMode, setDiscMode,
   promoCode, setPromoCode, appliedPromo, applyPromoCode, removePromoCode, validatingPromo,
 }: {
   isUrgent: boolean
@@ -1740,6 +1744,7 @@ function Step4Payment({
   defaultDays: number
   setDefaultDays: (n: number) => void
   prepayAmt: number
+  total: number
   symbol: string
   expressMode: 'percent' | 'fixed'
   setExpressMode: (m: 'percent' | 'fixed') => void
@@ -1750,6 +1755,8 @@ function Step4Payment({
   setTags: (t: string[]) => void
   markup: number
   setMarkup: (n: number) => void
+  discMode: 'discount' | 'markup'
+  setDiscMode: (m: 'discount' | 'markup') => void
   promoCode: string
   setPromoCode: (s: string) => void
   appliedPromo: { code: string; amount: number } | null
@@ -1958,45 +1965,52 @@ function Step4Payment({
           const cash = parseFloat(paymentCash) || 0
           const card = parseFloat(paymentCard) || 0
           const sum = cash + card
-          const diff = prepayAmt - sum
+          const remaining = total - sum
           return (
             <div className="mt-3 p-3 rounded-xl border bg-muted/30">
+              <div className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground mb-1.5">
+                Оплачено сейчас (можно частично)
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Наличные ({symbol})</Label>
+                  <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Наличными ({symbol})</Label>
                   <Input
                     type="number" min={0}
                     placeholder="0"
                     value={paymentCash}
                     onChange={e => setPaymentCash(e.target.value)}
-                    className="mt-1.5"
+                    className="mt-1.5 font-mono font-bold"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Карта ({symbol})</Label>
+                  <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Картой ({symbol})</Label>
                   <Input
                     type="number" min={0}
                     placeholder="0"
                     value={paymentCard}
                     onChange={e => setPaymentCard(e.target.value)}
-                    className="mt-1.5"
+                    className="mt-1.5 font-mono font-bold"
                   />
                 </div>
               </div>
-              <div className="font-mono text-xs mt-2 flex justify-between">
-                <span className="text-muted-foreground">Сумма: <span className="font-bold text-foreground">{formatCurrency(sum)} {symbol}</span></span>
-                {prepayAmt > 0 && (
-                  <span className={diff === 0 ? 'text-emerald-600' : 'text-orange-600'}>
-                    {diff === 0 ? '✓ совпадает с предоплатой' : `Не совпадает с предоплатой (${formatCurrency(prepayAmt)})`}
+              <div className="font-mono text-xs mt-2 grid grid-cols-2 gap-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Оплачено сейчас:</span>
+                  <span className="font-bold">{formatCurrency(sum)} {symbol}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">К доплате при выдаче:</span>
+                  <span className={cn('font-bold', remaining > 0 ? 'text-orange-600' : 'text-emerald-600')}>
+                    {formatCurrency(Math.max(0, remaining))} {symbol}
                   </span>
-                )}
+                </div>
               </div>
-              <div className="flex gap-1.5 mt-2">
+              <div className="flex gap-1.5 mt-2 flex-wrap">
                 <button
                   onClick={() => { setPaymentCash(String(prepayAmt)); setPaymentCard('0') }}
                   className="text-[11px] text-primary hover:underline"
                 >
-                  Всё налично
+                  Всё налично ({formatCurrency(prepayAmt)})
                 </button>
                 <span className="text-muted-foreground">·</span>
                 <button
@@ -2012,6 +2026,13 @@ function Step4Payment({
                 >
                   50/50
                 </button>
+                <span className="text-muted-foreground">·</span>
+                <button
+                  onClick={() => { setPaymentCash(String(total)); setPaymentCard('0') }}
+                  className="text-[11px] text-primary hover:underline"
+                >
+                  Полная оплата ({formatCurrency(total)})
+                </button>
               </div>
             </div>
           )
@@ -2023,19 +2044,19 @@ function Step4Payment({
           <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Скидка / Надбавка</Label>
           <div className="flex bg-background rounded-md p-0.5 mt-2 border">
             <button
-              onClick={() => { if (markup > 0) { setDiscount(markup); setMarkup(0) } }}
+              onClick={() => { setDiscMode('discount'); if (markup > 0) { setDiscount(markup); setMarkup(0) } }}
               className={cn(
                 'flex-1 h-8 rounded text-xs font-bold transition-colors',
-                markup === 0 ? 'bg-emerald-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
+                discMode === 'discount' ? 'bg-emerald-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
               )}
             >
               Скидка
             </button>
             <button
-              onClick={() => { if (discount > 0) { setMarkup(discount); setDiscount(0) } }}
+              onClick={() => { setDiscMode('markup'); if (discount > 0) { setMarkup(discount); setDiscount(0) } }}
               className={cn(
                 'flex-1 h-8 rounded text-xs font-bold transition-colors',
-                markup > 0 ? 'bg-amber-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
+                discMode === 'markup' ? 'bg-amber-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
               )}
             >
               Надбавка
@@ -2043,26 +2064,25 @@ function Step4Payment({
           </div>
           <div className="grid grid-cols-5 gap-1 mt-2">
             {[0, 5, 10, 15, 20].map(d => {
-              const isMarkupMode = markup > 0 || (discount === 0 && markup === 0 && false)
-              const active = markup > 0 ? markup === d : discount === d
-              const useMarkup = markup > 0
+              const isMarkup = discMode === 'markup'
+              const active = isMarkup ? markup === d : discount === d
               return (
                 <button
                   key={d}
                   onClick={() => {
-                    if (useMarkup) { setMarkup(d); setDiscount(0) }
+                    if (isMarkup) { setMarkup(d); setDiscount(0) }
                     else { setDiscount(d); setMarkup(0) }
                   }}
                   className={cn(
                     'h-9 rounded-md text-xs font-bold font-mono border transition-colors',
                     active
-                      ? useMarkup
+                      ? isMarkup
                         ? 'border-amber-500 bg-amber-500 text-white'
                         : 'border-emerald-500 bg-emerald-500 text-white'
                       : 'border-border hover:border-primary/40'
                   )}
                 >
-                  {useMarkup && d > 0 ? `+${d}%` : `${d}%`}
+                  {isMarkup && d > 0 ? `+${d}%` : `${d}%`}
                 </button>
               )
             })}
@@ -2086,6 +2106,9 @@ function Step4Payment({
                 {d}%
               </button>
             ))}
+          </div>
+          <div className="text-xs text-muted-foreground mt-1.5 font-mono">
+            = {formatCurrency(prepayAmt)} {symbol}
           </div>
         </div>
 
