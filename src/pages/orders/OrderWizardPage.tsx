@@ -2017,30 +2017,31 @@ function Step4Payment({
           ))}
         </div>
 
-        {/* Агрегаторы (Click / Payme / Uzum) — только когда не Mixed (в Mixed выбор провайдера живёт под полем агрегатора) */}
-        {payment !== 'mixed' && (
-          <div className="grid grid-cols-3 gap-2 mt-2">
-            {[
-              { k: 'click', label: 'Click', cls: 'text-sky-600 border-sky-300 hover:border-sky-500' },
-              { k: 'payme', label: 'Payme', cls: 'text-emerald-600 border-emerald-300 hover:border-emerald-500' },
-              { k: 'uzum',  label: 'Uzum',  cls: 'text-violet-600 border-violet-300 hover:border-violet-500' },
-            ].map(p => {
-              const sel = paymentProvider === p.k
-              return (
-                <button
-                  key={p.k}
-                  onClick={() => { setPayment('card'); setPaymentProvider(p.k) }}
-                  className={cn(
-                    'h-10 rounded-lg border-2 text-sm font-bold transition-colors',
-                    sel ? 'border-primary bg-primary text-primary-foreground' : `bg-background ${p.cls}`
-                  )}
-                >
-                  {p.label}
-                </button>
-              )
-            })}
-          </div>
-        )}
+        {/* Агрегаторы (Click / Payme / Uzum) — в Mixed выбирают провайдер для агрегатор-части, иначе переключают на card */}
+        <div className="grid grid-cols-3 gap-2 mt-2">
+          {[
+            { k: 'click', label: 'Click', cls: 'text-sky-600 border-sky-300 hover:border-sky-500' },
+            { k: 'payme', label: 'Payme', cls: 'text-emerald-600 border-emerald-300 hover:border-emerald-500' },
+            { k: 'uzum',  label: 'Uzum',  cls: 'text-violet-600 border-violet-300 hover:border-violet-500' },
+          ].map(p => {
+            const sel = paymentProvider === p.k
+            return (
+              <button
+                key={p.k}
+                onClick={() => {
+                  if (payment !== 'mixed') setPayment('card')
+                  setPaymentProvider(p.k)
+                }}
+                className={cn(
+                  'h-10 rounded-lg border-2 text-sm font-bold transition-colors',
+                  sel ? 'border-primary bg-primary text-primary-foreground' : `bg-background ${p.cls}`
+                )}
+              >
+                {p.label}
+              </button>
+            )
+          })}
+        </div>
 
         {payment === 'mixed' && (() => {
           const cash = parseFloat(paymentCash) || 0
@@ -2076,7 +2077,7 @@ function Step4Payment({
                 </div>
                 <div>
                   <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
-                    Click/Payme/Uzum ({symbol})
+                    {paymentProvider === 'click' ? 'Click' : paymentProvider === 'payme' ? 'Payme' : paymentProvider === 'uzum' ? 'Uzum' : 'Агрегатор'} ({symbol})
                   </Label>
                   <Input
                     type="number" min={0}
@@ -2085,24 +2086,9 @@ function Step4Payment({
                     onChange={e => setPaymentAggregator(e.target.value)}
                     className="mt-1.5 font-mono font-bold"
                   />
-                  {aggr > 0 && (
-                    <div className="grid grid-cols-3 gap-1 mt-1.5">
-                      {(['click','payme','uzum'] as const).map(p => (
-                        <button
-                          key={p}
-                          onClick={() => setPaymentProvider(p)}
-                          className={cn(
-                            'h-7 rounded text-[11px] font-bold border-2 transition-colors capitalize',
-                            paymentProvider === p
-                              ? 'border-primary bg-primary text-primary-foreground'
-                              : p === 'click' ? 'border-sky-300 text-sky-600 hover:border-sky-500'
-                              : p === 'payme' ? 'border-emerald-300 text-emerald-600 hover:border-emerald-500'
-                              : 'border-violet-300 text-violet-600 hover:border-violet-500'
-                          )}
-                        >
-                          {p}
-                        </button>
-                      ))}
+                  {aggr > 0 && !paymentProvider && (
+                    <div className="text-[10.5px] text-amber-600 mt-1">
+                      Выберите провайдер выше ↑
                     </div>
                   )}
                 </div>
