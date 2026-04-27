@@ -6,6 +6,7 @@ import {
   Clock, Zap, Truck, Package, Camera, Printer, CheckCircle2, Star,
 } from 'lucide-react'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
+import { ClientHistoryCard } from '@/components/orders/ClientHistoryCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -833,6 +834,7 @@ export function OrderWizardPage() {
                 {clientStats && clientStats.count === 0 && (
                   <div className="text-[11px] text-muted-foreground mt-2">{t('wizard.newClient', 'Новый клиент')}</div>
                 )}
+                <ClientHistoryCard clientId={clientId} className="mt-3 pt-3 border-t" />
               </>
             ) : (
               <div className="text-sm text-muted-foreground italic mt-1.5">{t('wizard.notSelected', 'Не выбран')}</div>

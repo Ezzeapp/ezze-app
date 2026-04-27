@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Search, Plus, Minus, X, Loader2, Check,
   GripVertical, ShoppingBag, Zap, Truck, UserPlus,
-  Camera, Printer, CheckCircle2, Pencil, Star,
+  Camera, Printer, CheckCircle2, Pencil, Star, History, ChevronUp,
 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
+import { ClientHistoryCard } from '@/components/orders/ClientHistoryCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/shared/Toaster'
@@ -148,6 +149,7 @@ export function OrderDnDPage() {
   const clients = clientsData?.items ?? []
 
   const { data: clientStats } = useCleaningClientStats(clientId)
+  const [showClientHistory, setShowClientHistory] = useState(false)
 
   // Зоны (drag & drop)
   const [zones, setZones] = useState<Record<ZoneId, CartLine[]>>({
@@ -785,7 +787,7 @@ export function OrderDnDPage() {
 
           {/* Client header */}
           <div
-            className="rounded-2xl px-3.5 py-3 flex items-center gap-3 text-white shrink-0"
+            className="rounded-2xl px-3.5 py-3 flex items-center gap-3 text-white shrink-0 relative"
             style={{ background: 'linear-gradient(135deg, rgb(37, 99, 235) 0%, rgb(59, 130, 246) 100%)' }}
           >
             <div className="h-9 w-9 rounded-full bg-white text-blue-600 grid place-items-center font-bold text-sm">
@@ -856,14 +858,33 @@ export function OrderDnDPage() {
               )}
             </div>
             {clientId && (
-              <button
-                onClick={() => { setClientId(null); setClientName(''); setClientPhone('') }}
-                className="text-xs px-2.5 py-1 border border-white/30 rounded text-white hover:bg-white/10"
-              >
-                Сменить
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setShowClientHistory(v => !v)}
+                  className={cn(
+                    'h-7 w-7 grid place-items-center border border-white/30 rounded text-white hover:bg-white/10',
+                    showClientHistory && 'bg-white/20'
+                  )}
+                  title="История клиента"
+                >
+                  {showClientHistory ? <ChevronUp className="h-3.5 w-3.5" /> : <History className="h-3.5 w-3.5" />}
+                </button>
+                <button
+                  onClick={() => { setClientId(null); setClientName(''); setClientPhone(''); setShowClientHistory(false) }}
+                  className="text-xs px-2.5 py-1 border border-white/30 rounded text-white hover:bg-white/10"
+                >
+                  Сменить
+                </button>
+              </div>
             )}
           </div>
+
+          {/* История клиента (раскрываемая) */}
+          {clientId && showClientHistory && (
+            <div className="bg-background rounded-2xl border shadow-sm p-3 shrink-0">
+              <ClientHistoryCard clientId={clientId} />
+            </div>
+          )}
 
           {/* Способ выдачи + адрес */}
           <div className="bg-background rounded-2xl border shadow-sm p-2.5 shrink-0 space-y-2">
