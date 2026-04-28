@@ -50,7 +50,7 @@ const DEFECTS_LIST = [
   "Выцветший", "Засаленный", "Молния", "Пуговица", "Подкладка",
 ]
 
-const ORDER_TAGS = ['Срочно', 'VIP', 'Повторная', 'Самовывоз', 'Доставка']
+const ORDER_TAGS = ['Срочно', 'Самовывоз', 'Доставка']
 
 interface CartItem {
   key: number

@@ -2401,7 +2401,7 @@ function Step4Payment({
       <div>
         <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Теги заказа</Label>
         <div className="flex gap-1.5 flex-wrap mt-1.5">
-          {['Срочно','VIP','Повторная','Самовывоз','Доставка','С пятнами','Хрупкое'].map(tag => {
+          {['Срочно','Самовывоз','Доставка'].map(tag => {
             const on = tags.includes(tag)
             return (
               <button

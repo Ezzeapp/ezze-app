@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Доставка — 3 варианта дизайна</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+  .demo-frame { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; }
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 600; }
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+</style>
+</head>
+<body class="bg-gray-50 p-8">
+
+<div class="max-w-7xl mx-auto space-y-12">
+
+  <header>
+    <h1 class="text-2xl font-bold mb-2">Страница «Доставка» — 3 варианта</h1>
+    <p class="text-gray-600 text-sm">Сейчас две голые колонки «Забор / Доставка» с серыми карточками. Ниже — три более живых варианта.</p>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Вариант 1: Канбан по дням (swimlanes)
+       ═══════════════════════════════════════════════════════════════ -->
+  <section class="space-y-3">
+    <div class="label">Вариант 1 — Канбан по дням</div>
+    <p class="text-sm text-gray-600">Колонки = дни недели. В каждой колонке два блока: «Забор» (синий) и «Доставка» (зелёный). Сразу видно загрузку дня. Хорошо для планирования.</p>
+
+    <div class="demo-frame">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold">Логистика на неделю</h2>
+        <div class="flex items-center gap-2 text-sm">
+          <button class="px-3 h-8 rounded-md border bg-white hover:bg-gray-50 flex items-center gap-1.5">
+            <i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>
+          </button>
+          <span class="font-semibold">Апр 27 – Май 3</span>
+          <button class="px-3 h-8 rounded-md border bg-white hover:bg-gray-50 flex items-center gap-1.5">
+            <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
+          </button>
+          <button class="ml-2 px-3 h-8 rounded-md border bg-white hover:bg-gray-50 text-xs font-semibold">Сегодня</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-7 gap-2">
+        <!-- День -->
+        <div class="space-y-2">
+          <div class="text-center py-2 border-b-2 border-gray-200">
+            <div class="text-[10px] uppercase font-semibold text-gray-500">Пн</div>
+            <div class="text-lg font-bold">28</div>
+          </div>
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-2">
+            <div class="flex items-center gap-1 text-[10px] font-bold text-blue-700 uppercase">
+              <i data-lucide="arrow-down" class="h-3 w-3"></i> Забор · 0
+            </div>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2">
+            <div class="flex items-center gap-1 text-[10px] font-bold text-emerald-700 uppercase">
+              <i data-lucide="arrow-up" class="h-3 w-3"></i> Доставка · 0
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-center py-2 border-b-2 border-blue-500">
+            <div class="text-[10px] uppercase font-semibold text-blue-600">Вт · сегодня</div>
+            <div class="text-lg font-bold text-blue-600">29</div>
+          </div>
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 space-y-1.5">
+            <div class="flex items-center gap-1 text-[10px] font-bold text-blue-700 uppercase">
+              <i data-lucide="arrow-down" class="h-3 w-3"></i> Забор · 0
+            </div>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2 space-y-1.5">
+            <div class="flex items-center gap-1 text-[10px] font-bold text-emerald-700 uppercase mb-1">
+              <i data-lucide="arrow-up" class="h-3 w-3"></i> Доставка · 1
+            </div>
+            <div class="bg-white rounded p-1.5 text-xs border border-emerald-100">
+              <div class="font-semibold">КВ-0032</div>
+              <div class="text-[10px] text-gray-500 truncate">Клиен 2 · мавмавм</div>
+              <div class="text-[10px] font-mono text-emerald-700 font-bold">15 000 so'm</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-center py-2 border-b-2 border-gray-200">
+            <div class="text-[10px] uppercase font-semibold text-gray-500">Ср</div>
+            <div class="text-lg font-bold">30</div>
+          </div>
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-2">
+            <div class="flex items-center gap-1 text-[10px] font-bold text-blue-700 uppercase">
+              <i data-lucide="arrow-down" class="h-3 w-3"></i> Забор · 0
+            </div>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2">
+            <div class="flex items-center gap-1 text-[10px] font-bold text-emerald-700 uppercase">
+              <i data-lucide="arrow-up" class="h-3 w-3"></i> Доставка · 0
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-center py-2 border-b-2 border-gray-200">
+            <div class="text-[10px] uppercase font-semibold text-gray-500">Чт</div>
+            <div class="text-lg font-bold">1 мая</div>
+          </div>
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-2">
+            <div class="flex items-center gap-1 text-[10px] font-bold text-blue-700 uppercase">
+              <i data-lucide="arrow-down" class="h-3 w-3"></i> Забор · 0
+            </div>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2 space-y-1.5">
+            <div class="flex items-center gap-1 text-[10px] font-bold text-emerald-700 uppercase mb-1">
+              <i data-lucide="arrow-up" class="h-3 w-3"></i> Доставка · 1
+            </div>
+            <div class="bg-white rounded p-1.5 text-xs border border-emerald-100">
+              <div class="font-semibold">КВ-0033</div>
+              <div class="text-[10px] text-gray-500 truncate">Клиен 2 · имапиапипа</div>
+              <div class="text-[10px] font-mono text-emerald-700 font-bold">165 000 so'm</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-center py-2 border-b-2 border-gray-200">
+            <div class="text-[10px] uppercase font-semibold text-gray-500">Пт</div>
+            <div class="text-lg font-bold">2</div>
+          </div>
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-2">
+            <div class="flex items-center gap-1 text-[10px] font-bold text-blue-700 uppercase">
+              <i data-lucide="arrow-down" class="h-3 w-3"></i> Забор · 0
+            </div>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2 space-y-1.5">
+            <div class="flex items-center gap-1 text-[10px] font-bold text-emerald-700 uppercase mb-1">
+              <i data-lucide="arrow-up" class="h-3 w-3"></i> Доставка · 1
+            </div>
+            <div class="bg-white rounded p-1.5 text-xs border border-emerald-100">
+              <div class="font-semibold">КВ-0038</div>
+              <div class="text-[10px] text-gray-500 truncate">Клиен 2 · ммавмавмавмва</div>
+              <div class="text-[10px] font-mono text-emerald-700 font-bold">165 000 so'm</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2 opacity-50">
+          <div class="text-center py-2 border-b-2 border-gray-200">
+            <div class="text-[10px] uppercase font-semibold text-gray-500">Сб</div>
+            <div class="text-lg font-bold">3</div>
+          </div>
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-2 text-[10px] text-center text-gray-400">выходной</div>
+        </div>
+
+        <div class="space-y-2 opacity-50">
+          <div class="text-center py-2 border-b-2 border-gray-200">
+            <div class="text-[10px] uppercase font-semibold text-gray-500">Вс</div>
+            <div class="text-lg font-bold">4</div>
+          </div>
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-2 text-[10px] text-center text-gray-400">выходной</div>
+        </div>
+      </div>
+    </div>
+    <div class="text-xs text-gray-500">+ Видна загрузка по дням за один взгляд. Удобно для планирования. Минус: на узких экранах может быть тесно.</div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Вариант 2: Маршрутный лист с timeline
+       ═══════════════════════════════════════════════════════════════ -->
+  <section class="space-y-3">
+    <div class="label">Вариант 2 — Timeline с цветными метками + быстрые действия</div>
+    <p class="text-sm text-gray-600">Вертикальный таймлайн. Каждая карточка — крупная, с цветным маркером слева (синий/зелёный), большими кликабельными кнопками действий справа.</p>
+
+    <div class="demo-frame">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex items-center gap-1.5 px-3 h-9 rounded-full bg-blue-50 text-blue-700 text-sm font-semibold">
+          <i data-lucide="arrow-down" class="h-3.5 w-3.5"></i> Забор: 0
+        </div>
+        <div class="flex items-center gap-1.5 px-3 h-9 rounded-full bg-emerald-50 text-emerald-700 text-sm font-semibold">
+          <i data-lucide="arrow-up" class="h-3.5 w-3.5"></i> Доставка: 3
+        </div>
+        <div class="flex-1"></div>
+        <button class="px-3 h-9 rounded-md border bg-white hover:bg-gray-50 text-sm font-semibold flex items-center gap-1.5">
+          <i data-lucide="calendar" class="h-3.5 w-3.5"></i> Эта неделя
+        </button>
+      </div>
+
+      <!-- Timeline -->
+      <div class="relative pl-8">
+        <div class="absolute left-3 top-2 bottom-2 w-px bg-gradient-to-b from-blue-200 via-emerald-200 to-emerald-200"></div>
+
+        <!-- Day group: Сегодня -->
+        <div class="mb-6 relative">
+          <div class="absolute -left-6 top-0 w-6 h-6 rounded-full bg-blue-600 border-4 border-white shadow flex items-center justify-center">
+            <span class="text-white text-[10px] font-bold">29</span>
+          </div>
+          <div class="text-sm font-bold text-blue-700">29 апреля, ср · сегодня</div>
+        </div>
+
+        <div class="mb-6 ml-2 bg-white border-l-4 border-emerald-500 rounded-r-xl shadow-sm p-3 hover:shadow-md transition flex items-start gap-3">
+          <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0">
+            <i data-lucide="arrow-up" class="h-5 w-5"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="font-bold">КВ-0032</span>
+              <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">Принят</span>
+              <span class="text-xs text-gray-500">10:00 – 12:00</span>
+            </div>
+            <div class="text-sm font-medium">Клиен 2</div>
+            <div class="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+              <i data-lucide="map-pin" class="h-3 w-3"></i> мавмавм
+            </div>
+            <div class="text-xs text-emerald-700 font-mono font-bold mt-1">15 000 so'm · clothing</div>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <button class="h-9 w-9 rounded-full bg-amber-100 text-amber-700 hover:bg-amber-200 flex items-center justify-center transition" title="Печать накладной"><i data-lucide="printer" class="h-4 w-4"></i></button>
+            <button class="h-9 w-9 rounded-full bg-green-100 text-green-700 hover:bg-green-200 flex items-center justify-center transition" title="Позвонить"><i data-lucide="phone" class="h-4 w-4"></i></button>
+            <button class="h-9 w-9 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 flex items-center justify-center transition" title="На карте"><i data-lucide="map-pin" class="h-4 w-4"></i></button>
+          </div>
+        </div>
+
+        <!-- Day group: 1 мая -->
+        <div class="mb-6 relative">
+          <div class="absolute -left-6 top-0 w-6 h-6 rounded-full bg-gray-200 border-4 border-white shadow flex items-center justify-center">
+            <span class="text-gray-600 text-[10px] font-bold">1</span>
+          </div>
+          <div class="text-sm font-bold text-gray-700">1 мая, чт</div>
+        </div>
+
+        <div class="mb-6 ml-2 bg-white border-l-4 border-emerald-500 rounded-r-xl shadow-sm p-3 hover:shadow-md transition flex items-start gap-3">
+          <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0">
+            <i data-lucide="arrow-up" class="h-5 w-5"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="font-bold">КВ-0033</span>
+              <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">Принят</span>
+            </div>
+            <div class="text-sm font-medium">Клиен 2</div>
+            <div class="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+              <i data-lucide="map-pin" class="h-3 w-3"></i> имапиапипа
+            </div>
+            <div class="text-xs text-emerald-700 font-mono font-bold mt-1">165 000 so'm · clothing</div>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <button class="h-9 w-9 rounded-full bg-amber-100 text-amber-700 hover:bg-amber-200 flex items-center justify-center transition"><i data-lucide="printer" class="h-4 w-4"></i></button>
+            <button class="h-9 w-9 rounded-full bg-green-100 text-green-700 hover:bg-green-200 flex items-center justify-center transition"><i data-lucide="phone" class="h-4 w-4"></i></button>
+            <button class="h-9 w-9 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 flex items-center justify-center transition"><i data-lucide="map-pin" class="h-4 w-4"></i></button>
+          </div>
+        </div>
+
+        <!-- Day: 2 мая -->
+        <div class="mb-6 relative">
+          <div class="absolute -left-6 top-0 w-6 h-6 rounded-full bg-gray-200 border-4 border-white shadow flex items-center justify-center">
+            <span class="text-gray-600 text-[10px] font-bold">2</span>
+          </div>
+          <div class="text-sm font-bold text-gray-700">2 мая, пт</div>
+        </div>
+
+        <div class="ml-2 bg-white border-l-4 border-emerald-500 rounded-r-xl shadow-sm p-3 hover:shadow-md transition flex items-start gap-3">
+          <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0">
+            <i data-lucide="arrow-up" class="h-5 w-5"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="font-bold">КВ-0038</span>
+              <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">Принят</span>
+            </div>
+            <div class="text-sm font-medium">Клиен 2</div>
+            <div class="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+              <i data-lucide="map-pin" class="h-3 w-3"></i> ммавмавмавмва
+            </div>
+            <div class="text-xs text-emerald-700 font-mono font-bold mt-1">165 000 so'm · clothing</div>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <button class="h-9 w-9 rounded-full bg-amber-100 text-amber-700 hover:bg-amber-200 flex items-center justify-center transition"><i data-lucide="printer" class="h-4 w-4"></i></button>
+            <button class="h-9 w-9 rounded-full bg-green-100 text-green-700 hover:bg-green-200 flex items-center justify-center transition"><i data-lucide="phone" class="h-4 w-4"></i></button>
+            <button class="h-9 w-9 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 flex items-center justify-center transition"><i data-lucide="map-pin" class="h-4 w-4"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="text-xs text-gray-500">+ Чёткая хронология, большие кнопки действий. Хорошо для одного маршрутного дня. Минус: при 50+ заказах будет длинный скролл.</div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Вариант 3: Карта + список
+       ═══════════════════════════════════════════════════════════════ -->
+  <section class="space-y-3">
+    <div class="label">Вариант 3 — Карта + список заказов</div>
+    <p class="text-sm text-gray-600">Слева карта города с пинами адресов забора (синий) и доставки (зелёный). Справа компактный список. Клик по пину — заказ выделяется. Удобно для курьера / водителя.</p>
+
+    <div class="demo-frame">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex bg-gray-100 rounded-lg p-1">
+          <button class="px-3 h-8 rounded-md bg-white shadow-sm text-sm font-semibold">Сегодня</button>
+          <button class="px-3 h-8 rounded-md text-sm font-semibold text-gray-600">Завтра</button>
+          <button class="px-3 h-8 rounded-md text-sm font-semibold text-gray-600">Эта неделя</button>
+        </div>
+        <div class="flex-1"></div>
+        <div class="flex items-center gap-2 text-xs">
+          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-blue-500"></span> Забор: 0</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> Доставка: 3</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-[1fr_360px] gap-4 h-[480px]">
+        <!-- Map mock -->
+        <div class="grid-bg rounded-xl border border-gray-200 relative overflow-hidden">
+          <div class="absolute top-3 right-3 flex flex-col gap-1.5 z-10">
+            <button class="h-9 w-9 rounded-md bg-white border shadow-sm flex items-center justify-center hover:bg-gray-50"><i data-lucide="plus" class="h-4 w-4"></i></button>
+            <button class="h-9 w-9 rounded-md bg-white border shadow-sm flex items-center justify-center hover:bg-gray-50"><i data-lucide="minus" class="h-4 w-4"></i></button>
+            <button class="h-9 w-9 rounded-md bg-white border shadow-sm flex items-center justify-center hover:bg-gray-50" title="Маршрут"><i data-lucide="route" class="h-4 w-4"></i></button>
+          </div>
+
+          <!-- Pins -->
+          <div class="absolute" style="top: 22%; left: 30%;">
+            <div class="relative">
+              <div class="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg ring-4 ring-emerald-200 cursor-pointer hover:scale-110 transition">
+                <i data-lucide="arrow-up" class="h-4 w-4"></i>
+              </div>
+              <div class="absolute top-10 left-1/2 -translate-x-1/2 bg-white rounded-md shadow-md px-2 py-1 text-[10px] font-bold whitespace-nowrap">КВ-0032</div>
+            </div>
+          </div>
+          <div class="absolute" style="top: 50%; left: 55%;">
+            <div class="relative">
+              <div class="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-xl ring-4 ring-emerald-300 cursor-pointer">
+                <i data-lucide="arrow-up" class="h-5 w-5"></i>
+              </div>
+              <div class="absolute top-12 left-1/2 -translate-x-1/2 bg-white rounded-md shadow-md px-2 py-1 text-[10px] font-bold whitespace-nowrap border-2 border-emerald-500">КВ-0033 · выбран</div>
+            </div>
+          </div>
+          <div class="absolute" style="top: 70%; left: 28%;">
+            <div class="relative">
+              <div class="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg ring-4 ring-emerald-200 cursor-pointer hover:scale-110 transition">
+                <i data-lucide="arrow-up" class="h-4 w-4"></i>
+              </div>
+              <div class="absolute top-10 left-1/2 -translate-x-1/2 bg-white rounded-md shadow-md px-2 py-1 text-[10px] font-bold whitespace-nowrap">КВ-0038</div>
+            </div>
+          </div>
+
+          <div class="absolute bottom-3 left-3 bg-white/95 rounded-lg shadow-md p-3 max-w-xs">
+            <div class="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Маршрут на сегодня</div>
+            <div class="text-sm font-bold mt-0.5">3 точки · ~24 км · ~1ч 40м</div>
+            <button class="mt-2 w-full px-3 h-8 rounded bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700">Открыть в Яндекс.Картах</button>
+          </div>
+        </div>
+
+        <!-- Order list -->
+        <div class="overflow-y-auto space-y-2 pr-1">
+          <div class="bg-white border-2 border-emerald-500 rounded-xl p-3 shadow-sm">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-bold text-sm">КВ-0033</span>
+              <span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[9.5px] font-bold rounded">ВЫБРАН</span>
+            </div>
+            <div class="text-xs text-gray-700">Клиен 2</div>
+            <div class="text-[11px] text-gray-500 flex items-center gap-1 mt-1"><i data-lucide="map-pin" class="h-3 w-3"></i> имапиапипа</div>
+            <div class="text-[11px] font-mono text-emerald-700 font-bold mt-1">165 000 so'm</div>
+            <div class="flex gap-1 mt-2">
+              <button class="flex-1 h-7 rounded text-[11px] font-semibold bg-amber-100 text-amber-700">Накладная</button>
+              <button class="flex-1 h-7 rounded text-[11px] font-semibold bg-green-100 text-green-700">Звонок</button>
+            </div>
+          </div>
+
+          <div class="bg-white border border-gray-200 rounded-xl p-3 hover:border-emerald-400 cursor-pointer transition">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-bold text-sm">КВ-0032</span>
+              <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[9.5px] font-bold rounded">Принят</span>
+            </div>
+            <div class="text-xs text-gray-700">Клиен 2</div>
+            <div class="text-[11px] text-gray-500 flex items-center gap-1 mt-1"><i data-lucide="map-pin" class="h-3 w-3"></i> мавмавм</div>
+            <div class="text-[11px] font-mono text-emerald-700 font-bold mt-1">15 000 so'm</div>
+          </div>
+
+          <div class="bg-white border border-gray-200 rounded-xl p-3 hover:border-emerald-400 cursor-pointer transition">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-bold text-sm">КВ-0038</span>
+              <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[9.5px] font-bold rounded">Принят</span>
+            </div>
+            <div class="text-xs text-gray-700">Клиен 2</div>
+            <div class="text-[11px] text-gray-500 flex items-center gap-1 mt-1"><i data-lucide="map-pin" class="h-3 w-3"></i> ммавмавмавмва</div>
+            <div class="text-[11px] font-mono text-emerald-700 font-bold mt-1">165 000 so'm</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="text-xs text-gray-500">+ Самый «вау». Видна география, можно строить маршруты. Минус: нужна интеграция с картой (Яндекс/Google) — это дополнительная работа и API-ключ.</div>
+  </section>
+
+  <footer class="text-center text-sm text-gray-500 pt-8 border-t">
+    Какой? Скажи 1 / 2 / 3 — реализую.<br>
+    <span class="text-xs">Можно комбинировать: например «timeline + переключатель карты» как доп. вкладка.</span>
+  </footer>
+
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

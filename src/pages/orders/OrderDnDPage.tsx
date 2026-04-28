@@ -307,7 +307,6 @@ export function OrderDnDPage() {
   // Срочная надбавка — % или фикс
   const [expressMode, setExpressMode] = useState<'percent' | 'fixed'>('percent')
   const [expressValue, setExpressValue] = useState('50')
-  const [extraTags, setExtraTags] = useState<string[]>([])
   // Тумблер: применять % надбавки от дефектов
   const [applyDefectsPct, setApplyDefectsPct] = useState(true)
 
@@ -328,7 +327,6 @@ export function OrderDnDPage() {
     visitAddress: string
     expressMode: 'percent' | 'fixed'
     expressValue: string
-    extraTags: string[]
     applyDefectsPct: boolean
     markup: number
     promoCode: string
@@ -352,7 +350,6 @@ export function OrderDnDPage() {
     setVisitAddress(d.visitAddress || '')
     setExpressMode(d.expressMode || 'percent')
     setExpressValue(d.expressValue || '50')
-    setExtraTags(d.extraTags || [])
     setApplyDefectsPct(d.applyDefectsPct ?? true)
     setMarkup(d.markup || 0)
     setPromoCode(d.promoCode || '')
@@ -363,18 +360,18 @@ export function OrderDnDPage() {
   // Авто-сохранение
   useEffect(() => {
     const allLinesCount = zones.normal.length + zones.urgent.length
-    if (allLinesCount === 0 && !clientId && extraTags.length === 0) return
+    if (allLinesCount === 0 && !clientId) return
     saveDraft({
       zones, deliveryMethod, deliveryFee, activeZone,
       clientId, clientName, clientPhone, orderType,
       payment, paymentCash, paymentCard, discount, visitAddress,
-      expressMode, expressValue, extraTags, applyDefectsPct,
+      expressMode, expressValue, applyDefectsPct,
       markup, promoCode, appliedPromo,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zones, deliveryMethod, deliveryFee, activeZone, clientId, clientName, clientPhone, orderType,
       payment, paymentCash, paymentCard, discount, visitAddress,
-      expressMode, expressValue, extraTags, applyDefectsPct,
+      expressMode, expressValue, applyDefectsPct,
       markup, promoCode, appliedPromo])
 
   // Расчёты
@@ -468,7 +465,7 @@ export function OrderDnDPage() {
     try {
       // Каждая зона → один заказ? Нет — один заказ, но с tags для зоны.
       // Решение: сохраняем как один заказ; срочный/доставка фиксируются через is_express и tags.
-      const tags: string[] = [...extraTags]
+      const tags: string[] = []
       if (zones.urgent.length > 0 && !tags.includes('Срочно')) tags.push('Срочно')
       if (deliveryMethod === 'delivery' && !tags.includes('Доставка')) tags.push('Доставка')
       else if (deliveryMethod === 'pickup' && !tags.includes('Самовывоз')) tags.push('Самовывоз')
@@ -1191,27 +1188,7 @@ export function OrderDnDPage() {
 
           {/* Compact totals + К оплате */}
           <div className="bg-background rounded-2xl border shadow-sm p-3 shrink-0">
-            <div className="flex gap-1 flex-wrap mb-2">
-              {['VIP','Повторная','С пятнами','Хрупкое'].map(tag => {
-                const on = extraTags.includes(tag)
-                return (
-                  <button
-                    key={tag}
-                    onClick={() => setExtraTags(on ? extraTags.filter(t => t !== tag) : [...extraTags, tag])}
-                    className={cn(
-                      'h-6 px-2 rounded text-[10.5px] border transition-colors',
-                      on
-                        ? 'border-primary bg-primary/10 text-primary font-semibold'
-                        : 'border-border text-muted-foreground hover:border-primary/40'
-                    )}
-                  >
-                    {on && '✓ '}{tag}
-                  </button>
-                )
-              })}
-            </div>
-
-            <div className="flex items-baseline justify-between border-t pt-2 font-mono">
+            <div className="flex items-baseline justify-between font-mono">
               <span className="text-xs text-muted-foreground">Подытог · {allLines.reduce((s, l) => s + l.qty, 0)} шт</span>
               <span className="text-sm font-semibold">{formatCurrency(subtotal)} {symbol}</span>
             </div>

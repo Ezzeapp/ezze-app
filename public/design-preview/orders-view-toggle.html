@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Заказы — переключатель режимов: 3 варианта</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+  .demo-frame { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 600; }
+</style>
+</head>
+<body class="bg-gray-50 p-8">
+
+<div class="max-w-6xl mx-auto space-y-12">
+
+  <header>
+    <h1 class="text-2xl font-bold mb-2">Переключатель режимов отображения заказов</h1>
+    <p class="text-gray-600 text-sm">Сейчас три маленькие иконки в правом верхнем углу. Выбери один из вариантов ниже.</p>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Вариант 1: Segmented pills с подписями
+       ═══════════════════════════════════════════════════════════════ -->
+  <section class="space-y-3">
+    <div class="label">Вариант 1 — Сегментированная панель с подписями</div>
+    <p class="text-sm text-gray-600">Один блок-пилюля с тремя секциями. Каждая секция — иконка + подпись. Активная подсвечена синим. Размер увеличен.</p>
+    <div class="demo-frame">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold">Заказы <span class="text-sm font-normal text-gray-500 ml-2">4 зак.</span></h2>
+        <div class="flex items-center gap-3">
+          <!-- segmented control -->
+          <div class="inline-flex bg-gray-100 rounded-xl p-1 gap-1">
+            <button class="flex items-center gap-2 px-4 h-9 rounded-lg bg-white text-blue-600 shadow-sm font-semibold text-sm">
+              <i data-lucide="list" class="h-4 w-4"></i>
+              Список
+            </button>
+            <button class="flex items-center gap-2 px-4 h-9 rounded-lg text-gray-600 hover:bg-white/60 font-semibold text-sm transition">
+              <i data-lucide="columns-3" class="h-4 w-4"></i>
+              Канбан
+            </button>
+            <button class="flex items-center gap-2 px-4 h-9 rounded-lg text-gray-600 hover:bg-white/60 font-semibold text-sm transition">
+              <i data-lucide="truck" class="h-4 w-4"></i>
+              Доставка
+            </button>
+          </div>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 h-10 rounded-lg flex items-center gap-2">
+            <i data-lucide="plus" class="h-4 w-4"></i>Новый заказ
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="text-xs text-gray-500">+ Понятно с первого взгляда что делает кнопка. Минус: занимает больше места. Хорошо для десктопа.</div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Вариант 2: Большие табы с подчёркиванием
+       ═══════════════════════════════════════════════════════════════ -->
+  <section class="space-y-3">
+    <div class="label">Вариант 2 — Табы с подчёркиванием</div>
+    <p class="text-sm text-gray-600">Режимы вынесены отдельной строкой под заголовком, как табы в браузере. Активный — синяя полоса снизу.</p>
+    <div class="demo-frame">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold">Заказы <span class="text-sm font-normal text-gray-500 ml-2">4 зак.</span></h2>
+        <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 h-10 rounded-lg flex items-center gap-2">
+          <i data-lucide="plus" class="h-4 w-4"></i>Новый заказ
+        </button>
+      </div>
+      <div class="flex border-b border-gray-200 gap-1">
+        <button class="flex items-center gap-2 px-4 py-3 -mb-px border-b-2 border-blue-600 text-blue-600 font-semibold text-sm">
+          <i data-lucide="list" class="h-4 w-4"></i>
+          Список
+          <span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded">4</span>
+        </button>
+        <button class="flex items-center gap-2 px-4 py-3 -mb-px border-b-2 border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300 font-semibold text-sm transition">
+          <i data-lucide="columns-3" class="h-4 w-4"></i>
+          Канбан
+        </button>
+        <button class="flex items-center gap-2 px-4 py-3 -mb-px border-b-2 border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300 font-semibold text-sm transition">
+          <i data-lucide="truck" class="h-4 w-4"></i>
+          Доставка
+          <span class="bg-orange-100 text-orange-700 text-[10px] font-bold px-1.5 py-0.5 rounded">3</span>
+        </button>
+      </div>
+    </div>
+    <div class="text-xs text-gray-500">+ Очень привычно (браузерные табы). Можно добавить счётчики (4 / 3) рядом с подписью. Минус: занимает целую строку.</div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Вариант 3: Большие карточки-кнопки
+       ═══════════════════════════════════════════════════════════════ -->
+  <section class="space-y-3">
+    <div class="label">Вариант 3 — Карточки-кнопки с иконкой и подписью</div>
+    <p class="text-sm text-gray-600">Три отдельные крупные кнопки 64×64. Иконка сверху, подпись снизу. Активная — с цветной заливкой и тенью.</p>
+    <div class="demo-frame">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold">Заказы <span class="text-sm font-normal text-gray-500 ml-2">4 зак.</span></h2>
+        <div class="flex items-center gap-2">
+          <button class="flex flex-col items-center gap-0.5 w-16 h-14 rounded-xl bg-blue-600 text-white shadow-md hover:bg-blue-700 transition">
+            <i data-lucide="list" class="h-5 w-5"></i>
+            <span class="text-[10.5px] font-semibold">Список</span>
+          </button>
+          <button class="flex flex-col items-center gap-0.5 w-16 h-14 rounded-xl bg-white border border-gray-200 text-gray-700 hover:border-blue-400 hover:text-blue-600 transition">
+            <i data-lucide="columns-3" class="h-5 w-5"></i>
+            <span class="text-[10.5px] font-semibold">Канбан</span>
+          </button>
+          <button class="flex flex-col items-center gap-0.5 w-16 h-14 rounded-xl bg-white border border-gray-200 text-gray-700 hover:border-blue-400 hover:text-blue-600 transition relative">
+            <i data-lucide="truck" class="h-5 w-5"></i>
+            <span class="text-[10.5px] font-semibold">Доставка</span>
+            <span class="absolute -top-1 -right-1 bg-orange-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">3</span>
+          </button>
+          <div class="w-px h-10 bg-gray-200 mx-1"></div>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 h-10 rounded-lg flex items-center gap-2">
+            <i data-lucide="plus" class="h-4 w-4"></i>Новый
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="text-xs text-gray-500">+ Самый кликабельный — большие зоны попадания. Можно вешать бейджи (3 в правом углу). Минус: «массивный» вид, может выглядеть детски.</div>
+  </section>
+
+  <footer class="text-center text-sm text-gray-500 pt-8 border-t">
+    Какой вариант предпочитаешь? Скажи 1 / 2 / 3 — впилю в реальный код.
+  </footer>
+
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

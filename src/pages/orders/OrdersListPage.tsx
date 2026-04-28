@@ -548,29 +548,44 @@ export function OrdersListPage() {
         description={total > 0 ? `${total} ${t('orders.shortOrders')}` : undefined}
       >
         <div className="flex items-center gap-1.5">
-          {/* Вид: таблица / канбан / доставка */}
-          <div className="flex rounded-lg border overflow-hidden">
+          {/* Вид: сегментированная панель с подписями */}
+          <div className="inline-flex bg-muted rounded-xl p-1 gap-0.5">
             <button
               onClick={() => setViewMode('table')}
-              className={cn('p-1.5 transition-colors', viewMode === 'table' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
-              title="Таблица"
+              className={cn(
+                'flex items-center gap-1.5 px-3 h-8 rounded-lg font-semibold text-xs transition-colors',
+                viewMode === 'table'
+                  ? 'bg-background text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-background/60'
+              )}
             >
-              <List className="h-4 w-4" />
+              <List className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Список</span>
             </button>
             <button
               onClick={() => setViewMode('kanban')}
-              className={cn('p-1.5 transition-colors', viewMode === 'kanban' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
-              title="Канбан"
+              className={cn(
+                'flex items-center gap-1.5 px-3 h-8 rounded-lg font-semibold text-xs transition-colors',
+                viewMode === 'kanban'
+                  ? 'bg-background text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-background/60'
+              )}
             >
-              <Columns3 className="h-4 w-4" />
+              <Columns3 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Канбан</span>
             </button>
             {isCleaningProduct && (
               <button
                 onClick={() => setViewMode('delivery')}
-                className={cn('p-1.5 transition-colors', viewMode === 'delivery' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}
-                title="Доставка"
+                className={cn(
+                  'flex items-center gap-1.5 px-3 h-8 rounded-lg font-semibold text-xs transition-colors',
+                  viewMode === 'delivery'
+                    ? 'bg-background text-primary shadow-sm'
+                    : 'text-muted-foreground hover:bg-background/60'
+                )}
               >
-                <Truck className="h-4 w-4" />
+                <Truck className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Доставка</span>
               </button>
             )}
           </div>
