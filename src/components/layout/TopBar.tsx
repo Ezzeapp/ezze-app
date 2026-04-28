@@ -3,7 +3,7 @@ import { LogOut, User, ExternalLink, Search, ChevronLeft, Shield } from 'lucide-
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { useHomeScreenConfig } from '@/hooks/useAppSettings'
+import { useHomeScreenConfig, isTilesLikeMode } from '@/hooks/useAppSettings'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -21,7 +21,7 @@ export function TopBar() {
   const location = useLocation()
   const [searchOpen, setSearchOpen] = useState(false)
   const { data: homeScreenConfig } = useHomeScreenConfig()
-  const isTilesMode = homeScreenConfig?.mode === 'tiles'
+  const isTilesMode = isTilesLikeMode(homeScreenConfig?.mode)
   const showHomeButton = isTilesMode && location.pathname !== '/'
 
   // Cmd+K / Ctrl+K shortcut

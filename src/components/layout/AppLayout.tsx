@@ -13,7 +13,7 @@ import { useDynamicFavicon } from '@/hooks/useDynamicFavicon'
 import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/lib/supabase'
 import { PRODUCT } from '@/lib/config'
-import { useHomeScreenConfig } from '@/hooks/useAppSettings'
+import { useHomeScreenConfig, isTilesLikeMode } from '@/hooks/useAppSettings'
 
 const inTelegram = isTelegramMiniApp()
 
@@ -38,7 +38,7 @@ export function AppLayout() {
   const queryClient = useQueryClient()
   const { data: existingProfile } = useProfile()
   const { data: homeScreenConfig } = useHomeScreenConfig()
-  const isTilesMode = homeScreenConfig?.mode === 'tiles'
+  const isTilesMode = isTilesLikeMode(homeScreenConfig?.mode)
 
   useAppointmentsRealtime()
   useClientsRealtime()

@@ -724,8 +724,20 @@ export interface HomeScreenTile {
   order: number
 }
 
+export type HomeScreenMode =
+  | 'sidebar'
+  | 'tiles'
+  | 'hybrid_light'
+  | 'hybrid_dense'
+  | 'hybrid_bento'
+
+/** Все режимы кроме sidebar — это tiles-подобные: показывают главный экран и скрывают сайдбар */
+export function isTilesLikeMode(mode: HomeScreenMode | undefined): boolean {
+  return mode !== undefined && mode !== 'sidebar'
+}
+
 export interface HomeScreenConfig {
-  mode: 'sidebar' | 'tiles'
+  mode: HomeScreenMode
   tiles: HomeScreenTile[]
 }
 

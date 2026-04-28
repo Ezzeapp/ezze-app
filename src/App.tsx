@@ -3,11 +3,20 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { PRODUCT } from '@/lib/config'
 import { useHomeScreenConfig } from '@/hooks/useAppSettings'
 import { HomeScreen } from '@/pages/home/HomeScreen'
+import { HybridLight } from '@/pages/home/hybrids/HybridLight'
+import { HybridDense } from '@/pages/home/hybrids/HybridDense'
+import { HybridBento } from '@/pages/home/hybrids/HybridBento'
 
-/** Tiles-режим: показываем HomeScreen. Sidebar-режим: редирект по продукту */
+/** Главная страница: рендерится по mode из home_screen_config */
 function DefaultRedirect() {
   const { data: config } = useHomeScreenConfig()
-  if (config?.mode === 'tiles') return <HomeScreen />
+  switch (config?.mode) {
+    case 'tiles':         return <HomeScreen />
+    case 'hybrid_light':  return <HybridLight />
+    case 'hybrid_dense':  return <HybridDense />
+    case 'hybrid_bento':  return <HybridBento />
+  }
+  // sidebar-режим (или ещё не загрузилось) — редиректим на основной раздел продукта
   if (PRODUCT === 'cleaning') return <Navigate to="/orders" replace />
   if (PRODUCT === 'workshop') return <Navigate to="/orders" replace />
   if (PRODUCT === 'farm')     return <Navigate to="/farm" replace />

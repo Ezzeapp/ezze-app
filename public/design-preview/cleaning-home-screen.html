@@ -1,0 +1,1573 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Cleaning · Главный экран — варианты дизайна</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+  .stage { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 18px; padding: 22px; }
+  .stage-dark { background: #0b1220; border: 1px solid #1e293b; border-radius: 18px; padding: 22px; }
+  .label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: #64748b; font-weight: 700; }
+  .pill { font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 700; letter-spacing: .02em; }
+  .hover-lift { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+  .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 14px 28px -12px rgba(15,23,42,.22); }
+
+  /* "Браузерная рамка" вокруг макета */
+  .frame {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px -8px rgba(15,23,42,.12);
+  }
+  .frame-bar {
+    background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+    padding: 8px 12px; display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: #64748b;
+  }
+  .dot { height: 10px; width: 10px; border-radius: 99px; background: #cbd5e1; }
+  .dot.r { background: #fca5a5; }
+  .dot.y { background: #fcd34d; }
+  .dot.g { background: #86efac; }
+
+  /* glass для варианта */
+  .glass-tile {
+    background: linear-gradient(140deg, rgba(255,255,255,.85), rgba(255,255,255,.55));
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.7);
+  }
+
+  /* gradient bgs */
+  .bg-mesh {
+    background:
+      radial-gradient(at 20% 10%, rgba(59,130,246,.18) 0px, transparent 50%),
+      radial-gradient(at 80% 0%,  rgba(236,72,153,.16) 0px, transparent 50%),
+      radial-gradient(at 80% 80%, rgba(34,197,94,.16) 0px, transparent 50%),
+      radial-gradient(at 10% 90%, rgba(168,85,247,.16) 0px, transparent 50%),
+      #ffffff;
+  }
+  .bg-mesh-dark {
+    background:
+      radial-gradient(at 20% 10%, rgba(59,130,246,.30) 0px, transparent 50%),
+      radial-gradient(at 80% 0%,  rgba(236,72,153,.22) 0px, transparent 50%),
+      radial-gradient(at 80% 80%, rgba(34,197,94,.22) 0px, transparent 50%),
+      radial-gradient(at 10% 90%, rgba(168,85,247,.22) 0px, transparent 50%),
+      #0b1220;
+  }
+
+  /* sparkline svg helper */
+  .spark { stroke-width: 2; fill: none; }
+</style>
+</head>
+<body class="bg-gray-50 p-6 md:p-10">
+
+<div class="max-w-[1320px] mx-auto space-y-14">
+
+  <header class="space-y-2">
+    <h1 class="text-3xl font-bold tracking-tight">Cleaning · Главный экран — варианты</h1>
+    <p class="text-gray-600 max-w-3xl">
+      В админке есть переключатель «Сайдбар / Плитки». Сейчас в плиточном режиме —
+      простой grid 4×n из серых квадратных плиток (иконка + подпись). Скучно.
+      Ниже — 6 вариантов плиточного экрана и 3 альтернативы (без плиток вообще).
+    </p>
+    <nav class="flex flex-wrap gap-2 pt-2 text-xs">
+      <a href="#current" class="px-3 py-1.5 rounded-full bg-white border hover:bg-gray-100 font-semibold">Что сейчас</a>
+      <a href="#tiles" class="px-3 py-1.5 rounded-full bg-white border hover:bg-gray-100 font-semibold">Варианты плиток (6)</a>
+      <a href="#alt" class="px-3 py-1.5 rounded-full bg-white border hover:bg-gray-100 font-semibold">Альтернативы (3)</a>
+      <a href="#hybrid" class="px-3 py-1.5 rounded-full bg-blue-100 border border-blue-300 text-blue-800 hover:bg-blue-200 font-semibold">★ Гибриды (3)</a>
+      <a href="#summary" class="px-3 py-1.5 rounded-full bg-white border hover:bg-gray-100 font-semibold">Что выбрать</a>
+    </nav>
+  </header>
+
+  <!-- ╔══════════════════════════════════════════════════════════════════╗
+       ║                  Б Л О К  0 — К А К  С Е Й Ч А С                 ║
+       ╚══════════════════════════════════════════════════════════════════╝ -->
+  <section id="current" class="space-y-3">
+    <div class="label">Текущая реализация</div>
+    <h2 class="text-xl font-bold">Как выглядит сейчас (HomeScreen.tsx)</h2>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ml-2 font-mono">app.ezze.site/</span></div>
+      <div class="bg-white">
+        <div class="px-8 pt-7 pb-5">
+          <h1 class="text-xl font-semibold">Добро пожаловать, Алишер!</h1>
+        </div>
+        <div class="px-8 pb-8">
+          <div class="grid grid-cols-4 gap-4 max-w-3xl">
+            <!-- 8 одинаковых серых квадратов -->
+            <button class="aspect-square rounded-2xl border bg-card p-4 flex flex-col items-center justify-center gap-3 hover:shadow-md transition">
+              <div class="rounded-xl bg-blue-100/60 p-3"><i data-lucide="clipboard-list" class="h-6 w-6 text-blue-600"></i></div>
+              <span class="text-sm font-medium">Заказы</span>
+            </button>
+            <button class="aspect-square rounded-2xl border bg-card p-4 flex flex-col items-center justify-center gap-3 hover:shadow-md transition">
+              <div class="rounded-xl bg-blue-100/60 p-3"><i data-lucide="shopping-cart" class="h-6 w-6 text-blue-600"></i></div>
+              <span class="text-sm font-medium">Касса</span>
+            </button>
+            <button class="aspect-square rounded-2xl border bg-card p-4 flex flex-col items-center justify-center gap-3 hover:shadow-md transition">
+              <div class="rounded-xl bg-blue-100/60 p-3"><i data-lucide="users" class="h-6 w-6 text-blue-600"></i></div>
+              <span class="text-sm font-medium">Клиенты</span>
+            </button>
+            <button class="aspect-square rounded-2xl border bg-card p-4 flex flex-col items-center justify-center gap-3 hover:shadow-md transition">
+              <div class="rounded-xl bg-blue-100/60 p-3"><i data-lucide="truck" class="h-6 w-6 text-blue-600"></i></div>
+              <span class="text-sm font-medium">Доставка</span>
+            </button>
+            <button class="aspect-square rounded-2xl border bg-card p-4 flex flex-col items-center justify-center gap-3 hover:shadow-md transition">
+              <div class="rounded-xl bg-blue-100/60 p-3"><i data-lucide="droplets" class="h-6 w-6 text-blue-600"></i></div>
+              <span class="text-sm font-medium">Расходники</span>
+            </button>
+            <button class="aspect-square rounded-2xl border bg-card p-4 flex flex-col items-center justify-center gap-3 hover:shadow-md transition">
+              <div class="rounded-xl bg-blue-100/60 p-3"><i data-lucide="bar-chart-3" class="h-6 w-6 text-blue-600"></i></div>
+              <span class="text-sm font-medium">Статистика</span>
+            </button>
+            <button class="aspect-square rounded-2xl border bg-card p-4 flex flex-col items-center justify-center gap-3 hover:shadow-md transition">
+              <div class="rounded-xl bg-blue-100/60 p-3"><i data-lucide="tag" class="h-6 w-6 text-blue-600"></i></div>
+              <span class="text-sm font-medium">Услуги</span>
+            </button>
+            <button class="aspect-square rounded-2xl border bg-card p-4 flex flex-col items-center justify-center gap-3 hover:shadow-md transition">
+              <div class="rounded-xl bg-blue-100/60 p-3"><i data-lucide="settings-2" class="h-6 w-6 text-blue-600"></i></div>
+              <span class="text-sm font-medium">Настройки</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2">⤷ Все плитки одинаковые, серые, без данных. Глаз скользит — не за что зацепиться.</p>
+  </section>
+
+  <!-- ╔══════════════════════════════════════════════════════════════════╗
+       ║              Б Л О К  1 — В А Р И А Н Т Ы  П Л И Т О К            ║
+       ╚══════════════════════════════════════════════════════════════════╝ -->
+  <section id="tiles" class="space-y-3 pt-6 border-t">
+    <div class="label">Раздел 1 · Плитки</div>
+    <h2 class="text-xl font-bold">6 вариантов плиточного главного экрана</h2>
+  </section>
+
+  <!-- ──────────────────────────────────────────────────────────────────
+       Вариант A — Цветные плитки + KPI на каждой
+       ────────────────────────────────────────────────────────────────── -->
+  <section class="space-y-3">
+    <div class="flex items-baseline gap-3">
+      <span class="label text-blue-600">Вариант A</span>
+      <h3 class="text-lg font-bold">Цветные плитки с живым KPI</h3>
+    </div>
+    <p class="text-sm text-gray-600 max-w-3xl">Каждый раздел — свой цвет. Внутри плитки — крупная цифра (количество активных заказов, клиентов за месяц, низкие расходники). Плитка живая, сразу понятно что важно.</p>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ml-2 font-mono">режим: tiles</span></div>
+      <div class="bg-white">
+        <div class="px-8 pt-7 pb-2 flex items-end justify-between">
+          <div>
+            <div class="text-xs text-gray-500 font-semibold mb-1">Среда, 29 апреля</div>
+            <h1 class="text-2xl font-bold">Доброе утро, Алишер 👋</h1>
+            <p class="text-sm text-gray-500 mt-1">Сегодня 7 заказов в работе и 3 — к выдаче.</p>
+          </div>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 h-10 rounded-xl flex items-center gap-2 shadow-sm">
+            <i data-lucide="plus" class="h-4 w-4"></i>Новый заказ
+          </button>
+        </div>
+
+        <div class="px-8 py-6">
+          <div class="grid grid-cols-4 gap-4">
+            <a class="hover-lift rounded-2xl p-5 cursor-pointer text-white" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+              <div class="flex justify-between items-start mb-4">
+                <div class="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center"><i data-lucide="clipboard-list" class="h-5 w-5"></i></div>
+                <span class="pill bg-white/25 text-white">7 в работе</span>
+              </div>
+              <div class="font-mono text-3xl font-extrabold">23</div>
+              <div class="text-sm font-semibold mt-1 opacity-90">Заказы</div>
+              <div class="text-[11px] opacity-75 mt-0.5">+5 со вчера</div>
+            </a>
+
+            <a class="hover-lift rounded-2xl p-5 cursor-pointer text-white" style="background: linear-gradient(135deg, #10b981, #047857);">
+              <div class="flex justify-between items-start mb-4">
+                <div class="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center"><i data-lucide="shopping-cart" class="h-5 w-5"></i></div>
+                <span class="pill bg-white/25 text-white">приёмка</span>
+              </div>
+              <div class="font-mono text-3xl font-extrabold">+</div>
+              <div class="text-sm font-semibold mt-1 opacity-90">Касса</div>
+              <div class="text-[11px] opacity-75 mt-0.5">принять заказ</div>
+            </a>
+
+            <a class="hover-lift rounded-2xl p-5 cursor-pointer text-white" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
+              <div class="flex justify-between items-start mb-4">
+                <div class="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center"><i data-lucide="users" class="h-5 w-5"></i></div>
+                <span class="pill bg-white/25 text-white">+12</span>
+              </div>
+              <div class="font-mono text-3xl font-extrabold">234</div>
+              <div class="text-sm font-semibold mt-1 opacity-90">Клиенты</div>
+              <div class="text-[11px] opacity-75 mt-0.5">за месяц</div>
+            </a>
+
+            <a class="hover-lift rounded-2xl p-5 cursor-pointer text-white" style="background: linear-gradient(135deg, #f59e0b, #b45309);">
+              <div class="flex justify-between items-start mb-4">
+                <div class="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center"><i data-lucide="truck" class="h-5 w-5"></i></div>
+                <span class="pill bg-white/25 text-white">сегодня</span>
+              </div>
+              <div class="font-mono text-3xl font-extrabold">5</div>
+              <div class="text-sm font-semibold mt-1 opacity-90">Доставка</div>
+              <div class="text-[11px] opacity-75 mt-0.5">3 забор · 2 выдача</div>
+            </a>
+
+            <a class="hover-lift rounded-2xl p-5 cursor-pointer text-white" style="background: linear-gradient(135deg, #06b6d4, #0e7490);">
+              <div class="flex justify-between items-start mb-4">
+                <div class="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center"><i data-lucide="droplets" class="h-5 w-5"></i></div>
+                <span class="pill bg-rose-400/90 text-white">2 ⚠</span>
+              </div>
+              <div class="font-mono text-3xl font-extrabold">14</div>
+              <div class="text-sm font-semibold mt-1 opacity-90">Расходники</div>
+              <div class="text-[11px] opacity-75 mt-0.5">2 заканчиваются</div>
+            </a>
+
+            <a class="hover-lift rounded-2xl p-5 cursor-pointer text-white" style="background: linear-gradient(135deg, #ec4899, #be185d);">
+              <div class="flex justify-between items-start mb-4">
+                <div class="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center"><i data-lucide="bar-chart-3" class="h-5 w-5"></i></div>
+                <span class="pill bg-emerald-400/90 text-white">+18%</span>
+              </div>
+              <div class="font-mono text-2xl font-extrabold">12.4 млн</div>
+              <div class="text-sm font-semibold mt-1 opacity-90">Статистика</div>
+              <div class="text-[11px] opacity-75 mt-0.5">выручка / мес</div>
+            </a>
+
+            <a class="hover-lift rounded-2xl p-5 cursor-pointer text-slate-700 bg-slate-100 border">
+              <div class="flex justify-between items-start mb-4">
+                <div class="h-10 w-10 rounded-xl bg-slate-200 flex items-center justify-center"><i data-lucide="tag" class="h-5 w-5 text-slate-600"></i></div>
+              </div>
+              <div class="font-mono text-3xl font-extrabold text-slate-800">86</div>
+              <div class="text-sm font-semibold mt-1">Услуги</div>
+              <div class="text-[11px] opacity-75 mt-0.5">в каталоге</div>
+            </a>
+
+            <a class="hover-lift rounded-2xl p-5 cursor-pointer text-slate-700 bg-slate-100 border">
+              <div class="flex justify-between items-start mb-4">
+                <div class="h-10 w-10 rounded-xl bg-slate-200 flex items-center justify-center"><i data-lucide="settings-2" class="h-5 w-5 text-slate-600"></i></div>
+              </div>
+              <div class="text-sm font-semibold mt-12">Настройки</div>
+              <div class="text-[11px] opacity-75 mt-0.5">конфигурация</div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2"><b>+</b> Сразу видны KPI и аномалии. <b>−</b> Нужно тянуть данные на главный экран (хук счётчиков).</p>
+  </section>
+
+  <!-- ──────────────────────────────────────────────────────────────────
+       Вариант B — Bento Grid (плитки разных размеров)
+       ────────────────────────────────────────────────────────────────── -->
+  <section class="space-y-3">
+    <div class="flex items-baseline gap-3">
+      <span class="label text-emerald-600">Вариант B</span>
+      <h3 class="text-lg font-bold">Bento — плитки разного размера по важности</h3>
+    </div>
+    <p class="text-sm text-gray-600 max-w-3xl">Заказы — главная плитка 2×2. Касса — широкая 2×1. Остальные — обычные. Asymmetric grid создаёт иерархию: глаз сразу идёт к главному.</p>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ml-2 font-mono">режим: tiles · bento</span></div>
+      <div class="bg-white p-8">
+        <h1 class="text-2xl font-bold mb-1">Доброе утро, Алишер</h1>
+        <p class="text-sm text-gray-500 mb-6">29 апреля · 23 заказа в работе</p>
+
+        <div class="grid grid-cols-4 grid-rows-[160px_160px_160px] gap-4">
+          <!-- Заказы 2×2 -->
+          <a class="row-span-2 col-span-2 rounded-2xl p-6 cursor-pointer text-white relative overflow-hidden hover-lift" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
+            <div class="flex justify-between items-start">
+              <div>
+                <div class="text-[10px] uppercase tracking-wider opacity-80 font-bold">Главное</div>
+                <div class="text-2xl font-bold mt-1">Заказы</div>
+              </div>
+              <div class="h-12 w-12 rounded-2xl bg-white/15 flex items-center justify-center"><i data-lucide="clipboard-list" class="h-6 w-6"></i></div>
+            </div>
+
+            <div class="mt-8">
+              <div class="font-mono text-6xl font-extrabold leading-none">23</div>
+              <div class="text-sm opacity-80 mt-1">в работе сейчас</div>
+            </div>
+
+            <div class="absolute bottom-5 left-6 right-6 grid grid-cols-3 gap-3 text-center">
+              <div class="border-t border-white/20 pt-2">
+                <div class="font-mono text-lg font-bold">7</div>
+                <div class="text-[10px] opacity-75">приём</div>
+              </div>
+              <div class="border-t border-white/20 pt-2">
+                <div class="font-mono text-lg font-bold">13</div>
+                <div class="text-[10px] opacity-75">в работе</div>
+              </div>
+              <div class="border-t border-white/20 pt-2">
+                <div class="font-mono text-lg font-bold">3</div>
+                <div class="text-[10px] opacity-75">к выдаче</div>
+              </div>
+            </div>
+          </a>
+
+          <!-- Касса 2×1 -->
+          <a class="col-span-2 rounded-2xl p-5 cursor-pointer text-white hover-lift flex items-center gap-4" style="background: linear-gradient(135deg, #047857, #10b981);">
+            <div class="h-14 w-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0"><i data-lucide="shopping-cart" class="h-7 w-7"></i></div>
+            <div class="flex-1">
+              <div class="text-lg font-bold">Принять заказ</div>
+              <div class="text-xs opacity-80">drag & drop · ⌘N</div>
+            </div>
+            <i data-lucide="arrow-right" class="h-5 w-5 opacity-70"></i>
+          </a>
+
+          <!-- Клиенты -->
+          <a class="rounded-2xl p-4 cursor-pointer hover-lift bg-violet-50 border border-violet-200 text-violet-900">
+            <div class="h-9 w-9 rounded-xl bg-violet-100 flex items-center justify-center mb-3"><i data-lucide="users" class="h-5 w-5 text-violet-700"></i></div>
+            <div class="font-mono text-2xl font-extrabold">234</div>
+            <div class="text-xs font-semibold mt-1 opacity-80">Клиенты</div>
+          </a>
+
+          <!-- Доставка -->
+          <a class="rounded-2xl p-4 cursor-pointer hover-lift bg-amber-50 border border-amber-200 text-amber-900">
+            <div class="h-9 w-9 rounded-xl bg-amber-100 flex items-center justify-center mb-3"><i data-lucide="truck" class="h-5 w-5 text-amber-700"></i></div>
+            <div class="font-mono text-2xl font-extrabold">5</div>
+            <div class="text-xs font-semibold mt-1 opacity-80">Сегодня</div>
+          </a>
+
+          <!-- Расходники -->
+          <a class="rounded-2xl p-4 cursor-pointer hover-lift bg-cyan-50 border border-cyan-200 text-cyan-900 relative">
+            <span class="pill absolute top-2 right-2 bg-rose-500 text-white">2</span>
+            <div class="h-9 w-9 rounded-xl bg-cyan-100 flex items-center justify-center mb-3"><i data-lucide="droplets" class="h-5 w-5 text-cyan-700"></i></div>
+            <div class="text-xs font-semibold opacity-80">Расходники</div>
+            <div class="text-[11px] opacity-70 mt-0.5">заканчиваются</div>
+          </a>
+
+          <!-- Статистика -->
+          <a class="rounded-2xl p-4 cursor-pointer hover-lift bg-pink-50 border border-pink-200 text-pink-900">
+            <div class="h-9 w-9 rounded-xl bg-pink-100 flex items-center justify-center mb-3"><i data-lucide="bar-chart-3" class="h-5 w-5 text-pink-700"></i></div>
+            <div class="font-mono text-base font-extrabold">12.4 млн</div>
+            <div class="text-xs font-semibold opacity-80 mt-0.5">+18% мес</div>
+          </a>
+
+          <!-- Услуги -->
+          <a class="rounded-2xl p-4 cursor-pointer hover-lift bg-slate-100 border text-slate-700">
+            <div class="h-9 w-9 rounded-xl bg-slate-200 flex items-center justify-center mb-3"><i data-lucide="tag" class="h-5 w-5 text-slate-600"></i></div>
+            <div class="text-xs font-semibold">Услуги</div>
+            <div class="text-[11px] opacity-70">86 поз.</div>
+          </a>
+
+          <!-- Настройки -->
+          <a class="rounded-2xl p-4 cursor-pointer hover-lift bg-slate-100 border text-slate-700">
+            <div class="h-9 w-9 rounded-xl bg-slate-200 flex items-center justify-center mb-3"><i data-lucide="settings-2" class="h-5 w-5 text-slate-600"></i></div>
+            <div class="text-xs font-semibold">Настройки</div>
+          </a>
+        </div>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2"><b>+</b> Иерархия читается мгновенно. <b>−</b> Сложнее настраивать (фиксированный layout, нельзя любую плитку поменять размером без выбора).</p>
+  </section>
+
+  <!-- ──────────────────────────────────────────────────────────────────
+       Вариант C — iOS-style крупные иконки на цветных квадратах
+       ────────────────────────────────────────────────────────────────── -->
+  <section class="space-y-3">
+    <div class="flex items-baseline gap-3">
+      <span class="label text-pink-600">Вариант C</span>
+      <h3 class="text-lg font-bold">iOS-style — иконки на цветной заливке + бейдж</h3>
+    </div>
+    <p class="text-sm text-gray-600 max-w-3xl">Минималистично, как на айфоне. Цветной квадрат с иконкой, бейдж сбоку (как точка нотификации), подпись снизу. Близко к привычному UX мобильных приложений. Хорошо смотрится в светлой и тёмной темах.</p>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ml-2 font-mono">режим: tiles · ios</span></div>
+      <div class="bg-mesh">
+        <div class="px-10 pt-8 pb-3">
+          <h1 class="text-3xl font-bold tracking-tight">Привет, Алишер</h1>
+          <p class="text-sm text-gray-500 mt-1">Среда · 23 заказа активно</p>
+        </div>
+
+        <div class="px-10 py-8">
+          <div class="grid grid-cols-4 gap-7 max-w-3xl">
+
+            <button class="flex flex-col items-center gap-2 group">
+              <div class="relative">
+                <div class="h-20 w-20 rounded-[26px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #60a5fa, #1d4ed8);">
+                  <i data-lucide="clipboard-list" class="h-9 w-9"></i>
+                </div>
+                <span class="absolute -top-1 -right-1 h-6 min-w-6 px-1.5 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center shadow-sm">7</span>
+              </div>
+              <span class="text-[12.5px] font-semibold text-gray-800">Заказы</span>
+            </button>
+
+            <button class="flex flex-col items-center gap-2 group">
+              <div class="h-20 w-20 rounded-[26px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #34d399, #047857);">
+                <i data-lucide="shopping-cart" class="h-9 w-9"></i>
+              </div>
+              <span class="text-[12.5px] font-semibold text-gray-800">Касса</span>
+            </button>
+
+            <button class="flex flex-col items-center gap-2 group">
+              <div class="relative">
+                <div class="h-20 w-20 rounded-[26px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #c084fc, #6d28d9);">
+                  <i data-lucide="users" class="h-9 w-9"></i>
+                </div>
+                <span class="absolute -top-1 -right-1 h-6 min-w-6 px-1.5 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center shadow-sm">+12</span>
+              </div>
+              <span class="text-[12.5px] font-semibold text-gray-800">Клиенты</span>
+            </button>
+
+            <button class="flex flex-col items-center gap-2 group">
+              <div class="relative">
+                <div class="h-20 w-20 rounded-[26px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #fbbf24, #b45309);">
+                  <i data-lucide="truck" class="h-9 w-9"></i>
+                </div>
+                <span class="absolute -top-1 -right-1 h-6 min-w-6 px-1.5 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center shadow-sm">5</span>
+              </div>
+              <span class="text-[12.5px] font-semibold text-gray-800">Доставка</span>
+            </button>
+
+            <button class="flex flex-col items-center gap-2 group">
+              <div class="relative">
+                <div class="h-20 w-20 rounded-[26px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #22d3ee, #0e7490);">
+                  <i data-lucide="droplets" class="h-9 w-9"></i>
+                </div>
+                <span class="absolute -top-1 -right-1 h-6 min-w-6 px-1.5 rounded-full bg-amber-500 text-white text-[11px] font-bold flex items-center justify-center shadow-sm">!</span>
+              </div>
+              <span class="text-[12.5px] font-semibold text-gray-800">Расходники</span>
+            </button>
+
+            <button class="flex flex-col items-center gap-2 group">
+              <div class="h-20 w-20 rounded-[26px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #f472b6, #be185d);">
+                <i data-lucide="bar-chart-3" class="h-9 w-9"></i>
+              </div>
+              <span class="text-[12.5px] font-semibold text-gray-800">Статистика</span>
+            </button>
+
+            <button class="flex flex-col items-center gap-2 group">
+              <div class="h-20 w-20 rounded-[26px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #94a3b8, #475569);">
+                <i data-lucide="tag" class="h-9 w-9"></i>
+              </div>
+              <span class="text-[12.5px] font-semibold text-gray-800">Услуги</span>
+            </button>
+
+            <button class="flex flex-col items-center gap-2 group">
+              <div class="h-20 w-20 rounded-[26px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #94a3b8, #334155);">
+                <i data-lucide="settings-2" class="h-9 w-9"></i>
+              </div>
+              <span class="text-[12.5px] font-semibold text-gray-800">Настройки</span>
+            </button>
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2"><b>+</b> Знакомый паттерн (iOS), nice & friendly. Бейджи быстро привлекают внимание. <b>−</b> На широких экранах много пустого места — не «офисный» вид.</p>
+  </section>
+
+  <!-- ──────────────────────────────────────────────────────────────────
+       Вариант D — Тёмная dashboard-сетка (Notion / Linear style)
+       ────────────────────────────────────────────────────────────────── -->
+  <section class="space-y-3">
+    <div class="flex items-baseline gap-3">
+      <span class="label text-violet-600">Вариант D</span>
+      <h3 class="text-lg font-bold">Dark dashboard — Notion / Linear style</h3>
+    </div>
+    <p class="text-sm text-gray-600 max-w-3xl">Тёмный фон, плитки — почти прозрачные тонкие карточки. Акцент — на контент, не на оформление. Идеально для бэк-офиса где сидят весь день. Визуально «спокойный» главный экран.</p>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ml-2 font-mono">режим: tiles · dark</span></div>
+      <div class="bg-mesh-dark">
+        <div class="px-10 pt-8 pb-2">
+          <h1 class="text-2xl font-semibold text-white">Алишер · Ezze cleaning</h1>
+          <p class="text-sm text-slate-400 mt-1">29 апреля · 11:42</p>
+        </div>
+
+        <div class="px-10 py-6">
+          <div class="grid grid-cols-4 gap-3">
+
+            <a class="hover-lift rounded-xl p-4 border border-white/10 cursor-pointer relative overflow-hidden" style="background: linear-gradient(180deg, rgba(59,130,246,.18), rgba(59,130,246,.04));">
+              <div class="flex justify-between items-start">
+                <i data-lucide="clipboard-list" class="h-5 w-5 text-blue-400"></i>
+                <span class="text-[10px] text-blue-300 font-mono font-bold">+5</span>
+              </div>
+              <div class="font-mono text-2xl font-bold text-white mt-3">23</div>
+              <div class="text-xs text-slate-300 mt-0.5">Заказы · 7 в приёмке</div>
+              <svg class="mt-2 w-full h-6" viewBox="0 0 100 24" preserveAspectRatio="none"><polyline class="spark" stroke="#60a5fa" points="0,18 14,15 28,16 42,10 56,12 70,6 84,8 100,2"/></svg>
+            </a>
+
+            <a class="hover-lift rounded-xl p-4 border border-white/10 cursor-pointer" style="background: linear-gradient(180deg, rgba(16,185,129,.18), rgba(16,185,129,.04));">
+              <div class="flex justify-between items-start">
+                <i data-lucide="shopping-cart" class="h-5 w-5 text-emerald-400"></i>
+                <span class="text-[10px] text-emerald-300 font-mono font-bold">⌘N</span>
+              </div>
+              <div class="text-base font-bold text-white mt-3">Принять заказ</div>
+              <div class="text-xs text-slate-300 mt-0.5">drag & drop из каталога</div>
+            </a>
+
+            <a class="hover-lift rounded-xl p-4 border border-white/10 cursor-pointer" style="background: linear-gradient(180deg, rgba(139,92,246,.18), rgba(139,92,246,.04));">
+              <div class="flex justify-between items-start">
+                <i data-lucide="users" class="h-5 w-5 text-violet-400"></i>
+                <span class="text-[10px] text-emerald-300 font-mono font-bold">+12</span>
+              </div>
+              <div class="font-mono text-2xl font-bold text-white mt-3">234</div>
+              <div class="text-xs text-slate-300 mt-0.5">Клиенты · база</div>
+            </a>
+
+            <a class="hover-lift rounded-xl p-4 border border-white/10 cursor-pointer" style="background: linear-gradient(180deg, rgba(245,158,11,.18), rgba(245,158,11,.04));">
+              <div class="flex justify-between items-start">
+                <i data-lucide="truck" class="h-5 w-5 text-amber-400"></i>
+              </div>
+              <div class="font-mono text-2xl font-bold text-white mt-3">5</div>
+              <div class="text-xs text-slate-300 mt-0.5">Доставка сегодня</div>
+              <div class="flex gap-1 mt-2">
+                <span class="flex-1 h-1 rounded-full bg-blue-400/60"></span>
+                <span class="flex-1 h-1 rounded-full bg-blue-400/60"></span>
+                <span class="flex-1 h-1 rounded-full bg-blue-400/60"></span>
+                <span class="flex-1 h-1 rounded-full bg-emerald-400/60"></span>
+                <span class="flex-1 h-1 rounded-full bg-emerald-400/60"></span>
+              </div>
+            </a>
+
+            <a class="hover-lift rounded-xl p-4 border border-white/10 cursor-pointer" style="background: linear-gradient(180deg, rgba(6,182,212,.18), rgba(6,182,212,.04));">
+              <div class="flex justify-between items-start">
+                <i data-lucide="droplets" class="h-5 w-5 text-cyan-400"></i>
+                <span class="text-[10px] text-rose-300 font-mono font-bold">⚠ 2</span>
+              </div>
+              <div class="font-mono text-2xl font-bold text-white mt-3">14</div>
+              <div class="text-xs text-slate-300 mt-0.5">Расходники · 2 на исходе</div>
+            </a>
+
+            <a class="hover-lift rounded-xl p-4 border border-white/10 cursor-pointer" style="background: linear-gradient(180deg, rgba(236,72,153,.18), rgba(236,72,153,.04));">
+              <div class="flex justify-between items-start">
+                <i data-lucide="bar-chart-3" class="h-5 w-5 text-pink-400"></i>
+                <span class="text-[10px] text-emerald-300 font-mono font-bold">+18%</span>
+              </div>
+              <div class="font-mono text-xl font-bold text-white mt-3">12.4 млн</div>
+              <div class="text-xs text-slate-300 mt-0.5">Выручка · мес</div>
+            </a>
+
+            <a class="hover-lift rounded-xl p-4 border border-white/10 cursor-pointer bg-white/5">
+              <i data-lucide="tag" class="h-5 w-5 text-slate-300"></i>
+              <div class="font-mono text-2xl font-bold text-white mt-3">86</div>
+              <div class="text-xs text-slate-300 mt-0.5">Услуги</div>
+            </a>
+
+            <a class="hover-lift rounded-xl p-4 border border-white/10 cursor-pointer bg-white/5">
+              <i data-lucide="settings-2" class="h-5 w-5 text-slate-300"></i>
+              <div class="text-base font-bold text-white mt-3">Настройки</div>
+              <div class="text-xs text-slate-300 mt-0.5">конфигурация</div>
+            </a>
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2"><b>+</b> «Спокойный» главный экран, читать данные комфортно весь день. <b>−</b> Только для пользователей с тёмной темой (или должна быть отдельная light-вариация).</p>
+  </section>
+
+  <!-- ──────────────────────────────────────────────────────────────────
+       Вариант E — Минимализм без иконок (только цвет и цифра)
+       ────────────────────────────────────────────────────────────────── -->
+  <section class="space-y-3">
+    <div class="flex items-baseline gap-3">
+      <span class="label text-slate-700">Вариант E</span>
+      <h3 class="text-lg font-bold">Минимализм — только число и название</h3>
+    </div>
+    <p class="text-sm text-gray-600 max-w-3xl">Никаких иконок. Только огромная цифра + название раздела. Свежо, по-европейски (Stripe, Vercel). Акцент — на содержание. Цвет используется как тонкий разделитель (полоска сверху).</p>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ml-2 font-mono">режим: tiles · numeric</span></div>
+      <div class="bg-white">
+        <div class="px-10 pt-9 pb-1">
+          <h1 class="text-3xl font-bold tracking-tight">Главная</h1>
+          <p class="text-sm text-gray-500 mt-1">Алишер · 29 апр</p>
+        </div>
+
+        <div class="px-10 py-8">
+          <div class="grid grid-cols-4 gap-px bg-gray-200 rounded-2xl overflow-hidden border border-gray-200">
+
+            <a class="hover-lift bg-white p-6 cursor-pointer relative">
+              <span class="absolute top-0 left-0 right-0 h-0.5 bg-blue-500"></span>
+              <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Заказы</div>
+              <div class="font-mono text-5xl font-bold mt-3">23</div>
+              <div class="text-xs text-gray-500 mt-1">7 ждут приёмки</div>
+            </a>
+            <a class="hover-lift bg-white p-6 cursor-pointer relative">
+              <span class="absolute top-0 left-0 right-0 h-0.5 bg-emerald-500"></span>
+              <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Касса</div>
+              <div class="text-2xl font-bold mt-3 leading-snug">+ Принять<br>заказ</div>
+            </a>
+            <a class="hover-lift bg-white p-6 cursor-pointer relative">
+              <span class="absolute top-0 left-0 right-0 h-0.5 bg-violet-500"></span>
+              <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Клиенты</div>
+              <div class="font-mono text-5xl font-bold mt-3">234</div>
+              <div class="text-xs text-emerald-600 font-semibold mt-1">+12 за неделю</div>
+            </a>
+            <a class="hover-lift bg-white p-6 cursor-pointer relative">
+              <span class="absolute top-0 left-0 right-0 h-0.5 bg-amber-500"></span>
+              <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Доставка</div>
+              <div class="font-mono text-5xl font-bold mt-3">5</div>
+              <div class="text-xs text-gray-500 mt-1">3 забор · 2 выдача</div>
+            </a>
+            <a class="hover-lift bg-white p-6 cursor-pointer relative">
+              <span class="absolute top-0 left-0 right-0 h-0.5 bg-cyan-500"></span>
+              <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Расходники</div>
+              <div class="font-mono text-5xl font-bold mt-3 text-rose-600">2</div>
+              <div class="text-xs text-rose-600 font-semibold mt-1">⚠ заканчиваются</div>
+            </a>
+            <a class="hover-lift bg-white p-6 cursor-pointer relative">
+              <span class="absolute top-0 left-0 right-0 h-0.5 bg-pink-500"></span>
+              <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Выручка / мес</div>
+              <div class="font-mono text-3xl font-bold mt-3">12.4 млн</div>
+              <div class="text-xs text-emerald-600 font-semibold mt-1">+18% к март</div>
+            </a>
+            <a class="hover-lift bg-white p-6 cursor-pointer relative">
+              <span class="absolute top-0 left-0 right-0 h-0.5 bg-slate-400"></span>
+              <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Услуги</div>
+              <div class="font-mono text-5xl font-bold mt-3">86</div>
+            </a>
+            <a class="hover-lift bg-white p-6 cursor-pointer relative">
+              <span class="absolute top-0 left-0 right-0 h-0.5 bg-slate-400"></span>
+              <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Настройки</div>
+              <div class="text-2xl font-bold mt-3">⚙</div>
+            </a>
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2"><b>+</b> Очень премиум, ничего лишнего. Подходит для «бизнес»-имиджа. <b>−</b> Без иконок труднее ориентироваться новичку.</p>
+  </section>
+
+  <!-- ──────────────────────────────────────────────────────────────────
+       Вариант F — Glassmorphism на фото / hero
+       ────────────────────────────────────────────────────────────────── -->
+  <section class="space-y-3">
+    <div class="flex items-baseline gap-3">
+      <span class="label text-fuchsia-600">Вариант F</span>
+      <h3 class="text-lg font-bold">Hero + glass-плитки на градиенте</h3>
+    </div>
+    <p class="text-sm text-gray-600 max-w-3xl">Большое hero-приветствие с градиентом, поверх него — полупрозрачные плитки. Wow-эффект, как у современных SaaS-лендингов. Эмоция «премиум».</p>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ml-2 font-mono">режим: tiles · hero</span></div>
+      <div class="relative" style="background: linear-gradient(135deg, #1e3a8a 0%, #6d28d9 50%, #be185d 100%);">
+        <!-- декоративные пятна -->
+        <div class="absolute inset-0 opacity-30" style="background:
+          radial-gradient(circle at 20% 20%, white 0px, transparent 200px),
+          radial-gradient(circle at 80% 60%, #fde047 0px, transparent 250px);"></div>
+
+        <div class="relative px-10 pt-10 pb-6 text-white">
+          <div class="text-xs uppercase tracking-[.2em] opacity-80 font-bold">Среда · 29 апреля</div>
+          <h1 class="text-4xl font-bold tracking-tight mt-2">Доброе утро,<br>Алишер</h1>
+          <p class="text-base opacity-80 mt-2 max-w-md">Сегодня <b>23 заказа</b> в работе. Выручка месяца — <b>12.4 млн сум</b>, на 18% выше марта.</p>
+          <button class="mt-5 bg-white text-slate-900 font-bold text-sm px-5 h-11 rounded-xl flex items-center gap-2 hover:scale-[1.03] transition shadow-xl">
+            <i data-lucide="plus" class="h-4 w-4"></i>Принять новый заказ
+            <kbd class="ml-2 text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-mono">⌘N</kbd>
+          </button>
+        </div>
+
+        <div class="relative px-10 py-8">
+          <div class="grid grid-cols-4 gap-3">
+
+            <a class="glass-tile rounded-2xl p-4 cursor-pointer hover-lift">
+              <div class="flex justify-between items-start mb-3">
+                <i data-lucide="clipboard-list" class="h-5 w-5 text-blue-700"></i>
+                <span class="pill bg-rose-500 text-white">7</span>
+              </div>
+              <div class="font-mono text-2xl font-extrabold text-slate-800">23</div>
+              <div class="text-xs font-semibold text-slate-700 mt-0.5">Заказы</div>
+            </a>
+            <a class="glass-tile rounded-2xl p-4 cursor-pointer hover-lift">
+              <i data-lucide="users" class="h-5 w-5 text-violet-700 mb-3"></i>
+              <div class="font-mono text-2xl font-extrabold text-slate-800">234</div>
+              <div class="text-xs font-semibold text-slate-700 mt-0.5">Клиенты</div>
+            </a>
+            <a class="glass-tile rounded-2xl p-4 cursor-pointer hover-lift">
+              <i data-lucide="truck" class="h-5 w-5 text-amber-700 mb-3"></i>
+              <div class="font-mono text-2xl font-extrabold text-slate-800">5</div>
+              <div class="text-xs font-semibold text-slate-700 mt-0.5">Доставка</div>
+            </a>
+            <a class="glass-tile rounded-2xl p-4 cursor-pointer hover-lift">
+              <div class="flex justify-between items-start mb-3">
+                <i data-lucide="droplets" class="h-5 w-5 text-cyan-700"></i>
+                <span class="pill bg-amber-400 text-amber-900">⚠</span>
+              </div>
+              <div class="font-mono text-2xl font-extrabold text-slate-800">14</div>
+              <div class="text-xs font-semibold text-slate-700 mt-0.5">Расходники</div>
+            </a>
+            <a class="glass-tile rounded-2xl p-4 cursor-pointer hover-lift">
+              <i data-lucide="bar-chart-3" class="h-5 w-5 text-pink-700 mb-3"></i>
+              <div class="font-mono text-base font-extrabold text-slate-800">12.4 млн</div>
+              <div class="text-xs font-semibold text-slate-700 mt-0.5">Статистика</div>
+            </a>
+            <a class="glass-tile rounded-2xl p-4 cursor-pointer hover-lift">
+              <i data-lucide="tag" class="h-5 w-5 text-slate-700 mb-3"></i>
+              <div class="font-mono text-2xl font-extrabold text-slate-800">86</div>
+              <div class="text-xs font-semibold text-slate-700 mt-0.5">Услуги</div>
+            </a>
+            <a class="glass-tile rounded-2xl p-4 cursor-pointer hover-lift">
+              <i data-lucide="shopping-cart" class="h-5 w-5 text-emerald-700 mb-3"></i>
+              <div class="text-sm font-bold text-slate-800">Касса</div>
+              <div class="text-xs text-slate-700">приёмка</div>
+            </a>
+            <a class="glass-tile rounded-2xl p-4 cursor-pointer hover-lift">
+              <i data-lucide="settings-2" class="h-5 w-5 text-slate-700 mb-3"></i>
+              <div class="text-sm font-bold text-slate-800">Настройки</div>
+            </a>
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2"><b>+</b> Wow + эмоция premium. Хорошо для маркетинга «попробуйте Ezze». <b>−</b> Каждый день одинаковый «вау» утомляет; нужна возможность отключить hero.</p>
+  </section>
+
+  <!-- ╔══════════════════════════════════════════════════════════════════╗
+       ║         Б Л О К  2 — А Л Ь Т Е Р Н А Т И В Ы  ( без плиток )      ║
+       ╚══════════════════════════════════════════════════════════════════╝ -->
+  <section id="alt" class="space-y-3 pt-6 border-t">
+    <div class="label">Раздел 2 · Альтернативы</div>
+    <h2 class="text-xl font-bold">3 главных экрана без плиток</h2>
+    <p class="text-sm text-gray-600 max-w-3xl">Если плиточный режим хочется заменить целиком (или сделать как ещё один режим в админке — «Дашборд», «План на день», «Командный центр»).</p>
+  </section>
+
+  <!-- ──────────────────────────────────────────────────────────────────
+       Альт 1 — Полноценный Dashboard с виджетами
+       ────────────────────────────────────────────────────────────────── -->
+  <section class="space-y-3">
+    <div class="flex items-baseline gap-3">
+      <span class="label text-emerald-700">Альт 1</span>
+      <h3 class="text-lg font-bold">Dashboard — KPI + график + последние заказы</h3>
+    </div>
+    <p class="text-sm text-gray-600 max-w-3xl">Никаких плиток-навигаторов. Главный экран = операционная панель: 4 KPI сверху, график выручки, лента последних заказов, быстрые действия. Навигация — через сайдбар (или верхний таб-бар).</p>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ml-2 font-mono">режим: dashboard</span></div>
+      <div class="bg-slate-50">
+        <div class="px-8 pt-6 pb-2 flex justify-between items-end">
+          <div>
+            <h1 class="text-2xl font-bold">Главная</h1>
+            <p class="text-sm text-gray-500">Среда · 29 апреля</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="bg-white border h-10 px-3 rounded-lg text-sm font-semibold flex items-center gap-2"><i data-lucide="calendar" class="h-4 w-4"></i>Месяц</button>
+            <button class="bg-blue-600 text-white h-10 px-4 rounded-lg text-sm font-semibold flex items-center gap-2"><i data-lucide="plus" class="h-4 w-4"></i>Новый заказ</button>
+          </div>
+        </div>
+
+        <!-- 4 KPI -->
+        <div class="px-8 py-4 grid grid-cols-4 gap-3">
+          <div class="bg-white rounded-xl border p-4">
+            <div class="flex justify-between items-start"><span class="text-xs text-gray-500 font-semibold">Активные заказы</span><i data-lucide="clipboard-list" class="h-4 w-4 text-blue-500"></i></div>
+            <div class="font-mono text-2xl font-bold mt-2">23</div>
+            <div class="text-xs text-emerald-600 font-semibold mt-1">↑ 5 со вчера</div>
+          </div>
+          <div class="bg-white rounded-xl border p-4">
+            <div class="flex justify-between items-start"><span class="text-xs text-gray-500 font-semibold">Выручка / день</span><i data-lucide="wallet" class="h-4 w-4 text-emerald-500"></i></div>
+            <div class="font-mono text-2xl font-bold mt-2">410k</div>
+            <div class="text-xs text-emerald-600 font-semibold mt-1">↑ 12% к ср.</div>
+          </div>
+          <div class="bg-white rounded-xl border p-4">
+            <div class="flex justify-between items-start"><span class="text-xs text-gray-500 font-semibold">Доставка сегодня</span><i data-lucide="truck" class="h-4 w-4 text-amber-500"></i></div>
+            <div class="font-mono text-2xl font-bold mt-2">5</div>
+            <div class="text-xs text-gray-500 mt-1">3 забор · 2 выдача</div>
+          </div>
+          <div class="bg-white rounded-xl border p-4 ring-1 ring-rose-200">
+            <div class="flex justify-between items-start"><span class="text-xs text-rose-600 font-semibold">Низкий запас</span><i data-lucide="alert-triangle" class="h-4 w-4 text-rose-500"></i></div>
+            <div class="font-mono text-2xl font-bold mt-2 text-rose-600">2</div>
+            <div class="text-xs text-rose-600 font-semibold mt-1">кондиционер, мешки</div>
+          </div>
+        </div>
+
+        <!-- График + правая колонка -->
+        <div class="px-8 pb-6 grid grid-cols-3 gap-3">
+          <!-- График -->
+          <div class="col-span-2 bg-white rounded-xl border p-5">
+            <div class="flex justify-between mb-3">
+              <h3 class="font-bold text-sm">Выручка · апрель</h3>
+              <span class="text-[11px] text-gray-500">12.4 млн сум · +18% к март</span>
+            </div>
+            <svg viewBox="0 0 600 160" class="w-full h-40">
+              <defs>
+                <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stop-color="#3b82f6" stop-opacity=".25"/>
+                  <stop offset="1" stop-color="#3b82f6" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,120 L40,100 80,110 120,90 160,95 200,75 240,80 280,60 320,70 360,55 400,45 440,55 480,40 520,35 560,25 600,30 L600,160 L0,160 Z" fill="url(#g1)"/>
+              <polyline class="spark" stroke="#3b82f6" stroke-width="2.5" fill="none"
+                points="0,120 40,100 80,110 120,90 160,95 200,75 240,80 280,60 320,70 360,55 400,45 440,55 480,40 520,35 560,25 600,30"/>
+            </svg>
+          </div>
+
+          <!-- Лента заказов -->
+          <div class="bg-white rounded-xl border p-5">
+            <h3 class="font-bold text-sm mb-3">Последние заказы</h3>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <div class="h-8 w-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">#341</div>
+                <div class="flex-1 min-w-0"><div class="text-xs font-semibold truncate">Эльмира Камалова</div><div class="text-[10px] text-gray-500">3 поз · 95k</div></div>
+                <span class="pill bg-amber-100 text-amber-800">в работе</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="h-8 w-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">#340</div>
+                <div class="flex-1 min-w-0"><div class="text-xs font-semibold truncate">Дилмурод А.</div><div class="text-[10px] text-gray-500">5 поз · 218k</div></div>
+                <span class="pill bg-emerald-100 text-emerald-800">готов</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="h-8 w-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">#339</div>
+                <div class="flex-1 min-w-0"><div class="text-xs font-semibold truncate">Сарвар К.</div><div class="text-[10px] text-gray-500">1 поз · 25k</div></div>
+                <span class="pill bg-blue-100 text-blue-800">приём</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="h-8 w-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">#338</div>
+                <div class="flex-1 min-w-0"><div class="text-xs font-semibold truncate">Зарина Н.</div><div class="text-[10px] text-gray-500">2 поз · 60k</div></div>
+                <span class="pill bg-slate-100 text-slate-700">выдан</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2"><b>+</b> Видна вся операционка одним взглядом. <b>−</b> Навигация всё равно нужна (sidebar). Это не «вместо плиток», а «другой уровень»: главный = dashboard, навигация = сайдбар.</p>
+  </section>
+
+  <!-- ──────────────────────────────────────────────────────────────────
+       Альт 2 — План на день (timeline)
+       ────────────────────────────────────────────────────────────────── -->
+  <section class="space-y-3">
+    <div class="flex items-baseline gap-3">
+      <span class="label text-orange-600">Альт 2</span>
+      <h3 class="text-lg font-bold">«Что сегодня» — таймлайн дня</h3>
+    </div>
+    <p class="text-sm text-gray-600 max-w-3xl">Главный экран = «что мне сегодня делать». Утренний забор, обед, дневная партия в работу, к концу — выдача. Тайм-лайн с задачами. Полезно для приёмщика-одиночки, для бригадира.</p>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ml-2 font-mono">режим: today</span></div>
+      <div class="bg-white p-8">
+        <div class="flex justify-between items-end mb-6">
+          <div>
+            <h1 class="text-2xl font-bold">Сегодня</h1>
+            <p class="text-sm text-gray-500">Среда, 29 апреля · 11 событий</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="text-xs px-3 h-9 rounded-lg border font-semibold">← Вчера</button>
+            <button class="text-xs px-3 h-9 rounded-lg bg-blue-600 text-white font-semibold">Сегодня</button>
+            <button class="text-xs px-3 h-9 rounded-lg border font-semibold">Завтра →</button>
+          </div>
+        </div>
+
+        <div class="relative pl-8 max-w-2xl">
+          <div class="absolute left-3 top-2 bottom-2 w-px bg-gray-200"></div>
+
+          <div class="relative pb-5">
+            <div class="absolute -left-7 top-2 h-3 w-3 rounded-full bg-blue-500 ring-4 ring-blue-100"></div>
+            <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">09:00</div>
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-1">
+              <div class="font-bold text-sm text-blue-900">Забор у Эльмиры К. · 3 поз</div>
+              <div class="text-xs text-blue-700">пр. Бунёдкор, 14 · +998 90 123 45 67</div>
+            </div>
+          </div>
+
+          <div class="relative pb-5">
+            <div class="absolute -left-7 top-2 h-3 w-3 rounded-full bg-blue-500 ring-4 ring-blue-100"></div>
+            <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">10:30</div>
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-1">
+              <div class="font-bold text-sm text-blue-900">Забор у Дилмурод А. · 5 поз</div>
+              <div class="text-xs text-blue-700">Чиланзар-12, кв. 88</div>
+            </div>
+          </div>
+
+          <div class="relative pb-5">
+            <div class="absolute -left-7 top-2 h-3 w-3 rounded-full bg-amber-500 ring-4 ring-amber-100"></div>
+            <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">12:00 · сейчас</div>
+            <div class="bg-amber-50 border-2 border-amber-300 rounded-xl p-3 mt-1">
+              <div class="flex items-center gap-2 mb-1"><i data-lucide="play" class="h-3.5 w-3.5 text-amber-700"></i><span class="text-[10px] font-bold uppercase text-amber-700">в процессе</span></div>
+              <div class="font-bold text-sm">Партия запуска · 23 поз</div>
+              <div class="text-xs text-amber-700">машины 1-3 загружены</div>
+            </div>
+          </div>
+
+          <div class="relative pb-5">
+            <div class="absolute -left-7 top-2 h-3 w-3 rounded-full bg-emerald-500 ring-4 ring-emerald-100"></div>
+            <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">15:00</div>
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mt-1">
+              <div class="font-bold text-sm text-emerald-900">Выдача · 3 заказа готовы</div>
+              <div class="text-xs text-emerald-700">#338, #340, #335 — клиенты уведомлены</div>
+            </div>
+          </div>
+
+          <div class="relative">
+            <div class="absolute -left-7 top-2 h-3 w-3 rounded-full bg-amber-500 ring-4 ring-amber-100"></div>
+            <div class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">17:00</div>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-1">
+              <div class="font-bold text-sm text-amber-900">Доставка #341 — Эльмира К.</div>
+              <div class="text-xs text-amber-700">пр. Бунёдкор, 14 · ~25 мин в пути</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Под низом — мини-карточки разделов -->
+        <div class="mt-8 pt-6 border-t flex gap-2 flex-wrap">
+          <a class="px-3 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold flex items-center gap-2"><i data-lucide="clipboard-list" class="h-3.5 w-3.5"></i>Все заказы</a>
+          <a class="px-3 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold flex items-center gap-2"><i data-lucide="users" class="h-3.5 w-3.5"></i>Клиенты</a>
+          <a class="px-3 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold flex items-center gap-2"><i data-lucide="bar-chart-3" class="h-3.5 w-3.5"></i>Статистика</a>
+          <a class="px-3 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold flex items-center gap-2"><i data-lucide="settings-2" class="h-3.5 w-3.5"></i>Настройки</a>
+        </div>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2"><b>+</b> Очень полезно операционно — экран «открыл и понял». <b>−</b> Полностью переделанный UX, требует серьёзной разработки + бэка под расписание.</p>
+  </section>
+
+  <!-- ──────────────────────────────────────────────────────────────────
+       Альт 3 — Командный центр (вертикальные модули)
+       ────────────────────────────────────────────────────────────────── -->
+  <section class="space-y-3">
+    <div class="flex items-baseline gap-3">
+      <span class="label text-rose-600">Альт 3</span>
+      <h3 class="text-lg font-bold">Командный центр — вертикальные модули</h3>
+    </div>
+    <p class="text-sm text-gray-600 max-w-3xl">Главный экран — несколько крупных горизонтальных модулей друг под другом: «к выдаче сегодня», «приёмка», «доставка», «алерты». Каждый модуль = карточка-список. Не надо никуда нажимать чтобы что-то увидеть.</p>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ml-2 font-mono">режим: command-center</span></div>
+      <div class="bg-slate-50 p-8 space-y-4">
+
+        <!-- Алерты -->
+        <div class="rounded-2xl border-2 border-rose-200 bg-rose-50 p-4 flex items-start gap-3">
+          <i data-lucide="alert-triangle" class="h-5 w-5 text-rose-600 shrink-0 mt-0.5"></i>
+          <div class="flex-1">
+            <div class="font-bold text-sm text-rose-900">2 расходника заканчиваются · 1 заказ просрочен</div>
+            <div class="text-xs text-rose-700 mt-1">Кондиционер «Lenor» (15%), мешки L (8 шт). Заказ #335 от Сардор Г. — срок вышел вчера.</div>
+          </div>
+          <button class="text-xs font-semibold text-rose-700 hover:underline shrink-0">→ открыть</button>
+        </div>
+
+        <!-- 3 модуля в ряд -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-white rounded-2xl border p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-sm flex items-center gap-2"><div class="h-7 w-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center"><i data-lucide="check-circle-2" class="h-4 w-4"></i></div>К выдаче · 3</h3>
+              <button class="text-[11px] text-blue-600 font-semibold">все</button>
+            </div>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between p-2 hover:bg-gray-50 rounded"><span class="font-mono font-bold">#340</span><span class="truncate flex-1 mx-2">Дилмурод А.</span><span class="text-gray-500">218k</span></div>
+              <div class="flex justify-between p-2 hover:bg-gray-50 rounded"><span class="font-mono font-bold">#338</span><span class="truncate flex-1 mx-2">Зарина Н.</span><span class="text-gray-500">60k</span></div>
+              <div class="flex justify-between p-2 hover:bg-gray-50 rounded"><span class="font-mono font-bold">#335</span><span class="truncate flex-1 mx-2 text-rose-600">Сардор Г. ⚠</span><span class="text-gray-500">95k</span></div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-sm flex items-center gap-2"><div class="h-7 w-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center"><i data-lucide="package" class="h-4 w-4"></i></div>В приёмке · 7</h3>
+              <button class="text-[11px] text-blue-600 font-semibold">все</button>
+            </div>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between p-2 hover:bg-gray-50 rounded"><span class="font-mono font-bold">#341</span><span class="truncate flex-1 mx-2">Эльмира К.</span><span class="text-gray-500">95k</span></div>
+              <div class="flex justify-between p-2 hover:bg-gray-50 rounded"><span class="font-mono font-bold">#342</span><span class="truncate flex-1 mx-2">Бахром Х.</span><span class="text-gray-500">40k</span></div>
+              <div class="flex justify-between p-2 hover:bg-gray-50 rounded"><span class="font-mono font-bold">#343</span><span class="truncate flex-1 mx-2">Гулнора М.</span><span class="text-gray-500">125k</span></div>
+              <div class="text-center text-[11px] text-gray-400 py-1">+4 ещё</div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-sm flex items-center gap-2"><div class="h-7 w-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center"><i data-lucide="truck" class="h-4 w-4"></i></div>Доставка · 5</h3>
+              <button class="text-[11px] text-blue-600 font-semibold">все</button>
+            </div>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between p-2 hover:bg-gray-50 rounded"><span class="text-blue-600 font-bold">забор</span><span class="truncate flex-1 mx-2">Бунёдкор 14 · 09:00</span></div>
+              <div class="flex justify-between p-2 hover:bg-gray-50 rounded"><span class="text-blue-600 font-bold">забор</span><span class="truncate flex-1 mx-2">Чиланзар 12 · 10:30</span></div>
+              <div class="flex justify-between p-2 hover:bg-gray-50 rounded"><span class="text-blue-600 font-bold">забор</span><span class="truncate flex-1 mx-2">Юнусабад · 13:00</span></div>
+              <div class="flex justify-between p-2 hover:bg-gray-50 rounded"><span class="text-emerald-600 font-bold">выдача</span><span class="truncate flex-1 mx-2">Бунёдкор 14 · 17:00</span></div>
+              <div class="flex justify-between p-2 hover:bg-gray-50 rounded"><span class="text-emerald-600 font-bold">выдача</span><span class="truncate flex-1 mx-2">Мирзо-Улугбек · 18:00</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="bg-white rounded-2xl border p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm">Быстрые действия</h3>
+          </div>
+          <div class="grid grid-cols-5 gap-2">
+            <button class="rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 p-3 text-blue-900 text-xs font-bold flex flex-col items-center gap-1.5">
+              <i data-lucide="plus" class="h-4 w-4"></i>Новый заказ
+            </button>
+            <button class="rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 p-3 text-violet-900 text-xs font-bold flex flex-col items-center gap-1.5">
+              <i data-lucide="user-plus" class="h-4 w-4"></i>Новый клиент
+            </button>
+            <button class="rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 p-3 text-emerald-900 text-xs font-bold flex flex-col items-center gap-1.5">
+              <i data-lucide="check-circle-2" class="h-4 w-4"></i>Выдать
+            </button>
+            <button class="rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 p-3 text-amber-900 text-xs font-bold flex flex-col items-center gap-1.5">
+              <i data-lucide="truck" class="h-4 w-4"></i>Доставка
+            </button>
+            <button class="rounded-xl bg-pink-50 hover:bg-pink-100 border border-pink-200 p-3 text-pink-900 text-xs font-bold flex flex-col items-center gap-1.5">
+              <i data-lucide="bar-chart-3" class="h-4 w-4"></i>Отчёт
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2"><b>+</b> Контент главнее навигации, всё видно сразу. <b>−</b> Не вмещается на маленьком экране, не работает как «лендинг кабинета» для нового пользователя.</p>
+  </section>
+
+  <!-- ╔══════════════════════════════════════════════════════════════════╗
+       ║          Б Л О К  2.5 — Г И Б Р И Д Ы  (плитки + dashboard)       ║
+       ╚══════════════════════════════════════════════════════════════════╝ -->
+
+  <section id="hybrid" class="space-y-3 pt-6 border-t">
+    <div class="label text-blue-700">★ Раздел 2.5 · Гибриды</div>
+    <h2 class="text-xl font-bold">Плитки-навигаторы + dashboard-сводка</h2>
+    <p class="text-sm text-gray-600 max-w-3xl">
+      Сверху — плитки (одним кликом в раздел), снизу — виджеты (видишь операционку без перехода).
+      Лучшее из двух миров: новичок сразу понимает «куда нажать», опытный сразу видит «что делать сейчас».
+    </p>
+  </section>
+
+  <!-- ──────────────────────────────────────────────────────────────────
+       Гибрид 1 — iOS-плитки + 2 виджета (лёгкий)
+       ────────────────────────────────────────────────────────────────── -->
+  <section class="space-y-3">
+    <div class="flex items-baseline gap-3">
+      <span class="label text-pink-600">Гибрид 1</span>
+      <h3 class="text-lg font-bold">«Лёгкий» · iOS-плитки + 2 виджета</h3>
+    </div>
+    <p class="text-sm text-gray-600 max-w-3xl">Сверху — компактный ряд из 8 цветных квадратов с бейджами (вариант C, в одну строку). Снизу — два виджета: график выручки и лента заказов. Главное приветствие — небольшое, без лишнего hero.</p>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ml-2 font-mono">режим: hybrid · light</span></div>
+      <div class="bg-mesh">
+
+        <!-- header -->
+        <div class="px-8 pt-7 pb-2 flex items-end justify-between">
+          <div>
+            <div class="text-xs text-gray-500 font-semibold mb-1">Среда, 29 апреля</div>
+            <h1 class="text-2xl font-bold tracking-tight">Доброе утро, Алишер</h1>
+            <p class="text-sm text-gray-500 mt-1">7 заказов в приёмке · 3 готовы к выдаче · ⚠ 2 расходника</p>
+          </div>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 h-10 rounded-xl flex items-center gap-2 shadow-md">
+            <i data-lucide="plus" class="h-4 w-4"></i>Новый заказ
+            <kbd class="text-[10px] bg-white/25 px-1.5 py-0.5 rounded font-mono">⌘N</kbd>
+          </button>
+        </div>
+
+        <!-- ROW: 8 ios-tiles in a single row -->
+        <div class="px-8 py-5">
+          <div class="grid grid-cols-8 gap-3">
+            <button class="flex flex-col items-center gap-1.5 group">
+              <div class="relative">
+                <div class="h-16 w-16 rounded-[20px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #60a5fa, #1d4ed8);">
+                  <i data-lucide="clipboard-list" class="h-7 w-7"></i>
+                </div>
+                <span class="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow">7</span>
+              </div>
+              <span class="text-[11px] font-semibold text-gray-800">Заказы</span>
+            </button>
+            <button class="flex flex-col items-center gap-1.5 group">
+              <div class="h-16 w-16 rounded-[20px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #34d399, #047857);">
+                <i data-lucide="shopping-cart" class="h-7 w-7"></i>
+              </div>
+              <span class="text-[11px] font-semibold text-gray-800">Касса</span>
+            </button>
+            <button class="flex flex-col items-center gap-1.5 group">
+              <div class="relative">
+                <div class="h-16 w-16 rounded-[20px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #c084fc, #6d28d9);">
+                  <i data-lucide="users" class="h-7 w-7"></i>
+                </div>
+                <span class="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center shadow">+12</span>
+              </div>
+              <span class="text-[11px] font-semibold text-gray-800">Клиенты</span>
+            </button>
+            <button class="flex flex-col items-center gap-1.5 group">
+              <div class="relative">
+                <div class="h-16 w-16 rounded-[20px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #fbbf24, #b45309);">
+                  <i data-lucide="truck" class="h-7 w-7"></i>
+                </div>
+                <span class="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow">5</span>
+              </div>
+              <span class="text-[11px] font-semibold text-gray-800">Доставка</span>
+            </button>
+            <button class="flex flex-col items-center gap-1.5 group">
+              <div class="relative">
+                <div class="h-16 w-16 rounded-[20px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #22d3ee, #0e7490);">
+                  <i data-lucide="droplets" class="h-7 w-7"></i>
+                </div>
+                <span class="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shadow">!</span>
+              </div>
+              <span class="text-[11px] font-semibold text-gray-800">Расходники</span>
+            </button>
+            <button class="flex flex-col items-center gap-1.5 group">
+              <div class="h-16 w-16 rounded-[20px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #f472b6, #be185d);">
+                <i data-lucide="bar-chart-3" class="h-7 w-7"></i>
+              </div>
+              <span class="text-[11px] font-semibold text-gray-800">Статистика</span>
+            </button>
+            <button class="flex flex-col items-center gap-1.5 group">
+              <div class="h-16 w-16 rounded-[20px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #94a3b8, #475569);">
+                <i data-lucide="tag" class="h-7 w-7"></i>
+              </div>
+              <span class="text-[11px] font-semibold text-gray-800">Услуги</span>
+            </button>
+            <button class="flex flex-col items-center gap-1.5 group">
+              <div class="h-16 w-16 rounded-[20px] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #94a3b8, #334155);">
+                <i data-lucide="settings-2" class="h-7 w-7"></i>
+              </div>
+              <span class="text-[11px] font-semibold text-gray-800">Настройки</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2 widgets -->
+        <div class="px-8 pb-8 grid grid-cols-3 gap-4">
+          <!-- График -->
+          <div class="col-span-2 bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+            <div class="flex justify-between mb-3">
+              <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="trending-up" class="h-4 w-4 text-emerald-600"></i>Выручка · апрель</h3>
+              <div class="text-right">
+                <div class="font-mono text-base font-extrabold">12.4 млн</div>
+                <div class="text-[10px] text-emerald-600 font-semibold">+18% к март</div>
+              </div>
+            </div>
+            <svg viewBox="0 0 600 140" class="w-full h-32">
+              <defs>
+                <linearGradient id="gh1" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stop-color="#3b82f6" stop-opacity=".3"/>
+                  <stop offset="1" stop-color="#3b82f6" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,110 L40,95 80,105 120,80 160,90 200,70 240,75 280,55 320,65 360,50 400,40 440,55 480,35 520,30 560,20 600,25 L600,140 L0,140 Z" fill="url(#gh1)"/>
+              <polyline class="spark" stroke="#3b82f6" stroke-width="2.5" fill="none"
+                points="0,110 40,95 80,105 120,80 160,90 200,70 240,75 280,55 320,65 360,50 400,40 440,55 480,35 520,30 560,20 600,25"/>
+            </svg>
+          </div>
+
+          <!-- Лента -->
+          <div class="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+            <h3 class="font-bold text-sm mb-3 flex items-center gap-2"><i data-lucide="activity" class="h-4 w-4 text-blue-600"></i>Активность</h3>
+            <div class="space-y-2.5">
+              <div class="flex items-center gap-2 text-xs">
+                <div class="h-2 w-2 rounded-full bg-emerald-500"></div>
+                <span class="font-mono font-bold">#341</span>
+                <span class="truncate flex-1">Эльмира · приёмка</span>
+                <span class="text-gray-400 text-[10px]">5м</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs">
+                <div class="h-2 w-2 rounded-full bg-blue-500"></div>
+                <span class="font-mono font-bold">#340</span>
+                <span class="truncate flex-1">Дилмурод · готов</span>
+                <span class="text-gray-400 text-[10px]">12м</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs">
+                <div class="h-2 w-2 rounded-full bg-amber-500"></div>
+                <span class="font-mono font-bold">#338</span>
+                <span class="truncate flex-1">Зарина · доставка</span>
+                <span class="text-gray-400 text-[10px]">28м</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs">
+                <div class="h-2 w-2 rounded-full bg-slate-400"></div>
+                <span class="font-mono font-bold">#335</span>
+                <span class="truncate flex-1">Сардор · выдан</span>
+                <span class="text-gray-400 text-[10px]">1ч</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs">
+                <div class="h-2 w-2 rounded-full bg-violet-500"></div>
+                <span class="font-mono font-bold">+1</span>
+                <span class="truncate flex-1">Бахром · клиент</span>
+                <span class="text-gray-400 text-[10px]">2ч</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2"><b>+</b> Лёгкий, дышащий, mesh-фон даёт «премиум». Плитки одной строкой — навигация не давит. <b>−</b> Виджеты узкие, мало деталей сразу.</p>
+  </section>
+
+  <!-- ──────────────────────────────────────────────────────────────────
+       Гибрид 2 — Плотный (плитки + 3 модуля + быстрые действия)
+       ────────────────────────────────────────────────────────────────── -->
+  <section class="space-y-3">
+    <div class="flex items-baseline gap-3">
+      <span class="label text-emerald-700">Гибрид 2</span>
+      <h3 class="text-lg font-bold">«Плотный» · плитки + 3 модуля операционки</h3>
+    </div>
+    <p class="text-sm text-gray-600 max-w-3xl">Алерт-баннер сверху (если есть). Под ним — узкие плитки-ярлычки в 4 столбца. Снизу — три модуля «к выдаче / в приёмке / доставка» — как у командного центра. Пользователь видит максимум информации без лишнего скролла.</p>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ml-2 font-mono">режим: hybrid · dense</span></div>
+      <div class="bg-slate-50">
+
+        <div class="px-8 pt-6 pb-2 flex items-end justify-between">
+          <div>
+            <h1 class="text-2xl font-bold">Главная</h1>
+            <p class="text-sm text-gray-500">Среда, 29 апреля · Алишер</p>
+          </div>
+          <button class="bg-blue-600 text-white text-sm font-semibold px-4 h-10 rounded-lg flex items-center gap-2 shadow-sm">
+            <i data-lucide="plus" class="h-4 w-4"></i>Новый заказ
+          </button>
+        </div>
+
+        <!-- алерт -->
+        <div class="px-8 pt-3">
+          <div class="rounded-xl border-2 border-rose-200 bg-rose-50 p-3 flex items-center gap-3">
+            <i data-lucide="alert-triangle" class="h-4 w-4 text-rose-600 shrink-0"></i>
+            <span class="text-xs text-rose-900 font-semibold flex-1">2 расходника заканчиваются (кондиционер, мешки) · заказ #335 просрочен</span>
+            <button class="text-[11px] text-rose-700 font-bold hover:underline">→ открыть</button>
+          </div>
+        </div>
+
+        <!-- плитки-ярлычки 4 col, узкие со счётчиком справа -->
+        <div class="px-8 pt-4 grid grid-cols-4 gap-2.5">
+          <a class="hover-lift bg-white rounded-xl border p-3 flex items-center gap-3 cursor-pointer">
+            <div class="h-10 w-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0"><i data-lucide="clipboard-list" class="h-5 w-5"></i></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-bold">Заказы</div>
+              <div class="text-[10px] text-gray-500">7 в приёмке</div>
+            </div>
+            <div class="font-mono text-base font-extrabold">23</div>
+          </a>
+          <a class="hover-lift bg-white rounded-xl border p-3 flex items-center gap-3 cursor-pointer">
+            <div class="h-10 w-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0"><i data-lucide="shopping-cart" class="h-5 w-5"></i></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-bold">Касса</div>
+              <div class="text-[10px] text-gray-500">drag & drop</div>
+            </div>
+            <i data-lucide="arrow-right" class="h-4 w-4 text-gray-400"></i>
+          </a>
+          <a class="hover-lift bg-white rounded-xl border p-3 flex items-center gap-3 cursor-pointer">
+            <div class="h-10 w-10 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center shrink-0"><i data-lucide="users" class="h-5 w-5"></i></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-bold">Клиенты</div>
+              <div class="text-[10px] text-emerald-600 font-semibold">+12 нед</div>
+            </div>
+            <div class="font-mono text-base font-extrabold">234</div>
+          </a>
+          <a class="hover-lift bg-white rounded-xl border p-3 flex items-center gap-3 cursor-pointer">
+            <div class="h-10 w-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0"><i data-lucide="truck" class="h-5 w-5"></i></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-bold">Доставка</div>
+              <div class="text-[10px] text-gray-500">3 заб · 2 выд</div>
+            </div>
+            <div class="font-mono text-base font-extrabold">5</div>
+          </a>
+          <a class="hover-lift bg-white rounded-xl border p-3 flex items-center gap-3 cursor-pointer ring-1 ring-rose-200">
+            <div class="h-10 w-10 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center shrink-0"><i data-lucide="droplets" class="h-5 w-5"></i></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-bold">Расходники</div>
+              <div class="text-[10px] text-rose-600 font-semibold">⚠ 2 на исходе</div>
+            </div>
+            <div class="font-mono text-base font-extrabold text-rose-600">14</div>
+          </a>
+          <a class="hover-lift bg-white rounded-xl border p-3 flex items-center gap-3 cursor-pointer">
+            <div class="h-10 w-10 rounded-lg bg-pink-100 text-pink-700 flex items-center justify-center shrink-0"><i data-lucide="bar-chart-3" class="h-5 w-5"></i></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-bold">Статистика</div>
+              <div class="text-[10px] text-emerald-600 font-semibold">+18%</div>
+            </div>
+            <div class="font-mono text-sm font-extrabold">12.4M</div>
+          </a>
+          <a class="hover-lift bg-white rounded-xl border p-3 flex items-center gap-3 cursor-pointer">
+            <div class="h-10 w-10 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0"><i data-lucide="tag" class="h-5 w-5"></i></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-bold">Услуги</div>
+              <div class="text-[10px] text-gray-500">в каталоге</div>
+            </div>
+            <div class="font-mono text-base font-extrabold">86</div>
+          </a>
+          <a class="hover-lift bg-white rounded-xl border p-3 flex items-center gap-3 cursor-pointer">
+            <div class="h-10 w-10 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0"><i data-lucide="settings-2" class="h-5 w-5"></i></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-bold">Настройки</div>
+              <div class="text-[10px] text-gray-500">конфигурация</div>
+            </div>
+          </a>
+        </div>
+
+        <!-- 3 модуля операционки -->
+        <div class="px-8 py-5 grid grid-cols-3 gap-3">
+          <div class="bg-white rounded-xl border p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-sm flex items-center gap-2"><div class="h-7 w-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center"><i data-lucide="check-circle-2" class="h-4 w-4"></i></div>К выдаче · 3</h3>
+              <button class="text-[11px] text-blue-600 font-semibold">все</button>
+            </div>
+            <div class="space-y-1.5 text-xs">
+              <div class="flex justify-between p-1.5 hover:bg-gray-50 rounded"><span class="font-mono font-bold">#340</span><span class="truncate flex-1 mx-2">Дилмурод А.</span><span class="text-gray-500">218k</span></div>
+              <div class="flex justify-between p-1.5 hover:bg-gray-50 rounded"><span class="font-mono font-bold">#338</span><span class="truncate flex-1 mx-2">Зарина Н.</span><span class="text-gray-500">60k</span></div>
+              <div class="flex justify-between p-1.5 hover:bg-gray-50 rounded"><span class="font-mono font-bold">#335</span><span class="truncate flex-1 mx-2 text-rose-600">Сардор Г. ⚠</span><span class="text-gray-500">95k</span></div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-sm flex items-center gap-2"><div class="h-7 w-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center"><i data-lucide="package" class="h-4 w-4"></i></div>В приёмке · 7</h3>
+              <button class="text-[11px] text-blue-600 font-semibold">все</button>
+            </div>
+            <div class="space-y-1.5 text-xs">
+              <div class="flex justify-between p-1.5 hover:bg-gray-50 rounded"><span class="font-mono font-bold">#341</span><span class="truncate flex-1 mx-2">Эльмира К.</span><span class="text-gray-500">95k</span></div>
+              <div class="flex justify-between p-1.5 hover:bg-gray-50 rounded"><span class="font-mono font-bold">#342</span><span class="truncate flex-1 mx-2">Бахром Х.</span><span class="text-gray-500">40k</span></div>
+              <div class="flex justify-between p-1.5 hover:bg-gray-50 rounded"><span class="font-mono font-bold">#343</span><span class="truncate flex-1 mx-2">Гулнора М.</span><span class="text-gray-500">125k</span></div>
+              <div class="text-center text-[10px] text-gray-400 py-1">+4 ещё</div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-sm flex items-center gap-2"><div class="h-7 w-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center"><i data-lucide="truck" class="h-4 w-4"></i></div>Доставка · 5</h3>
+              <button class="text-[11px] text-blue-600 font-semibold">все</button>
+            </div>
+            <div class="space-y-1.5 text-xs">
+              <div class="flex justify-between p-1.5 hover:bg-gray-50 rounded"><span class="text-blue-600 font-bold">забор</span><span class="truncate flex-1 mx-2">Бунёдкор · 09:00</span></div>
+              <div class="flex justify-between p-1.5 hover:bg-gray-50 rounded"><span class="text-blue-600 font-bold">забор</span><span class="truncate flex-1 mx-2">Чиланзар · 10:30</span></div>
+              <div class="flex justify-between p-1.5 hover:bg-gray-50 rounded"><span class="text-blue-600 font-bold">забор</span><span class="truncate flex-1 mx-2">Юнусабад · 13:00</span></div>
+              <div class="flex justify-between p-1.5 hover:bg-gray-50 rounded"><span class="text-emerald-600 font-bold">выдача</span><span class="truncate flex-1 mx-2">Бунёдкор · 17:00</span></div>
+              <div class="flex justify-between p-1.5 hover:bg-gray-50 rounded"><span class="text-emerald-600 font-bold">выдача</span><span class="truncate flex-1 mx-2">Мирзо · 18:00</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2"><b>+</b> Самый информативный — за один экран видно ВСЁ. Алерт сразу в глаза. <b>−</b> Плотно, может перегружать; нужны хорошие отступы и типографика.</p>
+  </section>
+
+  <!-- ──────────────────────────────────────────────────────────────────
+       Гибрид 3 — Bento-стиль (главная плитка + сетка вокруг)
+       ────────────────────────────────────────────────────────────────── -->
+  <section class="space-y-3">
+    <div class="flex items-baseline gap-3">
+      <span class="label text-violet-700">Гибрид 3</span>
+      <h3 class="text-lg font-bold">«Bento» · большая Заказы-плитка слева + плитки и виджеты вокруг</h3>
+    </div>
+    <p class="text-sm text-gray-600 max-w-3xl">Слева — крупная плитка «Заказы 23» с разбивкой и быстрыми действиями (4×4 в Bento-сетке). Справа сверху — 6 мини-плиток навигации. Под ними — широкий график выручки. Самый «продуктовый» вид, как у Stripe / Linear.</p>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ml-2 font-mono">режим: hybrid · bento</span></div>
+      <div class="bg-slate-50 p-8">
+
+        <div class="flex items-end justify-between mb-5">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight">Алишер · cleaning</h1>
+            <p class="text-sm text-gray-500">29 апреля · 11:42 · сейчас в работе 23 заказа</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="bg-white border h-10 px-3 rounded-lg text-xs font-semibold flex items-center gap-2"><i data-lucide="calendar" class="h-3.5 w-3.5"></i>Месяц</button>
+            <button class="bg-blue-600 text-white text-sm font-semibold px-4 h-10 rounded-lg flex items-center gap-2"><i data-lucide="plus" class="h-4 w-4"></i>Новый заказ</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-3">
+
+          <!-- Большая плитка Заказы 6 col x 2 row -->
+          <a class="col-span-6 row-span-2 rounded-2xl p-6 cursor-pointer text-white relative overflow-hidden hover-lift" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6 60%, #8b5cf6);">
+            <div class="flex justify-between items-start">
+              <div>
+                <div class="text-[10px] uppercase tracking-wider opacity-80 font-bold">Главное</div>
+                <div class="text-2xl font-bold mt-1">Заказы</div>
+              </div>
+              <div class="h-12 w-12 rounded-2xl bg-white/15 flex items-center justify-center"><i data-lucide="clipboard-list" class="h-6 w-6"></i></div>
+            </div>
+
+            <div class="mt-6">
+              <div class="font-mono text-7xl font-extrabold leading-none">23</div>
+              <div class="text-sm opacity-80 mt-1">в работе сейчас · ↑ +5 со вчера</div>
+            </div>
+
+            <!-- разбивка -->
+            <div class="mt-6 grid grid-cols-3 gap-3 text-center">
+              <div class="rounded-xl bg-white/10 p-3">
+                <div class="font-mono text-2xl font-bold">7</div>
+                <div class="text-[10px] opacity-75 uppercase tracking-wider">приёмка</div>
+              </div>
+              <div class="rounded-xl bg-white/10 p-3">
+                <div class="font-mono text-2xl font-bold">13</div>
+                <div class="text-[10px] opacity-75 uppercase tracking-wider">в работе</div>
+              </div>
+              <div class="rounded-xl bg-white/15 p-3 ring-1 ring-white/30">
+                <div class="font-mono text-2xl font-bold">3</div>
+                <div class="text-[10px] opacity-75 uppercase tracking-wider">к выдаче</div>
+              </div>
+            </div>
+
+            <!-- быстрые действия в плитке -->
+            <div class="mt-5 flex gap-2">
+              <button class="bg-white/15 hover:bg-white/25 backdrop-blur rounded-lg px-3 h-9 text-xs font-bold flex items-center gap-1.5"><i data-lucide="check-circle-2" class="h-3.5 w-3.5"></i>Выдать</button>
+              <button class="bg-white/15 hover:bg-white/25 backdrop-blur rounded-lg px-3 h-9 text-xs font-bold flex items-center gap-1.5"><i data-lucide="play" class="h-3.5 w-3.5"></i>В работу</button>
+              <button class="bg-white/15 hover:bg-white/25 backdrop-blur rounded-lg px-3 h-9 text-xs font-bold flex items-center gap-1.5 ml-auto"><i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>все</button>
+            </div>
+          </a>
+
+          <!-- 6 мини-плиток справа сверху (3×2) -->
+          <a class="col-span-2 rounded-2xl p-3 cursor-pointer hover-lift bg-emerald-50 border border-emerald-200">
+            <div class="flex justify-between items-start mb-2">
+              <div class="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center"><i data-lucide="shopping-cart" class="h-4 w-4"></i></div>
+            </div>
+            <div class="text-xs font-bold text-emerald-900">Касса</div>
+            <div class="text-[10px] text-emerald-700">приёмка</div>
+          </a>
+          <a class="col-span-2 rounded-2xl p-3 cursor-pointer hover-lift bg-violet-50 border border-violet-200">
+            <div class="flex justify-between items-start mb-2">
+              <div class="h-8 w-8 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center"><i data-lucide="users" class="h-4 w-4"></i></div>
+              <span class="pill bg-emerald-500 text-white">+12</span>
+            </div>
+            <div class="font-mono text-lg font-extrabold">234</div>
+            <div class="text-[10px] text-violet-700">Клиенты</div>
+          </a>
+          <a class="col-span-2 rounded-2xl p-3 cursor-pointer hover-lift bg-amber-50 border border-amber-200">
+            <div class="flex justify-between items-start mb-2">
+              <div class="h-8 w-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center"><i data-lucide="truck" class="h-4 w-4"></i></div>
+              <span class="pill bg-rose-500 text-white">5</span>
+            </div>
+            <div class="font-mono text-lg font-extrabold">5</div>
+            <div class="text-[10px] text-amber-700">Доставка</div>
+          </a>
+
+          <a class="col-span-2 rounded-2xl p-3 cursor-pointer hover-lift bg-cyan-50 border border-cyan-200 ring-1 ring-rose-200">
+            <div class="flex justify-between items-start mb-2">
+              <div class="h-8 w-8 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center"><i data-lucide="droplets" class="h-4 w-4"></i></div>
+              <span class="pill bg-rose-500 text-white">⚠</span>
+            </div>
+            <div class="font-mono text-lg font-extrabold text-rose-600">2</div>
+            <div class="text-[10px] text-cyan-700">Расходники</div>
+          </a>
+          <a class="col-span-2 rounded-2xl p-3 cursor-pointer hover-lift bg-pink-50 border border-pink-200">
+            <div class="flex justify-between items-start mb-2">
+              <div class="h-8 w-8 rounded-lg bg-pink-100 text-pink-700 flex items-center justify-center"><i data-lucide="bar-chart-3" class="h-4 w-4"></i></div>
+            </div>
+            <div class="font-mono text-sm font-extrabold">12.4M</div>
+            <div class="text-[10px] text-pink-700">Статистика</div>
+          </a>
+          <a class="col-span-2 rounded-2xl p-3 cursor-pointer hover-lift bg-slate-100 border">
+            <div class="h-8 w-8 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center mb-2"><i data-lucide="settings-2" class="h-4 w-4"></i></div>
+            <div class="text-xs font-bold">Услуги · ⚙</div>
+            <div class="text-[10px] text-slate-500">86 поз · конфиг</div>
+          </a>
+
+          <!-- График на ширину справа (под мини-плитками) -->
+          <!-- остаётся ниже Заказов: используем второй ряд: 6 мини-плиток выше уже занимают 2 ряда с col-span-2, значит график пойдёт на новый row. На col 7-12 -->
+
+          <!-- Виджет графика — на всю нижнюю полосу под Заказами справа уже сетки нет, переходим на новую строку, занимаем 6 col -->
+          <div class="col-span-6 col-start-7 bg-white rounded-2xl border p-5 shadow-sm">
+            <div class="flex justify-between mb-3">
+              <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="trending-up" class="h-4 w-4 text-emerald-600"></i>Выручка</h3>
+              <div class="text-right">
+                <div class="font-mono text-base font-extrabold">12.4 млн</div>
+                <div class="text-[10px] text-emerald-600 font-semibold">+18% к март</div>
+              </div>
+            </div>
+            <svg viewBox="0 0 600 100" class="w-full h-24">
+              <defs>
+                <linearGradient id="gh3" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stop-color="#3b82f6" stop-opacity=".3"/>
+                  <stop offset="1" stop-color="#3b82f6" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,80 L40,70 80,75 120,55 160,65 200,50 240,55 280,40 320,48 360,35 400,28 440,40 480,22 520,18 560,12 600,15 L600,100 L0,100 Z" fill="url(#gh3)"/>
+              <polyline class="spark" stroke="#3b82f6" stroke-width="2.5" fill="none"
+                points="0,80 40,70 80,75 120,55 160,65 200,50 240,55 280,40 320,48 360,35 400,28 440,40 480,22 520,18 560,12 600,15"/>
+            </svg>
+          </div>
+
+          <!-- Лента активности — широкая снизу слева 6 col, уже под Заказами на новой строке (но "Заказы" row-span-2 уже занял 2 строки).
+               Поэтому ставим под ВСЮ конструкцию: следующая строка col-span-12 -->
+          <div class="col-span-12 bg-white rounded-2xl border p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="activity" class="h-4 w-4 text-blue-600"></i>Последние действия</h3>
+              <button class="text-[11px] text-blue-600 font-semibold">журнал</button>
+            </div>
+            <div class="grid grid-cols-5 gap-3 text-xs">
+              <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gray-50">
+                <div class="h-2 w-2 rounded-full bg-emerald-500"></div>
+                <span class="font-mono font-bold">#341</span>
+                <span class="truncate flex-1">Эльмира</span>
+                <span class="text-gray-400 text-[10px]">5м</span>
+              </div>
+              <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gray-50">
+                <div class="h-2 w-2 rounded-full bg-blue-500"></div>
+                <span class="font-mono font-bold">#340</span>
+                <span class="truncate flex-1">Дилмурод готов</span>
+                <span class="text-gray-400 text-[10px]">12м</span>
+              </div>
+              <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gray-50">
+                <div class="h-2 w-2 rounded-full bg-amber-500"></div>
+                <span class="font-mono font-bold">#338</span>
+                <span class="truncate flex-1">Зарина → дост</span>
+                <span class="text-gray-400 text-[10px]">28м</span>
+              </div>
+              <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gray-50">
+                <div class="h-2 w-2 rounded-full bg-slate-400"></div>
+                <span class="font-mono font-bold">#335</span>
+                <span class="truncate flex-1">Сардор выдан</span>
+                <span class="text-gray-400 text-[10px]">1ч</span>
+              </div>
+              <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gray-50">
+                <div class="h-2 w-2 rounded-full bg-violet-500"></div>
+                <span class="font-mono font-bold">+1</span>
+                <span class="truncate flex-1">Бахром клиент</span>
+                <span class="text-gray-400 text-[10px]">2ч</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2"><b>+</b> Самый «современный SaaS»-вид. Ясная иерархия: Заказы — главное. Бренд-первое впечатление 10/10. <b>−</b> Жёсткий 12-grid layout, плохо адаптируется на узких экранах; настройка плиток через админку усложняется (нельзя любую сделать большой).</p>
+  </section>
+
+
+    <div class="label">Раздел 3 · Резюме</div>
+    <h2 class="text-xl font-bold">Что я бы выбрал</h2>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="rounded-2xl border-2 border-blue-400 bg-blue-50 p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="pill bg-blue-600 text-white">★ рекомендую</span>
+          <h3 class="font-bold">Гибрид 1 — iOS-плитки + 2 виджета</h3>
+        </div>
+        <p class="text-sm text-gray-700 mb-3">Лёгкий, дышащий, mesh-фон. Плитки в одну строку — навигация на месте, не давит. Снизу — график выручки + лента активности. Минимум доработок (виджеты можно частично переиспользовать со страницы Статистики).</p>
+        <div class="text-[11px] text-gray-500">→ переписывает <code class="bg-white px-1.5 py-0.5 rounded">HomeScreen.tsx</code>, добавляет 2 новых виджета</div>
+      </div>
+
+      <div class="rounded-2xl border-2 border-emerald-300 bg-emerald-50/50 p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="pill bg-emerald-600 text-white">если плотно</span>
+          <h3 class="font-bold">Гибрид 2 — плитки + 3 модуля операционки</h3>
+        </div>
+        <p class="text-sm text-gray-700 mb-3">Самый информативный. Алерт-баннер сверху, узкие плитки-ярлычки 4×2, под ними — «к выдаче / в приёмке / доставка». Подходит если каждый день много операций и приёмщик хочет видеть всё на одном экране.</p>
+        <div class="text-[11px] text-gray-500">→ требует хук со списками заказов по статусам</div>
+      </div>
+
+      <div class="rounded-2xl border bg-white p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="pill bg-violet-600 text-white">wow / SaaS</span>
+          <h3 class="font-bold">Гибрид 3 — Bento с главной Заказы-плиткой</h3>
+        </div>
+        <p class="text-sm text-gray-700 mb-3">Большая плитка «Заказы 23» с разбивкой 7/13/3 и быстрыми действиями, мини-плитки навигации справа, под ними — график и лента. Самый «современный SaaS»-вид.</p>
+        <div class="text-[11px] text-gray-500">→ жёсткий layout, сложнее настраивать через админку</div>
+      </div>
+
+      <div class="rounded-2xl border bg-white p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="pill bg-slate-400 text-white">только плитки</span>
+          <h3 class="font-bold">Если без виджетов — Вариант A или C</h3>
+        </div>
+        <p class="text-sm text-gray-700">Если решим, что виджеты overkill для главной — лучшие чисто-плиточные варианты: <b>A</b> (цветные с KPI) или <b>C</b> (iOS-style). Минимальные правки <code class="bg-gray-100 px-1 py-0.5 rounded">HomeScreen.tsx</code>.</p>
+      </div>
+
+    </div>
+
+    <div class="rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50 p-5 text-sm">
+      <div class="flex items-start gap-3">
+        <i data-lucide="lightbulb" class="h-5 w-5 text-amber-600 shrink-0 mt-0.5"></i>
+        <div>
+          <p class="font-bold text-amber-900 mb-1">Технический момент</p>
+          <p class="text-amber-800">Чтобы плитки несли KPI, нужен новый хук <code>useHomeStats(PRODUCT)</code> — он подтянет одной query цифры по разделам (count заказов в работе, count клиентов за месяц, расходники с low_stock). Делается один раз, потом подсказывает любому варианту (A, B, C, D, E, F). Без этого хука даже самая красивая плитка остаётся «иконкой + подписью».</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="pt-8 pb-4 text-center text-xs text-gray-400">
+    /design-preview/cleaning-home-screen.html · сгенерировано для обсуждения
+  </footer>
+
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>
