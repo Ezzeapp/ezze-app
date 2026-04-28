@@ -2,11 +2,30 @@
  * Геокодирование адреса через Nominatim (OpenStreetMap).
  * Бесплатно, без API-ключа. Лимит ~1 запрос/сек.
  *
- * Возвращает { lat, lon } или null если адрес не найден.
+ * Двухступенчатый поиск:
+ *  1) В viewbox Узбекистана с bounded=1 + countrycodes=uz → точные результаты в стране.
+ *  2) Если ничего — fallback без bounded (на случай если viewbox слишком жёсткий).
  *
- * Кешируем результат в localStorage чтобы не дёргать API повторно
- * для одного и того же адреса.
+ * Кешируем результат в localStorage чтобы не дёргать API повторно.
  */
+
+// Bbox Узбекистана: left,top,right,bottom (по WGS84 lon,lat,lon,lat)
+const UZ_VIEWBOX = '55.9,45.6,73.2,37.2'
+
+async function fetchNominatim(params: Record<string, string>): Promise<Array<{ lat: string; lon: string }> | null> {
+  const qs = new URLSearchParams({ format: 'json', limit: '1', ...params })
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?${qs.toString()}`, {
+      headers: { 'Accept': 'application/json' },
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return Array.isArray(data) ? data : null
+  } catch {
+    return null
+  }
+}
+
 export async function geocodeAddress(address: string): Promise<{ lat: number; lon: number } | null> {
   if (!address || address.trim().length < 4) return null
 
@@ -20,30 +39,38 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; lo
     }
   } catch { /* ignore */ }
 
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`
-    const res = await fetch(url, {
-      headers: {
-        // Nominatim требует валидный User-Agent
-        'Accept': 'application/json',
-      },
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    if (!Array.isArray(data) || data.length === 0) {
-      try { localStorage.setItem(cacheKey, 'null') } catch { /* ignore */ }
-      return null
-    }
-    const result = {
-      lat: parseFloat(data[0].lat),
-      lon: parseFloat(data[0].lon),
-    }
-    if (!Number.isFinite(result.lat) || !Number.isFinite(result.lon)) return null
-    try { localStorage.setItem(cacheKey, JSON.stringify(result)) } catch { /* ignore */ }
-    return result
-  } catch {
+  const q = address.trim()
+
+  // Шаг 1 — поиск в Узбекистане с привязкой к viewbox
+  let data = await fetchNominatim({
+    q,
+    countrycodes: 'uz',
+    viewbox: UZ_VIEWBOX,
+    bounded: '1',
+  })
+
+  // Шаг 2 — fallback без bounded если первый шаг ничего не нашёл
+  if (!data || data.length === 0) {
+    data = await fetchNominatim({ q, countrycodes: 'uz' })
+  }
+
+  if (!data || data.length === 0) {
+    try { localStorage.setItem(cacheKey, 'null') } catch { /* ignore */ }
     return null
   }
+
+  const result = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) }
+  if (!Number.isFinite(result.lat) || !Number.isFinite(result.lon)) return null
+  try { localStorage.setItem(cacheKey, JSON.stringify(result)) } catch { /* ignore */ }
+  return result
+}
+
+/**
+ * Очистить кеш геокодирования по адресу — нужно после ручной коррекции пина,
+ * чтобы при следующем геокодировании не подтянулись старые координаты.
+ */
+export function clearGeocodeCache(address: string): void {
+  try { localStorage.removeItem(`geocode:${address.trim().toLowerCase()}`) } catch { /* ignore */ }
 }
 
 /**

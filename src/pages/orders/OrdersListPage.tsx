@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Plus, Search, ClipboardList, Loader2,
-  AlertTriangle, Trash2, Download, CalendarRange, X,
+  AlertTriangle, Trash2, CalendarRange, X,
   ArrowUpDown, ArrowUp, ArrowDown, List, Columns3, Truck,
 } from 'lucide-react'
 import { PRODUCT } from '@/lib/config'
@@ -34,30 +34,6 @@ import dayjs from 'dayjs'
 import { cn } from '@/lib/utils'
 
 const NON_URGENT_STATUSES = ['issued', 'paid', 'cancelled']
-
-// ── CSV-экспорт ────────────────────────────────────────────────────────────────
-function exportCSV(orders: CleaningOrder[], symbol: string, noClientLabel: string, colLabels: string[]) {
-  const headers = colLabels.length === 7 ? colLabels : [
-    '#', 'Type', 'Client', 'Status', `Amount (${symbol})`, `Paid (${symbol})`, 'Date',
-  ]
-  const rows = orders.map(o => [
-    o.number,
-    ORDER_TYPE_LABELS[o.order_type as OrderType] ?? o.order_type,
-    o.client ? `${o.client.first_name} ${o.client.last_name || ''}`.trim() : noClientLabel,
-    o.status,
-    o.total_amount,
-    o.paid_amount,
-    dayjs(o.created_at).format('DD.MM.YYYY'),
-  ])
-  const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `orders-${dayjs().format('YYYY-MM-DD')}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
-}
 
 // ── Диалог подтверждения удаления ─────────────────────────────────────────────
 function DeleteConfirmDialog({ label, onConfirm, onClose, danger = false, confirmDeleteAllLabel, confirmDeleteLabel, cantUndoLabel, cancelLabel, deleteLabel }: {
@@ -598,21 +574,6 @@ export function OrdersListPage() {
           >
             <CalendarRange className="h-4 w-4" />
           </Button>
-          {/* CSV — десктоп */}
-          {orders.length > 0 && (
-            <Button
-              variant="ghost" size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
-              title={t('orders.exportCsv')}
-              onClick={() => exportCSV(orders, symbol, t('orders.noClient'), [
-                t('orders.col.number'), t('orders.col.type'), t('orders.col.client'),
-                t('orders.col.status'), `${t('orders.col.amount')} (${symbol})`,
-                `${t('orders.col.paid')} (${symbol})`, t('orders.col.date'),
-              ])}
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-          )}
           {/* Удалить все — десктоп */}
           {orders.length > 0 && (
             <Button

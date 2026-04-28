@@ -13,7 +13,7 @@ import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge'
 import { cn, formatCurrency } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { PRODUCT } from '@/lib/config'
-import { geocodeAddress, buildYandexRouteUrl } from '@/lib/geocode'
+import { geocodeAddress, buildYandexRouteUrl, clearGeocodeCache } from '@/lib/geocode'
 import dayjs from 'dayjs'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
@@ -323,6 +323,18 @@ function MapView({
                 key={o.id}
                 position={[o.visit_lat as number, o.visit_lon as number]}
                 icon={isPickup ? pickupIcon : deliveryIcon}
+                draggable
+                eventHandlers={{
+                  dragend: async (e) => {
+                    const m = e.target as L.Marker
+                    const { lat, lng } = m.getLatLng()
+                    await supabase
+                      .from('cleaning_orders')
+                      .update({ visit_lat: lat, visit_lon: lng })
+                      .eq('id', o.id)
+                    qc.invalidateQueries({ queryKey: ['cleaning_delivery'] })
+                  },
+                }}
               >
                 <Popup>
                   <div className="space-y-1">
@@ -330,12 +342,28 @@ function MapView({
                     <div className="text-xs">{o.client ? [o.client.first_name, o.client.last_name].filter(Boolean).join(' ') : 'Без клиента'}</div>
                     <div className="text-xs text-gray-500">{o.visit_address}</div>
                     <div className="text-xs font-mono font-bold">{formatCurrency(o.total_amount)} {symbol}</div>
+                    <div className="text-[10px] text-gray-400 mt-1 italic">Можно перетащить пин — координаты сохранятся</div>
                     <button
                       onClick={() => onNavigate(o.id)}
                       className="mt-1 w-full px-2 py-1 rounded bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700"
                     >
                       Открыть заказ
                     </button>
+                    {o.visit_address && (
+                      <button
+                        onClick={async () => {
+                          clearGeocodeCache(o.visit_address!)
+                          await supabase
+                            .from('cleaning_orders')
+                            .update({ visit_lat: null, visit_lon: null })
+                            .eq('id', o.id)
+                          qc.invalidateQueries({ queryKey: ['cleaning_delivery'] })
+                        }}
+                        className="w-full px-2 py-1 rounded border text-[10px] text-gray-600 hover:bg-gray-100"
+                      >
+                        Перегеокодировать
+                      </button>
+                    )}
                   </div>
                 </Popup>
               </Marker>

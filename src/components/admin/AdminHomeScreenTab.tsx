@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PRODUCT } from '@/lib/config'
-import { useHomeScreenConfig, useUpdateHomeScreenConfig } from '@/hooks/useAppSettings'
+import { useHomeScreenConfig, useUpdateHomeScreenConfig, isTilesLikeMode } from '@/hooks/useAppSettings'
 import type { HomeScreenConfig, HomeScreenTile, HomeScreenMode } from '@/hooks/useAppSettings'
 import { getDefaultTiles } from '@/lib/homeScreenDefaults'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,7 @@ import {
   BarChart3, Tag, Settings2, Wallet, LayoutDashboard, Wrench,
   MessageSquare, Star, Package, Bot, Shield, CalendarDays,
   BarChart2, ChevronUp, ChevronDown, Trash2, Plus, RotateCcw, Save,
+  PanelLeft, LayoutGrid, Sparkles, ListChecks, Boxes,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -62,6 +63,14 @@ export function AdminHomeScreenTab() {
 
   const [mode, setMode] = useState<HomeScreenMode>('sidebar')
   const [tiles, setTiles] = useState<HomeScreenTile[]>([])
+
+  const MODE_OPTIONS: { value: HomeScreenMode; Icon: LucideIcon; tKey: string; descKey: string }[] = [
+    { value: 'sidebar',       Icon: PanelLeft,   tKey: 'admin.homeScreen.modeSidebar',      descKey: 'admin.homeScreen.modeSidebarDesc' },
+    { value: 'tiles',         Icon: LayoutGrid,  tKey: 'admin.homeScreen.modeTiles',        descKey: 'admin.homeScreen.modeTilesDesc' },
+    { value: 'hybrid_light',  Icon: Sparkles,    tKey: 'admin.homeScreen.modeHybridLight',  descKey: 'admin.homeScreen.modeHybridLightDesc' },
+    { value: 'hybrid_dense',  Icon: ListChecks,  tKey: 'admin.homeScreen.modeHybridDense',  descKey: 'admin.homeScreen.modeHybridDenseDesc' },
+    { value: 'hybrid_bento',  Icon: Boxes,       tKey: 'admin.homeScreen.modeHybridBento',  descKey: 'admin.homeScreen.modeHybridBentoDesc' },
+  ]
 
   useEffect(() => {
     if (!config) return
@@ -133,27 +142,41 @@ export function AdminHomeScreenTab() {
       {/* Режим навигации */}
       <div className="space-y-3">
         <Label className="text-sm font-semibold">{t('admin.homeScreen.mode')}</Label>
-        <div className="flex gap-3">
-          {(['sidebar', 'tiles'] as const).map(m => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+          {MODE_OPTIONS.map(({ value, Icon, tKey, descKey }) => (
             <button
-              key={m}
+              key={value}
               type="button"
-              onClick={() => setMode(m)}
+              onClick={() => setMode(value)}
               className={cn(
-                'flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition-colors text-left',
-                mode === m
-                  ? 'border-primary bg-primary/5 text-primary'
-                  : 'border-border text-muted-foreground hover:bg-muted'
+                'rounded-xl border p-3 text-left transition-all',
+                mode === value
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary/30'
+                  : 'border-border bg-card hover:border-primary/40 hover:bg-muted/40'
               )}
             >
-              {m === 'sidebar' ? t('admin.homeScreen.modeSidebar') : t('admin.homeScreen.modeTiles')}
+              <div className={cn(
+                'h-9 w-9 rounded-lg flex items-center justify-center mb-2 transition-colors',
+                mode === value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              )}>
+                <Icon className="h-4.5 w-4.5" />
+              </div>
+              <div className={cn(
+                'text-sm font-bold leading-tight',
+                mode === value ? 'text-primary' : 'text-foreground'
+              )}>
+                {t(tKey)}
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                {t(descKey)}
+              </div>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Плитки — только в tiles-режиме */}
-      {mode === 'tiles' && (
+      {/* Плитки — настраиваются для всех tiles-подобных режимов (плитки + 3 гибрида) */}
+      {isTilesLikeMode(mode) && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-semibold">{t('admin.homeScreen.tiles')}</Label>
