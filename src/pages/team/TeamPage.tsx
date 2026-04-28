@@ -233,7 +233,7 @@ function CreateTeamForm() {
               value={slug}
               onChange={e => { setSlug(e.target.value); setSlugEdited(true) }}
               placeholder="salon-krasota"
-              pattern="[a-z0-9-]+"
+              pattern="[-a-z0-9]+"
               required
             />
             <p className="text-xs text-muted-foreground">{t('team.teamSlugHint')}</p>

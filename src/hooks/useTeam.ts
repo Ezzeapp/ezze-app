@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { uploadFile, uploadImage } from '@/lib/storage'
 import { useAuth } from '@/contexts/AuthContext'
+import { PRODUCT } from '@/lib/config'
 import type { Team, TeamMember, TeamRole } from '@/types'
 
 export const TEAM_KEY = 'team'
@@ -149,7 +150,8 @@ export function useCreateTeam() {
           ...data,
           owner_id: user!.id,
           is_public: false,
-          currency: 'RUB',
+          currency: 'UZS',
+          product: PRODUCT,
         })
         .select()
         .single()
