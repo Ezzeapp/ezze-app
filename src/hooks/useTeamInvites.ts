@@ -216,6 +216,7 @@ export function useJoinTeam() {
       queryClient.invalidateQueries({ queryKey: [TEAM_MEMBERS_KEY] })
       queryClient.invalidateQueries({ queryKey: [TEAM_INVITES_KEY] })
       queryClient.invalidateQueries({ queryKey: ['team_invite_validate'] })
+      queryClient.invalidateQueries({ queryKey: ['team_scope'] })
     },
   })
 }

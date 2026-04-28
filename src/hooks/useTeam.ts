@@ -160,6 +160,7 @@ export function useCreateTeam() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [TEAM_KEY] })
+      queryClient.invalidateQueries({ queryKey: ['team_scope'] })
     },
   })
 }
@@ -277,6 +278,7 @@ export function useDeleteTeam() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [TEAM_KEY] })
       queryClient.invalidateQueries({ queryKey: [TEAM_MEMBERS_KEY] })
+      queryClient.invalidateQueries({ queryKey: ['team_scope'] })
     },
   })
 }
@@ -302,6 +304,7 @@ export function useLeaveTeam() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [TEAM_KEY] })
       queryClient.invalidateQueries({ queryKey: [TEAM_MEMBERS_KEY] })
+      queryClient.invalidateQueries({ queryKey: ['team_scope'] })
       queryClient.refetchQueries({ queryKey: [TEAM_KEY] })
     },
   })
