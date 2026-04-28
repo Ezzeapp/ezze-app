@@ -4,6 +4,7 @@ import { Phone, MapPin, CalendarRange, Loader2, Truck, ArrowDown, ArrowUp, X, Pr
 import { DeliverySlipModal, type DeliverySlipData } from '@/components/orders/DeliverySlipModal'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { PRODUCT } from '@/lib/config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DateInput } from '@/components/ui/date-input'
@@ -33,16 +34,29 @@ interface DeliveryOrder {
 
 function useDeliveryOrders(dateFrom: string, dateTo: string) {
   return useQuery({
-    queryKey: ['cleaning_delivery', dateFrom, dateTo],
+    queryKey: ['cleaning_delivery', PRODUCT, dateFrom, dateTo],
     queryFn: async () => {
       let q = supabase
         .from('cleaning_orders')
         .select('id, number, status, order_type, total_amount, prepaid_amount, created_at, notes, pickup_date, delivery_date, visit_address, client:clients(first_name, last_name, phone), items:cleaning_order_items(item_type_name, price, color, brand, defects)')
+        .eq('product', PRODUCT)
         .or('pickup_date.not.is.null,delivery_date.not.is.null')
         .not('status', 'in', '("cancelled","paid")')
         .order('pickup_date', { ascending: true, nullsFirst: false })
-      if (dateFrom) q = q.gte('pickup_date', dateFrom)
-      if (dateTo) q = q.lte('delivery_date', dateTo)
+
+      // Диапазон: заказ показывается, если хотя бы одна из дат (pickup или delivery)
+      // попадает в выбранный диапазон. NULL-даты не блокируют выборку благодаря OR.
+      if (dateFrom && dateTo) {
+        q = q.or(
+          `and(pickup_date.gte.${dateFrom},pickup_date.lte.${dateTo}),` +
+          `and(delivery_date.gte.${dateFrom},delivery_date.lte.${dateTo})`
+        )
+      } else if (dateFrom) {
+        q = q.or(`pickup_date.gte.${dateFrom},delivery_date.gte.${dateFrom}`)
+      } else if (dateTo) {
+        q = q.or(`pickup_date.lte.${dateTo},delivery_date.lte.${dateTo}`)
+      }
+
       const { data } = await q
       return (data ?? []) as unknown as DeliveryOrder[]
     },
