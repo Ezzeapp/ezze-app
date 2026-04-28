@@ -11,6 +11,7 @@ import { getTileIcon, getTileColor } from './_parts/tileIcons'
 import { KpiBadge } from './_parts/KpiBadge'
 import { RevenueSparkline } from './_parts/RevenueSparkline'
 import { ActivityFeed } from './_parts/ActivityFeed'
+import { getNewOrderRoute } from './_parts/newOrderRoute'
 import dayjs from 'dayjs'
 
 export function HybridLight() {
@@ -64,7 +65,7 @@ export function HybridLight() {
         </div>
         <button
           type="button"
-          onClick={() => navigate('/orders/pos')}
+          onClick={() => navigate(getNewOrderRoute())}
           className="self-start lg:self-auto bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold px-4 h-10 rounded-xl flex items-center gap-2 shadow-md transition"
         >
           <Plus className="h-4 w-4" />

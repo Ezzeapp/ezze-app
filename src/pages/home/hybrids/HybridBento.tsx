@@ -12,6 +12,7 @@ import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { getTileIcon, getTileColor } from './_parts/tileIcons'
 import { RevenueSparkline } from './_parts/RevenueSparkline'
 import { ActivityFeed } from './_parts/ActivityFeed'
+import { getNewOrderRoute } from './_parts/newOrderRoute'
 import dayjs from 'dayjs'
 
 export function HybridBento() {
@@ -49,7 +50,7 @@ export function HybridBento() {
         </div>
         <button
           type="button"
-          onClick={() => navigate('/orders/pos')}
+          onClick={() => navigate(getNewOrderRoute())}
           className="self-start sm:self-auto bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold px-4 h-10 rounded-lg flex items-center gap-2 shadow-sm transition"
         >
           <Plus className="h-4 w-4" />
