@@ -21,6 +21,7 @@ import {
   completeOnboarding,
   saveProfession,
 } from '@/lib/onboarding-utils'
+import { autoImportCleaningCatalog } from '@/lib/cleaningAutoImport'
 import { PRODUCT_URL_MAP } from '@/lib/products'
 import { ProductSelectionStep } from '@/components/onboarding/ProductSelectionStep'
 
@@ -303,6 +304,13 @@ export function RegisterPage() {
       // 5. Завершаем онбординг + tg-master-welcome (с product и app_url)
       const finalProduct = selectedProduct || import.meta.env.VITE_PRODUCT || 'beauty'
       const finalAppUrl  = PRODUCT_URL_MAP[finalProduct] || import.meta.env.VITE_APP_URL || 'https://pro.ezze.site'
+
+      // 5a. Автозагрузка прайса для cleaning (только при первой регистрации,
+      // а не при повторном вызове onboarding для уже существующего юзера).
+      if (!alreadyRegistered && finalProduct === 'cleaning') {
+        await autoImportCleaningCatalog().catch(() => { /* non-critical */ })
+      }
+
       await completeOnboarding(userId, String(tgId), formName.trim(), formLang, finalProduct, finalAppUrl)
 
       // Редирект на правильный продукт — передаём токены сессии напрямую,
@@ -341,6 +349,12 @@ export function RegisterPage() {
                 await saveProfession(sbUser.id, '', formName.trim())
                 const fallbackProduct = selectedProduct || import.meta.env.VITE_PRODUCT || 'beauty'
                 const fallbackAppUrl  = PRODUCT_URL_MAP[fallbackProduct] || import.meta.env.VITE_APP_URL || 'https://pro.ezze.site'
+
+                // Автозагрузка прайса для cleaning (idempotent upsert).
+                if (fallbackProduct === 'cleaning') {
+                  await autoImportCleaningCatalog().catch(() => { /* non-critical */ })
+                }
+
                 await completeOnboarding(sbUser.id, String(tgId), formName.trim(), formLang, fallbackProduct, fallbackAppUrl)
                 window.location.replace(`${fallbackAppUrl}/tg?start=master`)
                 return
