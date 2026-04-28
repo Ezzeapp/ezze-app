@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Cleaning · Модалка оплаты — 3 варианта</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; background:#e2e8f0; }
+  .pay-btn { border:2px solid #e5e7eb; border-radius:10px; font-weight:600; transition:all .15s; cursor:pointer; background:white; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .pay-btn:hover { border-color:#cbd5e1; }
+  .pay-btn.active { background:#2563eb; color:white; border-color:#2563eb; }
+  .chip { padding:6px 10px; border-radius:8px; border:1.5px solid #e5e7eb; font-weight:600; font-size:13px; cursor:pointer; background:white; transition:all .15s; }
+  .chip:hover { border-color:#cbd5e1; }
+  .chip.active-pos { background:#10b981; color:white; border-color:#10b981; }
+  .chip.active-neg { background:#f59e0b; color:white; border-color:#f59e0b; }
+  .chip.active-blue { background:#2563eb; color:white; border-color:#2563eb; }
+  .seg { display:flex; background:#f1f5f9; border-radius:10px; padding:3px; }
+  .seg button { flex:1; padding:8px; border-radius:8px; font-size:13px; font-weight:600; color:#64748b; transition:all .15s; }
+  .seg button.active { background:white; color:#0f172a; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .input { height:38px; border:1px solid #d1d5db; border-radius:8px; padding:0 12px; font-family:ui-monospace,monospace; font-weight:bold; width:100%; outline:none; }
+  .input:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+  .label { font-size:11px; text-transform:uppercase; font-weight:700; color:#64748b; letter-spacing:.04em; }
+  .icon { width:18px; height:18px; }
+  details summary { cursor:pointer; list-style:none; }
+  details summary::-webkit-details-marker { display:none; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="max-w-7xl mx-auto p-6">
+  <h1 class="text-2xl font-bold text-slate-800 mb-1">Модалка оплаты заказа · 3 варианта</h1>
+  <p class="text-sm text-slate-500 mb-8">Cleaning · десктоп. Сравни компактность и удобство.</p>
+
+  <div class="grid grid-cols-3 gap-6 items-start">
+
+    <!-- =========================== -->
+    <!-- ВАРИАНТ A: Компактный одноколоночный (480px) -->
+    <!-- =========================== -->
+    <div>
+      <div class="mb-3">
+        <span class="inline-block bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">A</span>
+        <span class="ml-2 text-sm font-semibold text-slate-700">Компактный · 480px · рекоменд.</span>
+      </div>
+      <div class="bg-white rounded-2xl shadow-xl overflow-hidden" style="width:100%;">
+        <!-- Шапка -->
+        <div class="px-5 pt-5 pb-4 flex items-start justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Оплата заказа</h2>
+            <p class="text-xs text-slate-500 mt-0.5">клиент 3 · 2 позиции</p>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-slate-400 uppercase font-semibold">Итого</div>
+            <div class="text-xl font-bold text-slate-900 font-mono">285 000 <span class="text-xs text-slate-500">so'm</span></div>
+          </div>
+        </div>
+
+        <div class="px-5 pb-5 space-y-3">
+          <!-- Способы оплаты — 2x2 -->
+          <div>
+            <div class="label mb-1.5">Способ оплаты</div>
+            <div class="grid grid-cols-2 gap-2">
+              <button class="pay-btn h-12 text-sm">
+                <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
+                Наличные
+              </button>
+              <button class="pay-btn h-12 text-sm">
+                <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                Карта
+              </button>
+              <button class="pay-btn h-12 text-sm active">
+                <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 11l5-5 5 5M7 17l5-5 5 5"/></svg>
+                Перевод
+              </button>
+              <button class="pay-btn h-12 text-sm">
+                <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                Click/Payme
+              </button>
+            </div>
+            <button class="text-xs text-blue-600 hover:underline mt-2 font-medium">+ Разделить на несколько способов</button>
+          </div>
+
+          <!-- Скидка/Надбавка collapsible -->
+          <details class="border border-slate-200 rounded-lg">
+            <summary class="px-3 py-2 flex items-center justify-between text-sm font-medium text-slate-700 hover:bg-slate-50">
+              <span class="flex items-center gap-2">
+                <svg class="icon text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                Скидка / надбавка / промокод
+              </span>
+              <svg class="icon text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div class="px-3 pb-3 pt-1 space-y-2.5">
+              <div class="seg">
+                <button class="active">− Скидка</button>
+                <button>+ Надбавка</button>
+              </div>
+              <div class="flex gap-1.5">
+                <button class="chip flex-1 active-pos">0%</button>
+                <button class="chip flex-1">5%</button>
+                <button class="chip flex-1">10%</button>
+                <button class="chip flex-1">15%</button>
+                <button class="chip flex-1">20%</button>
+                <input class="input flex-1" placeholder="%" style="width:60px;" />
+              </div>
+              <div class="flex gap-2">
+                <input class="input flex-1" placeholder="Промокод" />
+                <button class="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg">Применить</button>
+              </div>
+            </div>
+          </details>
+
+          <!-- Сводка цены минималистичная -->
+          <div class="text-xs text-slate-500 flex items-center justify-between pt-1">
+            <span>Подытог 270 000 + доставка 15 000</span>
+            <span class="text-slate-700 font-semibold">285 000 so'm</span>
+          </div>
+        </div>
+
+        <!-- Футер -->
+        <div class="px-5 py-3 bg-slate-50 border-t flex gap-2">
+          <button class="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-lg">Отмена</button>
+          <button class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg flex items-center justify-center gap-2">
+            <svg class="icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Принять · 285 000 so'm
+          </button>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-500 mt-3 leading-relaxed">
+        <b>Плюсы:</b> компактно, фокус на главном. Скидки/промокод свёрнуты — открываются при необходимости. «Смешанная оплата» — отдельный режим под ссылкой.<br>
+        <b>Минусы:</b> для смешанной оплаты нужен ещё клик.
+      </p>
+    </div>
+
+    <!-- =========================== -->
+    <!-- ВАРИАНТ B: Двухколоночный (640px) -->
+    <!-- =========================== -->
+    <div>
+      <div class="mb-3">
+        <span class="inline-block bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded">B</span>
+        <span class="ml-2 text-sm font-semibold text-slate-700">Двухколоночный · 640px</span>
+      </div>
+      <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <!-- Шапка -->
+        <div class="px-5 pt-5 pb-4 flex items-start justify-between border-b">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Оплата заказа</h2>
+            <p class="text-xs text-slate-500 mt-0.5">клиент 3 · 2 позиции</p>
+          </div>
+          <button class="text-slate-400 hover:text-slate-700 -mt-1">
+            <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 divide-x">
+          <!-- Левая: способы оплаты -->
+          <div class="p-4 space-y-3">
+            <div>
+              <div class="label mb-1.5">Способ оплаты</div>
+              <div class="grid grid-cols-2 gap-2">
+                <button class="pay-btn h-11 text-xs">
+                  <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
+                  Наличные
+                </button>
+                <button class="pay-btn h-11 text-xs">
+                  <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                  Карта
+                </button>
+                <button class="pay-btn h-11 text-xs active">
+                  <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 11l5-5 5 5M7 17l5-5 5 5"/></svg>
+                  Перевод
+                </button>
+                <button class="pay-btn h-11 text-xs">
+                  <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                  Click/Payme
+                </button>
+              </div>
+              <button class="pay-btn h-9 text-xs w-full mt-2 border-dashed">
+                <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                Смешанная
+              </button>
+            </div>
+
+            <div>
+              <div class="label mb-1.5">Сколько оплачивает сейчас</div>
+              <div class="flex gap-1.5">
+                <input class="input flex-1" placeholder="285 000" />
+                <button class="chip">Вся</button>
+                <button class="chip">50%</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Правая: скидка/промо/итог -->
+          <div class="p-4 space-y-3 bg-slate-50/50">
+            <div>
+              <div class="seg">
+                <button class="active">− Скидка</button>
+                <button>+ Надбавка</button>
+              </div>
+              <div class="flex gap-1.5 mt-2">
+                <button class="chip flex-1 active-pos text-xs">0%</button>
+                <button class="chip flex-1 text-xs">5%</button>
+                <button class="chip flex-1 text-xs">10%</button>
+                <button class="chip flex-1 text-xs">15%</button>
+                <button class="chip flex-1 text-xs">20%</button>
+              </div>
+            </div>
+
+            <div class="flex gap-2">
+              <input class="input flex-1 text-xs" placeholder="Промокод" />
+              <button class="px-3 text-xs font-semibold text-slate-700 bg-white border rounded-lg">OK</button>
+            </div>
+
+            <!-- Итог -->
+            <div class="pt-2 border-t space-y-1 text-xs">
+              <div class="flex justify-between text-slate-600"><span>Подытог (2 шт)</span><span class="font-mono">270 000</span></div>
+              <div class="flex justify-between text-purple-600"><span>Доставка</span><span class="font-mono">+ 15 000</span></div>
+              <div class="flex justify-between text-base font-bold text-slate-900 pt-1"><span>Итого</span><span class="font-mono">285 000 so'm</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Футер -->
+        <div class="px-5 py-3 bg-slate-50 border-t flex gap-2">
+          <button class="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-lg">Отмена</button>
+          <button class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg flex items-center justify-center gap-2">
+            <svg class="icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Принять заказ · 285 000 so'm
+          </button>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-500 mt-3 leading-relaxed">
+        <b>Плюсы:</b> всё видно сразу — оплата слева, скидки/итог справа. Подходит для опытных кассиров.<br>
+        <b>Минусы:</b> в 2 раза шире, больше визуального шума.
+      </p>
+    </div>
+
+    <!-- =========================== -->
+    <!-- ВАРИАНТ C: Минимум кликов (400px) -->
+    <!-- =========================== -->
+    <div>
+      <div class="mb-3">
+        <span class="inline-block bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded">C</span>
+        <span class="ml-2 text-sm font-semibold text-slate-700">Минимум · 400px · быстрый</span>
+      </div>
+      <div class="bg-white rounded-2xl shadow-xl overflow-hidden" style="width:100%;">
+        <!-- Шапка -->
+        <div class="px-4 pt-4 pb-3 flex items-start justify-between">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Оплата</h2>
+            <p class="text-xs text-slate-500">клиент 3 · 2 поз.</p>
+          </div>
+          <div class="text-right">
+            <div class="text-2xl font-bold text-slate-900 font-mono leading-none">285 000</div>
+            <div class="text-xs text-slate-500">so'm</div>
+          </div>
+        </div>
+
+        <div class="px-4 pb-4 space-y-3">
+          <!-- 4 крупные иконки в ряд -->
+          <div class="grid grid-cols-4 gap-1.5">
+            <button class="pay-btn h-16 flex-col text-[10px] gap-1">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
+              Нал.
+            </button>
+            <button class="pay-btn h-16 flex-col text-[10px] gap-1">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+              Карта
+            </button>
+            <button class="pay-btn h-16 flex-col text-[10px] gap-1 active">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 11l5-5 5 5M7 17l5-5 5 5"/></svg>
+              Перевод
+            </button>
+            <button class="pay-btn h-16 flex-col text-[10px] gap-1">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              Click
+            </button>
+          </div>
+
+          <!-- Доп. опции в одну строку -->
+          <div class="flex items-center gap-1.5 text-xs">
+            <button class="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-slate-100 text-slate-600 font-medium">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/></svg>
+              Скидка
+            </button>
+            <button class="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-slate-100 text-slate-600 font-medium">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7h-3a2 2 0 01-2-2V2"/><path d="M9 18a2 2 0 01-2-2V4a2 2 0 012-2h7l4 4v12a2 2 0 01-2 2H9z"/><path d="M3 15h12M3 12h12M3 18h12"/></svg>
+              Промо
+            </button>
+            <button class="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-slate-100 text-slate-600 font-medium">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+              Разделить
+            </button>
+            <button class="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-slate-100 text-slate-600 font-medium ml-auto">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Футер -->
+        <div class="px-4 py-3 bg-slate-50 border-t flex gap-2">
+          <button class="px-3 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-200 rounded-lg">✕</button>
+          <button class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg flex items-center justify-center gap-2 text-sm">
+            <svg class="icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Принять · 285 000
+          </button>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-500 mt-3 leading-relaxed">
+        <b>Плюсы:</b> самый компактный, оплата в 1 клик. Иконки = квадратные плитки. Доп. опции — пиктограммы внизу.<br>
+        <b>Минусы:</b> подписи мелкие, скидка/промо требуют доп. экран/поповер.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- =========================== -->
+  <!-- ВАРИАНТ D: Гибрид — клон A с агрегаторами и Смешанной (РЕКОМЕНД.) -->
+  <!-- =========================== -->
+  <div class="mt-12">
+    <div class="mb-3 flex items-center gap-2">
+      <span class="inline-block bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded">D</span>
+      <span class="text-sm font-semibold text-slate-700">Гибрид · клон A · 2×2 + 3 агрегатора + смешанная-разворот</span>
+      <span class="text-xs text-slate-500">→ кликни «Смешанная» чтобы развернуть поля</span>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6 items-start">
+      <!-- D1: Свёрнутая (по умолчанию) -->
+      <div>
+        <div class="text-xs font-semibold text-slate-500 mb-2 uppercase">Состояние 1 · обычный режим</div>
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden" id="d-modal" style="max-width:480px;">
+          <!-- Шапка -->
+          <div class="px-5 pt-5 pb-4 flex items-start justify-between">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">Оплата заказа</h2>
+              <p class="text-xs text-slate-500 mt-0.5">клиент 3 · 2 позиции</p>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-slate-400 uppercase font-semibold">Итого</div>
+              <div class="text-xl font-bold text-slate-900 font-mono">285 000 <span class="text-xs text-slate-500">so'm</span></div>
+            </div>
+          </div>
+
+          <div class="px-5 pb-5 space-y-3">
+            <!-- Способы оплаты — 2x2 -->
+            <div>
+              <div class="label mb-1.5">Способ оплаты</div>
+              <div class="grid grid-cols-2 gap-2" id="d-methods">
+                <button data-m="cash" class="d-pay pay-btn h-12 text-sm">
+                  <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
+                  Наличные
+                </button>
+                <button data-m="card" class="d-pay pay-btn h-12 text-sm">
+                  <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                  Карта
+                </button>
+                <button data-m="transfer" class="d-pay pay-btn h-12 text-sm active">
+                  <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 11l5-5 5 5M7 17l5-5 5 5"/></svg>
+                  Перевод
+                </button>
+                <button data-m="mixed" class="d-pay pay-btn h-12 text-sm">
+                  <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                  Смешанная
+                </button>
+              </div>
+
+              <!-- Агрегаторы (отдельным рядом, всегда видны) -->
+              <div class="mt-2 grid grid-cols-3 gap-2" id="d-aggregators">
+                <button data-a="click" class="d-agg pay-btn h-10 text-xs" style="border-color:#7dd3fc;color:#0284c7;">
+                  <span class="font-bold">Click</span>
+                </button>
+                <button data-a="payme" class="d-agg pay-btn h-10 text-xs" style="border-color:#86efac;color:#059669;">
+                  <span class="font-bold">Payme</span>
+                </button>
+                <button data-a="uzum" class="d-agg pay-btn h-10 text-xs" style="border-color:#c4b5fd;color:#7c3aed;">
+                  <span class="font-bold">Uzum</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Сумма к оплате сейчас (для одиночного способа) -->
+            <div id="d-amount-row">
+              <div class="label mb-1.5">Сумма к оплате сейчас</div>
+              <div class="flex gap-1.5">
+                <input id="d-amount-input" class="input flex-1" value="285 000" />
+                <button id="d-btn-full" class="chip active-blue">Вся</button>
+                <button id="d-btn-half" class="chip">50%</button>
+                <button id="d-btn-quarter" class="chip">25%</button>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1">Если меньше итога — будет частичная предоплата, остаток в долг.</p>
+            </div>
+
+            <!-- Mixed-панель (скрыта по умолчанию) -->
+            <div id="d-mixed-panel" class="hidden border-2 border-blue-100 rounded-lg p-3 bg-blue-50/40 space-y-2.5">
+              <div class="text-xs font-semibold text-slate-700">Распределите сумму:</div>
+              <div class="flex items-center gap-2">
+                <span class="w-20 text-xs text-slate-600">Наличные</span>
+                <input class="input flex-1 text-sm" placeholder="0" />
+                <span class="text-xs text-slate-400 w-10">so'm</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-20 text-xs text-slate-600">Карта</span>
+                <input class="input flex-1 text-sm" placeholder="0" />
+                <span class="text-xs text-slate-400 w-10">so'm</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-20 text-xs text-slate-600">Агрегатор</span>
+                <input class="input flex-1 text-sm" placeholder="0" />
+                <select class="input text-xs" style="width:80px;">
+                  <option>Click</option>
+                  <option>Payme</option>
+                  <option>Uzum</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-blue-200 text-xs">
+                <span class="text-slate-600">Введено:</span>
+                <span class="font-mono font-bold text-emerald-600">0 / 285 000</span>
+              </div>
+            </div>
+
+            <!-- Скидка/Надбавка/Промокод свёрнуто -->
+            <details class="border border-slate-200 rounded-lg">
+              <summary class="px-3 py-2 flex items-center justify-between text-sm font-medium text-slate-700 hover:bg-slate-50">
+                <span class="flex items-center gap-2">
+                  <svg class="icon text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                  Скидка / надбавка / промокод
+                </span>
+                <svg class="icon text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+              </summary>
+              <div class="px-3 pb-3 pt-1 space-y-2.5">
+                <div class="seg">
+                  <button class="active">− Скидка</button>
+                  <button>+ Надбавка</button>
+                </div>
+                <div class="flex gap-1.5">
+                  <button class="chip flex-1 active-pos">0%</button>
+                  <button class="chip flex-1">5%</button>
+                  <button class="chip flex-1">10%</button>
+                  <button class="chip flex-1">15%</button>
+                  <button class="chip flex-1">20%</button>
+                </div>
+                <div class="flex gap-2">
+                  <input class="input flex-1" placeholder="Промокод" />
+                  <button class="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg">Применить</button>
+                </div>
+              </div>
+            </details>
+
+            <!-- Сводка цены -->
+            <div class="text-xs text-slate-500 flex items-center justify-between pt-1">
+              <span>Подытог 270 000 + доставка 15 000</span>
+              <span class="text-slate-700 font-semibold">285 000 so'm</span>
+            </div>
+          </div>
+
+          <!-- Футер -->
+          <div class="px-5 py-3 bg-slate-50 border-t flex gap-2">
+            <button class="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-lg">Отмена</button>
+            <button class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg flex items-center justify-center gap-2">
+              <svg class="icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Принять · 285 000 so'm
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- D2: Развёрнутая (Смешанная активна) — статичный мокап -->
+      <div>
+        <div class="text-xs font-semibold text-slate-500 mb-2 uppercase">Состояние 2 · после клика «Смешанная»</div>
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden" style="max-width:480px;">
+          <div class="px-5 pt-5 pb-4 flex items-start justify-between">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">Оплата заказа</h2>
+              <p class="text-xs text-slate-500 mt-0.5">клиент 3 · 2 позиции</p>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-slate-400 uppercase font-semibold">Итого</div>
+              <div class="text-xl font-bold text-slate-900 font-mono">285 000 <span class="text-xs text-slate-500">so'm</span></div>
+            </div>
+          </div>
+
+          <div class="px-5 pb-5 space-y-3">
+            <div>
+              <div class="label mb-1.5">Способ оплаты</div>
+              <div class="grid grid-cols-2 gap-2">
+                <button class="pay-btn h-12 text-sm">Наличные</button>
+                <button class="pay-btn h-12 text-sm">Карта</button>
+                <button class="pay-btn h-12 text-sm">Перевод</button>
+                <button class="pay-btn h-12 text-sm active">Смешанная</button>
+              </div>
+              <!-- Агрегаторы — приглушены, потому что выбраны через mixed-панель -->
+              <div class="mt-2 grid grid-cols-3 gap-2 opacity-40 pointer-events-none">
+                <button class="pay-btn h-10 text-xs" style="border-color:#7dd3fc;color:#0284c7;">Click</button>
+                <button class="pay-btn h-10 text-xs" style="border-color:#86efac;color:#059669;">Payme</button>
+                <button class="pay-btn h-10 text-xs" style="border-color:#c4b5fd;color:#7c3aed;">Uzum</button>
+              </div>
+            </div>
+
+            <div class="border-2 border-blue-100 rounded-lg p-3 bg-blue-50/40 space-y-2.5">
+              <div class="text-xs font-semibold text-slate-700">Распределите сумму:</div>
+              <div class="flex items-center gap-2">
+                <span class="w-20 text-xs text-slate-600">Наличные</span>
+                <input class="input flex-1 text-sm" value="100 000" />
+                <span class="text-xs text-slate-400 w-10">so'm</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-20 text-xs text-slate-600">Карта</span>
+                <input class="input flex-1 text-sm" value="0" />
+                <span class="text-xs text-slate-400 w-10">so'm</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-20 text-xs text-slate-600">Агрегатор</span>
+                <input class="input flex-1 text-sm" value="185 000" />
+                <select class="input text-xs" style="width:80px;">
+                  <option>Click</option>
+                  <option>Payme</option>
+                  <option>Uzum</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-blue-200 text-xs">
+                <span class="text-slate-600">Введено:</span>
+                <span class="font-mono font-bold text-emerald-600">285 000 / 285 000 ✓</span>
+              </div>
+            </div>
+
+            <details class="border border-slate-200 rounded-lg">
+              <summary class="px-3 py-2 flex items-center justify-between text-sm font-medium text-slate-700 hover:bg-slate-50">
+                <span class="flex items-center gap-2">
+                  <svg class="icon text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/></svg>
+                  Скидка / надбавка / промокод
+                </span>
+                <svg class="icon text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+              </summary>
+            </details>
+
+            <div class="text-xs text-slate-500 flex items-center justify-between pt-1">
+              <span>Подытог 270 000 + доставка 15 000</span>
+              <span class="text-slate-700 font-semibold">285 000 so'm</span>
+            </div>
+          </div>
+
+          <div class="px-5 py-3 bg-slate-50 border-t flex gap-2">
+            <button class="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-lg">Отмена</button>
+            <button class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg flex items-center justify-center gap-2">
+              <svg class="icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Принять · 285 000 so'm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-slate-700">
+      <p><b>Логика:</b></p>
+      <ul class="list-disc ml-5 mt-1 space-y-1 text-xs leading-relaxed">
+        <li>4 главные кнопки (2×2) — Наличные / Карта / Перевод / Смешанная</li>
+        <li>3 агрегатора (Click / Payme / Uzum) — отдельным рядом, всегда видны. Клик = выбран этот агрегатор как единственный способ оплаты</li>
+        <li>Клик «Смешанная» → разворачивается панель с 3 полями: Наличные, Карта, Агрегатор (с выпадашкой Click/Payme/Uzum). Кнопки агрегаторов снизу приглушаются</li>
+        <li>Снизу подсчёт: «Введено: 285 000 / 285 000 ✓» — кнопка «Принять» активна только когда сумма сходится</li>
+        <li>Скидка/надбавка/промокод — свёрнуто</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Интерактив для D1
+    (function(){
+      const TOTAL = 285000;
+      const methods = document.querySelectorAll('#d-methods .d-pay');
+      const aggs = document.querySelectorAll('#d-aggregators .d-agg');
+      const panel = document.getElementById('d-mixed-panel');
+      const aggRow = document.getElementById('d-aggregators');
+      const amountRow = document.getElementById('d-amount-row');
+      const amountInput = document.getElementById('d-amount-input');
+      const btnFull = document.getElementById('d-btn-full');
+      const btnHalf = document.getElementById('d-btn-half');
+      const btnQuarter = document.getElementById('d-btn-quarter');
+      const fmt = n => Math.round(n).toLocaleString('ru-RU').replace(/,/g, ' ');
+
+      function clearActive(nodes){ nodes.forEach(n=>n.classList.remove('active')); }
+      function setAmountActive(which) {
+        btnFull.classList.toggle('active-blue', which === 'full');
+        btnHalf.classList.toggle('active-blue', which === 'half');
+        btnQuarter.classList.toggle('active-blue', which === 'quarter');
+      }
+
+      methods.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          clearActive(methods); clearActive(aggs);
+          btn.classList.add('active');
+          if (btn.dataset.m === 'mixed') {
+            panel.classList.remove('hidden');
+            aggRow.classList.add('opacity-40','pointer-events-none');
+            amountRow.classList.add('hidden');
+          } else {
+            panel.classList.add('hidden');
+            aggRow.classList.remove('opacity-40','pointer-events-none');
+            amountRow.classList.remove('hidden');
+          }
+        });
+      });
+      aggs.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          clearActive(methods); clearActive(aggs);
+          btn.classList.add('active');
+          panel.classList.add('hidden');
+          aggRow.classList.remove('opacity-40','pointer-events-none');
+          amountRow.classList.remove('hidden');
+        });
+      });
+
+      btnFull.addEventListener('click', ()=>{
+        amountInput.value = fmt(TOTAL);
+        setAmountActive('full');
+      });
+      btnHalf.addEventListener('click', ()=>{
+        amountInput.value = fmt(TOTAL / 2);
+        setAmountActive('half');
+      });
+      btnQuarter.addEventListener('click', ()=>{
+        amountInput.value = fmt(TOTAL / 4);
+        setAmountActive('quarter');
+      });
+      amountInput.addEventListener('input', ()=> setAmountActive(null));
+    })();
+  </script>
+
+  <!-- Сравнительная таблица -->
+  <div class="mt-10 bg-white rounded-xl border p-5">
+    <h2 class="font-bold text-slate-800 mb-3">Сравнение</h2>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs uppercase text-slate-500 border-b">
+          <th class="py-2 font-semibold">Параметр</th>
+          <th class="py-2 font-semibold">A · Компактный</th>
+          <th class="py-2 font-semibold">B · Двухколоночный</th>
+          <th class="py-2 font-semibold">C · Минимум</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        <tr><td class="py-2 text-slate-600">Ширина</td><td>~480px</td><td>~640px</td><td>~400px</td></tr>
+        <tr><td class="py-2 text-slate-600">Способы оплаты</td><td>2×2 крупные</td><td>2×2 + смешанная</td><td>1×4 квадрат</td></tr>
+        <tr><td class="py-2 text-slate-600">Скидка/промо</td><td>Свёрнуто</td><td>Всегда видно</td><td>Поповеры</td></tr>
+        <tr><td class="py-2 text-slate-600">Сценарий простой оплаты</td><td>👍 быстро</td><td>средне</td><td>👍 быстрее всех</td></tr>
+        <tr><td class="py-2 text-slate-600">Сценарий со скидкой/промо</td><td>+1 клик</td><td>👍 без кликов</td><td>+1 клик (поповер)</td></tr>
+        <tr><td class="py-2 text-slate-600">Смешанная оплата</td><td>+1 клик</td><td>👍 кнопка видна</td><td>+1 клик</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+</body>
+</html>

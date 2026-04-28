@@ -4,6 +4,7 @@ import {
   ArrowLeft, Search, Plus, Minus, X, Loader2, Check,
   GripVertical, ShoppingBag, Zap, Truck, UserPlus,
   Camera, Printer, CheckCircle2, Pencil, Star, History, ChevronUp,
+  Wallet, CreditCard, ArrowRightLeft, Shuffle, Tag, ChevronDown,
 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -1133,11 +1134,11 @@ export function OrderDnDPage() {
           onClick={() => setShowPaymentModal(false)}
         >
           <div
-            className="bg-background rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] overflow-hidden flex flex-col"
+            className="bg-background rounded-2xl shadow-2xl max-w-md w-full max-h-[92vh] overflow-hidden flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             {/* Заголовок */}
-            <div className="px-5 py-3 border-b flex items-center gap-3 bg-muted/30">
+            <div className="px-5 py-4 border-b flex items-center gap-3 bg-muted/30">
               <div className="min-w-0">
                 <h2 className="text-lg font-bold">Оплата заказа</h2>
                 <p className="text-xs text-muted-foreground truncate">
@@ -1145,362 +1146,390 @@ export function OrderDnDPage() {
                 </p>
               </div>
               <div className="ml-auto text-right shrink-0">
-                <div className="text-xs text-muted-foreground">Итого</div>
-                <div className="text-2xl font-extrabold font-mono">{formatCurrency(total)} <span className="text-sm">{symbol}</span></div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Итого</div>
+                <div className="text-xl font-extrabold font-mono">{formatCurrency(total)} <span className="text-sm">{symbol}</span></div>
               </div>
               <button
                 onClick={() => setShowPaymentModal(false)}
-                className="ml-2 h-8 w-8 grid place-items-center hover:bg-muted rounded-md shrink-0"
+                className="ml-1 h-8 w-8 grid place-items-center hover:bg-muted rounded-md shrink-0"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Тело — скроллируемое */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
 
-            {(() => {
-              const isAggrActive = payment === 'card' && ['click','payme','uzum'].includes(paymentProvider || '')
-              const isCardActive = payment === 'card' && !paymentProvider
-              const selectMethod = (k: string) => {
-                if (k === 'aggregator') {
-                  setPayment('card')
-                  if (!['click','payme','uzum'].includes(paymentProvider || '')) setPaymentProvider('click')
-                } else {
+              {/* Способы оплаты: 4 главные + 3 агрегатора */}
+              {(() => {
+                const isAggrActive = (provider: string) => payment === 'card' && paymentProvider === provider
+                const isMethodActive = (method: string) => {
+                  if (method === 'card') return payment === 'card' && !paymentProvider
+                  return payment === method
+                }
+                const selectMethod = (k: string) => {
                   setPayment(k)
                   setPaymentProvider(null)
                 }
-              }
-              const isActive = (k: string) => {
-                if (k === 'aggregator') return isAggrActive
-                if (k === 'card') return isCardActive
-                return payment === k
-              }
-              return <>
-                <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-                  {[
-                    { k: 'cash',       label: 'Наличные' },
-                    { k: 'card',       label: 'Карта' },
-                    { k: 'transfer',   label: 'Перевод' },
-                    { k: 'aggregator', label: 'Click/Payme/Uzum' },
-                  ].map(opt => (
-                    <button
-                      key={opt.k}
-                      onClick={() => selectMethod(opt.k)}
-                      className={cn(
-                        'h-8 rounded-md text-xs font-bold border transition-colors px-1',
-                        isActive(opt.k)
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border hover:border-primary/40'
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => selectMethod('mixed')}
-                  className={cn(
-                    'w-full h-8 rounded-md text-xs font-bold border transition-colors mb-2',
-                    isActive('mixed')
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border hover:border-primary/40'
-                  )}
-                >
-                  Смешанная (несколько способов)
-                </button>
-
-                {/* Раскрытие выбора провайдера — только когда активен «Click·Payme·Uzum» */}
-                {isAggrActive && (
-                  <div className="grid grid-cols-3 gap-1.5 mb-3 p-1.5 rounded-md border bg-muted/30">
-                    {[
-                      { k: 'click', label: 'Click', cls: 'text-sky-600 border-sky-300 hover:border-sky-500' },
-                      { k: 'payme', label: 'Payme', cls: 'text-emerald-600 border-emerald-300 hover:border-emerald-500' },
-                      { k: 'uzum',  label: 'Uzum',  cls: 'text-violet-600 border-violet-300 hover:border-violet-500' },
-                    ].map(p => {
-                      const sel = paymentProvider === p.k
-                      return (
+                const selectAggregator = (provider: string) => {
+                  setPayment('card')
+                  setPaymentProvider(provider)
+                }
+                const isMixed = payment === 'mixed'
+                return (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1.5">Способ оплаты</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { k: 'cash',     label: 'Наличные', icon: <Wallet className="h-4 w-4" /> },
+                        { k: 'card',     label: 'Карта',    icon: <CreditCard className="h-4 w-4" /> },
+                        { k: 'transfer', label: 'Перевод',  icon: <ArrowRightLeft className="h-4 w-4" /> },
+                        { k: 'mixed',    label: 'Смешанная', icon: <Shuffle className="h-4 w-4" /> },
+                      ].map(opt => (
                         <button
-                          key={p.k}
-                          onClick={() => setPaymentProvider(p.k)}
+                          key={opt.k}
+                          onClick={() => selectMethod(opt.k)}
                           className={cn(
-                            'h-7 rounded text-xs font-bold border-2 transition-colors',
-                            sel ? 'border-primary bg-primary text-primary-foreground' : `bg-background ${p.cls}`
+                            'h-12 rounded-lg text-sm font-bold border-2 transition-colors flex items-center justify-center gap-1.5',
+                            isMethodActive(opt.k)
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'border-border hover:border-primary/40'
                           )}
                         >
-                          {p.label}
+                          {opt.icon}
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Агрегаторы */}
+                    <div className={cn(
+                      'mt-2 grid grid-cols-3 gap-2 transition-opacity',
+                      isMixed && 'opacity-40 pointer-events-none'
+                    )}>
+                      {[
+                        { k: 'click', label: 'Click', cls: 'text-sky-600 border-sky-300 hover:border-sky-500' },
+                        { k: 'payme', label: 'Payme', cls: 'text-emerald-600 border-emerald-300 hover:border-emerald-500' },
+                        { k: 'uzum',  label: 'Uzum',  cls: 'text-violet-600 border-violet-300 hover:border-violet-500' },
+                      ].map(p => {
+                        const sel = isAggrActive(p.k)
+                        return (
+                          <button
+                            key={p.k}
+                            onClick={() => selectAggregator(p.k)}
+                            className={cn(
+                              'h-10 rounded-lg text-xs font-bold border-2 transition-colors',
+                              sel ? 'border-primary bg-primary text-primary-foreground' : `bg-background ${p.cls}`
+                            )}
+                          >
+                            {p.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Сумма к оплате сейчас (для одиночного способа) */}
+              {payment !== 'mixed' && (
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1.5">
+                    Сумма к оплате сейчас
+                  </div>
+                  {(() => {
+                    const fullStr = String(total)
+                    const halfStr = String(Math.round(total / 2))
+                    const quarterStr = String(Math.round(total / 4))
+                    return (
+                      <div className="flex gap-1.5">
+                        <Input
+                          type="number" min={0} max={total}
+                          placeholder={`По умолч. ${formatCurrency(total)}`}
+                          value={customPrepayAmount}
+                          onChange={e => setCustomPrepayAmount(e.target.value)}
+                          className="h-9 text-sm flex-1 font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setCustomPrepayAmount(fullStr)}
+                          className={cn(
+                            'h-9 px-3 rounded-md border-2 text-xs font-bold transition-colors',
+                            customPrepayAmount === fullStr ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40'
+                          )}
+                        >
+                          Вся
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCustomPrepayAmount(halfStr)}
+                          className={cn(
+                            'h-9 px-3 rounded-md border-2 text-xs font-bold transition-colors',
+                            customPrepayAmount === halfStr ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40'
+                          )}
+                        >
+                          50%
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCustomPrepayAmount(quarterStr)}
+                          className={cn(
+                            'h-9 px-3 rounded-md border-2 text-xs font-bold transition-colors',
+                            customPrepayAmount === quarterStr ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40'
+                          )}
+                        >
+                          25%
+                        </button>
+                      </div>
+                    )
+                  })()}
+                  {customPrepayAmount && parseFloat(customPrepayAmount) < total && (
+                    <div className="text-[11px] text-orange-600 mt-1">
+                      Остаток в долг: {formatCurrency(total - (parseFloat(customPrepayAmount) || 0))} {symbol}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Mixed-панель: 3 строки (Наличные / Карта / Агрегатор + выбор) */}
+              {payment === 'mixed' && (() => {
+                const sum = (parseFloat(paymentCash) || 0) + (parseFloat(paymentCard) || 0) + (parseFloat(paymentAggregator) || 0)
+                const ok = Math.abs(sum - total) < 1
+                return (
+                  <div className="border-2 border-blue-100 dark:border-blue-900/40 rounded-lg p-3 bg-blue-50/40 dark:bg-blue-950/20 space-y-2.5">
+                    <div className="text-xs font-bold">Распределите сумму:</div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="w-20 text-xs text-muted-foreground">Наличные</span>
+                      <Input
+                        type="number" min={0}
+                        placeholder="0"
+                        value={paymentCash}
+                        onChange={e => setPaymentCash(e.target.value)}
+                        className="h-8 text-xs flex-1 font-mono"
+                      />
+                      <span className="text-[11px] text-muted-foreground w-10">{symbol}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="w-20 text-xs text-muted-foreground">Карта</span>
+                      <Input
+                        type="number" min={0}
+                        placeholder="0"
+                        value={paymentCard}
+                        onChange={e => setPaymentCard(e.target.value)}
+                        className="h-8 text-xs flex-1 font-mono"
+                      />
+                      <span className="text-[11px] text-muted-foreground w-10">{symbol}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="w-20 text-xs text-muted-foreground">Агрегатор</span>
+                      <Input
+                        type="number" min={0}
+                        placeholder="0"
+                        value={paymentAggregator}
+                        onChange={e => setPaymentAggregator(e.target.value)}
+                        className="h-8 text-xs flex-1 font-mono"
+                      />
+                      <select
+                        value={paymentProvider || 'click'}
+                        onChange={e => setPaymentProvider(e.target.value)}
+                        className="h-8 text-xs border rounded px-1 bg-background font-bold"
+                        style={{ width: '74px' }}
+                      >
+                        <option value="click">Click</option>
+                        <option value="payme">Payme</option>
+                        <option value="uzum">Uzum</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-blue-200 dark:border-blue-900/40 text-xs">
+                      <span className="text-muted-foreground">Введено:</span>
+                      <span className={cn('font-mono font-bold', ok ? 'text-emerald-600' : 'text-orange-600')}>
+                        {formatCurrency(sum)} / {formatCurrency(total)} {symbol} {ok && '✓'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Скидка / Надбавка / Промокод — свёрнуто */}
+              <details className="border rounded-lg group">
+                <summary className="px-3 py-2 flex items-center justify-between text-sm font-medium cursor-pointer hover:bg-muted/50 select-none [&::-webkit-details-marker]:hidden">
+                  <span className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-muted-foreground" />
+                    Скидка / надбавка / промокод
+                    {(discount > 0 || markup > 0 || appliedPromo) && (
+                      <span className="text-xs font-bold">
+                        {discount > 0 && <span className="text-emerald-600">−{discount}%</span>}
+                        {markup > 0 && <span className="text-amber-600">+{markup}%</span>}
+                        {appliedPromo && <span className="text-blue-600 ml-1">· {appliedPromo.code}</span>}
+                      </span>
+                    )}
+                  </span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground group-open:rotate-180 transition-transform" />
+                </summary>
+                <div className="px-3 pb-3 pt-1 space-y-2.5">
+                  <div className="flex bg-muted rounded-md p-0.5">
+                    <button
+                      onClick={() => { setDiscMode('discount'); if (markup > 0) { setDiscount(markup); setMarkup(0) } }}
+                      className={cn(
+                        'flex-1 h-7 rounded text-xs font-bold transition-colors',
+                        discMode === 'discount' ? 'bg-emerald-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      Скидка
+                    </button>
+                    <button
+                      onClick={() => { setDiscMode('markup'); if (discount > 0) { setMarkup(discount); setDiscount(0) } }}
+                      className={cn(
+                        'flex-1 h-7 rounded text-xs font-bold transition-colors',
+                        discMode === 'markup' ? 'bg-amber-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      Надбавка
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1">
+                    {[0, 5, 10, 15, 20].map(d => {
+                      const isMarkup = discMode === 'markup'
+                      const active = isMarkup ? markup === d : discount === d
+                      return (
+                        <button
+                          key={d}
+                          onClick={() => {
+                            if (isMarkup) { setMarkup(d); setDiscount(0) }
+                            else { setDiscount(d); setMarkup(0) }
+                          }}
+                          className={cn(
+                            'h-7 rounded-md text-xs font-bold font-mono border transition-colors',
+                            active
+                              ? isMarkup
+                                ? 'border-amber-500 bg-amber-500 text-white'
+                                : 'border-emerald-500 bg-emerald-500 text-white'
+                              : 'border-border hover:border-primary/40'
+                          )}
+                        >
+                          {isMarkup && d > 0 ? `+${d}%` : `${d}%`}
                         </button>
                       )
                     })}
                   </div>
-                )}
-              </>
-            })()}
 
-            {/* Сумма сейчас (для одиночного способа) */}
-            {payment !== 'mixed' && (
-              <div className="mb-3 p-2 rounded-md border bg-muted/30">
-                <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1.5">
-                  Сколько оплачивает клиент сейчас?
-                </div>
-                <div className="flex gap-1.5">
-                  <Input
-                    type="number" min={0} max={total}
-                    placeholder={`По умолч. ${formatCurrency(total)}`}
-                    value={customPrepayAmount}
-                    onChange={e => setCustomPrepayAmount(e.target.value)}
-                    className="h-8 text-xs flex-1 font-mono"
-                  />
-                  <button
-                    onClick={() => setCustomPrepayAmount(String(total))}
-                    className="h-8 px-2 rounded border text-[11px] font-bold hover:bg-muted whitespace-nowrap"
-                  >
-                    Вся
-                  </button>
-                  <button
-                    onClick={() => setCustomPrepayAmount(String(Math.round(total / 2)))}
-                    className="h-8 px-2 rounded border text-[11px] font-bold hover:bg-muted whitespace-nowrap"
-                  >
-                    50%
-                  </button>
-                  {customPrepayAmount && (
-                    <button
-                      onClick={() => setCustomPrepayAmount('')}
-                      className="h-8 w-8 rounded border text-muted-foreground hover:text-destructive grid place-items-center"
-                      title="Сбросить"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-                {customPrepayAmount && parseFloat(customPrepayAmount) < total && (
-                  <div className="text-[10.5px] text-orange-600 mt-1">
-                    Остаток при выдаче: {formatCurrency(total - (parseFloat(customPrepayAmount) || 0))} {symbol}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {payment === 'mixed' && (
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <div>
-                  <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Нал. ({symbol})</Label>
-                  <Input
-                    type="number" min={0}
-                    placeholder="0"
-                    value={paymentCash}
-                    onChange={e => setPaymentCash(e.target.value)}
-                    className="mt-1 h-8 text-xs"
-                  />
-                </div>
-                <div>
-                  <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Карта ({symbol})</Label>
-                  <Input
-                    type="number" min={0}
-                    placeholder="0"
-                    value={paymentCard}
-                    onChange={e => setPaymentCard(e.target.value)}
-                    className="mt-1 h-8 text-xs"
-                  />
-                </div>
-                <div>
-                  <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
-                    {paymentProvider === 'click' ? 'Click' : paymentProvider === 'payme' ? 'Payme' : paymentProvider === 'uzum' ? 'Uzum' : 'Агрегатор'} ({symbol})
-                  </Label>
-                  <Input
-                    type="number" min={0}
-                    placeholder="0"
-                    value={paymentAggregator}
-                    onChange={e => setPaymentAggregator(e.target.value)}
-                    className="mt-1 h-8 text-xs"
-                  />
-                  {(parseFloat(paymentAggregator) || 0) > 0 && (
-                    <div className="grid grid-cols-3 gap-1 mt-1">
-                      {(['click','payme','uzum'] as const).map(p => (
-                        <button
-                          key={p}
-                          onClick={() => setPaymentProvider(p)}
-                          className={cn(
-                            'h-6 rounded text-[10px] font-bold border transition-colors capitalize',
-                            paymentProvider === p
-                              ? 'border-primary bg-primary text-primary-foreground'
-                              : p === 'click' ? 'border-sky-300 text-sky-600'
-                              : p === 'payme' ? 'border-emerald-300 text-emerald-600'
-                              : 'border-violet-300 text-violet-600'
-                          )}
-                        >
-                          {p}
-                        </button>
-                      ))}
+                  {appliedPromo ? (
+                    <div className="flex items-center gap-2 px-2 py-1.5 rounded-md border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/30">
+                      <span className="text-[10.5px] uppercase tracking-wider font-bold text-blue-700 dark:text-blue-300 shrink-0">Промокод:</span>
+                      <span className="font-mono text-xs font-bold text-blue-700 dark:text-blue-300 flex-1">{appliedPromo.code}</span>
+                      <span className="font-mono text-[11px] font-bold text-blue-700 dark:text-blue-300">−{formatCurrency(appliedPromo.amount)} {symbol}</span>
+                      <button
+                        onClick={removePromoCode}
+                        className="text-blue-700 dark:text-blue-300 hover:text-destructive p-0.5"
+                        title="Убрать промокод"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        placeholder="Промокод"
+                        value={promoCode}
+                        onChange={e => setPromoCode(e.target.value.toUpperCase())}
+                        onKeyDown={e => { if (e.key === 'Enter') applyPromoCode() }}
+                        className="h-8 text-xs font-mono uppercase flex-1"
+                      />
+                      <button
+                        onClick={applyPromoCode}
+                        disabled={!promoCode.trim() || validatingPromo}
+                        className={cn(
+                          'h-8 px-3 rounded-md text-xs font-bold border transition-colors shrink-0',
+                          promoCode.trim() && !validatingPromo
+                            ? 'border-blue-500 bg-blue-500 text-white hover:bg-blue-600'
+                            : 'border-border bg-muted text-muted-foreground cursor-not-allowed'
+                        )}
+                      >
+                        {validatingPromo ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Применить'}
+                      </button>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+              </details>
 
-            <div className="mb-2">
-              <div className="flex bg-muted rounded-md p-0.5 mb-1.5">
-                <button
-                  onClick={() => { setDiscMode('discount'); if (markup > 0) { setDiscount(markup); setMarkup(0) } }}
-                  className={cn(
-                    'flex-1 h-6 rounded text-[10.5px] font-bold transition-colors',
-                    discMode === 'discount' ? 'bg-emerald-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  Скидка
-                </button>
-                <button
-                  onClick={() => { setDiscMode('markup'); if (discount > 0) { setMarkup(discount); setDiscount(0) } }}
-                  className={cn(
-                    'flex-1 h-6 rounded text-[10.5px] font-bold transition-colors',
-                    discMode === 'markup' ? 'bg-amber-500 text-white shadow' : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  Надбавка
-                </button>
-              </div>
-              <div className="grid grid-cols-5 gap-1">
-                {[0, 5, 10, 15, 20].map(d => {
-                  const isMarkup = discMode === 'markup'
-                  const active = isMarkup ? markup === d : discount === d
-                  return (
-                    <button
-                      key={d}
-                      onClick={() => {
-                        if (isMarkup) { setMarkup(d); setDiscount(0) }
-                        else { setDiscount(d); setMarkup(0) }
-                      }}
-                      className={cn(
-                        'h-7 rounded-md text-[10.5px] font-bold font-mono border transition-colors',
-                        active
-                          ? isMarkup
-                            ? 'border-amber-500 bg-amber-500 text-white'
-                            : 'border-emerald-500 bg-emerald-500 text-white'
-                          : 'border-border hover:border-primary/40'
-                      )}
-                    >
-                      {isMarkup && d > 0 ? `+${d}%` : `${d}%`}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Промокод */}
-            <div className="mb-3">
-              {appliedPromo ? (
-                <div className="flex items-center gap-2 px-2 py-1.5 rounded-md border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/30">
-                  <span className="text-[10.5px] uppercase tracking-wider font-bold text-blue-700 dark:text-blue-300 shrink-0">Промокод:</span>
-                  <span className="font-mono text-xs font-bold text-blue-700 dark:text-blue-300 flex-1">{appliedPromo.code}</span>
-                  <span className="font-mono text-[11px] font-bold text-blue-700 dark:text-blue-300">−{formatCurrency(appliedPromo.amount)} {symbol}</span>
-                  <button
-                    onClick={removePromoCode}
-                    className="text-blue-700 dark:text-blue-300 hover:text-destructive p-0.5"
-                    title="Убрать промокод"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    placeholder="Промокод"
-                    value={promoCode}
-                    onChange={e => setPromoCode(e.target.value.toUpperCase())}
-                    onKeyDown={e => { if (e.key === 'Enter') applyPromoCode() }}
-                    className="h-7 text-xs font-mono uppercase flex-1"
-                  />
-                  <button
-                    onClick={applyPromoCode}
-                    disabled={!promoCode.trim() || validatingPromo}
-                    className={cn(
-                      'h-7 px-2.5 rounded-md text-[10.5px] font-bold border transition-colors shrink-0',
-                      promoCode.trim() && !validatingPromo
-                        ? 'border-blue-500 bg-blue-500 text-white hover:bg-blue-600'
-                        : 'border-border bg-muted text-muted-foreground cursor-not-allowed'
-                    )}
-                  >
-                    {validatingPromo ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Применить'}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {zones.urgent.length > 0 && (
-              <div className="mb-2 p-2 rounded-md border border-red-500/40 bg-red-50/40 dark:bg-red-950/20">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] uppercase tracking-wider font-bold text-red-700 dark:text-red-300">Срочно:</span>
-                  <div className="inline-flex bg-background rounded border border-red-200 dark:border-red-900/50 p-0.5">
-                    <button
-                      onClick={() => setExpressMode('percent')}
-                      className={cn(
-                        'h-6 px-2 rounded text-[10px] font-bold transition-colors',
-                        expressMode === 'percent' ? 'bg-red-500 text-white' : 'text-muted-foreground'
-                      )}
-                    >%</button>
-                    <button
-                      onClick={() => setExpressMode('fixed')}
-                      className={cn(
-                        'h-6 px-2 rounded text-[10px] font-bold transition-colors',
-                        expressMode === 'fixed' ? 'bg-red-500 text-white' : 'text-muted-foreground'
-                      )}
-                    >{symbol}</button>
+              {/* Срочность — видна, если есть urgent-зоны */}
+              {zones.urgent.length > 0 && (
+                <div className="p-2 rounded-md border border-red-500/40 bg-red-50/40 dark:bg-red-950/20">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-red-700 dark:text-red-300">Срочно:</span>
+                    <div className="inline-flex bg-background rounded border border-red-200 dark:border-red-900/50 p-0.5">
+                      <button
+                        onClick={() => setExpressMode('percent')}
+                        className={cn(
+                          'h-6 px-2 rounded text-[10px] font-bold transition-colors',
+                          expressMode === 'percent' ? 'bg-red-500 text-white' : 'text-muted-foreground'
+                        )}
+                      >%</button>
+                      <button
+                        onClick={() => setExpressMode('fixed')}
+                        className={cn(
+                          'h-6 px-2 rounded text-[10px] font-bold transition-colors',
+                          expressMode === 'fixed' ? 'bg-red-500 text-white' : 'text-muted-foreground'
+                        )}
+                      >{symbol}</button>
+                    </div>
+                    <Input
+                      type="number" min={0}
+                      value={expressValue}
+                      onChange={e => setExpressValue(e.target.value)}
+                      className="h-6 w-14 text-[11px] font-mono font-bold px-1.5"
+                    />
+                    <span className="ml-auto font-mono text-[10.5px] text-red-700 dark:text-red-300 font-bold">
+                      + {formatCurrency(surchargeAmt)} {symbol}
+                    </span>
                   </div>
-                  <Input
-                    type="number" min={0}
-                    value={expressValue}
-                    onChange={e => setExpressValue(e.target.value)}
-                    className="h-6 w-14 text-[11px] font-mono font-bold px-1.5"
-                  />
-                  <span className="ml-auto font-mono text-[10.5px] text-red-700 dark:text-red-300 font-bold">
-                    + {formatCurrency(surchargeAmt)} {symbol}
-                  </span>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="font-mono text-xs space-y-1">
-              <div className="flex justify-between text-muted-foreground">
-                <span>Подытог ({allLines.reduce((s, l) => s + l.qty, 0)} шт)</span>
-                <span>{formatCurrency(subtotal)} {symbol}</span>
-              </div>
-              {surchargeAmt > 0 && (
-                <div className="flex justify-between text-red-500">
-                  <span>Срочно {expressMode === 'percent' ? `+${expressValue}%` : ''}</span>
-                  <span>+ {formatCurrency(surchargeAmt)} {symbol}</span>
+              {/* Сводка цены */}
+              <div className="text-xs space-y-0.5 pt-1">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Подытог ({allLines.reduce((s, l) => s + l.qty, 0)} шт)</span>
+                  <span className="font-mono">{formatCurrency(subtotal)} {symbol}</span>
                 </div>
-              )}
-              {markupAmt > 0 && (
-                <div className="flex justify-between text-amber-600">
-                  <span>Надбавка +{markup}%</span>
-                  <span>+ {formatCurrency(markupAmt)} {symbol}</span>
-                </div>
-              )}
-              {deliveryAdd > 0 && (
-                <div className="flex justify-between text-violet-600">
-                  <span>Доставка</span>
-                  <span>+ {formatCurrency(deliveryAdd)} {symbol}</span>
-                </div>
-              )}
-              {discount > 0 && (
-                <div className="flex justify-between text-emerald-600">
-                  <span>Скидка {discount}%</span>
-                  <span>− {formatCurrency(discountAmt)} {symbol}</span>
-                </div>
-              )}
-              {promoAmt > 0 && (
-                <div className="flex justify-between text-blue-600">
-                  <span>Промокод {appliedPromo?.code}</span>
-                  <span>− {formatCurrency(promoAmt)} {symbol}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-baseline border-t pt-2 mt-2">
-                <span className="font-sans font-bold text-base">Итого</span>
-                <span className="text-xl font-extrabold">{formatCurrency(total)} {symbol}</span>
+                {surchargeAmt > 0 && (
+                  <div className="flex justify-between text-red-500">
+                    <span>Срочно {expressMode === 'percent' ? `+${expressValue}%` : ''}</span>
+                    <span className="font-mono">+ {formatCurrency(surchargeAmt)} {symbol}</span>
+                  </div>
+                )}
+                {markupAmt > 0 && (
+                  <div className="flex justify-between text-amber-600">
+                    <span>Надбавка +{markup}%</span>
+                    <span className="font-mono">+ {formatCurrency(markupAmt)} {symbol}</span>
+                  </div>
+                )}
+                {deliveryAdd > 0 && (
+                  <div className="flex justify-between text-violet-600">
+                    <span>Доставка</span>
+                    <span className="font-mono">+ {formatCurrency(deliveryAdd)} {symbol}</span>
+                  </div>
+                )}
+                {discount > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span>Скидка {discount}%</span>
+                    <span className="font-mono">− {formatCurrency(discountAmt)} {symbol}</span>
+                  </div>
+                )}
+                {promoAmt > 0 && (
+                  <div className="flex justify-between text-blue-600">
+                    <span>Промокод {appliedPromo?.code}</span>
+                    <span className="font-mono">− {formatCurrency(promoAmt)} {symbol}</span>
+                  </div>
+                )}
               </div>
             </div>
-            </div>
-            {/* Footer модалки */}
+
+            {/* Footer */}
             <div className="border-t px-5 py-3 bg-muted/30 flex gap-2 shrink-0">
               <Button
                 variant="outline"
