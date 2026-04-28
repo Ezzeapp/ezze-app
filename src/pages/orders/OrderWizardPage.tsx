@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label'
 import { DateInput } from '@/components/ui/date-input'
 import { toast } from '@/components/shared/Toaster'
 import {
-  useCreateOrder, useCleaningEnabledOrderTypes, getOrderTypeIcon,
+  useCreateOrder, useCleaningEnabledOrderTypes, getOrderTypeIcon, isItemAvailableForOrderType,
   type OrderType, type CleaningOrderTypeConfig, DEFAULT_ENABLED_CONFIGS,
 } from '@/hooks/useCleaningOrders'
 import { useCleaningItemTypes, type CleaningItemType } from '@/hooks/useCleaningItemTypes'
@@ -123,9 +123,9 @@ export function OrderWizardPage() {
     },
   })
 
-  // Каталог
+  // Каталог: позиции выбранного типа + универсальные доп. услуги (extras)
   const filteredTypes = useMemo(
-    () => allTypes.filter(t => (t.category || 'clothing') === orderType),
+    () => allTypes.filter(t => isItemAvailableForOrderType(t.category, orderType)),
     [allTypes, orderType]
   )
   const subgroups = useMemo(() => {

@@ -7,7 +7,25 @@ import { Shirt, LayoutGrid, Sofa, Footprints, Wind, BedDouble, Package, Scissors
 import dayjs from 'dayjs'
 
 export type OrderType = string   // slug of the order type (e.g. 'clothing', 'carpet', custom...)
-export const ALL_ORDER_TYPES: OrderType[] = ['clothing', 'carpet', 'furniture', 'shoes', 'curtains', 'bedding']
+export const ALL_ORDER_TYPES: OrderType[] = ['clothing', 'carpet', 'furniture', 'shoes', 'curtains', 'bedding', 'extras']
+
+// Услуги с этими типами доступны в заказе любого типа (универсальные доп. услуги).
+export const UNIVERSAL_ITEM_CATEGORIES: string[] = ['extras']
+
+/**
+ * Проверяет, доступна ли позиция справочника при создании заказа выбранного типа.
+ * Универсальные категории (extras) видны во всех типах, кроме самого extras —
+ * там они показываются по основному условию совпадения категорий.
+ */
+export function isItemAvailableForOrderType(
+  itemCategory: string | undefined | null,
+  orderType: OrderType,
+): boolean {
+  const cat = itemCategory || 'clothing'
+  if (cat === orderType) return true
+  if (UNIVERSAL_ITEM_CATEGORIES.includes(cat) && orderType !== 'extras') return true
+  return false
+}
 
 // ── Интерфейс конфигурации типа заказа ────────────────────────────────────────
 export interface CleaningOrderTypeConfig {
@@ -46,9 +64,10 @@ const DEFAULT_ORDER_TYPES: CleaningOrderTypeConfig[] = [
   { slug: 'clothing',  label: 'Одежда',      icon: 'Shirt',      sort_order: 0, active: true,  description: 'Одежда, пальто, куртки, костюмы' },
   { slug: 'carpet',    label: 'Ковёр',        icon: 'LayoutGrid', sort_order: 1, active: true,  description: 'Ковры, дорожки (цена за кв.м)' },
   { slug: 'furniture', label: 'Мебель',       icon: 'Sofa',       sort_order: 2, active: true,  description: 'Диваны, кресла, матрасы' },
-  { slug: 'shoes',     label: 'Обувь',        icon: 'Footprints', sort_order: 3, active: false, description: 'Обувь, сапоги, ботинки' },
-  { slug: 'curtains',  label: 'Шторы',        icon: 'Wind',       sort_order: 4, active: false, description: 'Шторы, тюль, занавески' },
-  { slug: 'bedding',   label: 'Постельное',   icon: 'BedDouble',  sort_order: 5, active: false, description: 'Одеяла, подушки, постельное' },
+  { slug: 'shoes',     label: 'Обувь',        icon: 'Footprints', sort_order: 3, active: true,  description: 'Обувь, сапоги, ботинки' },
+  { slug: 'curtains',  label: 'Шторы',        icon: 'Wind',       sort_order: 4, active: true,  description: 'Шторы, тюль, занавески' },
+  { slug: 'bedding',   label: 'Постельное',   icon: 'BedDouble',  sort_order: 5, active: true,  description: 'Одеяла, подушки, постельное' },
+  { slug: 'extras',    label: 'Доп. услуги',  icon: 'Sparkles',   sort_order: 6, active: true,  description: 'Срочная химчистка, доставка, дезинфекция, упаковка' },
 ]
 export type OrderStatus = 'received' | 'in_progress' | 'ready' | 'issued' | 'paid' | 'cancelled'
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid'
@@ -127,6 +146,7 @@ export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   shoes:     'Обувь',
   curtains:  'Шторы',
   bedding:   'Постельное',
+  extras:    'Доп. услуги',
 }
 
 export const ORDER_TYPE_DESCRIPTIONS: Record<OrderType, string> = {
@@ -136,6 +156,7 @@ export const ORDER_TYPE_DESCRIPTIONS: Record<OrderType, string> = {
   shoes:     'Обувь, сапоги, ботинки',
   curtains:  'Шторы, тюль, занавески',
   bedding:   'Одеяла, подушки, постельное',
+  extras:    'Срочная химчистка, доставка, дезинфекция, упаковка',
 }
 
 export const ORDER_TYPE_ICONS: Record<OrderType, LucideIcon> = {
@@ -145,6 +166,7 @@ export const ORDER_TYPE_ICONS: Record<OrderType, LucideIcon> = {
   shoes:     Footprints,
   curtains:  Wind,
   bedding:   BedDouble,
+  extras:    Sparkles,
 }
 
 // ── Конфигурация типов заказов ─────────────────────────────────────────────

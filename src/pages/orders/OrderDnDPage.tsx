@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/shared/Toaster'
 import {
-  useCreateOrder, useCleaningEnabledOrderTypes, getOrderTypeIcon,
+  useCreateOrder, useCleaningEnabledOrderTypes, getOrderTypeIcon, isItemAvailableForOrderType,
   type OrderType, DEFAULT_ENABLED_CONFIGS,
 } from '@/hooks/useCleaningOrders'
 import { useCleaningItemTypes, type CleaningItemType } from '@/hooks/useCleaningItemTypes'
@@ -96,9 +96,9 @@ export function OrderDnDPage() {
     }
   }, [enabledOrderTypes, orderType])
 
-  // Каталог
+  // Каталог: позиции выбранного типа + универсальные доп. услуги (extras)
   const filteredTypes = useMemo(
-    () => allTypes.filter(t => (t.category || 'clothing') === orderType),
+    () => allTypes.filter(t => isItemAvailableForOrderType(t.category, orderType)),
     [allTypes, orderType]
   )
   const subgroups = useMemo(() => {

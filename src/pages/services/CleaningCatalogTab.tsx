@@ -16,14 +16,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { useGlobalServices } from '@/hooks/useGlobalCatalogs'
 
 // ── Keyword-based category suggest (used only as UX hint in AddDialog) ───────
+const EXTRAS_KW    = ['срочн', 'доставк', 'выезд', 'дезодор', 'дезинф', 'упаковк', 'консервац', 'хранен', 'антимол', 'антиклещ', 'аромат', 'страховк']
 const CARPET_KW    = ['кв.м', 'ковёр', 'ковр', 'палас']
-const FURNITURE_KW = ['диван', 'кресло', 'матрас', 'пуф', 'угловой', 'банкетк', 'стул мягк']
-const SHOES_KW     = ['сапог', 'ботин', 'кроссов', 'туфл', 'сандал', 'обувь', 'угг', 'кед', 'мокасин', 'шлёпанц', 'шлепанц']
-const CURTAINS_KW  = ['штор', 'тюл', 'занавес', 'ламбрек', 'жалюзи', 'гардин', 'портьер']
-const BEDDING_KW   = ['одеял', 'подушк', 'постел', 'простын', 'наволочк', 'пеленк', 'наматрасник', 'плед', 'покрывал']
+const FURNITURE_KW = ['диван', 'кресло', 'матрас', 'пуф', 'угловой', 'банкетк', 'стул мягк', 'автосалон', 'автомоб', 'автокресл', 'изголов']
+const SHOES_KW     = ['сапог', 'ботин', 'кроссов', 'туфл', 'сандал', 'обувь', 'угг', 'кед', 'мокасин', 'шлёпанц', 'шлепанц', 'эспадрил', 'балетк', 'тапк', 'унт', 'валенк']
+const CURTAINS_KW  = ['штор', 'тюл', 'занавес', 'ламбрек', 'жалюзи', 'гардин', 'портьер', 'балдахин', 'плиссе']
+const BEDDING_KW   = ['одеял', 'подушк', 'постел', 'простын', 'наволочк', 'пеленк', 'наматрасник', 'плед', 'покрывал', 'скатерт', 'салфетк', 'полотенц']
 
 function suggestCategory(name: string): string {
   const n = name.toLowerCase()
+  if (EXTRAS_KW.some(k => n.includes(k))) return 'extras'
   if (CARPET_KW.some(k => n.includes(k))) return 'carpet'
   if (FURNITURE_KW.some(k => n.includes(k))) return 'furniture'
   if (SHOES_KW.some(k => n.includes(k))) return 'shoes'
@@ -35,11 +37,12 @@ function suggestCategory(name: string): string {
 // ── Map global catalog category text → OrderType slug ───────────────────────
 function mapGlobalCategoryToSlug(categoryText: string): string {
   const t = (categoryText || '').toLowerCase()
-  if (t.includes('ковр') || t.includes('палас')) return 'carpet'
-  if (t.includes('мебел') || t.includes('диван') || t.includes('кресл') || t.includes('матрас')) return 'furniture'
-  if (t.includes('обувь') || t.includes('ботин') || t.includes('кроссов') || t.includes('туфл') || t.includes('кед')) return 'shoes'
+  if (t.includes('спецуслуг') || t.includes('доп. услуг')) return 'extras'
+  if (t === 'ковры' || t.includes('ковр') || t.includes('палас')) return 'carpet'
+  if (t.includes('мягк') || t.includes('диван') || t.includes('кресл') || t.includes('матрас') || t.includes('авто')) return 'furniture'
+  if (t === 'обувь' || t.includes('ботин') || t.includes('кроссов') || t.includes('туфл') || t.includes('кед')) return 'shoes'
   if (t.includes('штор') || t.includes('тюл') || t.includes('занавес') || t.includes('гардин') || t.includes('портьер')) return 'curtains'
-  if (t.includes('постел') || t.includes('одеял') || t.includes('подушк') || t.includes('плед') || t.includes('покрывал')) return 'bedding'
+  if (t.includes('постел') || t.includes('одеял') || t.includes('подушк') || t.includes('плед') || t.includes('покрывал') || t.includes('детское бельё') || t.includes('текстиль для дома')) return 'bedding'
   return 'clothing'
 }
 
@@ -51,6 +54,7 @@ const BADGE_COLORS: Record<string, string> = {
   shoes:     'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
   curtains:  'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
   bedding:   'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
+  extras:    'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
 }
 
 function CategoryBadge({ category, label }: { category: string; label?: string }) {
@@ -65,12 +69,13 @@ function CategoryBadge({ category, label }: { category: string; label?: string }
 
 // ── Default category options (fallback when config not loaded) ────────────────
 const DEFAULT_CAT_OPTIONS: CleaningOrderTypeConfig[] = [
-  { slug: 'clothing',  label: 'Одежда',    icon: 'Shirt',      sort_order: 0, active: true },
-  { slug: 'carpet',    label: 'Ковёр',     icon: 'LayoutGrid', sort_order: 1, active: true },
-  { slug: 'furniture', label: 'Мебель',    icon: 'Sofa',       sort_order: 2, active: true },
-  { slug: 'shoes',     label: 'Обувь',     icon: 'Footprints', sort_order: 3, active: false },
-  { slug: 'curtains',  label: 'Шторы',     icon: 'Wind',       sort_order: 4, active: false },
-  { slug: 'bedding',   label: 'Постельное', icon: 'BedDouble', sort_order: 5, active: false },
+  { slug: 'clothing',  label: 'Одежда',     icon: 'Shirt',      sort_order: 0, active: true },
+  { slug: 'carpet',    label: 'Ковёр',      icon: 'LayoutGrid', sort_order: 1, active: true },
+  { slug: 'furniture', label: 'Мебель',     icon: 'Sofa',       sort_order: 2, active: true },
+  { slug: 'shoes',     label: 'Обувь',      icon: 'Footprints', sort_order: 3, active: true },
+  { slug: 'curtains',  label: 'Шторы',      icon: 'Wind',       sort_order: 4, active: true },
+  { slug: 'bedding',   label: 'Постельное', icon: 'BedDouble',  sort_order: 5, active: true },
+  { slug: 'extras',    label: 'Доп. услуги', icon: 'Sparkles',  sort_order: 6, active: true },
 ]
 
 // ── Add dialog ────────────────────────────────────────────────────────────────

@@ -7,7 +7,7 @@ import { DateInput } from '@/components/ui/date-input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { toast } from '@/components/shared/Toaster'
-import { useCreateOrder, type OrderType, getOrderTypeIcon, useCleaningEnabledOrderTypes, type CleaningOrderTypeConfig, DEFAULT_ENABLED_CONFIGS } from '@/hooks/useCleaningOrders'
+import { useCreateOrder, type OrderType, getOrderTypeIcon, useCleaningEnabledOrderTypes, isItemAvailableForOrderType, type CleaningOrderTypeConfig, DEFAULT_ENABLED_CONFIGS } from '@/hooks/useCleaningOrders'
 import { useCleaningItemTypes } from '@/hooks/useCleaningItemTypes'
 import { useClientsPaged, useCreateClient } from '@/hooks/useClients'
 import { formatCurrency } from '@/lib/utils'
@@ -321,9 +321,9 @@ export function POSPage() {
     },
   })
 
-  // Каталог
+  // Каталог: позиции выбранного типа + универсальные доп. услуги (extras)
   const { data: allTypes = [] } = useCleaningItemTypes()
-  const filteredTypes = allTypes.filter(t => (t.category || 'clothing') === orderType)
+  const filteredTypes = allTypes.filter(t => isItemAvailableForOrderType(t.category, orderType))
   const [catalogSearch, setCatalogSearch] = useState('')
   const [catalogView, setCatalogView] = useState<'grid' | 'list'>('grid')
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
@@ -581,6 +581,7 @@ export function POSPage() {
     shoes:     'bg-rose-50/40 dark:bg-rose-950/10',
     curtains:  'bg-violet-50/40 dark:bg-violet-950/10',
     bedding:   'bg-sky-50/40 dark:bg-sky-950/10',
+    extras:    'bg-pink-50/40 dark:bg-pink-950/10',
   }
 
   const addCustomItem = () => {
