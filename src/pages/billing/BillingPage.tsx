@@ -1,9 +1,12 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Navigate } from 'react-router-dom'
 import { Check, Zap, Crown, Building2, CreditCard, ExternalLink, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import dayjs from 'dayjs'
 import { useAuth } from '@/contexts/AuthContext'
-import { useAppSettings, usePlanPrices, DEFAULT_PLAN_PRICES, usePlanLimits, DEFAULT_PLAN_LIMITS, usePlanFeatures, DEFAULT_PLAN_FEATURES, usePlanNames, DEFAULT_PLAN_NAMES, type PlanFeaturesConfig } from '@/hooks/useAppSettings'
+import { useTeamScope } from '@/contexts/TeamContext'
+import { useAppSettings, usePlanPrices, DEFAULT_PLAN_PRICES, usePlanLimits, DEFAULT_PLAN_LIMITS, usePlanFeatures, DEFAULT_PLAN_FEATURES, usePlanNames, DEFAULT_PLAN_NAMES, usePlanSeatPricing, DEFAULT_PLAN_SEAT_PRICING, type PlanFeaturesConfig } from '@/hooks/useAppSettings'
+import { useTeamMembers, useMyTeam } from '@/hooks/useTeam'
 import { useMySubscription, useSubscriptionHistory } from '@/hooks/useSubscription'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -285,12 +288,27 @@ function PlanCard({ plan, currentPlan, onUpgrade }: PlanCardProps) {
   const { data: planLimits }     = usePlanLimits()
   const { data: planFeaturesData } = usePlanFeatures()
   const { data: planNames }      = usePlanNames()
+  const { data: seatPricing }    = usePlanSeatPricing()
+
+  // Текущая команда владельца — для расчёта реальной цены с учётом seats
+  const { data: myTeam }         = useMyTeam()
+  const ownTeamId = myTeam?.isOwner ? myTeam.team?.id : undefined
+  const { data: members = [] }   = useTeamMembers(ownTeamId ?? '')
+  const activeSeats = members.filter((m: any) => m.status === 'active').length
 
   const PlanIcon    = plan.icon
   const prices      = planPrices ?? DEFAULT_PLAN_PRICES
   const price       = plan.id === 'free' ? 0 : (prices[plan.id as keyof typeof prices] ?? 0)
   const isCurrent   = plan.id === currentPlan
   const isDowngrade = PLANS.findIndex(p => p.id === plan.id) < PLANS.findIndex(p => p.id === currentPlan)
+
+  // Per-seat расчёт для тарифа enterprise
+  const seatCfg = (seatPricing ?? DEFAULT_PLAN_SEAT_PRICING)[plan.id as 'free' | 'pro' | 'enterprise']
+  const isPerSeat = plan.id === 'enterprise' && seatCfg.additional_seat_price > 0
+  const additionalSeatsForCurrent = isPerSeat
+    ? Math.max(0, activeSeats - seatCfg.seats_included)
+    : 0
+  const totalForCurrent = price + additionalSeatsForCurrent * seatCfg.additional_seat_price
 
   // ── Динамические фичи на основе реальных лимитов ──────────────────────────
   const dynamicFeatures = useMemo(() => {
@@ -362,6 +380,18 @@ function PlanCard({ plan, currentPlan, onUpgrade }: PlanCardProps) {
               : formatCurrency(price, 'UZS', i18n.language) + ' / ' + t('billing.perMonth')
             }
           </p>
+          {isPerSeat && (
+            <p className="text-[11px] text-muted-foreground mt-1">
+              + {formatCurrency(seatCfg.additional_seat_price, 'UZS', i18n.language)} за сотрудника свыше {seatCfg.seats_included}
+            </p>
+          )}
+          {isPerSeat && isCurrent && activeSeats > seatCfg.seats_included && (
+            <div className="mt-2 px-2 py-1.5 rounded-md bg-purple-100/60 dark:bg-purple-900/30 text-xs">
+              <span className="text-purple-700 dark:text-purple-300">
+                Сейчас в команде: <b>{activeSeats}</b>. Итого: <b>{formatCurrency(totalForCurrent, 'UZS', i18n.language)}/мес</b>
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -447,7 +477,13 @@ function SubscriptionHistory() {
 export function BillingPage() {
   const { t }            = useTranslation()
   const { user }         = useAuth()
+  const teamScope        = useTeamScope()
   const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(null)
+
+  // Сотрудники команды (team_only_for) не имеют своей подписки — редирект
+  if (teamScope.isTeamOnly) {
+    return <Navigate to="/" replace />
+  }
 
   const currentPlan = (user?.plan ?? 'free') as PlanId
 

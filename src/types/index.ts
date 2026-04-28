@@ -16,6 +16,8 @@ export interface User extends BaseRecord {
   onboarded?: boolean
   is_admin?: boolean
   plan?: 'free' | 'pro' | 'enterprise'
+  /** Если заполнено — пользователь существует только как сотрудник этой команды */
+  team_only_for?: string | null
 }
 
 // ── Справочник видов деятельности и специальностей ──────────────────────────

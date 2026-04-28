@@ -16,6 +16,7 @@ function DefaultRedirect() {
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/queryClient'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { TeamProvider } from '@/contexts/TeamContext'
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Toaster } from '@/components/shared/Toaster'
@@ -257,10 +258,12 @@ export default function App() {
       <AppSettingsInitializer />
       <RealtimeSync />
       <AuthProvider>
-        <Suspense fallback={<LoadingSpinner fullScreen />}>
-          <RouterProvider router={router} />
-        </Suspense>
-        <Toaster />
+        <TeamProvider>
+          <Suspense fallback={<LoadingSpinner fullScreen />}>
+            <RouterProvider router={router} />
+          </Suspense>
+          <Toaster />
+        </TeamProvider>
       </AuthProvider>
     </QueryClientProvider>
   )

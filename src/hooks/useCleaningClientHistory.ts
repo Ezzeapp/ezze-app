@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useTeamScope } from '@/contexts/TeamContext'
 import { PRODUCT } from '@/lib/config'
 
 export interface RecentOrder {
@@ -22,17 +23,24 @@ export interface ClientHistory {
 }
 
 export function useCleaningClientHistory(clientId: string | null) {
+  const teamScope = useTeamScope()
   return useQuery<ClientHistory | null>({
-    queryKey: ['cleaning_client_history', clientId, PRODUCT],
+    // teamId в queryKey: при смене контекста (вход/выход из команды) кэш не смешивается
+    queryKey: ['cleaning_client_history', clientId, PRODUCT, teamScope.effectiveTeamId],
     queryFn: async () => {
       if (!clientId) return null
-      const { data } = await supabase
+      let q = supabase
         .from('cleaning_orders')
         .select('id, number, status, total_amount, paid_amount, created_at, items:cleaning_order_items(item_type_name)')
         .eq('client_id', clientId)
         .eq('product', PRODUCT)
         .order('created_at', { ascending: false })
         .limit(30)
+      // В команде — фильтруем по team_id (дублирует RLS, но даёт явный контракт + лучший cache)
+      if (teamScope.effectiveTeamId) {
+        q = q.eq('team_id', teamScope.effectiveTeamId)
+      }
+      const { data } = await q
       const orders = (data ?? []) as Array<RecentOrder & { items: { item_type_name: string }[] }>
 
       const counts = new Map<string, number>()

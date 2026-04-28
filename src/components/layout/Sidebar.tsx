@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTeamScope } from '@/contexts/TeamContext'
 import { useFeature } from '@/hooks/useFeatureFlags'
 import { useMyTeam } from '@/hooks/useTeam'
 import { useAppSettings } from '@/hooks/useAppSettings'
@@ -53,7 +54,13 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
   const { t } = useTranslation()
   const { user } = useAuth()
   const { data: teamData } = useMyTeam()
+  const teamScope = useTeamScope()
   const { data: appSettings } = useAppSettings()
+  // Сотрудник в команде (team_only_for) — урезанный sidebar без Settings/Billing/Admin
+  const isTeamOnly = teamScope.isTeamOnly
+  const role = teamScope.role
+  // Worker — самый ограниченный: только заказы и базовые пункты
+  const isWorker = role === 'worker'
   const platformName = appSettings?.platform_name ?? 'Ezze'
   const logoUrl = appSettings?.logo_url
   const ServiceIcon = useProfileIcon()
@@ -150,19 +157,35 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
         )}
 
         {/* ── Команда ── */}
-        <SidebarGroupLabel label={t('nav.groupTeam')} />
-        <NavItemGated icon={UsersRound} iconColor="dark:text-cyan-400" label={t('nav.team')} to="/team" feature="teams" onClick={onClose} />
+        {/* Сотрудники команды и владельцы видят пункт всегда. Остальным — по фиче (план Pro+) */}
+        {(teamScope.isMember || teamScope.isOwner || teamScope.isTeamOnly) ? (
+          <>
+            <SidebarGroupLabel label={t('nav.groupTeam')} />
+            <SidebarNavItem icon={UsersRound} iconColor="dark:text-cyan-400" label={t('nav.team')} to="/team" onClick={onClose} />
+          </>
+        ) : (
+          <>
+            <SidebarGroupLabel label={t('nav.groupTeam')} />
+            <NavItemGated icon={UsersRound} iconColor="dark:text-cyan-400" label={t('nav.team')} to="/team" feature="teams" onClick={onClose} />
+          </>
+        )}
       </nav>
 
       <Separator className="bg-sidebar-border" />
 
       {/* Bottom nav */}
       <div className="py-4 px-2 space-y-1">
-        <SidebarNavItem icon={CreditCard} iconColor="dark:text-yellow-400"  label={t('nav.billing')}  to="/billing"  onClick={onClose} />
+        {/* Сотруднику не показываем биллинг (платит владелец) и админку */}
+        {!isTeamOnly && (
+          <SidebarNavItem icon={CreditCard} iconColor="dark:text-yellow-400"  label={t('nav.billing')}  to="/billing"  onClick={onClose} />
+        )}
         <SidebarNavItem icon={LifeBuoy}   iconColor="dark:text-red-400"     label={t('nav.support')}  to="/support"  onClick={onClose} />
         <SidebarNavItem icon={User}       iconColor="dark:text-violet-400"  label={t('nav.profile')}  to="/profile"  onClick={onClose} />
-        <SidebarNavItem icon={Settings}   iconColor="dark:text-slate-400"   label={t('nav.settings')} to="/settings" onClick={onClose} />
-        {user?.is_admin && (
+        {/* Worker не видит Settings (нечего ему там настраивать) */}
+        {!isWorker && (
+          <SidebarNavItem icon={Settings}   iconColor="dark:text-slate-400"   label={t('nav.settings')} to="/settings" onClick={onClose} />
+        )}
+        {user?.is_admin && !isTeamOnly && (
           <SidebarNavItem
             icon={ShieldCheck}
             label={t('nav.admin')}

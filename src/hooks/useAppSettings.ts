@@ -224,6 +224,157 @@ export function useUpdatePlanFeatures() {
   })
 }
 
+// ── Plan Seat Pricing (per-seat биллинг для команд) ──────────────────────────
+
+export interface SeatPricingTier {
+  seats_included:        number   // включено в базовую цену
+  additional_seat_price: number   // цена за каждое доп. место (UZS)
+  max_seats:             number   // лимит мест в этом тарифе
+}
+
+export interface PlanSeatPricingConfig {
+  free:       SeatPricingTier
+  pro:        SeatPricingTier
+  enterprise: SeatPricingTier
+}
+
+export const DEFAULT_PLAN_SEAT_PRICING: PlanSeatPricingConfig = {
+  free:       { seats_included: 1, additional_seat_price: 0,     max_seats: 1 },
+  pro:        { seats_included: 1, additional_seat_price: 0,     max_seats: 1 },
+  enterprise: { seats_included: 3, additional_seat_price: 30000, max_seats: 15 },
+}
+
+export function usePlanSeatPricing() {
+  return useQuery({
+    queryKey: [APP_SETTINGS_KEY, 'plan_seat_pricing'],
+    queryFn: async (): Promise<PlanSeatPricingConfig> => {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'plan_seat_pricing')
+        .eq('product', PRODUCT)
+        .maybeSingle()
+      if (!data?.value) return DEFAULT_PLAN_SEAT_PRICING
+      try {
+        return { ...DEFAULT_PLAN_SEAT_PRICING, ...JSON.parse(data.value) } as PlanSeatPricingConfig
+      } catch {
+        return DEFAULT_PLAN_SEAT_PRICING
+      }
+    },
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useUpdatePlanSeatPricing() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (config: PlanSeatPricingConfig) => {
+      const value = JSON.stringify(config)
+      const { data, error } = await supabase
+        .from('app_settings')
+        .upsert({ product: PRODUCT, key: 'plan_seat_pricing', value }, { onConflict: 'product,key' })
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [APP_SETTINGS_KEY, 'plan_seat_pricing'] }),
+  })
+}
+
+
+// ── Plan Active (флаги включения тарифов) ───────────────────────────────────
+
+export interface PlanActiveConfig {
+  free:       boolean
+  pro:        boolean
+  enterprise: boolean
+}
+
+export const DEFAULT_PLAN_ACTIVE: PlanActiveConfig = {
+  free: true, pro: true, enterprise: true,
+}
+
+export function usePlanActive() {
+  return useQuery({
+    queryKey: [APP_SETTINGS_KEY, 'plan_active'],
+    queryFn: async (): Promise<PlanActiveConfig> => {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'plan_active')
+        .eq('product', PRODUCT)
+        .maybeSingle()
+      if (!data?.value) return DEFAULT_PLAN_ACTIVE
+      try {
+        return { ...DEFAULT_PLAN_ACTIVE, ...JSON.parse(data.value) } as PlanActiveConfig
+      } catch {
+        return DEFAULT_PLAN_ACTIVE
+      }
+    },
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useUpdatePlanActive() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (cfg: PlanActiveConfig) => {
+      const value = JSON.stringify(cfg)
+      const { data, error } = await supabase
+        .from('app_settings')
+        .upsert({ product: PRODUCT, key: 'plan_active', value }, { onConflict: 'product,key' })
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [APP_SETTINGS_KEY, 'plan_active'] }),
+  })
+}
+
+
+// ── Subscription Price (расчёт с учётом seats) ─────────────────────────────
+
+export interface SubscriptionPriceArgs {
+  plan: 'free' | 'pro' | 'enterprise'
+  seats?: number   // для enterprise — фактическое кол-во активных сотрудников
+}
+
+/**
+ * Рассчитывает итоговую месячную цену подписки с учётом per-seat биллинга.
+ * Все значения берутся из app_settings — ничего не хардкодится.
+ *
+ * @example
+ *   const { data: price } = useSubscriptionPrice({ plan: 'enterprise', seats: 5 })
+ *   // плановая база 120000 + (5-3) * 30000 = 180000
+ */
+export function useSubscriptionPrice(args: SubscriptionPriceArgs) {
+  const { data: prices } = usePlanPrices()
+  const { data: seatPricing } = usePlanSeatPricing()
+
+  const plan = args.plan
+  const seats = Math.max(0, args.seats ?? 0)
+
+  return useQuery({
+    queryKey: [APP_SETTINGS_KEY, 'subscription_price', plan, seats, prices, seatPricing],
+    queryFn: async () => {
+      const basePrice = plan === 'free' ? 0
+        : plan === 'pro' ? (prices?.pro ?? 0)
+        : (prices?.enterprise ?? 0)
+
+      if (plan !== 'enterprise') return basePrice
+
+      const cfg = seatPricing?.enterprise ?? DEFAULT_PLAN_SEAT_PRICING.enterprise
+      const additionalSeats = Math.max(0, seats - cfg.seats_included)
+      return basePrice + additionalSeats * cfg.additional_seat_price
+    },
+    enabled: !!prices && !!seatPricing,
+    staleTime: 60_000,
+  })
+}
+
+
 // ── Plan Limit Check ─────────────────────────────────────────────────────────
 
 export interface PlanLimitCheckResult {

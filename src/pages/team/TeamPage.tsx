@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useFeature } from '@/hooks/useFeatureFlags'
+import { useTeamScope } from '@/contexts/TeamContext'
 import {
   Users, UserPlus, Copy, Trash2, UserMinus, Check,
   LogIn, ChevronRight, Loader2, KeyRound, AlertTriangle,
@@ -404,9 +405,11 @@ function InviteRow({ invite, onShowQR }: { invite: any; onShowQR?: (code: string
 
 function MembersTab({ team, members, membersLoading }: { team: any; members: any[]; membersLoading: boolean }) {
   const { t } = useTranslation()
-  const [maxUsesInput, setMaxUsesInput] = useState('5')
+  const [maxUsesInput, setMaxUsesInput] = useState('1')
+  const [inviteRole, setInviteRole] = useState<'admin' | 'operator' | 'worker'>('operator')
   const [newInviteCode, setNewInviteCode] = useState<string | null>(null)
   const [copiedNew, setCopiedNew] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null)
   const [qrCode, setQrCode] = useState<string | null>(null)
 
@@ -424,13 +427,20 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
 
   const maxUsesValue = maxUsesInput === '' ? 0 : Math.max(0, parseInt(maxUsesInput) || 0)
 
+  // TG-бот ссылка для приглашения сотрудника (master-бот для всех продуктов)
+  // Сотрудник тапает → бот регистрирует через team-employee-register
+  const botLink = newInviteCode
+    ? `https://t.me/ezzemaster_bot?start=join_${newInviteCode}`
+    : null
+
   const handleCreateInvite = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
       const inv = await createInvite.mutateAsync({
         teamId: team.id,
         maxUses: maxUsesValue,
-        expiryDays: 3,
+        expiryDays: 7,
+        label: inviteRole,
       })
       setNewInviteCode(inv.code)
     } catch {
@@ -443,7 +453,15 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
     await navigator.clipboard.writeText(newInviteCode)
     setCopiedNew(true)
     toast.success(t('team.inviteCodeCopied'))
-    setTimeout(() => { setCopiedNew(false); setNewInviteCode(null) }, 3000)
+    setTimeout(() => { setCopiedNew(false) }, 2000)
+  }
+
+  const handleCopyLink = async () => {
+    if (!botLink) return
+    await navigator.clipboard.writeText(botLink)
+    setCopiedLink(true)
+    toast.success('Ссылка скопирована')
+    setTimeout(() => { setCopiedLink(false) }, 2000)
   }
 
   const handleRemoveConfirmed = async () => {
@@ -469,7 +487,19 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <form onSubmit={handleCreateInvite}>
+          <form onSubmit={handleCreateInvite} className="space-y-2.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-muted-foreground shrink-0">Роль:</span>
+              <select
+                value={inviteRole}
+                onChange={e => setInviteRole(e.target.value as any)}
+                className="h-8 rounded border border-border bg-background px-2 text-sm font-medium focus:outline-none focus:border-primary"
+              >
+                <option value="operator">Оператор (POS, заказы)</option>
+                <option value="worker">Сотрудник (только свои заказы)</option>
+                <option value="admin">Админ (управление командой)</option>
+              </select>
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground shrink-0">{t('team.inviteUses')}:</span>
               <input
@@ -482,30 +512,58 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
                 placeholder="0=∞"
               />
               <Button type="submit" size="sm" loading={createInvite.isPending} className="ml-auto shrink-0">
-                {t('team.generateCode')}
+                <UserPlus className="h-3.5 w-3.5 mr-1" />
+                Пригласить сотрудника
               </Button>
             </div>
           </form>
 
-          {newInviteCode && (
-            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800 space-y-1.5">
-              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">{t('team.inviteCodeReady')}</p>
-              <div className="flex items-center gap-2">
-                <KeyRound className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span className="font-mono text-sm font-bold tracking-widest text-emerald-700 dark:text-emerald-400 flex-1">
+          {newInviteCode && botLink && (
+            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800 space-y-2.5">
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+                ✅ Приглашение готово — отправьте ссылку сотруднику в Telegram/WhatsApp:
+              </p>
+
+              {/* TG-бот ссылка — главный способ */}
+              <div className="bg-white dark:bg-emerald-950/50 rounded-md p-2 border border-emerald-300 dark:border-emerald-700">
+                <p className="text-[10px] uppercase tracking-wide text-emerald-700 dark:text-emerald-400 font-semibold mb-1">
+                  Ссылка для регистрации через бот
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <code className="text-xs font-mono break-all text-emerald-900 dark:text-emerald-200 flex-1">
+                    {botLink}
+                  </code>
+                  <Button
+                    size="sm" variant="ghost"
+                    className="h-7 px-2 text-emerald-700 hover:bg-emerald-100 shrink-0"
+                    onClick={handleCopyLink}
+                  >
+                    {copiedLink ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Альтернатива: код вручную */}
+              <div className="flex items-center gap-2 pt-1 border-t border-emerald-200 dark:border-emerald-800">
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-500 shrink-0">
+                  или код вручную:
+                </span>
+                <span className="font-mono text-sm font-bold tracking-widest text-emerald-700 dark:text-emerald-400">
                   {newInviteCode}
                 </span>
-                <Button size="sm" variant="ghost" className="h-7 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-100 shrink-0" onClick={() => setQrCode(newInviteCode)} title="Показать QR-код">
+                <Button size="sm" variant="ghost" className="h-7 text-emerald-700 hover:bg-emerald-100 shrink-0 ml-auto" onClick={() => setQrCode(newInviteCode)} title="QR-код">
                   <QrCode className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-7 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-100 shrink-0" onClick={handleCopyNew}>
+                <Button size="sm" variant="ghost" className="h-7 text-emerald-700 hover:bg-emerald-100 shrink-0" onClick={handleCopyNew}>
                   {copiedNew ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 </Button>
               </div>
             </div>
           )}
 
-          <p className="text-xs text-muted-foreground">{t('team.inviteHint')}</p>
+          <p className="text-xs text-muted-foreground">
+            Сотрудник тапает по ссылке → бот запросит контакт → автоматически регистрирует и открывает кабинет команды.
+          </p>
         </CardContent>
       </Card>
 
@@ -818,8 +876,12 @@ export function TeamPage() {
   const { t } = useTranslation()
   const hasTeams = useFeature('teams')
   const { data, isLoading } = useMyTeam()
+  const teamScope = useTeamScope()
 
-  if (!hasTeams) return <Navigate to="/billing" replace />
+  // Сотрудник или участник команды — пускаем без проверки фичи (доступ через членство).
+  // Иначе — фича `teams` (требует план Pro+).
+  const allowAccess = teamScope.isMember || teamScope.isOwner || teamScope.isTeamOnly || hasTeams
+  if (!allowAccess) return <Navigate to="/billing" replace />
 
   return (
     <div className="flex flex-col h-full">

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTeamScope } from '@/contexts/TeamContext'
 import { PRODUCT } from '@/lib/config'
 import { Shirt, LayoutGrid, Sofa, Footprints, Wind, BedDouble, Package, Scissors, Sparkles, Droplets, Layers, WashingMachine, type LucideIcon } from 'lucide-react'
 import dayjs from 'dayjs'
@@ -229,9 +230,10 @@ export function useCleaningOrders(opts: {
     dateFrom = '',
     dateTo = '',
   } = opts
+  const teamScope = useTeamScope()
 
   return useQuery({
-    queryKey: [ORDERS_KEY, 'list', user?.id, status, orderType, paymentStatus, search, assignedToMe, page, sortBy, dateFrom, dateTo],
+    queryKey: [ORDERS_KEY, 'list', user?.id, teamScope.effectiveTeamId, teamScope.role, status, orderType, paymentStatus, search, assignedToMe, page, sortBy, dateFrom, dateTo],
     queryFn: async () => {
       const from = (page - 1) * perPage
       const to = page * perPage - 1
@@ -246,6 +248,27 @@ export function useCleaningOrders(opts: {
         `, { count: 'exact' })
         .eq('product', PRODUCT)
         .range(from, to)
+
+      // Team scoping: фильтруем по team_id если пользователь в команде
+      if (teamScope.effectiveTeamId) {
+        q = q.eq('team_id', teamScope.effectiveTeamId)
+      }
+
+      // Worker видит только назначенные ему заказы
+      if (teamScope.role === 'worker' && user) {
+        const { data: mp } = await supabase
+          .from('master_profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        if (mp) {
+          q = q.eq('assigned_to', mp.id)
+        } else {
+          // У worker может не быть master_profile — фильтр по user_id
+          // (assigned_to ссылается на master_profiles.id, но если профиля нет — пустой результат)
+          return { orders: [], total: 0 }
+        }
+      }
 
       // Сортировка
       if (sortBy === 'oldest') {
@@ -365,6 +388,8 @@ export interface CreateOrderPayload {
 
 export function useCreateOrder() {
   const qc = useQueryClient()
+  const { user } = useAuth()
+  const teamScope = useTeamScope()
 
   return useMutation({
     mutationFn: async (payload: CreateOrderPayload) => {
@@ -400,6 +425,9 @@ export function useCreateOrder() {
           delivery_date:     payload.delivery_date ?? null,
           visit_address:     payload.visit_address ?? null,
           visit_date:        payload.visit_date ?? null,
+          // Team workspace: scope + audit
+          team_id:           teamScope.effectiveTeamId ?? null,
+          created_by:        user?.id ?? null,
         })
         .select()
         .single()
@@ -408,7 +436,12 @@ export function useCreateOrder() {
       if (payload.items.length > 0) {
         const { error: itemsErr } = await supabase
           .from('cleaning_order_items')
-          .insert(payload.items.map(item => ({ ...item, order_id: order.id })))
+          .insert(payload.items.map(item => ({
+            ...item,
+            order_id: order.id,
+            team_id: teamScope.effectiveTeamId ?? null,
+            created_by: user?.id ?? null,
+          })))
         if (itemsErr) throw itemsErr
       }
 

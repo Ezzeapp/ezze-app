@@ -115,10 +115,12 @@ async function createSession(userId: string) {
   }
 }
 
-// ── Find user by phone in master_profiles ────────────────────────────────────
+// ── Find user by phone ───────────────────────────────────────────────────────
+// Looks in master_profiles first (owners/masters), then falls back to
+// team_members (sotrudники, у которых tg_chat_id хранится в team_members).
 
 async function findUserByPhone(phone: string): Promise<{ user_id: string; tg_chat_id: string } | null> {
-  // Try exact match
+  // 1. master_profiles — обычные мастера (владельцы)
   const { data } = await supabaseAdmin
     .from('master_profiles')
     .select('user_id, tg_chat_id')
@@ -127,7 +129,7 @@ async function findUserByPhone(phone: string): Promise<{ user_id: string; tg_cha
 
   if (data?.user_id && data?.tg_chat_id) return data
 
-  // Try without leading +
+  // 2. master_profiles без leading +
   const phoneNoPlus = phone.startsWith('+') ? phone.slice(1) : phone
   const { data: data2 } = await supabaseAdmin
     .from('master_profiles')
@@ -136,6 +138,26 @@ async function findUserByPhone(phone: string): Promise<{ user_id: string; tg_cha
     .maybeSingle()
 
   if (data2?.user_id && data2?.tg_chat_id) return data2
+
+  // 3. team_only_for сотрудники: ищем через auth.users.phone → team_members.tg_chat_id
+  // (team_only_for users не имеют master_profiles)
+  // get_auth_user_id_by_phone returns scalar UUID or null
+  const { data: userId } = await supabaseAdmin
+    .rpc('get_auth_user_id_by_phone', { p_phone: phone })
+
+  if (!userId) return null
+
+  // Look up tg_chat_id from team_members
+  const { data: member } = await supabaseAdmin
+    .from('team_members')
+    .select('tg_chat_id')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (member?.tg_chat_id) {
+    return { user_id: userId, tg_chat_id: member.tg_chat_id }
+  }
 
   return null
 }

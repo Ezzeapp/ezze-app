@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useTeamScope } from '@/contexts/TeamContext'
 import { PRODUCT } from '@/lib/config'
 
 export interface ClientStats {
@@ -10,16 +11,21 @@ export interface ClientStats {
 }
 
 export function useCleaningClientStats(clientId: string | null) {
+  const teamScope = useTeamScope()
   return useQuery<ClientStats | null>({
-    queryKey: ['cleaning_client_stats', clientId, PRODUCT],
+    queryKey: ['cleaning_client_stats', clientId, PRODUCT, teamScope.effectiveTeamId],
     queryFn: async () => {
       if (!clientId) return null
-      const { data } = await supabase
+      let q = supabase
         .from('cleaning_orders')
         .select('id, total_amount, paid_amount, payment_status, created_at')
         .eq('client_id', clientId)
         .eq('product', PRODUCT)
         .order('created_at', { ascending: false })
+      if (teamScope.effectiveTeamId) {
+        q = q.eq('team_id', teamScope.effectiveTeamId)
+      }
+      const { data } = await q
       const orders = data ?? []
       const spent = orders
         .filter(o => o.payment_status === 'paid')

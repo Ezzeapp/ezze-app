@@ -8,6 +8,7 @@
 import { readFileSync, writeFileSync } from "fs";
 import {
   supabase, APP_URL, MASTER_BOT_TOKEN, CLIENT_BOT_TOKEN,
+  SUPABASE_URL, SUPABASE_SERVICE_KEY,
   loadTgConfig, loadAIConfig, invalidateTgConfigCache,
   findMasterByChatId, autoFixMasterProfile,
   getMasterTools, executeMasterTool,
@@ -170,6 +171,35 @@ const REGISTER_KEYBOARD = [[{
   text: "🚀 Начать регистрацию",
   web_app: { url: "https://app.ezze.site/register" }
 }]];
+
+// ── Роли сотрудников: отображаемые названия ──────────────────────────────────
+
+const ROLE_LABELS = {
+  admin:    "Админ",
+  operator: "Оператор",
+  worker:   "Сотрудник",
+  member:   "Участник",
+};
+
+function roleLabel(role) {
+  return ROLE_LABELS[role] || ROLE_LABELS.operator;
+}
+
+// ── Ссылка для входа сотрудника в кабинет команды ──────────────────────────
+
+function buildTeamCabinetUrl(product, accessToken, refreshToken) {
+  const baseUrl = getProductUrl(product);
+  if (accessToken && refreshToken) {
+    const at = encodeURIComponent(accessToken);
+    const rt = encodeURIComponent(refreshToken);
+    // Используем start=master, тк TelegramEntryPage умеет обрабатывать at/rt из URL
+    // и редиректит на /orders (для cleaning) после setSession.
+    // Когда фронт обновится — можно будет переключить на start=team для team-only UI.
+    return `${baseUrl}/tg?start=master&at=${at}&rt=${rt}`;
+  }
+  // Fallback: phone+code login on web (Day 5.5)
+  return `${baseUrl}/login?role=employee`;
+}
 
 // ── Мастерское меню (для зарегистрированных) ──────────────────────────────────
 
@@ -417,6 +447,116 @@ async function processUpdate(update) {
   if (message?.contact) {
     const chatId = message.chat.id;
     const pending = pendingMasters.get(chatId);
+
+    // ── Сотрудник делится контактом для регистрации в команду ──────────────
+    if (pending?.step === "waiting_employee_phone") {
+      const phone = message.contact.phone_number;
+      const tgFirst = message.from?.first_name || "";
+      const tgLast = message.from?.last_name || "";
+      const tgUsername = message.from?.username || "";
+
+      console.log(`👥 [employee] chat=${chatId} invite=${pending.inviteCode} phone=${phone}`);
+
+      // Call edge function: team-employee-register
+      let result = null;
+      let errMsg = null;
+
+      try {
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/team-employee-register`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_SERVICE_KEY,
+            "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+          },
+          body: JSON.stringify({
+            invite_code: pending.inviteCode,
+            phone,
+            tg_chat_id: String(chatId),
+            first_name: tgFirst,
+            last_name: tgLast,
+            tg_username: tgUsername,
+          }),
+        });
+        if (!resp.ok) {
+          const errBody = await resp.json().catch(() => ({}));
+          errMsg = errBody?.message || `HTTP ${resp.status}`;
+        } else {
+          result = await resp.json();
+        }
+      } catch (e) {
+        console.error("[employee-register] fetch error:", e);
+        errMsg = String(e?.message || e);
+      }
+
+      pendingMasters.delete(chatId);
+      savePendingSessions();
+
+      if (errMsg) {
+        const errText = {
+          phone_already_registered:
+            `❌ <b>Этот номер уже зарегистрирован в системе.</b>\n\n` +
+            `Используйте другой Telegram-аккаунт или обратитесь к владельцу команды.`,
+          tg_chat_already_linked:
+            `❌ <b>Ваш Telegram уже связан с другой командой.</b>\n\n` +
+            `Сначала покиньте текущую команду через её владельца.`,
+          seat_limit_reached:
+            `❌ <b>В команде достигнут лимит сотрудников по тарифу владельца.</b>\n\n` +
+            `Попросите владельца повысить тариф и пригласить вас снова.`,
+          invite_expired:
+            `❌ <b>Срок действия приглашения истёк.</b>\n\nПопросите новую ссылку.`,
+          invite_used_up:
+            `❌ <b>Приглашение уже использовано.</b>\n\nПопросите новую ссылку.`,
+          invite_not_found:
+            `❌ <b>Приглашение не найдено.</b>\n\nПопросите новую ссылку.`,
+        }[errMsg] || `❌ <b>Не удалось завершить регистрацию.</b>\n\n<code>${escapeHtml(errMsg)}</code>`;
+
+        await bot.sendMessage(chatId, errText, { remove_keyboard: true });
+        return;
+      }
+
+      // Success — send inline button to open team cabinet
+      const teamNameSafe = escapeHtml(result.team_name || "");
+      const fullName = escapeHtml([tgFirst, tgLast].filter(Boolean).join(" ") || "Сотрудник");
+      const cabinetUrl = buildTeamCabinetUrl(
+        result.product,
+        result.access_token,
+        result.refresh_token
+      );
+
+      await bot.sendMessage(chatId,
+        `✅ <b>Готово, ${fullName}!</b>\n\n` +
+        `Вы добавлены в команду <b>«${teamNameSafe}»</b> на роль <b>${roleLabel(result.role)}</b>.\n\n` +
+        `Нажмите кнопку ниже, чтобы открыть кабинет команды:`,
+        {
+          remove_keyboard: true,
+          inline_keyboard: [[
+            { text: "🌐 Открыть кабинет", url: cabinetUrl },
+          ]],
+        }
+      );
+
+      // Notify team owner about new employee
+      try {
+        const { data: team } = await supabase
+          .from("teams").select("owner_id").eq("id", result.team_id).maybeSingle();
+        if (team?.owner_id) {
+          const { data: ownerProfile } = await supabase
+            .from("master_profiles").select("tg_chat_id")
+            .eq("user_id", team.owner_id).maybeSingle();
+          if (ownerProfile?.tg_chat_id) {
+            await bot.sendMessage(ownerProfile.tg_chat_id,
+              `👥 <b>Новый сотрудник в команде</b>\n\n` +
+              `${fullName} присоединился(ась) на роль <b>${roleLabel(result.role)}</b>.`
+            );
+          }
+        }
+      } catch (e) {
+        console.error("[employee-register] notify owner error:", e?.message);
+      }
+      return;
+    }
+
     if (pending?.step === "waiting_phone") {
       const lang = getLang(pending);
       const s = LANG_STRINGS[lang];
@@ -542,6 +682,91 @@ async function processUpdate(update) {
       const param = text.split(" ")[1] || "";
 
       if (param) {
+        // /start join_<inviteCode> — приглашение сотрудника в команду
+        if (param.startsWith("join_")) {
+          const inviteCode = param.slice(5);
+
+          // Validate invite via RPC
+          const { data: validations, error: vErr } = await supabase
+            .rpc("validate_team_invite", { p_code: inviteCode });
+          const v = Array.isArray(validations) ? validations[0] : validations;
+
+          if (vErr || !v) {
+            await bot.sendMessage(chatId,
+              `❌ <b>Приглашение не найдено</b>\n\nПопросите владельца команды прислать новую ссылку.`
+            );
+            return;
+          }
+
+          if (!v.is_valid) {
+            const reasonText = {
+              not_found: "Приглашение не найдено",
+              inactive:  "Приглашение отключено владельцем",
+              expired:   "Срок действия приглашения истёк",
+              used_up:   "Приглашение уже использовано максимальное число раз",
+            }[v.reason] || "Приглашение недействительно";
+            await bot.sendMessage(chatId,
+              `❌ <b>${reasonText}</b>\n\nПопросите владельца команды прислать новую ссылку.`
+            );
+            return;
+          }
+
+          // Check if user already a member of any team
+          const { data: existingMember } = await supabase
+            .from("team_members")
+            .select("team_id, status")
+            .eq("tg_chat_id", String(chatId))
+            .eq("status", "active")
+            .maybeSingle();
+
+          if (existingMember) {
+            if (existingMember.team_id === v.team_id) {
+              await bot.sendMessage(chatId,
+                `ℹ️ <b>Вы уже в этой команде.</b>\n\nИспользуйте кнопку меню рядом с полем ввода, чтобы открыть кабинет.`
+              );
+            } else {
+              await bot.sendMessage(chatId,
+                `❌ <b>Вы уже состоите в другой команде.</b>\n\nДля смены команды попросите владельца текущей команды удалить вас, затем используйте новую ссылку.`
+              );
+            }
+            return;
+          }
+
+          // Save pending session — wait for phone share
+          pendingMasters.set(chatId, sessionEntry({
+            step: "waiting_employee_phone",
+            inviteCode,
+            inviteId: v.invite_id,
+            teamId: v.team_id,
+            teamName: v.team_name,
+            product: v.product || "beauty",
+            role: v.role || "operator",
+          }));
+          savePendingSessions();
+
+          const teamNameSafe = escapeHtml(v.team_name || "");
+          const roleName = roleLabel(v.role);
+
+          await fetch(`${bot.TG_API}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text:
+                `👋 <b>Приглашение в команду</b>\n\n` +
+                `Вас приглашают в команду <b>«${teamNameSafe}»</b> на роль <b>${roleName}</b>.\n\n` +
+                `📱 Поделитесь номером телефона для регистрации:`,
+              parse_mode: "HTML",
+              reply_markup: {
+                keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
+                resize_keyboard: true,
+                one_time_keyboard: true,
+              },
+            }),
+          });
+          return;
+        }
+
         // /start connect_slug или /start slug — привязка Telegram к профилю мастера
         const slug = param.startsWith("connect_") ? param.slice(8) : param;
         const { data: profile } = await supabase
@@ -561,7 +786,34 @@ async function processUpdate(update) {
         return;
       }
 
-      // /start без параметра — поиск мастера по chat_id
+      // /start без параметра — сначала проверяем, не сотрудник ли это
+      const { data: employeeMember } = await supabase
+        .from("team_members")
+        .select("team_id, role, status, teams(id, name, owner_id, product)")
+        .eq("tg_chat_id", String(chatId))
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (employeeMember && employeeMember.teams) {
+        // Это сотрудник — показываем кнопку открытия кабинета команды
+        const team = employeeMember.teams;
+        const teamNameSafe = escapeHtml(team.name || "");
+        const cabinetUrl = buildTeamCabinetUrl(team.product || "beauty", null, null);
+
+        await bot.sendMessage(chatId,
+          `👋 <b>Привет${firstName ? ", " + escapeHtml(firstName) : ""}!</b>\n\n` +
+          `Вы в команде <b>«${teamNameSafe}»</b> на роль <b>${roleLabel(employeeMember.role)}</b>.\n\n` +
+          `Откройте кабинет, чтобы продолжить работу:`,
+          {
+            inline_keyboard: [[
+              { text: "🌐 Открыть кабинет", url: cabinetUrl },
+            ]],
+          }
+        );
+        return;
+      }
+
+      // Поиск мастера по chat_id
       let masterProfile = await findMasterByChatId(chatId);
       if (!masterProfile) {
         console.log(`ℹ️  Master not found by tg_chat_id=${chatId}, trying autoFix...`);
@@ -633,6 +885,24 @@ async function processUpdate(update) {
             parse_mode: "HTML",
             reply_markup: {
               keyboard: [[{ text: s.shareBtn, request_contact: true, style: "primary" }]],
+              resize_keyboard: true,
+              one_time_keyboard: true,
+            },
+          }),
+        });
+        return;
+      }
+      // ── Текст при ожидании контакта от сотрудника (employee invite) ─────────
+      if (pending?.step === "waiting_employee_phone") {
+        await fetch(`${bot.TG_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `📱 Пожалуйста, нажмите кнопку <b>«Поделиться номером»</b> ниже для регистрации в команде.`,
+            parse_mode: "HTML",
+            reply_markup: {
+              keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
               resize_keyboard: true,
               one_time_keyboard: true,
             },
