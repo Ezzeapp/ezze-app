@@ -78,9 +78,9 @@ export function OrderDnDPage() {
   const { user } = useAuth()
   const { data: defaults } = useCleaningDefaults()
 
-  // Mobile fallback → wizard (DnD только для desktop)
+  // Mobile + узкие ноутбуки → wizard (DnD только для широких экранов 1280+)
   useEffect(() => {
-    if (window.innerWidth < 1024) navigate('/orders/wizard', { replace: true })
+    if (window.innerWidth < 1280) navigate('/orders/wizard', { replace: true })
   }, [navigate])
 
   const { data: enabledOrderTypes = DEFAULT_ENABLED_CONFIGS } = useCleaningEnabledOrderTypes()
@@ -150,6 +150,8 @@ export function OrderDnDPage() {
 
   const { data: clientStats } = useCleaningClientStats(clientId)
   const [showClientHistory, setShowClientHistory] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showAddressModal, setShowAddressModal] = useState(false)
 
   // Зоны (drag & drop)
   const [zones, setZones] = useState<Record<ZoneId, CartLine[]>>({
@@ -562,6 +564,7 @@ export function OrderDnDPage() {
       }
       setReceiptData(rData)
       setCreatedOrder({ id: order.id, number: order.number })
+      setShowPaymentModal(false)
       clearDraft()
       toast.success(`Заказ ${order.number} принят`)
     } catch (e: any) {
@@ -900,15 +903,15 @@ export function OrderDnDPage() {
             </div>
           )}
 
-          {/* Способ выдачи + адрес */}
-          <div className="bg-background rounded-2xl border shadow-sm p-2.5 shrink-0 space-y-2">
+          {/* Способ выдачи + адрес (свёрнутый) */}
+          <div className="bg-background rounded-2xl border shadow-sm p-2.5 shrink-0 space-y-1.5">
             <div className="flex items-center gap-2">
               <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground shrink-0">Выдача:</span>
               <div className="flex gap-1 flex-1">
                 <button
                   onClick={() => setDeliveryMethod('pickup')}
                   className={cn(
-                    'flex-1 h-8 rounded-md text-xs font-bold border transition-colors flex items-center justify-center gap-1.5',
+                    'flex-1 h-7 rounded-md text-xs font-bold border transition-colors flex items-center justify-center gap-1.5',
                     deliveryMethod === 'pickup'
                       ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
                       : 'border-border hover:border-emerald-500/40'
@@ -920,7 +923,7 @@ export function OrderDnDPage() {
                 <button
                   onClick={() => setDeliveryMethod('delivery')}
                   className={cn(
-                    'flex-1 h-8 rounded-md text-xs font-bold border transition-colors flex items-center justify-center gap-1.5',
+                    'flex-1 h-7 rounded-md text-xs font-bold border transition-colors flex items-center justify-center gap-1.5',
                     deliveryMethod === 'delivery'
                       ? 'border-violet-500 bg-violet-500/10 text-violet-700 dark:text-violet-400'
                       : 'border-border hover:border-violet-500/40'
@@ -932,26 +935,18 @@ export function OrderDnDPage() {
               </div>
             </div>
             {(deliveryMethod === 'delivery' || orderType === 'furniture') && (
-              <>
-                <Input
-                  placeholder={orderType === 'furniture' ? 'Адрес выезда: ул. Пушкина, 10, кв. 5' : 'Адрес доставки: ул. Пушкина, 10, кв. 5'}
-                  value={visitAddress}
-                  onChange={e => setVisitAddress(e.target.value)}
-                  className="h-8 text-xs"
-                />
-                {deliveryMethod === 'delivery' && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground shrink-0">Цена доставки:</span>
-                    <Input
-                      type="number" min={0}
-                      value={deliveryFee}
-                      onChange={e => { setDeliveryFee(e.target.value); setDeliveryFeeTouched(true) }}
-                      className="h-7 w-24 text-xs font-mono"
-                    />
-                    <span className="text-xs text-muted-foreground">{symbol}</span>
-                  </div>
-                )}
-              </>
+              <button
+                onClick={() => setShowAddressModal(true)}
+                className="w-full text-left text-xs px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted flex items-center gap-2 border"
+              >
+                <span className="shrink-0">📍</span>
+                <span className="flex-1 truncate font-mono">
+                  {visitAddress
+                    ? `${visitAddress}${deliveryMethod === 'delivery' && deliveryFee ? ` · ${formatCurrency(parseFloat(deliveryFee) || 0)} ${symbol}` : ''}`
+                    : (orderType === 'furniture' ? 'Указать адрес выезда' : 'Указать адрес доставки')}
+                </span>
+                <Pencil className="h-3 w-3 text-blue-600 shrink-0" />
+              </button>
             )}
           </div>
 
@@ -1033,9 +1028,9 @@ export function OrderDnDPage() {
             />
           </div>
 
-          {/* Totals + payment */}
-          <div className="bg-background rounded-2xl border shadow-sm p-3.5 shrink-0">
-            <div className="flex gap-1 flex-wrap mb-3">
+          {/* Compact totals + К оплате */}
+          <div className="bg-background rounded-2xl border shadow-sm p-3 shrink-0">
+            <div className="flex gap-1 flex-wrap mb-2">
               {['VIP','Повторная','С пятнами','Хрупкое'].map(tag => {
                 const on = extraTags.includes(tag)
                 return (
@@ -1054,6 +1049,115 @@ export function OrderDnDPage() {
                 )
               })}
             </div>
+
+            <div className="flex items-baseline justify-between border-t pt-2 font-mono">
+              <span className="text-xs text-muted-foreground">Подытог · {allLines.reduce((s, l) => s + l.qty, 0)} шт</span>
+              <span className="text-sm font-semibold">{formatCurrency(subtotal)} {symbol}</span>
+            </div>
+            <div className="flex items-baseline justify-between mt-1">
+              <span className="font-bold text-sm">Итого</span>
+              <span className="text-xl font-extrabold font-mono">{formatCurrency(total)} <span className="text-xs">{symbol}</span></span>
+            </div>
+
+            <Button
+              disabled={isPending || allLines.length === 0}
+              onClick={() => setShowPaymentModal(true)}
+              className="w-full mt-2.5 h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+            >
+              К оплате →
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════ МОДАЛКА АДРЕСА ДОСТАВКИ ═══════════ */}
+      {showAddressModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4"
+          onClick={() => setShowAddressModal(false)}
+        >
+          <div
+            className="bg-background rounded-2xl shadow-2xl max-w-md w-full p-5"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold">
+                {orderType === 'furniture' ? 'Адрес выезда' : 'Адрес доставки'}
+              </h3>
+              <button
+                onClick={() => setShowAddressModal(false)}
+                className="h-8 w-8 grid place-items-center hover:bg-muted rounded-md"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Адрес</Label>
+                <Input
+                  placeholder="ул. Пушкина, 10, кв. 5"
+                  value={visitAddress}
+                  onChange={e => setVisitAddress(e.target.value)}
+                  className="mt-1.5"
+                  autoFocus
+                />
+              </div>
+              {deliveryMethod === 'delivery' && (
+                <div>
+                  <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+                    Цена доставки ({symbol})
+                  </Label>
+                  <Input
+                    type="number" min={0}
+                    value={deliveryFee}
+                    onChange={e => { setDeliveryFee(e.target.value); setDeliveryFeeTouched(true) }}
+                    className="mt-1.5 font-mono font-bold"
+                  />
+                </div>
+              )}
+            </div>
+            <Button
+              onClick={() => setShowAddressModal(false)}
+              className="w-full mt-4 h-10 bg-primary text-primary-foreground font-bold"
+            >
+              Готово
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════ МОДАЛКА ОПЛАТЫ ═══════════ */}
+      {showPaymentModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4"
+          onClick={() => setShowPaymentModal(false)}
+        >
+          <div
+            className="bg-background rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] overflow-hidden flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Заголовок */}
+            <div className="px-5 py-3 border-b flex items-center gap-3 bg-muted/30">
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold">Оплата заказа</h2>
+                <p className="text-xs text-muted-foreground truncate">
+                  {clientId ? clientName : 'Без клиента'} · {allLines.reduce((s, l) => s + l.qty, 0)} позиций
+                </p>
+              </div>
+              <div className="ml-auto text-right shrink-0">
+                <div className="text-xs text-muted-foreground">Итого</div>
+                <div className="text-2xl font-extrabold font-mono">{formatCurrency(total)} <span className="text-sm">{symbol}</span></div>
+              </div>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="ml-2 h-8 w-8 grid place-items-center hover:bg-muted rounded-md shrink-0"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Тело — скроллируемое */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
 
             {(() => {
               const isAggrActive = payment === 'card' && ['click','payme','uzum'].includes(paymentProvider || '')
@@ -1395,22 +1499,32 @@ export function OrderDnDPage() {
                 <span className="text-xl font-extrabold">{formatCurrency(total)} {symbol}</span>
               </div>
             </div>
-
-            <Button
-              disabled={isPending || allLines.length === 0}
-              onClick={handleSubmit}
-              className="w-full mt-3 h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
-            >
-              {isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Check className="h-4 w-4 mr-2" />
-              )}
-              Принять заказ · {formatCurrency(total)} {symbol}
-            </Button>
+            </div>
+            {/* Footer модалки */}
+            <div className="border-t px-5 py-3 bg-muted/30 flex gap-2 shrink-0">
+              <Button
+                variant="outline"
+                onClick={() => setShowPaymentModal(false)}
+                className="px-4 h-11"
+              >
+                Отмена
+              </Button>
+              <Button
+                disabled={isPending || allLines.length === 0}
+                onClick={handleSubmit}
+                className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+              >
+                {isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4 mr-2" />
+                )}
+                Принять заказ · {formatCurrency(total)} {symbol}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Quick add client */}
       {showAddClient && (
