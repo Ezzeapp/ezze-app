@@ -267,6 +267,7 @@ export function OrderWizardPage() {
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; amount: number } | null>(null)
   const [validatingPromo, setValidatingPromo] = useState(false)
   const [prepayPct, setPrepayPct] = useState(0)
+  const [customPrepayAmount, setCustomPrepayAmount] = useState('')
   const [notes, setNotes] = useState('')
   const [pickupDate, setPickupDate] = useState('')
   const [deliveryDate, setDeliveryDate] = useState('')
@@ -295,6 +296,7 @@ export function OrderWizardPage() {
     appliedPromo: { code: string; amount: number } | null
     discount: number
     prepayPct: number
+    customPrepayAmount?: string
     notes: string
     pickupDate: string
     deliveryDate: string
@@ -327,6 +329,7 @@ export function OrderWizardPage() {
     setAppliedPromo(d.appliedPromo || null)
     setDiscount(d.discount || 0)
     setPrepayPct(d.prepayPct || 0)
+    setCustomPrepayAmount(d.customPrepayAmount || '')
     setNotes(d.notes || '')
     setPickupDate(d.pickupDate || '')
     setDeliveryDate(d.deliveryDate || '')
@@ -344,14 +347,14 @@ export function OrderWizardPage() {
     saveDraft({
       cart, clientId, clientName, clientPhone, orderType,
       isUrgent, deliveryMethod, deliveryFee, payment, paymentProvider, paymentCash, paymentCard,
-      expressMode, expressValue, tags, applyDefectsPct, discount, prepayPct, notes,
+      expressMode, expressValue, tags, applyDefectsPct, discount, prepayPct, customPrepayAmount, notes,
       pickupDate, deliveryDate, visitAddress, defaultDays, assignedTo, step,
       markup, promoCode, appliedPromo,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart, clientId, clientName, clientPhone, orderType,
       isUrgent, deliveryMethod, deliveryFee, payment, paymentProvider, paymentCash, paymentCard,
-      expressMode, expressValue, tags, applyDefectsPct, discount, prepayPct, notes,
+      expressMode, expressValue, tags, applyDefectsPct, discount, prepayPct, customPrepayAmount, notes,
       pickupDate, deliveryDate, visitAddress, defaultDays, assignedTo, step,
       markup, promoCode, appliedPromo])
 
@@ -383,7 +386,9 @@ export function OrderWizardPage() {
   const promoAmt = appliedPromo?.amount || 0
   const deliveryAdd = deliveryMethod === 'delivery' ? (parseFloat(deliveryFee) || 0) : 0
   const total = Math.max(0, Math.round(subtotal + surchargeAmt + markupAmt - discountAmt - promoAmt + deliveryAdd))
-  const prepayAmt = Math.round(total * prepayPct / 100)
+  const prepayAmt = customPrepayAmount
+    ? Math.min(total, Math.max(0, parseFloat(customPrepayAmount) || 0))
+    : Math.round(total * prepayPct / 100)
 
   async function applyPromoCode() {
     const code = promoCode.trim().toUpperCase()
@@ -772,6 +777,8 @@ export function OrderWizardPage() {
               setDiscount={setDiscount}
               prepayPct={prepayPct}
               setPrepayPct={setPrepayPct}
+              customPrepayAmount={customPrepayAmount}
+              setCustomPrepayAmount={setCustomPrepayAmount}
               notes={notes}
               setNotes={setNotes}
               orderType={orderType}
@@ -1754,7 +1761,7 @@ function Step4Payment({
   payment, setPayment, paymentProvider, setPaymentProvider,
   paymentCash, setPaymentCash, paymentCard, setPaymentCard,
   paymentAggregator, setPaymentAggregator,
-  discount, setDiscount, prepayPct, setPrepayPct,
+  discount, setDiscount, prepayPct, setPrepayPct, customPrepayAmount, setCustomPrepayAmount,
   notes, setNotes,
   orderType, pickupDate, setPickupDate, deliveryDate, setDeliveryDate,
   visitAddress, setVisitAddress,
@@ -1786,6 +1793,8 @@ function Step4Payment({
   setDiscount: (n: number) => void
   prepayPct: number
   setPrepayPct: (n: number) => void
+  customPrepayAmount: string
+  setCustomPrepayAmount: (s: string) => void
   notes: string
   setNotes: (s: string) => void
   orderType: OrderType
@@ -1821,11 +1830,27 @@ function Step4Payment({
   validatingPromo: boolean
 }) {
   const paymentOptions = [
-    { k: 'cash',     label: 'Наличные' },
-    { k: 'card',     label: 'Карта' },
-    { k: 'transfer', label: 'Перевод' },
-    { k: 'mixed',    label: 'Смешанная' },
+    { k: 'cash',       label: 'Наличные' },
+    { k: 'card',       label: 'Карта' },
+    { k: 'transfer',   label: 'Перевод' },
+    { k: 'aggregator', label: 'Click/Payme/Uzum' },
+    { k: 'mixed',      label: 'Смешанная' },
   ]
+
+  function selectMethod(k: string) {
+    if (k === 'aggregator') {
+      setPayment('card')
+      if (!['click','payme','uzum'].includes(paymentProvider || '')) setPaymentProvider('click')
+    } else {
+      setPayment(k)
+      setPaymentProvider(null)
+    }
+  }
+  function isMethodActive(k: string): boolean {
+    if (k === 'aggregator') return payment === 'card' && ['click','payme','uzum'].includes(paymentProvider || '')
+    if (k === 'card')       return payment === 'card' && !paymentProvider
+    return payment === k
+  }
 
   return (
     <div className="space-y-6">
@@ -2000,14 +2025,14 @@ function Step4Payment({
 
       <div>
         <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Способ оплаты</Label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-2">
           {paymentOptions.map(p => (
             <button
               key={p.k}
-              onClick={() => { setPayment(p.k); setPaymentProvider(null) }}
+              onClick={() => selectMethod(p.k)}
               className={cn(
                 'h-12 rounded-lg border-2 text-sm font-bold transition-colors',
-                payment === p.k && !paymentProvider
+                isMethodActive(p.k)
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border hover:border-primary/40'
               )}
@@ -2017,31 +2042,35 @@ function Step4Payment({
           ))}
         </div>
 
-        {/* Агрегаторы (Click / Payme / Uzum) — в Mixed выбирают провайдер для агрегатор-части, иначе переключают на card */}
-        <div className="grid grid-cols-3 gap-2 mt-2">
-          {[
-            { k: 'click', label: 'Click', cls: 'text-sky-600 border-sky-300 hover:border-sky-500' },
-            { k: 'payme', label: 'Payme', cls: 'text-emerald-600 border-emerald-300 hover:border-emerald-500' },
-            { k: 'uzum',  label: 'Uzum',  cls: 'text-violet-600 border-violet-300 hover:border-violet-500' },
-          ].map(p => {
-            const sel = paymentProvider === p.k
-            return (
-              <button
-                key={p.k}
-                onClick={() => {
-                  if (payment !== 'mixed') setPayment('card')
-                  setPaymentProvider(p.k)
-                }}
-                className={cn(
-                  'h-10 rounded-lg border-2 text-sm font-bold transition-colors',
-                  sel ? 'border-primary bg-primary text-primary-foreground' : `bg-background ${p.cls}`
-                )}
-              >
-                {p.label}
-              </button>
-            )
-          })}
-        </div>
+        {/* Под-выбор провайдера — только когда активен «Click/Payme/Uzum» (одиночный безнал-агрегатор) */}
+        {isMethodActive('aggregator') && (
+          <div className="mt-2 p-2.5 rounded-lg border bg-muted/30">
+            <div className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground mb-1.5">
+              Какой агрегатор?
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { k: 'click', label: 'Click', cls: 'text-sky-600 border-sky-300 hover:border-sky-500' },
+                { k: 'payme', label: 'Payme', cls: 'text-emerald-600 border-emerald-300 hover:border-emerald-500' },
+                { k: 'uzum',  label: 'Uzum',  cls: 'text-violet-600 border-violet-300 hover:border-violet-500' },
+              ].map(p => {
+                const sel = paymentProvider === p.k
+                return (
+                  <button
+                    key={p.k}
+                    onClick={() => setPaymentProvider(p.k)}
+                    className={cn(
+                      'h-10 rounded-lg border-2 text-sm font-bold transition-colors',
+                      sel ? 'border-primary bg-primary text-primary-foreground' : `bg-background ${p.cls}`
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {payment === 'mixed' && (() => {
           const cash = parseFloat(paymentCash) || 0
@@ -2086,9 +2115,24 @@ function Step4Payment({
                     onChange={e => setPaymentAggregator(e.target.value)}
                     className="mt-1.5 font-mono font-bold"
                   />
-                  {aggr > 0 && !paymentProvider && (
-                    <div className="text-[10.5px] text-amber-600 mt-1">
-                      Выберите провайдер выше ↑
+                  {aggr > 0 && (
+                    <div className="grid grid-cols-3 gap-1 mt-1.5">
+                      {(['click','payme','uzum'] as const).map(p => (
+                        <button
+                          key={p}
+                          onClick={() => setPaymentProvider(p)}
+                          className={cn(
+                            'h-7 rounded text-[11px] font-bold border-2 transition-colors capitalize',
+                            paymentProvider === p
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : p === 'click' ? 'border-sky-300 text-sky-600 hover:border-sky-500'
+                              : p === 'payme' ? 'border-emerald-300 text-emerald-600 hover:border-emerald-500'
+                              : 'border-violet-300 text-violet-600 hover:border-violet-500'
+                          )}
+                        >
+                          {p}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -2190,15 +2234,41 @@ function Step4Payment({
         </div>
 
         <div className="p-3 rounded-xl border bg-muted/40">
-          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Предоплата</Label>
+          <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+            {payment === 'mixed' ? 'Предоплата' : 'Сумма сейчас'}
+          </Label>
+
+          {/* Поле произвольной суммы — для одиночных способов */}
+          {payment !== 'mixed' && (
+            <div className="flex gap-2 mt-2">
+              <Input
+                type="number" min={0} max={total}
+                placeholder={`По умолчанию: ${formatCurrency(total)}`}
+                value={customPrepayAmount}
+                onChange={e => { setCustomPrepayAmount(e.target.value); setPrepayPct(0) }}
+                className="flex-1 font-mono font-bold"
+              />
+              {customPrepayAmount && (
+                <Button
+                  size="sm" variant="ghost"
+                  onClick={() => setCustomPrepayAmount('')}
+                  className="px-2"
+                  title="Сбросить произвольную сумму"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-4 gap-1 mt-2">
             {[0, 25, 50, 100].map(d => (
               <button
                 key={d}
-                onClick={() => setPrepayPct(d)}
+                onClick={() => { setPrepayPct(d); setCustomPrepayAmount('') }}
                 className={cn(
                   'h-9 rounded-md text-xs font-bold font-mono border transition-colors',
-                  prepayPct === d
+                  !customPrepayAmount && prepayPct === d
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border hover:border-primary/40'
                 )}
@@ -2209,6 +2279,7 @@ function Step4Payment({
           </div>
           <div className="text-xs text-muted-foreground mt-1.5 font-mono">
             = {formatCurrency(prepayAmt)} {symbol}
+            {prepayAmt < total && <span className="ml-2 text-orange-600">· остаток при выдаче: {formatCurrency(total - prepayAmt)} {symbol}</span>}
           </div>
         </div>
 

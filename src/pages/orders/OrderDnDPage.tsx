@@ -1047,47 +1047,73 @@ export function OrderDnDPage() {
               })}
             </div>
 
-            <div className="grid grid-cols-4 gap-1.5 mb-2">
-              {[['cash','Нал.'], ['card','Карта'], ['transfer','Перевод'], ['mixed','Смеш.']].map(([k, label]) => (
-                <button
-                  key={k}
-                  onClick={() => { setPayment(k); setPaymentProvider(null) }}
-                  className={cn(
-                    'h-8 rounded-md text-xs font-bold border transition-colors',
-                    payment === k && !paymentProvider
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border hover:border-primary/40'
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            {(() => {
+              const isAggrActive = payment === 'card' && ['click','payme','uzum'].includes(paymentProvider || '')
+              const isCardActive = payment === 'card' && !paymentProvider
+              const selectMethod = (k: string) => {
+                if (k === 'aggregator') {
+                  setPayment('card')
+                  if (!['click','payme','uzum'].includes(paymentProvider || '')) setPaymentProvider('click')
+                } else {
+                  setPayment(k)
+                  setPaymentProvider(null)
+                }
+              }
+              const isActive = (k: string) => {
+                if (k === 'aggregator') return isAggrActive
+                if (k === 'card') return isCardActive
+                return payment === k
+              }
+              return <>
+                <div className="grid grid-cols-2 gap-1.5 mb-2 sm:grid-cols-5">
+                  {[
+                    { k: 'cash',       label: 'Нал.' },
+                    { k: 'card',       label: 'Карта' },
+                    { k: 'transfer',   label: 'Перевод' },
+                    { k: 'aggregator', label: 'Click·Payme·Uzum' },
+                    { k: 'mixed',      label: 'Смеш.' },
+                  ].map(opt => (
+                    <button
+                      key={opt.k}
+                      onClick={() => selectMethod(opt.k)}
+                      className={cn(
+                        'h-8 rounded-md text-xs font-bold border transition-colors',
+                        isActive(opt.k)
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border hover:border-primary/40'
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
 
-            <div className="grid grid-cols-3 gap-1.5 mb-3">
-              {[
-                { k: 'click', label: 'Click', cls: 'text-sky-600 border-sky-300 hover:border-sky-500' },
-                { k: 'payme', label: 'Payme', cls: 'text-emerald-600 border-emerald-300 hover:border-emerald-500' },
-                { k: 'uzum',  label: 'Uzum',  cls: 'text-violet-600 border-violet-300 hover:border-violet-500' },
-              ].map(p => {
-                const sel = paymentProvider === p.k
-                return (
-                  <button
-                    key={p.k}
-                    onClick={() => {
-                      if (payment !== 'mixed') setPayment('card')
-                      setPaymentProvider(p.k)
-                    }}
-                    className={cn(
-                      'h-8 rounded-md text-xs font-bold border-2 transition-colors',
-                      sel ? 'border-primary bg-primary text-primary-foreground' : `bg-background ${p.cls}`
-                    )}
-                  >
-                    {p.label}
-                  </button>
-                )
-              })}
-            </div>
+                {/* Раскрытие выбора провайдера — только когда активен «Click·Payme·Uzum» */}
+                {isAggrActive && (
+                  <div className="grid grid-cols-3 gap-1.5 mb-3 p-1.5 rounded-md border bg-muted/30">
+                    {[
+                      { k: 'click', label: 'Click', cls: 'text-sky-600 border-sky-300 hover:border-sky-500' },
+                      { k: 'payme', label: 'Payme', cls: 'text-emerald-600 border-emerald-300 hover:border-emerald-500' },
+                      { k: 'uzum',  label: 'Uzum',  cls: 'text-violet-600 border-violet-300 hover:border-violet-500' },
+                    ].map(p => {
+                      const sel = paymentProvider === p.k
+                      return (
+                        <button
+                          key={p.k}
+                          onClick={() => setPaymentProvider(p.k)}
+                          className={cn(
+                            'h-7 rounded text-xs font-bold border-2 transition-colors',
+                            sel ? 'border-primary bg-primary text-primary-foreground' : `bg-background ${p.cls}`
+                          )}
+                        >
+                          {p.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </>
+            })()}
 
             {payment === 'mixed' && (
               <div className="grid grid-cols-3 gap-2 mb-3">
@@ -1122,9 +1148,24 @@ export function OrderDnDPage() {
                     onChange={e => setPaymentAggregator(e.target.value)}
                     className="mt-1 h-8 text-xs"
                   />
-                  {(parseFloat(paymentAggregator) || 0) > 0 && !paymentProvider && (
-                    <div className="text-[10px] text-amber-600 mt-0.5">
-                      Выберите выше ↑
+                  {(parseFloat(paymentAggregator) || 0) > 0 && (
+                    <div className="grid grid-cols-3 gap-1 mt-1">
+                      {(['click','payme','uzum'] as const).map(p => (
+                        <button
+                          key={p}
+                          onClick={() => setPaymentProvider(p)}
+                          className={cn(
+                            'h-6 rounded text-[10px] font-bold border transition-colors capitalize',
+                            paymentProvider === p
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : p === 'click' ? 'border-sky-300 text-sky-600'
+                              : p === 'payme' ? 'border-emerald-300 text-emerald-600'
+                              : 'border-violet-300 text-violet-600'
+                          )}
+                        >
+                          {p}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
