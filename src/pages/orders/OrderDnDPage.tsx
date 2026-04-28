@@ -1065,19 +1065,18 @@ export function OrderDnDPage() {
                 return payment === k
               }
               return <>
-                <div className="grid grid-cols-2 gap-1.5 mb-2 sm:grid-cols-5">
+                <div className="grid grid-cols-2 gap-1.5 mb-1.5">
                   {[
-                    { k: 'cash',       label: 'Нал.' },
+                    { k: 'cash',       label: 'Наличные' },
                     { k: 'card',       label: 'Карта' },
                     { k: 'transfer',   label: 'Перевод' },
-                    { k: 'aggregator', label: 'Click·Payme·Uzum' },
-                    { k: 'mixed',      label: 'Смеш.' },
+                    { k: 'aggregator', label: 'Click/Payme/Uzum' },
                   ].map(opt => (
                     <button
                       key={opt.k}
                       onClick={() => selectMethod(opt.k)}
                       className={cn(
-                        'h-8 rounded-md text-xs font-bold border transition-colors',
+                        'h-8 rounded-md text-xs font-bold border transition-colors px-1',
                         isActive(opt.k)
                           ? 'border-primary bg-primary text-primary-foreground'
                           : 'border-border hover:border-primary/40'
@@ -1087,6 +1086,17 @@ export function OrderDnDPage() {
                     </button>
                   ))}
                 </div>
+                <button
+                  onClick={() => selectMethod('mixed')}
+                  className={cn(
+                    'w-full h-8 rounded-md text-xs font-bold border transition-colors mb-2',
+                    isActive('mixed')
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border hover:border-primary/40'
+                  )}
+                >
+                  Смешанная (несколько способов)
+                </button>
 
                 {/* Раскрытие выбора провайдера — только когда активен «Click·Payme·Uzum» */}
                 {isAggrActive && (

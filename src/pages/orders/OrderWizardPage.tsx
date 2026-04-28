@@ -1834,7 +1834,6 @@ function Step4Payment({
     { k: 'card',       label: 'Карта' },
     { k: 'transfer',   label: 'Перевод' },
     { k: 'aggregator', label: 'Click/Payme/Uzum' },
-    { k: 'mixed',      label: 'Смешанная' },
   ]
 
   function selectMethod(k: string) {
@@ -2025,13 +2024,13 @@ function Step4Payment({
 
       <div>
         <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Способ оплаты</Label>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 mt-2">
+        <div className="grid grid-cols-2 gap-2 mt-2">
           {paymentOptions.map(p => (
             <button
               key={p.k}
               onClick={() => selectMethod(p.k)}
               className={cn(
-                'h-10 rounded-md border text-xs sm:text-[13px] font-semibold transition-colors px-1',
+                'h-10 rounded-md border-2 text-sm font-semibold transition-colors px-2',
                 isMethodActive(p.k)
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border hover:border-primary/40'
@@ -2041,6 +2040,17 @@ function Step4Payment({
             </button>
           ))}
         </div>
+        <button
+          onClick={() => selectMethod('mixed')}
+          className={cn(
+            'w-full h-10 rounded-md border-2 text-sm font-semibold transition-colors mt-2',
+            isMethodActive('mixed')
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border hover:border-primary/40'
+          )}
+        >
+          Смешанная (несколько способов)
+        </button>
 
         {/* Под-выбор провайдера — только когда активен «Click/Payme/Uzum» (одиночный безнал-агрегатор) */}
         {isMethodActive('aggregator') && (
