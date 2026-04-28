@@ -207,7 +207,7 @@ export function TeamSettingsTab({ team }: Props) {
               <Input
                 value={slug}
                 onChange={e => { setSlug(e.target.value); setSlugEdited(true) }}
-                pattern="[-a-z0-9]+"
+                pattern="[a-z0-9\-]+"
                 required
               />
               <p className="text-xs text-muted-foreground">{t('team.teamSlugHint')}</p>

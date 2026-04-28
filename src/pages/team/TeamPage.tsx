@@ -209,8 +209,12 @@ function CreateTeamForm() {
     try {
       await createTeam.mutateAsync({ name: name.trim(), slug: slug.trim() })
       toast.success(t('common.saved'))
-    } catch {
-      toast.error(t('common.saveError'))
+    } catch (err: any) {
+      if (err?.code === '23505' || err?.message?.includes('duplicate')) {
+        toast.error('Этот slug уже занят — выберите другой')
+      } else {
+        toast.error(t('common.saveError'))
+      }
     }
   }
 
@@ -233,7 +237,7 @@ function CreateTeamForm() {
               value={slug}
               onChange={e => { setSlug(e.target.value); setSlugEdited(true) }}
               placeholder="salon-krasota"
-              pattern="[-a-z0-9]+"
+              pattern="[a-z0-9\-]+"
               required
             />
             <p className="text-xs text-muted-foreground">{t('team.teamSlugHint')}</p>
