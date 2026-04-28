@@ -9,7 +9,18 @@ export interface ReceiptConfig {
   footer_text: string
   show_item_details: boolean  // цвет, бренд, дефекты
   copy_count: 1 | 2           // 1 = один экземпляр, 2 = клиент + организация
+  terms_text: string          // условия приёмки (юр. оферта); пустая строка — не показывать
 }
+
+export const DEFAULT_TERMS_TEXT = [
+  'Условия приёмки:',
+  '1. Клиент подтверждает наличие отмеченных дефектов на изделии.',
+  '2. Химчистка не несёт ответственности за скрытые дефекты, проявившиеся в процессе обработки (потеря цвета, деформация фурнитуры, расхождение швов, усадка ткани).',
+  '3. Срок предъявления претензий к качеству — 24 часа с момента выдачи.',
+  '4. Готовое изделие хранится бесплатно 30 дней. Далее взимается плата за хранение.',
+  '5. При утере квитанции изделие выдаётся при предъявлении документа, удостоверяющего личность.',
+  '6. Подписывая квитанцию, клиент соглашается с условиями приёмки.',
+].join('\n')
 
 export const DEFAULT_RECEIPT_CONFIG: ReceiptConfig = {
   company_name: '',
@@ -18,6 +29,7 @@ export const DEFAULT_RECEIPT_CONFIG: ReceiptConfig = {
   footer_text: 'Спасибо за обращение!',
   show_item_details: true,
   copy_count: 2,
+  terms_text: DEFAULT_TERMS_TEXT,
 }
 
 const QKEY = ['app_settings', 'receipt_config', PRODUCT]

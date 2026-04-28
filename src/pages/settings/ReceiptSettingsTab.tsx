@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/shared/Toaster'
-import { useReceiptConfig, useUpdateReceiptConfig, DEFAULT_RECEIPT_CONFIG, type ReceiptConfig } from '@/hooks/useReceiptConfig'
+import { useReceiptConfig, useUpdateReceiptConfig, DEFAULT_RECEIPT_CONFIG, DEFAULT_TERMS_TEXT, type ReceiptConfig } from '@/hooks/useReceiptConfig'
+import { Textarea } from '@/components/ui/textarea'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 import dayjs from 'dayjs'
 
@@ -120,6 +121,35 @@ export function ReceiptSettingsTab() {
               onChange={e => set('footer_text', e.target.value)}
               className="mt-1"
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Условия приёмки */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Условия приёмки</CardTitle>
+          <CardDescription>Юридический текст оферты — печатается мелким шрифтом перед QR-кодом. Защищает от споров о скрытых дефектах.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Textarea
+            value={config.terms_text}
+            onChange={e => set('terms_text', e.target.value)}
+            placeholder="Оставьте пустым, чтобы не показывать"
+            rows={8}
+            className="text-xs font-mono leading-relaxed"
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {config.terms_text ? `${config.terms_text.length} символов` : 'Условия не печатаются'}
+            </span>
+            <button
+              type="button"
+              onClick={() => set('terms_text', DEFAULT_TERMS_TEXT)}
+              className="text-xs text-primary hover:underline"
+            >
+              Восстановить шаблон
+            </button>
           </div>
         </CardContent>
       </Card>

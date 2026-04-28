@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PRODUCT } from '@/lib/config'
 import { useHomeScreenConfig, useUpdateHomeScreenConfig } from '@/hooks/useAppSettings'
-import type { HomeScreenConfig, HomeScreenTile } from '@/hooks/useAppSettings'
+import type { HomeScreenConfig, HomeScreenTile, HomeScreenMode } from '@/hooks/useAppSettings'
 import { getDefaultTiles } from '@/lib/homeScreenDefaults'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -60,7 +60,7 @@ export function AdminHomeScreenTab() {
   const { data: config, isLoading } = useHomeScreenConfig()
   const updateConfig = useUpdateHomeScreenConfig()
 
-  const [mode, setMode] = useState<'sidebar' | 'tiles'>('sidebar')
+  const [mode, setMode] = useState<HomeScreenMode>('sidebar')
   const [tiles, setTiles] = useState<HomeScreenTile[]>([])
 
   useEffect(() => {

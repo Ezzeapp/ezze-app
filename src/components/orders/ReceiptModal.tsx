@@ -63,6 +63,10 @@ function num(n: number): string {
   return n.toLocaleString('ru')
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string))
+}
+
 function buildReceiptCopyHtml(
   data: ReceiptData,
   config: ReceiptConfig,
@@ -221,6 +225,11 @@ function buildReceiptCopyHtml(
 
       <!-- Метка копии -->
       ${copyLabel ? `<div style="text-align:center;color:#666;font-size:10px;margin-bottom:4px;">${copyLabel}</div>` : ''}
+
+      <!-- Условия приёмки -->
+      ${config.terms_text
+        ? `<div style="border-top:1px dashed #ccc;padding-top:6px;margin-top:6px;margin-bottom:8px;font-size:9px;color:#555;line-height:1.35;white-space:pre-line;">${escapeHtml(config.terms_text)}</div>`
+        : ''}
 
       <!-- QR-код для отслеживания -->
       <div style="text-align:center;margin:8px 0 4px;">
@@ -464,6 +473,13 @@ function ReceiptPreview({ data, config, symbol, format }: {
           {/* Метка копии */}
           {copyLabel && (
             <div className="text-center text-gray-500 text-[10px] mb-1">{copyLabel}</div>
+          )}
+
+          {/* Условия приёмки (юр. оферта) */}
+          {config.terms_text && (
+            <div className="border-t border-dashed border-gray-300 pt-1.5 mt-1.5 mb-2 text-[9px] text-gray-600 leading-tight whitespace-pre-line">
+              {config.terms_text}
+            </div>
           )}
 
           {/* QR-код для отслеживания */}

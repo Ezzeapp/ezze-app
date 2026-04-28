@@ -55,7 +55,10 @@ function useDeliveryOrders(dateFrom: string, dateTo: string) {
   return useQuery({
     queryKey: ['cleaning_delivery', PRODUCT, dateFrom, dateTo],
     queryFn: async () => {
-      let q = supabase
+      // Берём из БД все «активные» заказы с любой из дат забора/доставки.
+      // Диапазон дат применяем на клиенте — PostgREST не умеет аккуратно
+      // комбинировать `or=(and(...),and(...))` для двух полей одновременно.
+      const { data } = await supabase
         .from('cleaning_orders')
         .select('id, number, status, order_type, total_amount, prepaid_amount, created_at, notes, pickup_date, delivery_date, visit_address, visit_lat, visit_lon, client:clients(first_name, last_name, phone), items:cleaning_order_items(item_type_name, price, color, brand, defects)')
         .eq('product', PRODUCT)
@@ -63,19 +66,16 @@ function useDeliveryOrders(dateFrom: string, dateTo: string) {
         .not('status', 'in', '("cancelled","paid")')
         .order('pickup_date', { ascending: true, nullsFirst: false })
 
-      if (dateFrom && dateTo) {
-        q = q.or(
-          `and(pickup_date.gte.${dateFrom},pickup_date.lte.${dateTo}),` +
-          `and(delivery_date.gte.${dateFrom},delivery_date.lte.${dateTo})`
-        )
-      } else if (dateFrom) {
-        q = q.or(`pickup_date.gte.${dateFrom},delivery_date.gte.${dateFrom}`)
-      } else if (dateTo) {
-        q = q.or(`pickup_date.lte.${dateTo},delivery_date.lte.${dateTo}`)
-      }
+      const all = (data ?? []) as unknown as DeliveryOrder[]
+      if (!dateFrom && !dateTo) return all
 
-      const { data } = await q
-      return (data ?? []) as unknown as DeliveryOrder[]
+      const inRange = (d: string | null) => {
+        if (!d) return false
+        if (dateFrom && d < dateFrom) return false
+        if (dateTo && d > dateTo) return false
+        return true
+      }
+      return all.filter(o => inRange(o.pickup_date) || inRange(o.delivery_date))
     },
   })
 }
