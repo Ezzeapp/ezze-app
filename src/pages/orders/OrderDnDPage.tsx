@@ -407,6 +407,15 @@ export function OrderDnDPage() {
   const deliveryAdd = deliveryMethod === 'delivery' ? (parseFloat(deliveryFee) || 0) : 0
   const total = Math.max(0, subtotal + surchargeAmt + markupAmt - discountAmt - promoAmt + deliveryAdd)
 
+  // При изменении total: если введённая сумма предоплаты больше нового total — обнулить (сбросить «прилипшее» значение).
+  // Также сбрасываем mixed-поля если они стали невалидными при total=0.
+  useEffect(() => {
+    if (customPrepayAmount.trim() === '') return
+    const n = parseFloat(String(customPrepayAmount).replace(',', '.'))
+    if (!Number.isFinite(n) || n > total) setCustomPrepayAmount('')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total])
+
   async function applyPromoCode() {
     const code = promoCode.trim().toUpperCase()
     if (!code) return
@@ -486,10 +495,13 @@ export function OrderDnDPage() {
       const readyDate = customReadyDate || dayjs().add(zones.urgent.length > 0 ? 1 : 3, 'day').format('YYYY-MM-DD')
       // Сумма «оплачено сейчас» (предоплата). Для одиночного способа: customPrepayAmount или вся сумма.
       // Для Mixed: сумма всех трёх полей.
-      const singlePrepay = customPrepayAmount
-        ? Math.min(total, Math.max(0, parseFloat(customPrepayAmount) || 0))
-        : total
-      const mixedSum = (parseFloat(paymentCash) || 0) + (parseFloat(paymentCard) || 0) + (parseFloat(paymentAggregator) || 0)
+      // Парсим с заменой запятой на точку (UZ-локаль), пустую строку трактуем как «по умолчанию = total».
+      const parseAmount = (v: string) => parseFloat(String(v).replace(',', '.')) || 0
+      const trimmedPrepay = customPrepayAmount.trim()
+      const singlePrepay = trimmedPrepay === ''
+        ? total
+        : Math.min(total, Math.max(0, parseAmount(trimmedPrepay)))
+      const mixedSum = parseAmount(paymentCash) + parseAmount(paymentCard) + parseAmount(paymentAggregator)
       const prepayAmt = payment === 'mixed' ? mixedSum : singlePrepay
       const order = await createOrder({
         order_type: orderType,
@@ -500,9 +512,9 @@ export function OrderDnDPage() {
         is_express: zones.urgent.length > 0,
         payment_method: payment,
         payment_provider: paymentProvider,
-        payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : (payment === 'cash' ? prepayAmt : 0),
-        payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : (payment === 'card' && !paymentProvider ? prepayAmt : 0),
-        payment_aggregator_amount: payment === 'mixed' ? (parseFloat(paymentAggregator) || 0) : (payment === 'card' && paymentProvider ? prepayAmt : 0),
+        payment_cash: payment === 'mixed' ? parseAmount(paymentCash) : (payment === 'cash' ? prepayAmt : 0),
+        payment_card: payment === 'mixed' ? parseAmount(paymentCard) : (payment === 'card' && !paymentProvider ? prepayAmt : 0),
+        payment_aggregator_amount: payment === 'mixed' ? parseAmount(paymentAggregator) : (payment === 'card' && paymentProvider ? prepayAmt : 0),
         surcharge_percent: zones.urgent.length > 0 && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
         surcharge_amount: surchargeAmt + markupAmt,
         visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? (visitAddress || null) : null,
@@ -1168,10 +1180,25 @@ export function OrderDnDPage() {
                   return payment === method
                 }
                 const selectMethod = (k: string) => {
+                  // При выходе из mixed → сбрасываем поля cash/card/aggregator (чтобы не «прилипали»).
+                  // При входе в mixed → сбрасываем customPrepayAmount (он не используется).
+                  if (payment === 'mixed' && k !== 'mixed') {
+                    setPaymentCash('')
+                    setPaymentCard('')
+                    setPaymentAggregator('')
+                  }
+                  if (k === 'mixed') {
+                    setCustomPrepayAmount('')
+                  }
                   setPayment(k)
                   setPaymentProvider(null)
                 }
                 const selectAggregator = (provider: string) => {
+                  if (payment === 'mixed') {
+                    setPaymentCash('')
+                    setPaymentCard('')
+                    setPaymentAggregator('')
+                  }
                   setPayment('card')
                   setPaymentProvider(provider)
                 }
@@ -1239,8 +1266,16 @@ export function OrderDnDPage() {
                   </div>
                   {(() => {
                     const fullStr = String(total)
-                    const halfStr = String(Math.round(total / 2))
-                    const quarterStr = String(Math.round(total / 4))
+                    const halfStr = String(Math.floor(total / 2))
+                    const quarterStr = String(Math.floor(total / 4))
+                    const disabledPct = total <= 0
+                    const sanitizeBlur = () => {
+                      if (customPrepayAmount.trim() === '') return
+                      const n = parseFloat(String(customPrepayAmount).replace(',', '.'))
+                      if (!Number.isFinite(n) || n <= 0) { setCustomPrepayAmount(''); return }
+                      const clamped = Math.min(total, Math.max(0, n))
+                      setCustomPrepayAmount(String(clamped))
+                    }
                     return (
                       <div className="flex gap-1.5">
                         <Input
@@ -1248,14 +1283,17 @@ export function OrderDnDPage() {
                           placeholder={`По умолч. ${formatCurrency(total)}`}
                           value={customPrepayAmount}
                           onChange={e => setCustomPrepayAmount(e.target.value)}
+                          onBlur={sanitizeBlur}
+                          disabled={total <= 0}
                           className="h-9 text-sm flex-1 font-mono"
                         />
                         <button
                           type="button"
                           onClick={() => setCustomPrepayAmount(fullStr)}
+                          disabled={disabledPct}
                           className={cn(
-                            'h-9 px-3 rounded-md border-2 text-xs font-bold transition-colors',
-                            customPrepayAmount === fullStr ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40'
+                            'h-9 px-3 rounded-md border-2 text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+                            !disabledPct && customPrepayAmount === fullStr ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40'
                           )}
                         >
                           Вся
@@ -1263,9 +1301,10 @@ export function OrderDnDPage() {
                         <button
                           type="button"
                           onClick={() => setCustomPrepayAmount(halfStr)}
+                          disabled={disabledPct}
                           className={cn(
-                            'h-9 px-3 rounded-md border-2 text-xs font-bold transition-colors',
-                            customPrepayAmount === halfStr ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40'
+                            'h-9 px-3 rounded-md border-2 text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+                            !disabledPct && customPrepayAmount === halfStr && customPrepayAmount !== fullStr ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40'
                           )}
                         >
                           50%
@@ -1273,9 +1312,10 @@ export function OrderDnDPage() {
                         <button
                           type="button"
                           onClick={() => setCustomPrepayAmount(quarterStr)}
+                          disabled={disabledPct}
                           className={cn(
-                            'h-9 px-3 rounded-md border-2 text-xs font-bold transition-colors',
-                            customPrepayAmount === quarterStr ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40'
+                            'h-9 px-3 rounded-md border-2 text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+                            !disabledPct && customPrepayAmount === quarterStr && customPrepayAmount !== halfStr && customPrepayAmount !== fullStr ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40'
                           )}
                         >
                           25%
@@ -1283,18 +1323,23 @@ export function OrderDnDPage() {
                       </div>
                     )
                   })()}
-                  {customPrepayAmount && parseFloat(customPrepayAmount) < total && (
-                    <div className="text-[11px] text-orange-600 mt-1">
-                      Остаток в долг: {formatCurrency(total - (parseFloat(customPrepayAmount) || 0))} {symbol}
-                    </div>
-                  )}
+                  {(() => {
+                    const p = parseFloat(String(customPrepayAmount).replace(',', '.'))
+                    if (customPrepayAmount.trim() === '' || !Number.isFinite(p) || p <= 0 || p >= total) return null
+                    return (
+                      <div className="text-[11px] text-orange-600 mt-1">
+                        Остаток в долг: {formatCurrency(total - p)} {symbol}
+                      </div>
+                    )
+                  })()}
                 </div>
               )}
 
               {/* Mixed-панель: 3 строки (Наличные / Карта / Агрегатор + выбор) */}
               {payment === 'mixed' && (() => {
-                const sum = (parseFloat(paymentCash) || 0) + (parseFloat(paymentCard) || 0) + (parseFloat(paymentAggregator) || 0)
-                const ok = Math.abs(sum - total) < 1
+                const parseN = (v: string) => parseFloat(String(v).replace(',', '.')) || 0
+                const sum = parseN(paymentCash) + parseN(paymentCard) + parseN(paymentAggregator)
+                const ok = total > 0 && Math.abs(sum - total) < 1
                 return (
                   <div className="border-2 border-blue-100 dark:border-blue-900/40 rounded-lg p-3 bg-blue-50/40 dark:bg-blue-950/20 space-y-2.5">
                     <div className="text-xs font-bold">Распределите сумму:</div>
@@ -1539,7 +1584,7 @@ export function OrderDnDPage() {
                 Отмена
               </Button>
               <Button
-                disabled={isPending || allLines.length === 0}
+                disabled={isPending || allLines.length === 0 || total <= 0}
                 onClick={handleSubmit}
                 className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
               >
