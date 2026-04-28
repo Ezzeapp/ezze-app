@@ -2025,13 +2025,13 @@ function Step4Payment({
 
       <div>
         <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Способ оплаты</Label>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 mt-2">
           {paymentOptions.map(p => (
             <button
               key={p.k}
               onClick={() => selectMethod(p.k)}
               className={cn(
-                'h-12 rounded-lg border-2 text-sm font-bold transition-colors',
+                'h-10 rounded-md border text-xs sm:text-[13px] font-semibold transition-colors px-1',
                 isMethodActive(p.k)
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border hover:border-primary/40'
@@ -2044,11 +2044,11 @@ function Step4Payment({
 
         {/* Под-выбор провайдера — только когда активен «Click/Payme/Uzum» (одиночный безнал-агрегатор) */}
         {isMethodActive('aggregator') && (
-          <div className="mt-2 p-2.5 rounded-lg border bg-muted/30">
-            <div className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground mb-1.5">
+          <div className="mt-2 p-2 rounded-md border bg-muted/30">
+            <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1.5">
               Какой агрегатор?
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1.5">
               {[
                 { k: 'click', label: 'Click', cls: 'text-sky-600 border-sky-300 hover:border-sky-500' },
                 { k: 'payme', label: 'Payme', cls: 'text-emerald-600 border-emerald-300 hover:border-emerald-500' },
@@ -2060,7 +2060,7 @@ function Step4Payment({
                     key={p.k}
                     onClick={() => setPaymentProvider(p.k)}
                     className={cn(
-                      'h-10 rounded-lg border-2 text-sm font-bold transition-colors',
+                      'h-8 rounded-md border-2 text-xs font-bold transition-colors',
                       sel ? 'border-primary bg-primary text-primary-foreground' : `bg-background ${p.cls}`
                     )}
                   >
