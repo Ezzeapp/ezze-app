@@ -288,6 +288,7 @@ export function OrderDnDPage() {
   const [paymentCash, setPaymentCash] = useState('')
   const [paymentCard, setPaymentCard] = useState('')
   const [paymentAggregator, setPaymentAggregator] = useState('')
+  const [customPrepayAmount, setCustomPrepayAmount] = useState('')
   const [discount, setDiscount] = useState(0)
   const [markup, setMarkup] = useState(0)
   const [discMode, setDiscMode] = useState<'discount' | 'markup'>('discount')
@@ -480,18 +481,25 @@ export function OrderDnDPage() {
         })
       )
       const readyDate = customReadyDate || dayjs().add(zones.urgent.length > 0 ? 1 : 3, 'day').format('YYYY-MM-DD')
+      // Сумма «оплачено сейчас» (предоплата). Для одиночного способа: customPrepayAmount или вся сумма.
+      // Для Mixed: сумма всех трёх полей.
+      const singlePrepay = customPrepayAmount
+        ? Math.min(total, Math.max(0, parseFloat(customPrepayAmount) || 0))
+        : total
+      const mixedSum = (parseFloat(paymentCash) || 0) + (parseFloat(paymentCard) || 0) + (parseFloat(paymentAggregator) || 0)
+      const prepayAmt = payment === 'mixed' ? mixedSum : singlePrepay
       const order = await createOrder({
         order_type: orderType,
         client_id: clientId,
-        prepaid_amount: 0,
+        prepaid_amount: prepayAmt,
         total_amount: total,
         ready_date: readyDate,
         is_express: zones.urgent.length > 0,
         payment_method: payment,
         payment_provider: paymentProvider,
-        payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : 0,
-        payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : 0,
-        payment_aggregator_amount: payment === 'mixed' ? (parseFloat(paymentAggregator) || 0) : 0,
+        payment_cash: payment === 'mixed' ? (parseFloat(paymentCash) || 0) : (payment === 'cash' ? prepayAmt : 0),
+        payment_card: payment === 'mixed' ? (parseFloat(paymentCard) || 0) : (payment === 'card' && !paymentProvider ? prepayAmt : 0),
+        payment_aggregator_amount: payment === 'mixed' ? (parseFloat(paymentAggregator) || 0) : (payment === 'card' && paymentProvider ? prepayAmt : 0),
         surcharge_percent: zones.urgent.length > 0 && expressMode === 'percent' ? (parseFloat(expressValue) || 0) : 0,
         surcharge_amount: surchargeAmt + markupAmt,
         visit_address: (orderType === 'furniture' || deliveryMethod === 'delivery') ? (visitAddress || null) : null,
@@ -526,7 +534,7 @@ export function OrderDnDPage() {
           }
         }),
         total_amount: total,
-        prepaid_amount: 0,
+        prepaid_amount: prepayAmt,
         notes: null,
         subtotal,
         surcharge_amount: surchargeAmt + markupAmt,
@@ -1124,6 +1132,50 @@ export function OrderDnDPage() {
                 )}
               </>
             })()}
+
+            {/* Сумма сейчас (для одиночного способа) */}
+            {payment !== 'mixed' && (
+              <div className="mb-3 p-2 rounded-md border bg-muted/30">
+                <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1.5">
+                  Сколько оплачивает клиент сейчас?
+                </div>
+                <div className="flex gap-1.5">
+                  <Input
+                    type="number" min={0} max={total}
+                    placeholder={`По умолч. ${formatCurrency(total)}`}
+                    value={customPrepayAmount}
+                    onChange={e => setCustomPrepayAmount(e.target.value)}
+                    className="h-8 text-xs flex-1 font-mono"
+                  />
+                  <button
+                    onClick={() => setCustomPrepayAmount(String(total))}
+                    className="h-8 px-2 rounded border text-[11px] font-bold hover:bg-muted whitespace-nowrap"
+                  >
+                    Вся
+                  </button>
+                  <button
+                    onClick={() => setCustomPrepayAmount(String(Math.round(total / 2)))}
+                    className="h-8 px-2 rounded border text-[11px] font-bold hover:bg-muted whitespace-nowrap"
+                  >
+                    50%
+                  </button>
+                  {customPrepayAmount && (
+                    <button
+                      onClick={() => setCustomPrepayAmount('')}
+                      className="h-8 w-8 rounded border text-muted-foreground hover:text-destructive grid place-items-center"
+                      title="Сбросить"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                {customPrepayAmount && parseFloat(customPrepayAmount) < total && (
+                  <div className="text-[10.5px] text-orange-600 mt-1">
+                    Остаток при выдаче: {formatCurrency(total - (parseFloat(customPrepayAmount) || 0))} {symbol}
+                  </div>
+                )}
+              </div>
+            )}
 
             {payment === 'mixed' && (
               <div className="grid grid-cols-3 gap-2 mb-3">
