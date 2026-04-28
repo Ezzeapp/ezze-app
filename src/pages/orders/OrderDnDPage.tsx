@@ -5,6 +5,7 @@ import {
   GripVertical, ShoppingBag, Zap, Truck, UserPlus,
   Camera, Printer, CheckCircle2, Pencil, Star, History, ChevronUp,
   Wallet, CreditCard, ArrowRightLeft, Shuffle, Tag, ChevronDown,
+  LayoutGrid, List,
 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -282,8 +283,12 @@ export function OrderDnDPage() {
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
   const [showReceipt, setShowReceipt] = useState(false)
 
-  // Кастомная дата готовности (перебивает пресет 3-5/1-2 дней)
+  // Готовность: пресет в днях (1/2/3/5/7) или кастомная дата (перебивает пресет)
+  const [presetDays, setPresetDays] = useState<number>(3)
   const [customReadyDate, setCustomReadyDate] = useState('')
+
+  // Режим отображения каталога: карточки или таблица
+  const [catalogView, setCatalogView] = useState<'grid' | 'list'>('grid')
 
   // Оплата
   const [payment, setPayment] = useState('cash')
@@ -492,7 +497,7 @@ export function OrderDnDPage() {
           }
         })
       )
-      const readyDate = customReadyDate || dayjs().add(zones.urgent.length > 0 ? 1 : 3, 'day').format('YYYY-MM-DD')
+      const readyDate = customReadyDate || dayjs().add(presetDays, 'day').format('YYYY-MM-DD')
       // Сумма «оплачено сейчас» (предоплата). Для одиночного способа: customPrepayAmount или вся сумма.
       // Для Mixed: сумма всех трёх полей.
       // Парсим с заменой запятой на точку (UZ-локаль), пустую строку трактуем как «по умолчанию = total».
@@ -736,79 +741,194 @@ export function OrderDnDPage() {
               <Star className={cn('h-3.5 w-3.5', showFavsOnly && 'fill-current')} />
               <span className="font-mono">{favs.size}</span>
             </button>
+            {/* Переключатель вида каталога */}
+            <div className="flex h-8 rounded-md border overflow-hidden shrink-0">
+              <button
+                onClick={() => setCatalogView('grid')}
+                className={cn(
+                  'px-2 transition-colors flex items-center justify-center',
+                  catalogView === 'grid' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'
+                )}
+                title="Карточки"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setCatalogView('list')}
+                className={cn(
+                  'px-2 border-l transition-colors flex items-center justify-center',
+                  catalogView === 'list' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'
+                )}
+                title="Список"
+              >
+                <List className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto p-3">
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2.5">
-              {/* Своя позиция → подсказка: тащите в зону или жмите кнопку зоны */}
-              <button
-                onClick={() => setCustomDialog('normal')}
-                className="p-3 rounded-xl border-2 border-dashed border-primary/40 text-primary hover:bg-primary/5 transition-colors flex flex-col justify-center items-center min-h-[100px] gap-1.5"
-                title="Добавить позицию вне каталога в обычную зону"
-              >
-                <Plus className="h-5 w-5" />
-                <span className="text-sm font-semibold">Своя позиция</span>
-                <span className="text-[10px] text-muted-foreground">Не из каталога</span>
-              </button>
-              {visibleTypes.length === 0 ? (
-                <div className="col-span-full text-sm text-muted-foreground italic text-center py-12">
-                  Нет позиций
-                </div>
-              ) : visibleTypes.map(t => (
-                <div
-                  key={t.id}
-                  draggable
-                  onDragStart={() => setDragging(t.id)}
-                  onDragEnd={() => { setDragging(null); setDropHot(null) }}
-                  onClick={() => {
-                    dropTo(activeZone, t.id)
-                    setFlashType(t.id)
-                    setTimeout(() => setFlashType(f => f === t.id ? null : f), 400)
-                  }}
-                  className={cn(
-                    'p-3 rounded-xl border-[1.5px] transition-all bg-background cursor-pointer hover:cursor-grab active:cursor-grabbing',
-                    dragging === t.id
-                      ? 'border-primary opacity-70 scale-[0.98] shadow-lg'
-                      : flashType === t.id
-                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 scale-[0.97]'
-                        : 'border-border hover:border-primary/40 hover:shadow-sm'
-                  )}
-                  style={dragging === t.id ? { boxShadow: '0 10px 24px -10px rgba(37,99,235,.5)' } : undefined}
-                  title={`Клик: добавить в «${activeZone === 'normal' ? 'Обычную' : activeZone === 'urgent' ? 'Срочный' : 'С доставкой'}» · Drag: в любую`}
+            {catalogView === 'grid' ? (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2.5">
+                {/* Своя позиция → подсказка: тащите в зону или жмите кнопку зоны */}
+                <button
+                  onClick={() => setCustomDialog('normal')}
+                  className="p-3 rounded-xl border-2 border-dashed border-primary/40 text-primary hover:bg-primary/5 transition-colors flex flex-col justify-center items-center min-h-[100px] gap-1.5"
+                  title="Добавить позицию вне каталога в обычную зону"
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
-                    <div className="flex items-center gap-1">
-                      {t.default_days <= 1 && (
-                        <span className="text-[9.5px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">
-                          FAST
+                  <Plus className="h-5 w-5" />
+                  <span className="text-sm font-semibold">Своя позиция</span>
+                  <span className="text-[10px] text-muted-foreground">Не из каталога</span>
+                </button>
+                {visibleTypes.length === 0 ? (
+                  <div className="col-span-full text-sm text-muted-foreground italic text-center py-12">
+                    Нет позиций
+                  </div>
+                ) : visibleTypes.map(t => (
+                  <div
+                    key={t.id}
+                    draggable
+                    onDragStart={() => setDragging(t.id)}
+                    onDragEnd={() => { setDragging(null); setDropHot(null) }}
+                    onClick={() => {
+                      dropTo(activeZone, t.id)
+                      setFlashType(t.id)
+                      setTimeout(() => setFlashType(f => f === t.id ? null : f), 400)
+                    }}
+                    className={cn(
+                      'p-3 rounded-xl border-[1.5px] transition-all bg-background cursor-pointer hover:cursor-grab active:cursor-grabbing',
+                      dragging === t.id
+                        ? 'border-primary opacity-70 scale-[0.98] shadow-lg'
+                        : flashType === t.id
+                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 scale-[0.97]'
+                          : 'border-border hover:border-primary/40 hover:shadow-sm'
+                    )}
+                    style={dragging === t.id ? { boxShadow: '0 10px 24px -10px rgba(37,99,235,.5)' } : undefined}
+                    title={`Клик: добавить в «${activeZone === 'normal' ? 'Обычную' : activeZone === 'urgent' ? 'Срочный' : 'С доставкой'}» · Drag: в любую`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                      <div className="flex items-center gap-1">
+                        {t.default_days <= 1 && (
+                          <span className="text-[9.5px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">
+                            FAST
+                          </span>
+                        )}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleFav(t.id) }}
+                          className={cn(
+                            'p-0.5 transition-colors',
+                            isFavourite(t.id) ? 'text-amber-400' : 'text-muted-foreground/40 hover:text-amber-400'
+                          )}
+                          title={isFavourite(t.id) ? 'Убрать из избранного' : 'В избранное'}
+                        >
+                          <Star className={cn('h-3 w-3', isFavourite(t.id) && 'fill-current')} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="text-sm font-semibold leading-tight min-h-[34px]">{t.name}</div>
+                    <div className="flex justify-between items-baseline mt-2">
+                      <span className="font-mono text-sm font-extrabold">
+                        {formatCurrency(t.default_price)} <span className="text-[10px] text-muted-foreground">{symbol}</span>
+                      </span>
+                      {t.subcategory && (
+                        <span className="font-mono text-[9px] text-muted-foreground truncate max-w-[60px]" title={t.subcategory}>
+                          {t.subcategory}
                         </span>
                       )}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); toggleFav(t.id) }}
-                        className={cn(
-                          'p-0.5 transition-colors',
-                          isFavourite(t.id) ? 'text-amber-400' : 'text-muted-foreground/40 hover:text-amber-400'
-                        )}
-                        title={isFavourite(t.id) ? 'Убрать из избранного' : 'В избранное'}
-                      >
-                        <Star className={cn('h-3 w-3', isFavourite(t.id) && 'fill-current')} />
-                      </button>
                     </div>
                   </div>
-                  <div className="text-sm font-semibold leading-tight min-h-[34px]">{t.name}</div>
-                  <div className="flex justify-between items-baseline mt-2">
-                    <span className="font-mono text-sm font-extrabold">
-                      {formatCurrency(t.default_price)} <span className="text-[10px] text-muted-foreground">{symbol}</span>
-                    </span>
-                    {t.subcategory && (
-                      <span className="font-mono text-[9px] text-muted-foreground truncate max-w-[60px]" title={t.subcategory}>
-                        {t.subcategory}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-xl border overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-muted-foreground">
+                    <tr className="text-[10.5px] uppercase tracking-wider">
+                      <th className="text-left px-3 py-2 font-semibold w-6"></th>
+                      <th className="text-left px-2 py-2 font-semibold">Название</th>
+                      <th className="text-left px-2 py-2 font-semibold hidden md:table-cell">Категория</th>
+                      <th className="text-right px-2 py-2 font-semibold">Цена</th>
+                      <th className="text-center px-2 py-2 font-semibold w-12">Дн</th>
+                      <th className="w-10 px-2 py-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Своя позиция — первой строкой */}
+                    <tr
+                      onClick={() => setCustomDialog('normal')}
+                      className="border-t cursor-pointer hover:bg-primary/5 text-primary"
+                      title="Добавить позицию вне каталога"
+                    >
+                      <td className="px-3 py-2"><Plus className="h-3.5 w-3.5" /></td>
+                      <td className="px-2 py-2 font-semibold" colSpan={4}>Своя позиция (не из каталога)</td>
+                      <td className="px-2 py-2"></td>
+                    </tr>
+                    {visibleTypes.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-sm text-muted-foreground italic text-center py-10">
+                          Нет позиций
+                        </td>
+                      </tr>
+                    ) : visibleTypes.map(t => (
+                      <tr
+                        key={t.id}
+                        draggable
+                        onDragStart={() => setDragging(t.id)}
+                        onDragEnd={() => { setDragging(null); setDropHot(null) }}
+                        onClick={() => {
+                          dropTo(activeZone, t.id)
+                          setFlashType(t.id)
+                          setTimeout(() => setFlashType(f => f === t.id ? null : f), 400)
+                        }}
+                        className={cn(
+                          'border-t cursor-pointer hover:cursor-grab active:cursor-grabbing transition-colors',
+                          dragging === t.id
+                            ? 'bg-primary/10 opacity-70'
+                            : flashType === t.id
+                              ? 'bg-emerald-50 dark:bg-emerald-950/30'
+                              : 'hover:bg-muted/40'
+                        )}
+                        title={`Клик: добавить в «${activeZone === 'normal' ? 'Обычную' : activeZone === 'urgent' ? 'Срочный' : 'С доставкой'}» · Drag: в любую`}
+                      >
+                        <td className="px-3 py-2 text-muted-foreground">
+                          <GripVertical className="h-3.5 w-3.5" />
+                        </td>
+                        <td className="px-2 py-2 font-medium">
+                          <div className="flex items-center gap-1.5">
+                            <span>{t.name}</span>
+                            {t.default_days <= 1 && (
+                              <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">
+                                FAST
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-2 py-2 text-[11px] text-muted-foreground hidden md:table-cell truncate max-w-[120px]" title={t.subcategory || ''}>
+                          {t.subcategory || '—'}
+                        </td>
+                        <td className="px-2 py-2 text-right font-mono font-bold whitespace-nowrap">
+                          {formatCurrency(t.default_price)} <span className="text-[10px] text-muted-foreground font-normal">{symbol}</span>
+                        </td>
+                        <td className="px-2 py-2 text-center font-mono text-[11px] text-muted-foreground">
+                          {t.default_days}
+                        </td>
+                        <td className="px-2 py-2 text-center">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleFav(t.id) }}
+                            className={cn(
+                              'p-1 transition-colors',
+                              isFavourite(t.id) ? 'text-amber-400' : 'text-muted-foreground/40 hover:text-amber-400'
+                            )}
+                            title={isFavourite(t.id) ? 'Убрать из избранного' : 'В избранное'}
+                          >
+                            <Star className={cn('h-3.5 w-3.5', isFavourite(t.id) && 'fill-current')} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
 
@@ -963,33 +1083,61 @@ export function OrderDnDPage() {
             )}
           </div>
 
-          {/* Custom ready date (опционально) */}
-          <div className="bg-background rounded-2xl border shadow-sm p-2.5 shrink-0 flex items-center gap-2">
-            <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground shrink-0">
-              Готов к:
-            </Label>
-            <Input
-              type="date"
-              value={customReadyDate}
-              onChange={e => setCustomReadyDate(e.target.value)}
-              min={dayjs().format('YYYY-MM-DD')}
-              className={cn('h-7 flex-1 text-xs font-mono', customReadyDate && 'border-primary ring-1 ring-primary/30')}
-              placeholder="auto"
-            />
-            {customReadyDate ? (
-              <button
-                onClick={() => setCustomReadyDate('')}
-                className="h-7 px-2 rounded text-[11px] text-muted-foreground hover:text-destructive border"
-                title="Сбросить — использовать пресет"
-              >
-                сброс
-              </button>
-            ) : (
-              <span className="text-[10px] text-muted-foreground shrink-0">
-                {zones.urgent.length > 0 ? '1-2 дн' : '3-5 дн'}
-              </span>
-            )}
-          </div>
+          {/* Готовность: пресет 1/2/3/5/7 дн + опционально кастомная дата */}
+          {(() => {
+            const computedDate = customReadyDate || dayjs().add(presetDays, 'day').format('YYYY-MM-DD')
+            const computedLabel = new Date(computedDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', weekday: 'short' })
+            return (
+              <div className="bg-background rounded-2xl border shadow-sm p-2.5 shrink-0 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
+                    Готов к
+                  </Label>
+                  <span className="text-[11px] font-mono font-bold text-primary capitalize">
+                    {computedLabel}
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 gap-1">
+                  {[1, 2, 3, 5, 7].map(d => (
+                    <button
+                      key={d}
+                      onClick={() => { setPresetDays(d); setCustomReadyDate('') }}
+                      className={cn(
+                        'h-7 rounded text-[11px] font-bold border transition-colors',
+                        !customReadyDate && presetDays === d
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border text-muted-foreground hover:border-primary/40'
+                      )}
+                      title={`${d} ${d === 1 ? 'день' : 'дн'}`}
+                    >
+                      {d} дн
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Label className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground/70 shrink-0">
+                    или дата
+                  </Label>
+                  <Input
+                    type="date"
+                    value={customReadyDate}
+                    onChange={e => setCustomReadyDate(e.target.value)}
+                    min={dayjs().format('YYYY-MM-DD')}
+                    className={cn('h-7 flex-1 text-[11px] font-mono', customReadyDate && 'border-primary ring-1 ring-primary/30')}
+                  />
+                  {customReadyDate && (
+                    <button
+                      onClick={() => setCustomReadyDate('')}
+                      className="h-7 w-7 rounded text-muted-foreground hover:text-destructive border flex items-center justify-center"
+                      title="Сбросить"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Drop zones */}
           <div className="flex-1 grid grid-rows-2 gap-2.5 min-h-0 overflow-y-auto">
