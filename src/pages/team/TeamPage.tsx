@@ -748,12 +748,20 @@ function OwnerView({ team }: { team: any }) {
   // Все мастера = владелец + участники (active + paused)
   const allMasters = useMemo(() => [ownerAsMember, ...members], [ownerAsMember, members])
 
+  // Календарь и Аналитика построены на appointments (бронирования салонов).
+  // В workshop и cleaning — другие сущности (orders/cleaning_orders),
+  // поэтому эти вкладки скрыты до отдельной реализации.
+  const isOrderProduct = PRODUCT === 'workshop' || PRODUCT === 'cleaning'
+
   const tabs: { key: OwnerTab; label: string }[] = [
-    { key: 'members',   label: t('team.tabMembers')   },
-    // Календарь бронирований не используется в workshop
-    ...(PRODUCT !== 'workshop' ? [{ key: 'calendar' as OwnerTab, label: t('team.tabCalendar') }] : []),
-    { key: 'analytics', label: t('team.tabAnalytics') },
-    { key: 'settings',  label: t('team.tabSettings')  },
+    { key: 'members', label: t('team.tabMembers') },
+    ...(!isOrderProduct
+      ? [
+          { key: 'calendar' as OwnerTab, label: t('team.tabCalendar') },
+          { key: 'analytics' as OwnerTab, label: t('team.tabAnalytics') },
+        ]
+      : []),
+    { key: 'settings', label: t('team.tabSettings') },
   ]
 
   return (
