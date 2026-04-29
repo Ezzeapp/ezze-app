@@ -144,6 +144,16 @@ export function useCreateTeam() {
 
   return useMutation({
     mutationFn: async (data: { name: string; slug: string; description?: string }) => {
+      // DIAG: дамп всех id-источников для отладки RLS-несоответствия
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      // eslint-disable-next-line no-console
+      console.log('[team-diag] before-insert', {
+        appUserId: user?.id,
+        authUid: authUser?.id,
+        match: user?.id === authUser?.id,
+        product: PRODUCT,
+      })
+
       const { data: team, error } = await supabase
         .from('teams')
         .insert({
@@ -156,6 +166,31 @@ export function useCreateTeam() {
         .select()
         .single()
       if (error) throw error
+
+      // DIAG: сразу читаем то что вставили — если RLS режет SELECT, count=0
+      const { data: check, count } = await supabase
+        .from('teams')
+        .select('id, owner_id, name, product', { count: 'exact' })
+        .eq('id', (team as any).id)
+      // eslint-disable-next-line no-console
+      console.log('[team-diag] post-insert read', {
+        insertedId: (team as any).id,
+        rowsReadable: count,
+        row: check?.[0],
+      })
+
+      // DIAG: read-by-owner — то что делает useMyTeam
+      const { data: byOwner, count: countOwner } = await supabase
+        .from('teams')
+        .select('id, owner_id, name', { count: 'exact' })
+        .eq('owner_id', user!.id)
+      // eslint-disable-next-line no-console
+      console.log('[team-diag] read-by-owner_id', {
+        ownerId: user?.id,
+        rowsFound: countOwner,
+        rows: byOwner,
+      })
+
       return team as Team
     },
     onSuccess: () => {
