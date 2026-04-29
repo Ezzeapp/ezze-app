@@ -17,6 +17,7 @@ import {
   MessageSquare, Star, Package, Bot, Shield, CalendarDays,
   BarChart2, ChevronUp, ChevronDown, Trash2, Plus, RotateCcw, Save,
   PanelLeft, LayoutGrid, Sparkles, ListChecks, Boxes,
+  Gift, Megaphone, UsersRound, CreditCard, LifeBuoy, User, ShieldCheck,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -42,6 +43,13 @@ const ICON_OPTIONS: { value: string; Icon: LucideIcon }[] = [
   { value: 'Package',       Icon: Package },
   { value: 'Bot',           Icon: Bot },
   { value: 'Shield',        Icon: Shield },
+  { value: 'ShieldCheck',   Icon: ShieldCheck },
+  { value: 'Gift',          Icon: Gift },
+  { value: 'Megaphone',     Icon: Megaphone },
+  { value: 'UsersRound',    Icon: UsersRound },
+  { value: 'CreditCard',    Icon: CreditCard },
+  { value: 'LifeBuoy',      Icon: LifeBuoy },
+  { value: 'User',          Icon: User },
 ]
 
 const ICON_MAP: Record<string, LucideIcon> = Object.fromEntries(
