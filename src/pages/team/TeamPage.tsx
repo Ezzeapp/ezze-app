@@ -210,9 +210,7 @@ function CreateTeamForm() {
       await createTeam.mutateAsync({ name: name.trim(), slug: slug.trim() })
       toast.success(t('common.saved'))
     } catch (err: any) {
-      if (err?.code === 'team_already_exists') {
-        toast.error('У вас уже есть команда — перезагрузите страницу')
-      } else if (err?.code === '23505' || err?.message?.includes('duplicate')) {
+      if (err?.code === '23505' || err?.message?.includes('duplicate')) {
         toast.error('Этот slug уже занят — выберите другой')
       } else {
         toast.error(t('common.saveError'))

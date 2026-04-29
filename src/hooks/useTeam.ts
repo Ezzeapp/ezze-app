@@ -27,28 +27,42 @@ export function useMyTeam() {
       if (!user) return { team: null, role: null, isOwner: false, isMember: false }
 
       // 1. Проверяем — является ли пользователь владельцем команды
-      // Берём самую старую запись (на случай дублей — пока не схлопнули UNIQUE)
-      const { data: ownedRows } = await supabase
+      // Без embedded users — RLS на users могла резать JOIN и роняла весь запрос
+      const { data: ownedRows, error: ownedErr } = await supabase
         .from('teams')
-        .select('*, owner:users(*)')
+        .select('*')
         .eq('owner_id', user.id)
         .order('created_at', { ascending: true })
         .limit(1)
+      if (ownedErr) {
+        // eslint-disable-next-line no-console
+        console.error('[useMyTeam] owned teams error', ownedErr)
+      }
       const ownedTeam = ownedRows?.[0] ?? null
 
       if (ownedTeam) {
-        const t = { ...ownedTeam, expand: { owner: (ownedTeam as any).owner } } as Team
+        // owner данные подтягиваем отдельным запросом (опциональный, не блокирующий)
+        const { data: ownerData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle()
+        const t = { ...ownedTeam, expand: { owner: ownerData ?? null } } as Team
         return { team: t, role: 'owner', isOwner: true, isMember: false }
       }
 
       // 2. Проверяем — является ли участником команды
-      const { data: membershipRows } = await supabase
+      const { data: membershipRows, error: memErr } = await supabase
         .from('team_members')
         .select('*, team:teams(*)')
         .eq('user_id', user.id)
         .eq('status', 'active')
         .order('joined_at', { ascending: true })
         .limit(1)
+      if (memErr) {
+        // eslint-disable-next-line no-console
+        console.error('[useMyTeam] membership error', memErr)
+      }
       const membership = membershipRows?.[0] ?? null
 
       if (membership) {
@@ -149,16 +163,16 @@ export function useCreateTeam() {
 
   return useMutation({
     mutationFn: async (data: { name: string; slug: string; description?: string }) => {
-      // Защита от случайного создания второй команды у того же владельца
+      // Идемпотентность: если у owner-а уже есть команда — возвращаем её,
+      // вместо INSERT (защита от дублей и ошибок UNIQUE по slug)
       const { data: existing } = await supabase
         .from('teams')
-        .select('id')
+        .select('*')
         .eq('owner_id', user!.id)
+        .order('created_at', { ascending: true })
         .limit(1)
       if (existing && existing.length > 0) {
-        const err: any = new Error('team_already_exists')
-        err.code = 'team_already_exists'
-        throw err
+        return existing[0] as Team
       }
 
       const { data: team, error } = await supabase
