@@ -193,6 +193,23 @@ export function useDeleteService() {
   })
 }
 
+export function useDeleteAllServices() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!user?.id) throw new Error('No user')
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('master_id', user.id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [SERVICES_KEY] }),
+  })
+}
+
 export function useCreateCategory() {
   const queryClient = useQueryClient()
   const { user } = useAuth()

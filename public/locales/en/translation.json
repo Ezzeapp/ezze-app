@@ -441,7 +441,10 @@
     "deletedMultiple": "Deleted {{count}} services",
     "selectedCount": "Selected: {{count}}",
     "bulkDeleteConfirm": "Delete {{count}} services?",
-    "categoryDeleteConfirm": "Delete category?"
+    "categoryDeleteConfirm": "Delete category?",
+    "deleteAll": "Delete all services",
+    "deletedAll": "All services deleted",
+    "deleteAllConfirm": "Delete all services ({{count}})? This action cannot be undone."
   },
   "schedule": {
     "subtitle": "Configure your working hours",

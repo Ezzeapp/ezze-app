@@ -443,7 +443,10 @@
     "addMaterialsAfterSaveHint": "После сохранения перейти во вкладку материалов",
     "deletedMultiple": "Удалено услуг: {{count}}",
     "selectedCount": "Выбрано: {{count}}",
-    "bulkDeleteConfirm": "Удалить {{count}} услуг?"
+    "bulkDeleteConfirm": "Удалить {{count}} услуг?",
+    "deleteAll": "Удалить все услуги",
+    "deletedAll": "Все услуги удалены",
+    "deleteAllConfirm": "Удалить все услуги ({{count}})? Это действие нельзя отменить."
   },
   "schedule": {
     "subtitle": "Настройте рабочие часы",

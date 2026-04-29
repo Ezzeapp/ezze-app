@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, MoreVertical, Trash2, Edit, Clock, Tags, X, Pencil, Download, Search, Square, CheckSquare, Check, ChevronsUpDown, ArrowUpDown } from 'lucide-react'
+import { Plus, Trash2, Clock, Tags, X, Pencil, Download, Search, Check, ChevronsUpDown, ArrowUpDown } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useServicesPage, useServices, useServiceCategories, useServicesNoCatCount, useCreateService, useUpdateService, useDeleteService, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/hooks/useServices'
+import { useServicesPage, useServices, useServiceCategories, useServicesNoCatCount, useCreateService, useUpdateService, useDeleteService, useDeleteAllServices, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/hooks/useServices'
 import { PaginationBar } from '@/components/shared/PaginationBar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,12 +13,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
-import { BulkActionBar } from '@/components/shared/BulkActionBar'
 import { toast } from '@/components/shared/Toaster'
 import { ServiceMaterialsTab } from '@/components/services/ServiceMaterialsTab'
 import { ImportServicesDialog } from '@/components/services/ImportServicesDialog'
@@ -268,9 +266,9 @@ export function ServicesPage() {
   const [sortAsc, setSortAsc] = useState(true)
   // Переключатель "перейти к материалам после сохранения"
   const [goToMaterials, setGoToMaterials] = useState(false)
+  // Удаление всех услуг
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false)
   // Категория — поиск в диалоге
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [catSearch, setCatSearch] = useState('')
   const [catOpen, setCatOpen] = useState(false)
   const [selectedCatId, setSelectedCatId] = useState<string>('__none__')
@@ -318,6 +316,7 @@ export function ServicesPage() {
   const create = useCreateService()
   const update = useUpdateService()
   const del = useDeleteService()
+  const delAll = useDeleteAllServices()
   const createCat = useCreateCategory()
 
   const categoryMap = useMemo(
@@ -402,37 +401,12 @@ export function ServicesPage() {
     }
   }
 
-  const toggleSelect = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  const isAllSelected = useMemo(
-    () => services.length > 0 && services.every(s => selectedIds.has(s.id)),
-    [services, selectedIds]
-  )
-  const isSomeSelected = useMemo(
-    () => services.some(s => selectedIds.has(s.id)),
-    [services, selectedIds]
-  )
-
-  const toggleSelectAll = () => {
-    if (isAllSelected) {
-      setSelectedIds(new Set())
-    } else {
-      setSelectedIds(new Set(services.map(s => s.id)))
-    }
-  }
-
-  const handleBulkDelete = async () => {
+  const handleDeleteAll = async () => {
     try {
-      await Promise.all([...selectedIds].map(id => del.mutateAsync(id)))
-      toast.success(t('services.deletedMultiple', { count: selectedIds.size }))
-      setSelectedIds(new Set())
-      setBulkDeleteOpen(false)
+      await delAll.mutateAsync()
+      toast.success(t('services.deletedAll'))
+      setDeleteAllOpen(false)
+      setPage(1)
     } catch {
       toast.error(t('common.deleteError'))
     }
@@ -451,17 +425,6 @@ export function ServicesPage() {
           <h1 className="text-2xl font-semibold text-foreground">{t('nav.services')}</h1>
           {/* cleaning uses only catalog — no tabs needed */}
         </div>
-
-        {/* Bulk action bar */}
-        {isSomeSelected && (
-          <BulkActionBar
-            count={selectedIds.size}
-            isAllSelected={isAllSelected}
-            onToggleAll={toggleSelectAll}
-            onCancel={() => setSelectedIds(new Set())}
-            onDelete={() => setBulkDeleteOpen(true)}
-          />
-        )}
 
         {/* Row 2: search + buttons */}
         <div className="flex items-center gap-2">
@@ -488,6 +451,17 @@ export function ServicesPage() {
             {hasGlobalServices && (
               <Button variant="outline" size="icon" className="sm:hidden" onClick={() => setImportOpen(true)}>
                 <Download className="h-4 w-4" />
+              </Button>
+            )}
+            {totalItems > 0 && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="text-destructive hover:text-destructive"
+                onClick={() => setDeleteAllOpen(true)}
+                title={t('services.deleteAll')}
+              >
+                <Trash2 className="h-4 w-4" />
               </Button>
             )}
             <Button variant="outline" className="hidden sm:flex" onClick={() => setCatDialogOpen(true)}>
@@ -546,22 +520,12 @@ export function ServicesPage() {
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 sm:hidden">
           {services.map((service) => {
             const cat = (service as any).category as ServiceCategory | null | undefined
-            const isSelected = selectedIds.has(service.id)
             return (
               <div
                 key={service.id}
                 onClick={() => openEdit(service)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border bg-card hover:bg-accent/30 transition-colors cursor-pointer ${!service.is_active ? 'opacity-60' : ''} ${isSelected ? 'border-primary/60 bg-primary/5' : ''}`}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border bg-card hover:bg-accent/30 transition-colors cursor-pointer ${!service.is_active ? 'opacity-60' : ''}`}
               >
-                {/* Чекбокс */}
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); toggleSelect(service.id) }}
-                  className="flex items-center justify-center text-muted-foreground hover:text-primary transition-colors shrink-0"
-                >
-                  {isSelected ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
-                </button>
-                {/* Левая часть */}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{service.name}</p>
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -583,22 +547,15 @@ export function ServicesPage() {
                     <span className="text-xs font-medium shrink-0">{formatCurrency(service.price, currency, i18n.language)}</span>
                   </div>
                 </div>
-                {/* Меню */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(service) }}>
-                      <Edit className="mr-2 h-4 w-4" />{t('common.edit')}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(service.id) }}>
-                      <Trash2 className="mr-2 h-4 w-4" />{t('common.delete')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
+                  onClick={(e) => { e.stopPropagation(); setDeleteId(service.id) }}
+                  title={t('common.delete')}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             )
           })}
@@ -608,15 +565,6 @@ export function ServicesPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
-                <th className="p-3 w-10">
-                  <button
-                    type="button"
-                    onClick={toggleSelectAll}
-                    className="flex items-center text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {isAllSelected ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
-                  </button>
-                </th>
                 <th className="text-left p-3 font-medium">
                   <button type="button" onClick={() => toggleSort('name')} className="flex items-center gap-1 hover:text-foreground transition-colors">
                     {t('services.name')}<ArrowUpDown className={`h-3 w-3 shrink-0 ${sortKey === 'name' ? 'text-primary' : 'opacity-30'}`} />
@@ -646,22 +594,12 @@ export function ServicesPage() {
             <tbody>
               {services.map((service) => {
                 const cat = (service as any).category as ServiceCategory | null | undefined
-                const isSelected = selectedIds.has(service.id)
                 return (
                   <tr
                     key={service.id}
-                    className={`border-t hover:bg-accent/40 transition-colors cursor-pointer ${!service.is_active ? 'opacity-60' : ''} ${isSelected ? 'bg-primary/5' : ''}`}
+                    className={`border-t hover:bg-accent/40 transition-colors cursor-pointer ${!service.is_active ? 'opacity-60' : ''}`}
                     onClick={() => openEdit(service)}
                   >
-                    <td className="p-3 w-10">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); toggleSelect(service.id) }}
-                        className="flex items-center text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        {isSelected ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
-                      </button>
-                    </td>
                     <td className="p-3">
                       <p className="font-medium leading-tight">{service.name}</p>
                     </td>
@@ -696,21 +634,15 @@ export function ServicesPage() {
                       </div>
                     </td>
                     <td className="p-3 w-10">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(service) }}>
-                            <Edit className="mr-2 h-4 w-4" />{t('common.edit')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(service.id) }}>
-                            <Trash2 className="mr-2 h-4 w-4" />{t('common.delete')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={(e) => { e.stopPropagation(); setDeleteId(service.id) }}
+                        title={t('common.delete')}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </td>
                   </tr>
                 )
@@ -957,8 +889,8 @@ export function ServicesPage() {
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete}
         title={t('services.deleteConfirm')} loading={del.isPending} />
 
-      <ConfirmDialog open={bulkDeleteOpen} onClose={() => setBulkDeleteOpen(false)} onConfirm={handleBulkDelete}
-        title={t('services.bulkDeleteConfirm', { count: selectedIds.size })} loading={del.isPending} />
+      <ConfirmDialog open={deleteAllOpen} onClose={() => setDeleteAllOpen(false)} onConfirm={handleDeleteAll}
+        title={t('services.deleteAllConfirm', { count: totalItems })} loading={delAll.isPending} />
     </div>
   )
 }
