@@ -154,7 +154,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <DefaultRedirect /> },
       { path: 'dashboard', element: PRODUCT === 'workshop' ? <Navigate to="/stats" replace /> : <DashboardPage /> },
-      { path: 'profile', element: PRODUCT === 'cleaning' ? <Navigate to="/settings" replace /> : <ProfilePage /> },
+      { path: 'profile', element: (PRODUCT === 'cleaning' || PRODUCT === 'beauty') ? <Navigate to="/settings" replace /> : <ProfilePage /> },
       { path: 'clients', element: <ClientsPage /> },
       { path: 'services', element: PRODUCT === 'cleaning' ? <CleaningServicesPage /> : <ServicesPage /> },
       { path: 'schedule', element: PRODUCT === 'workshop' ? <Navigate to="/orders" replace /> : <SchedulePage /> },

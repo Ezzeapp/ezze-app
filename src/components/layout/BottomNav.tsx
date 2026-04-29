@@ -24,17 +24,20 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
   const canLoyalty   = useTeamAccess('loyalty')
   const canInventory = useTeamAccess('inventory')
 
-  // Cleaning/workshop: промо и лояльность лежат в табах /orders, в Ещё их не дублируем
-  const showPromoLoyalty = PRODUCT !== 'cleaning' && PRODUCT !== 'workshop'
-  // Cleaning: профиль объединён с настройками — отдельный пункт не нужен
-  const showProfile = PRODUCT !== 'cleaning'
+  // Cleaning/workshop: промо/лояльность в табах /orders;
+  // beauty: иконки в шапке Календаря — в Ещё не дублируем.
+  const showPromoLoyalty = PRODUCT !== 'cleaning' && PRODUCT !== 'workshop' && PRODUCT !== 'beauty'
+  // Cleaning/beauty: профиль объединён с настройками — отдельный пункт не нужен
+  const showProfile = PRODUCT !== 'cleaning' && PRODUCT !== 'beauty'
+  // Beauty: склад скрыт пока модуль не нужен
+  const showInventory = PRODUCT !== 'beauty'
 
   const items = [
     showProfile && { icon: User,        label: t('nav.profile'),    to: '/profile',   highlight: false },
     canServices && { icon: ServiceIcon, label: t('nav.services'),   to: '/services',  highlight: false },
     showPromoLoyalty && canPromo    && { icon: Tag,  label: t('marketing.tabPromo'),   to: '/promo',   highlight: false },
     showPromoLoyalty && canLoyalty  && { icon: Gift, label: t('marketing.tabLoyalty'), to: '/loyalty', highlight: false },
-    hasInventory && canInventory && { icon: Package,    label: t('nav.inventory'), to: '/inventory', highlight: false },
+    showInventory && hasInventory && canInventory && { icon: Package,    label: t('nav.inventory'), to: '/inventory', highlight: false },
     hasTeams     && { icon: UsersRound, label: t('nav.team'),      to: '/team',      highlight: false },
     { icon: Bot,         label: 'AI',                to: '/ai',        highlight: false },
     { icon: CreditCard,  label: t('nav.billing'),    to: '/billing',   highlight: false },

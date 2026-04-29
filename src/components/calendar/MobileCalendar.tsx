@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight, ChevronDown, Plus, Clock, UserCircle, CalendarDays, CalendarRange, CalendarPlus, Ban, QrCode } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, Clock, UserCircle, CalendarDays, CalendarRange, CalendarPlus, Ban, QrCode, Tag, Gift } from 'lucide-react'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import { Badge } from '@/components/ui/badge'
@@ -47,6 +47,8 @@ interface MobileCalendarProps {
   onOpenEdit: (appt: Appointment) => void
   onBlockTime?: (date: string) => void
   onShowQR?: () => void
+  onShowPromo?: () => void
+  onShowLoyalty?: () => void
   mobileView?: MobileViewMode
   onMobileViewChange?: (v: MobileViewMode) => void
   limitReached?: boolean
@@ -62,6 +64,8 @@ export function MobileCalendar({
   onOpenEdit,
   onBlockTime,
   onShowQR,
+  onShowPromo,
+  onShowLoyalty,
   mobileView = 'day',
   onMobileViewChange,
   limitReached = false,
@@ -78,6 +82,8 @@ export function MobileCalendar({
   const handleNewAppt = () => { closeFab(); onOpenCreate(selectedDate) }
   const handleBlock   = () => { closeFab(); onBlockTime?.(selectedDate) }
   const handleQR      = () => { closeFab(); onShowQR?.() }
+  const handlePromo   = () => { closeFab(); onShowPromo?.() }
+  const handleLoyalty = () => { closeFab(); onShowLoyalty?.() }
 
   const toggleDay = (fmt: string) => {
     setExpandedDays(prev => {
@@ -555,6 +561,24 @@ export function MobileCalendar({
                   <QrCode className="h-5 w-5 text-emerald-500 shrink-0" />
                   <span className="font-semibold flex-1 text-left text-foreground">QR-код записи</span>
                 </button>
+                {onShowPromo && (
+                  <button
+                    onClick={handlePromo}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-muted active:scale-[0.98] transition-transform"
+                  >
+                    <Tag className="h-5 w-5 text-orange-500 shrink-0" />
+                    <span className="font-semibold flex-1 text-left text-foreground">{t('marketing.tabPromo')}</span>
+                  </button>
+                )}
+                {onShowLoyalty && (
+                  <button
+                    onClick={handleLoyalty}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-muted active:scale-[0.98] transition-transform"
+                  >
+                    <Gift className="h-5 w-5 text-rose-500 shrink-0" />
+                    <span className="font-semibold flex-1 text-left text-foreground">{t('marketing.tabLoyalty')}</span>
+                  </button>
+                )}
               </div>
               <button
                 onClick={closeFab}

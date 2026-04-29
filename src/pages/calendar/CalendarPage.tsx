@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate as useNav } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, Search, ChevronDown, ChevronUp, ChevronsUpDown, Clock, UserCircle, Download, Copy, Share2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, Search, ChevronDown, ChevronUp, ChevronsUpDown, Clock, UserCircle, Download, Copy, Share2, Tag, Gift } from 'lucide-react'
+import { PRODUCT } from '@/lib/config'
 import { MobileCalendar, type MobileViewMode } from '@/components/calendar/MobileCalendar'
 import { AppointmentDialog, type AppointmentFormData } from '@/components/calendar/AppointmentDialog'
 import { AppointmentPreviewSheet } from '@/components/calendar/AppointmentPreviewSheet'
@@ -569,6 +570,8 @@ export function CalendarPage() {
           onOpenEdit={openPreview}
           onBlockTime={handleBlockTime}
           onShowQR={() => setQrOpen(true)}
+          onShowPromo={PRODUCT === 'beauty' ? () => navTo('/promo') : undefined}
+          onShowLoyalty={PRODUCT === 'beauty' ? () => navTo('/loyalty') : undefined}
           mobileView={mobileView}
           onMobileViewChange={setMobileView}
           limitReached={apptLimitReached}
@@ -582,6 +585,16 @@ export function CalendarPage() {
             <Button variant="outline" size="icon" onClick={exportApptsCSV} title={t('common.exportCSV')} disabled={!allAppointments?.length}>
               <Download className="h-4 w-4" />
             </Button>
+          )}
+          {PRODUCT === 'beauty' && (
+            <>
+              <Button variant="outline" size="icon" onClick={() => navTo('/promo')} title={t('marketing.tabPromo')}>
+                <Tag className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => navTo('/loyalty')} title={t('marketing.tabLoyalty')}>
+                <Gift className="h-4 w-4" />
+              </Button>
+            </>
           )}
           <Button onClick={() => openCreate()} disabled={apptLimitReached}>
             <Plus className="h-4 w-4 mr-2" />{t('appointments.add')}

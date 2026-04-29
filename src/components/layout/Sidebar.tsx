@@ -130,9 +130,9 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
         {PRODUCT !== 'farm' && (
           <NavItemGated icon={Users} iconColor="dark:text-emerald-400" label={PRODUCT === 'clinic' ? t('clinic.nav.patients') : t('nav.clients')} to="/clients" feature="clients" module="clients" onClick={onClose} />
         )}
-        {/* Промокоды/Лояльность для cleaning и workshop вынесены в табы /orders,
-            чтобы не раздувать сайдбар. Для остальных продуктов — отдельные пункты. */}
-        {PRODUCT !== 'farm' && PRODUCT !== 'cleaning' && PRODUCT !== 'workshop' && (
+        {/* Промокоды/Лояльность для cleaning и workshop вынесены в табы /orders;
+            для beauty — иконки в шапке Календаря. Для остальных — отдельные пункты. */}
+        {PRODUCT !== 'farm' && PRODUCT !== 'cleaning' && PRODUCT !== 'workshop' && PRODUCT !== 'beauty' && (
           <>
             <NavItemAccess icon={Tag}  iconColor="dark:text-orange-400" label={t('marketing.tabPromo')}   to="/promo"   module="promo"   onClick={onClose} />
             <NavItemAccess icon={Gift} iconColor="dark:text-rose-400"   label={t('marketing.tabLoyalty')} to="/loyalty" module="loyalty" onClick={onClose} />
@@ -171,7 +171,7 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
             {/* ── Каталог ── */}
             <SidebarGroupLabel label={t('nav.groupCatalog')} />
             <NavItemGated icon={ServiceIcon} iconColor="dark:text-purple-400"  label={t('nav.services')}  to="/services"  feature={null}       module="services"  onClick={onClose} />
-            {PRODUCT !== 'cleaning' && (
+            {PRODUCT !== 'cleaning' && PRODUCT !== 'beauty' && (
               <NavItemGated icon={Package}     iconColor="dark:text-orange-400"  label={t('nav.inventory')} to="/inventory" feature="inventory"  module="inventory" onClick={onClose} />
             )}
           </>
@@ -211,8 +211,8 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
           <SidebarNavItem icon={CreditCard} iconColor="dark:text-yellow-400"  label={t('nav.billing')}  to="/billing"  onClick={onClose} />
         )}
         <SidebarNavItem icon={LifeBuoy}   iconColor="dark:text-red-400"     label={t('nav.support')}  to="/support"  onClick={onClose} />
-        {/* Cleaning: профиль объединён с настройками — отдельный пункт не нужен */}
-        {PRODUCT !== 'cleaning' && (
+        {/* Cleaning/beauty: профиль объединён с настройками — отдельный пункт не нужен */}
+        {PRODUCT !== 'cleaning' && PRODUCT !== 'beauty' && (
           <SidebarNavItem icon={User}       iconColor="dark:text-violet-400"  label={t('nav.profile')}  to="/profile"  onClick={onClose} />
         )}
         {/* Worker не видит Settings (нечего ему там настраивать) */}
