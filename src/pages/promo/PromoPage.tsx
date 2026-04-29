@@ -1,16 +1,16 @@
 import { useTranslation } from 'react-i18next'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { LoyaltyTab } from '@/pages/marketing/tabs/LoyaltyTab'
+import { PromoTab } from '@/pages/marketing/tabs/PromoTab'
 
-export function LoyaltyPage() {
+export function PromoPage() {
   const { t } = useTranslation()
   return (
     <div className="space-y-0">
       <PageHeader
-        title={t('loyalty.title')}
-        description={t('loyalty.subtitle')}
+        title={t('marketing.tabPromo')}
+        description={t('promo.subtitle')}
       />
-      <LoyaltyTab />
+      <PromoTab />
     </div>
   )
 }

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard, CalendarDays, Users, MoreHorizontal, Bot, Megaphone,
   Package, User, Settings, ShieldCheck, X, UsersRound, ChevronRight, LogOut, CreditCard, LifeBuoy,
-  ClipboardList, Wrench,
+  ClipboardList, Wrench, Tag, Gift,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -21,6 +21,8 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
   const items = [
     { icon: User,        label: t('nav.profile'),    to: '/profile',   highlight: false },
     { icon: ServiceIcon, label: t('nav.services'),   to: '/services',  highlight: false },
+    { icon: Tag,         label: t('marketing.tabPromo'),   to: '/promo',   highlight: false },
+    { icon: Gift,        label: t('marketing.tabLoyalty'), to: '/loyalty', highlight: false },
     hasInventory && { icon: Package,    label: t('nav.inventory'), to: '/inventory', highlight: false },
     hasTeams     && { icon: UsersRound, label: t('nav.team'),      to: '/team',      highlight: false },
     { icon: Bot,         label: 'AI',                to: '/ai',        highlight: false },

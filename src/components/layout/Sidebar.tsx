@@ -6,7 +6,7 @@ import {
   Settings, Zap, X, ShieldCheck, UsersRound, Megaphone, CreditCard, LifeBuoy,
   ClipboardList, BarChart3, Beef, Wheat, Milk, Wallet, ShoppingCart,
   FlaskConical, Pill, Tractor, TreePine, Egg, Syringe, Sparkles, QrCode,
-  BedDouble, UtensilsCrossed, Heart, Wrench,
+  BedDouble, UtensilsCrossed, Heart, Wrench, Tag, Gift,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -108,6 +108,12 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
         )}
         {PRODUCT !== 'farm' && (
           <NavItemGated icon={Users} iconColor="dark:text-emerald-400" label={PRODUCT === 'clinic' ? t('clinic.nav.patients') : t('nav.clients')} to="/clients" feature="clients" onClick={onClose} />
+        )}
+        {PRODUCT !== 'farm' && (
+          <>
+            <SidebarNavItem icon={Tag}  iconColor="dark:text-orange-400" label={t('marketing.tabPromo')}   to="/promo"   onClick={onClose} />
+            <SidebarNavItem icon={Gift} iconColor="dark:text-rose-400"   label={t('marketing.tabLoyalty')} to="/loyalty" onClick={onClose} />
+          </>
         )}
         {PRODUCT === 'clinic' && (
           <>

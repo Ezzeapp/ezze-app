@@ -53,6 +53,8 @@ const TeamPage = lazy(() => import('@/pages/team/TeamPage').then(m => ({ default
 const JoinTeamPage = lazy(() => import('@/pages/team/JoinTeamPage').then(m => ({ default: m.JoinTeamPage })))
 const TeamAnalyticsPage = lazy(() => import('@/pages/team/TeamAnalyticsPage').then(m => ({ default: m.TeamAnalyticsPage })))
 const MarketingPage = lazy(() => import('@/pages/marketing/MarketingPage').then(m => ({ default: m.MarketingPage })))
+const PromoPage = lazy(() => import('@/pages/promo/PromoPage').then(m => ({ default: m.PromoPage })))
+const LoyaltyPage = lazy(() => import('@/pages/loyalty/LoyaltyPage').then(m => ({ default: m.LoyaltyPage })))
 const BillingPage = lazy(() => import('@/pages/billing/BillingPage').then(m => ({ default: m.BillingPage })))
 const PublicBookingPage = lazy(() => import('@/pages/booking/PublicBookingPage').then(m => ({ default: m.PublicBookingPage })))
 const CancelBookingPage = lazy(() => import('@/pages/booking/CancelBookingPage').then(m => ({ default: m.CancelBookingPage })))
@@ -163,11 +165,12 @@ const router = createBrowserRouter([
       { path: 'team', element: <TeamPage /> },
       { path: 'team/analytics', element: <TeamAnalyticsPage /> },
       { path: 'marketing', element: <MarketingPage /> },
-      { path: 'promo-codes', element: <Navigate to="/marketing?tab=promo" replace /> },
+      { path: 'promo', element: <PromoPage /> },
+      { path: 'promo-codes', element: <Navigate to="/promo" replace /> },
       { path: 'reviews', element: <Navigate to="/marketing?tab=reviews" replace /> },
       { path: 'billing', element: <BillingPage /> },
       { path: 'support', element: <SupportPage /> },
-      { path: 'loyalty', element: <Navigate to="/marketing?tab=loyalty" replace /> },
+      { path: 'loyalty', element: <LoyaltyPage /> },
       { path: 'ai', element: <AIAssistantPage /> },
       { path: 'orders',     element: PRODUCT === 'workshop' ? <WorkshopOrdersListPage /> : <OrdersListPage /> },
       { path: 'orders/new', element: PRODUCT === 'workshop' ? <WorkshopOrderFormPage /> : <OrderFormPage /> },

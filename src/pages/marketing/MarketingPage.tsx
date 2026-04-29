@@ -1,17 +1,15 @@
 import { useEffect, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Send, Bell, Tag, Gift, Star } from 'lucide-react'
+import { Send, Bell, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { BroadcastsTab } from './tabs/BroadcastsTab'
 import { AutoTab } from './tabs/AutoTab'
-import { PromoTab } from './tabs/PromoTab'
-import { LoyaltyTab } from './tabs/LoyaltyTab'
 import { ReviewsTab } from './tabs/ReviewsTab'
 import { PRODUCT } from '@/lib/config'
 
-type MarketingTab = 'broadcasts' | 'auto' | 'promo' | 'loyalty' | 'reviews'
+type MarketingTab = 'broadcasts' | 'auto' | 'reviews'
 
 const DEFAULT_TAB: MarketingTab = 'broadcasts'
 
@@ -23,9 +21,14 @@ export function MarketingPage() {
   // для workshop есть отдельная страница настроек шаблонов уведомлений.
   const validTabs: MarketingTab[] = useMemo(() => (
     PRODUCT === 'workshop'
-      ? ['broadcasts', 'promo', 'loyalty', 'reviews']
-      : ['broadcasts', 'auto', 'promo', 'loyalty', 'reviews']
+      ? ['broadcasts', 'reviews']
+      : ['broadcasts', 'auto', 'reviews']
   ), [])
+
+  // Старые ссылки ?tab=promo / ?tab=loyalty переезжают на отдельные страницы
+  const rawTabParam = searchParams.get('tab')
+  if (rawTabParam === 'promo')   return <Navigate to="/promo" replace />
+  if (rawTabParam === 'loyalty') return <Navigate to="/loyalty" replace />
 
   const rawTab = searchParams.get('tab') as MarketingTab | null
   const activeTab: MarketingTab = rawTab && validTabs.includes(rawTab) ? rawTab : DEFAULT_TAB
@@ -40,8 +43,6 @@ export function MarketingPage() {
   const allTabs: { id: MarketingTab; label: string; icon: React.ElementType }[] = [
     { id: 'broadcasts', label: t('marketing.tabBroadcasts'), icon: Send  },
     { id: 'auto',       label: t('marketing.tabAuto'),       icon: Bell  },
-    { id: 'promo',      label: t('marketing.tabPromo'),      icon: Tag   },
-    { id: 'loyalty',    label: t('marketing.tabLoyalty'),    icon: Gift  },
     { id: 'reviews',    label: t('marketing.tabReviews'),    icon: Star  },
   ]
   const tabs = allTabs.filter(x => validTabs.includes(x.id))
@@ -76,8 +77,6 @@ export function MarketingPage() {
       {/* Контент вкладки */}
       {activeTab === 'broadcasts' && <BroadcastsTab />}
       {activeTab === 'auto'       && <AutoTab />}
-      {activeTab === 'promo'      && <PromoTab />}
-      {activeTab === 'loyalty'    && <LoyaltyTab />}
       {activeTab === 'reviews'    && <ReviewsTab />}
     </div>
   )
