@@ -30,6 +30,37 @@ const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 )
 
+const DELETE_MESSAGES = {
+  ru: {
+    title: 'Ваша учётная запись удалена',
+    body:  'Ваш аккаунт мастера в <b>Ezze</b> был удалён администратором.',
+    contact: 'По всем вопросам обращайтесь к администратору платформы.',
+    again: 'Если хотите зарегистрироваться снова — нажмите кнопку ниже 👇',
+    btn:   '📝 Зарегистрироваться',
+  },
+  en: {
+    title: 'Your account has been deleted',
+    body:  'Your master account on <b>Ezze</b> has been removed by an administrator.',
+    contact: 'For any questions, please contact the platform administrator.',
+    again: 'If you want to register again — tap the button below 👇',
+    btn:   '📝 Register',
+  },
+  uz: {
+    title: "Hisobingiz o'chirildi",
+    body:  "<b>Ezze</b> dagi usta hisobingiz administrator tomonidan o'chirildi.",
+    contact: "Barcha savollar bo'yicha platforma administratoriga murojaat qiling.",
+    again: "Qayta ro'yxatdan o'tmoqchi bo'lsangiz — quyidagi tugmani bosing 👇",
+    btn:   "📝 Ro'yxatdan o'tish",
+  },
+  kz: {
+    title: 'Аккаунтыңыз жойылды',
+    body:  '<b>Ezze</b> платформасындағы шебер аккаунтыңыз әкімші тарапынан жойылды.',
+    contact: 'Барлық сұрақтар бойынша платформа әкімшісіне хабарласыңыз.',
+    again: 'Қайта тіркелгіңіз келсе — төмендегі түймені басыңыз 👇',
+    btn:   '📝 Тіркелу',
+  },
+}
+
 // ── Helper: delete rows from a table by a filter column = value ───────────────
 
 async function deleteWhere(table: string, column: string, value: string) {
@@ -143,7 +174,7 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  // ── Pre-step: Grab tg_chat_id + phone + product before deletion ─────────────
+  // ── Pre-step: Grab tg_chat_id + phone + product + language before deletion ─
   const { data: masterProfileSnap } = await supabaseAdmin
     .from('master_profiles')
     .select('tg_chat_id, phone, product')
@@ -152,6 +183,13 @@ Deno.serve(async (req: Request) => {
   const tgChatId: string | null = masterProfileSnap?.tg_chat_id ?? null
   const masterPhone: string = masterProfileSnap?.phone ?? ''
   const masterProduct: string = (masterProfileSnap?.product ?? 'beauty').trim() || 'beauty'
+
+  const { data: userRowSnap } = await supabaseAdmin
+    .from('users')
+    .select('language')
+    .eq('id', userId)
+    .maybeSingle()
+  const userLang: string = (userRowSnap?.language ?? 'ru').toLowerCase()
 
   // Pre-step B: find TG auth user ID (tg_{chatId}@ezze.site) BEFORE any deletions.
   // Step 11b must use this pre-captured ID — public.users is deleted in Step 10.
@@ -251,6 +289,7 @@ Deno.serve(async (req: Request) => {
         signal,
       }).catch((e) => console.error('[admin-delete-user] setChatMenuButton error:', String(e)))
 
+      const tr = (DELETE_MESSAGES as Record<string, typeof DELETE_MESSAGES.ru>)[userLang] || DELETE_MESSAGES.ru
       const signal2 = AbortSignal.timeout(5000)
       const tgResp = await fetch(`${tgApi}/sendMessage`, {
         method: 'POST',
@@ -258,13 +297,13 @@ Deno.serve(async (req: Request) => {
         body: JSON.stringify({
           chat_id: tgChatId,
           text:
-            `🚫 <b>Ваша учётная запись удалена</b>\n\n` +
-            `Ваш аккаунт мастера в <b>Ezze</b> был удалён администратором.\n\n` +
-            `📞 <b>По всем вопросам обращайтесь к администратору платформы.</b>\n\n` +
-            `Если хотите зарегистрироваться снова — нажмите кнопку ниже 👇`,
+            `🚫 <b>${tr.title}</b>\n\n` +
+            `${tr.body}\n\n` +
+            `📞 <b>${tr.contact}</b>\n\n` +
+            `${tr.again}`,
           parse_mode: 'HTML',
           reply_markup: {
-            inline_keyboard: [[{ text: '📝 Зарегистрироваться', callback_data: 'register_after_delete' }]],
+            inline_keyboard: [[{ text: tr.btn, callback_data: 'register_after_delete' }]],
           },
         }),
         signal: signal2,
