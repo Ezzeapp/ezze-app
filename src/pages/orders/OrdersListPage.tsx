@@ -264,7 +264,7 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, onMessage, onPrint,
                   <SortIndicator active={deadlineActive || dateActive} asc={sortBy === 'oldest' || sortBy === 'deadline_asc'} />
                 </button>
               </th>
-              <th className="px-2 py-2.5 w-8" />
+              <th className="px-2 py-2.5 w-28 text-right text-muted-foreground font-medium">{t('orders.col.actions') ?? 'Действия'}</th>
             </tr>
           </thead>
           <tbody>
@@ -344,24 +344,24 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, onMessage, onPrint,
                     )}
                   </td>
                   <td className="px-2 py-2.5">
-                    <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-0.5">
                       <button
                         onClick={e => { e.stopPropagation(); onMessage(order.id) }}
-                        className="p-1.5 rounded text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                        className="p-1.5 rounded text-muted-foreground/60 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
                         title="Написать клиенту"
                       >
                         <Send className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={e => { e.stopPropagation(); onPrint(order.id) }}
-                        className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                        className="p-1.5 rounded text-muted-foreground/60 hover:text-foreground hover:bg-muted transition-colors"
                         title="Печать квитанции"
                       >
                         <Printer className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={e => { e.stopPropagation(); onDelete(order.id) }}
-                        className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        className="p-1.5 rounded text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
                         title="Удалить"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
