@@ -36,9 +36,9 @@ export function useCleaningClientHistory(clientId: string | null) {
         .eq('product', PRODUCT)
         .order('created_at', { ascending: false })
         .limit(30)
-      // В команде — фильтруем по team_id (дублирует RLS, но даёт явный контракт + лучший cache)
+      // В команде — team_id команды ИЛИ legacy без team_id (совпадает с RLS 065)
       if (teamScope.effectiveTeamId) {
-        q = q.eq('team_id', teamScope.effectiveTeamId)
+        q = q.or(`team_id.eq.${teamScope.effectiveTeamId},team_id.is.null`)
       }
       const { data } = await q
       const orders = (data ?? []) as Array<RecentOrder & { items: { item_type_name: string }[] }>

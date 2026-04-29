@@ -269,9 +269,12 @@ export function useCleaningOrders(opts: {
         .eq('product', PRODUCT)
         .range(from, to)
 
-      // Team scoping: фильтруем по team_id если пользователь в команде
+      // Team scoping: совпадает с RLS-логикой 065_team_scoped_rls.sql.
+      // Заказы команды + legacy-заказы без team_id (созданные до workspace).
+      // Без OR team_id IS NULL старые заказы owner-а пропадают из списка,
+      // хотя stats их видит — отсюда «1 заказ в плашке, но список пуст».
       if (teamScope.effectiveTeamId) {
-        q = q.eq('team_id', teamScope.effectiveTeamId)
+        q = q.or(`team_id.eq.${teamScope.effectiveTeamId},team_id.is.null`)
       }
 
       // Worker видит только назначенные ему заказы

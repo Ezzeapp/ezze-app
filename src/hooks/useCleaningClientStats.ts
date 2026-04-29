@@ -22,8 +22,9 @@ export function useCleaningClientStats(clientId: string | null) {
         .eq('client_id', clientId)
         .eq('product', PRODUCT)
         .order('created_at', { ascending: false })
+      // team_id команды ИЛИ legacy без team_id (совпадает с RLS 065)
       if (teamScope.effectiveTeamId) {
-        q = q.eq('team_id', teamScope.effectiveTeamId)
+        q = q.or(`team_id.eq.${teamScope.effectiveTeamId},team_id.is.null`)
       }
       const { data } = await q
       const orders = data ?? []
