@@ -264,9 +264,7 @@ export function useCleaningOrders(opts: {
         .from('cleaning_orders')
         .select(`
           *,
-          client:clients(id, first_name, last_name, phone, tg_chat_id),
-          accepted_by_profile:master_profiles!cleaning_orders_accepted_by_fkey(id, display_name),
-          assigned_to_profile:master_profiles!cleaning_orders_assigned_to_fkey(id, display_name)
+          client:clients(id, first_name, last_name, phone, tg_chat_id)
         `, { count: 'exact' })
         .eq('product', PRODUCT)
         .range(from, to)
@@ -327,7 +325,35 @@ export function useCleaningOrders(opts: {
 
       const { data, error, count } = await q
       if (error) throw error
-      return { orders: (data ?? []) as CleaningOrder[], total: count ?? 0 }
+      const ordersList = (data ?? []) as CleaningOrder[]
+
+      // Подгружаем master_profiles отдельным запросом — раньше эмбеды
+      // master_profiles!cleaning_orders_*_fkey ломали весь запрос при
+      // RLS-фильтрации (PostgREST падал, возвращая 0 строк).
+      const profileIds = new Set<string>()
+      for (const o of ordersList) {
+        if (o.accepted_by) profileIds.add(o.accepted_by)
+        if (o.assigned_to) profileIds.add(o.assigned_to)
+      }
+      if (profileIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from('master_profiles')
+          .select('id, display_name')
+          .in('id', Array.from(profileIds))
+        const byId = new Map((profiles ?? []).map(p => [p.id, p]))
+        for (const o of ordersList) {
+          if (o.accepted_by) {
+            const p = byId.get(o.accepted_by)
+            if (p) o.accepted_by_profile = p
+          }
+          if (o.assigned_to) {
+            const p = byId.get(o.assigned_to)
+            if (p) o.assigned_to_profile = p
+          }
+        }
+      }
+
+      return { orders: ordersList, total: count ?? 0 }
     },
     enabled: !!user,
     staleTime: 30_000,
