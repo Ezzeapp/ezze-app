@@ -27,8 +27,8 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
   // Cleaning/workshop: промо/лояльность в табах /orders;
   // beauty: иконки в шапке Календаря — в Ещё не дублируем.
   const showPromoLoyalty = PRODUCT !== 'cleaning' && PRODUCT !== 'workshop' && PRODUCT !== 'beauty'
-  // Cleaning/beauty: профиль объединён с настройками — отдельный пункт не нужен
-  const showProfile = PRODUCT !== 'cleaning' && PRODUCT !== 'beauty'
+  // Cleaning: профиль объединён с настройками — отдельный пункт не нужен
+  const showProfile = PRODUCT !== 'cleaning'
   // Beauty: склад скрыт пока модуль не нужен
   const showInventory = PRODUCT !== 'beauty'
 
