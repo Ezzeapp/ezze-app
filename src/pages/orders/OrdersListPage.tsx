@@ -5,13 +5,10 @@ import {
   Plus, Search, ClipboardList, Loader2,
   AlertTriangle, Trash2, CalendarRange, X,
   ArrowUpDown, ArrowUp, ArrowDown, List, Columns3, Truck,
-  Send, Printer, SendHorizontal, Tag, Gift, MoreHorizontal,
+  Send, Printer, SendHorizontal, Tag, Gift,
 } from 'lucide-react'
 import { PromoTab } from '@/pages/marketing/tabs/PromoTab'
 import { LoyaltyTab } from '@/pages/marketing/tabs/LoyaltyTab'
-import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
 import { MessageModal } from '@/components/orders/MessageModal'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 import { PRODUCT } from '@/lib/config'
@@ -527,16 +524,6 @@ function OrdersListMain() {
   const isDelivery = viewMode === 'delivery'
   const isCleaningProduct = PRODUCT === 'cleaning'
 
-  // Активны ли какие-то фильтры? Если да — даже при 0 заказов показываем
-  // тулбар, иначе пользователь не сможет сбросить фильтры.
-  const hasActiveFilters =
-    !!search ||
-    status !== 'all' ||
-    orderType !== 'all' ||
-    paymentFilter !== 'all' ||
-    myOnly ||
-    hasDateFilter
-
   const { data, isLoading } = useCleaningOrders({
     status:        isKanban ? 'all' : status,
     orderType,
@@ -555,11 +542,6 @@ function OrdersListMain() {
   const orders     = data?.orders ?? []
   const total      = data?.total ?? 0
   const totalPages = Math.ceil(total / 25)
-
-  // «Чистый пустой стейт» — заказов нет вообще И ни один фильтр не активен.
-  // В таком виде прячем шумные контролы (stats/поиск/статусы/период/рассылка),
-  // оставляем только заголовок + кнопку «Новый заказ» + EmptyState.
-  const isPristineEmpty = !isLoading && total === 0 && !hasActiveFilters
 
   // Флаги срочности
   const isOverdueMap:  Record<string, boolean> = {}
@@ -678,88 +660,79 @@ function OrdersListMain() {
         description={total > 0 ? `${total} ${t('orders.shortOrders')}` : undefined}
       >
         <div className="flex items-center gap-1.5">
-          {/* Вид + фильтры + действия — скрываем в чистом пустом стейте */}
-          {!isPristineEmpty && (
-            <>
-              {/* Вид: сегментированная панель с подписями */}
-              <div className="inline-flex bg-muted rounded-xl p-1 gap-0.5">
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 h-8 rounded-lg font-semibold text-xs transition-colors',
-                    viewMode === 'table'
-                      ? 'bg-background text-primary shadow-sm'
-                      : 'text-muted-foreground hover:bg-background/60'
-                  )}
-                >
-                  <List className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Список</span>
-                </button>
-                <button
-                  onClick={() => setViewMode('kanban')}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 h-8 rounded-lg font-semibold text-xs transition-colors',
-                    viewMode === 'kanban'
-                      ? 'bg-background text-primary shadow-sm'
-                      : 'text-muted-foreground hover:bg-background/60'
-                  )}
-                >
-                  <Columns3 className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Канбан</span>
-                </button>
-                {isCleaningProduct && (
-                  <button
-                    onClick={() => setViewMode('delivery')}
-                    className={cn(
-                      'flex items-center gap-1.5 px-3 h-8 rounded-lg font-semibold text-xs transition-colors',
-                      viewMode === 'delivery'
-                        ? 'bg-background text-primary shadow-sm'
-                        : 'text-muted-foreground hover:bg-background/60'
-                    )}
-                  >
-                    <Truck className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Доставка</span>
-                  </button>
-                )}
-              </div>
-              {/* Период */}
-              <Button
-                variant="ghost" size="icon"
-                className={cn('h-8 w-8', (showDateFilter || hasDateFilter) ? 'text-primary' : 'text-muted-foreground')}
-                title={t('orders.filterPeriod')}
-                onClick={() => setShowDateFilter(v => !v)}
-              >
-                <CalendarRange className="h-4 w-4" />
-              </Button>
-              {/* Overflow-меню: рассылка + удалить все */}
-              {(isCleaningProduct || orders.length > 0) && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Ещё">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    {isCleaningProduct && (
-                      <DropdownMenuItem onClick={() => setMassMessage(true)} className="gap-2">
-                        <SendHorizontal className="h-4 w-4 text-blue-600" />
-                        Массовая рассылка
-                      </DropdownMenuItem>
-                    )}
-                    {isCleaningProduct && orders.length > 0 && <DropdownMenuSeparator />}
-                    {orders.length > 0 && (
-                      <DropdownMenuItem
-                        onClick={() => setDeleteAllOpen(true)}
-                        className="gap-2 text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        {t('orders.deleteAll')}
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+          {/* Вид: сегментированная панель с подписями */}
+          <div className="inline-flex bg-muted rounded-xl p-1 gap-0.5">
+            <button
+              onClick={() => setViewMode('table')}
+              className={cn(
+                'flex items-center gap-1.5 px-3 h-8 rounded-lg font-semibold text-xs transition-colors',
+                viewMode === 'table'
+                  ? 'bg-background text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-background/60'
               )}
-            </>
+            >
+              <List className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Список</span>
+            </button>
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={cn(
+                'flex items-center gap-1.5 px-3 h-8 rounded-lg font-semibold text-xs transition-colors',
+                viewMode === 'kanban'
+                  ? 'bg-background text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-background/60'
+              )}
+            >
+              <Columns3 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Канбан</span>
+            </button>
+            {isCleaningProduct && (
+              <button
+                onClick={() => setViewMode('delivery')}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 h-8 rounded-lg font-semibold text-xs transition-colors',
+                  viewMode === 'delivery'
+                    ? 'bg-background text-primary shadow-sm'
+                    : 'text-muted-foreground hover:bg-background/60'
+                )}
+              >
+                <Truck className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Доставка</span>
+              </button>
+            )}
+          </div>
+          {/* Массовая рассылка — только для cleaning */}
+          {isCleaningProduct && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMassMessage(true)}
+              className="h-8 gap-1.5 border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950"
+              title="Массовая рассылка клиентам"
+            >
+              <SendHorizontal className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Рассылка</span>
+            </Button>
+          )}
+          {/* Период */}
+          <Button
+            variant="ghost" size="icon"
+            className={cn('h-8 w-8', (showDateFilter || hasDateFilter) ? 'text-primary' : 'text-muted-foreground')}
+            title={t('orders.filterPeriod')}
+            onClick={() => setShowDateFilter(v => !v)}
+          >
+            <CalendarRange className="h-4 w-4" />
+          </Button>
+          {/* Удалить все — десктоп */}
+          {orders.length > 0 && (
+            <Button
+              variant="ghost" size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive hidden sm:inline-flex"
+              title={t('orders.deleteAll')}
+              onClick={() => setDeleteAllOpen(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           )}
           <NewOrderButtons newOrderLabel={t('orders.newOrder')} />
         </div>
@@ -768,8 +741,7 @@ function OrdersListMain() {
 
       <div className="flex-1 overflow-y-auto px-4 lg:px-[18px] pb-20 lg:pb-4 space-y-3">
 
-        {/* Статистика — скрываем в чистом пустом стейте */}
-        {!isPristineEmpty && (
+        {/* Статистика */}
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none sticky top-0 z-10 bg-background py-2 -my-2">
 
           {/* Сегодня */}
@@ -853,7 +825,6 @@ function OrdersListMain() {
             </div>
           )}
         </div>
-        )}
 
         {/* Фильтр по периоду (раскрывается) */}
         {showDateFilter && (
@@ -883,8 +854,8 @@ function OrdersListMain() {
           </div>
         )}
 
-        {/* Поиск + Статусы — не нужны в режиме Доставка и в чистом пустом стейте */}
-        {!isDelivery && !isPristineEmpty && (
+        {/* Поиск + Статусы — не нужны в режиме Доставка */}
+        {!isDelivery && (
           <>
             <div className="pt-2">
               <div className="relative">
