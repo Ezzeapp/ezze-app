@@ -5,10 +5,13 @@ import {
   Plus, Search, ClipboardList, Loader2,
   AlertTriangle, Trash2, CalendarRange, X,
   ArrowUpDown, ArrowUp, ArrowDown, List, Columns3, Truck,
-  Send, Printer, SendHorizontal, Tag, Gift,
+  Send, Printer, SendHorizontal, Tag, Gift, Settings, ArrowLeft as ArrowLeftIcon,
 } from 'lucide-react'
 import { PromoTab } from '@/pages/marketing/tabs/PromoTab'
 import { LoyaltyTab } from '@/pages/marketing/tabs/LoyaltyTab'
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu'
 import { MessageModal } from '@/components/orders/MessageModal'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 import { PRODUCT } from '@/lib/config'
@@ -418,38 +421,24 @@ function NewOrderButtons({ newOrderLabel }: { newOrderLabel: string }) {
   )
 }
 
-// ── Полоска табов «Список / Промокоды / Лояльность» ───────────────────────────
-// Промокоды и Лояльность раньше были отдельными пунктами сайдбара — вынесли
-// сюда, чтобы основной хаб работы (Заказы) держал все смежные настройки рядом.
-function OrdersTabsStrip({ active }: { active: 'list' | 'promo' | 'loyalty' }) {
+// ── Шапка sub-страницы (Промокоды / Лояльность) с кнопкой «Назад» ────────────
+function SubpageHeader({ title, icon: Icon }: { title: string; icon: React.ElementType }) {
   const [, setParams] = useSearchParams()
-  const tabs: { id: 'list' | 'promo' | 'loyalty'; label: string; icon: React.ElementType }[] = [
-    { id: 'list',    label: 'Заказы',     icon: ClipboardList },
-    { id: 'promo',   label: 'Промокоды',  icon: Tag },
-    { id: 'loyalty', label: 'Лояльность', icon: Gift },
-  ]
   return (
-    <div className="px-4 lg:px-[18px] pt-3 lg:pt-4 border-b">
-      <div className="flex gap-1 overflow-x-auto scrollbar-none">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => {
-              if (id === 'list') setParams({}, { replace: true })
-              else setParams({ tab: id }, { replace: true })
-            }}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
-              active === id
-                ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </button>
-        ))}
+    <div className="px-4 lg:px-[18px] pt-4 lg:pt-6 pb-3 border-b flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setParams({}, { replace: true })}
+        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        title="Вернуться к списку заказов"
+      >
+        <ArrowLeftIcon className="h-4 w-4" />
+        Заказы
+      </button>
+      <span className="text-muted-foreground/40">/</span>
+      <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+        <Icon className="h-4 w-4 text-primary" />
+        {title}
       </div>
     </div>
   )
@@ -463,7 +452,7 @@ export function OrdersListPage() {
   if (subtab === 'promo') {
     return (
       <div className="flex flex-col h-full">
-        <OrdersTabsStrip active="promo" />
+        <SubpageHeader title="Промокоды" icon={Tag} />
         <div className="flex-1 overflow-y-auto px-4 lg:px-[18px] py-4 pb-20 lg:pb-6">
           <PromoTab />
         </div>
@@ -473,7 +462,7 @@ export function OrdersListPage() {
   if (subtab === 'loyalty') {
     return (
       <div className="flex flex-col h-full">
-        <OrdersTabsStrip active="loyalty" />
+        <SubpageHeader title="Лояльность" icon={Gift} />
         <div className="flex-1 overflow-y-auto px-4 lg:px-[18px] py-4 pb-20 lg:pb-6">
           <LoyaltyTab />
         </div>
@@ -651,69 +640,39 @@ function OrdersListMain() {
     setPage(1)
   }
 
+  const VIEW_MODES: { id: 'table' | 'kanban' | 'delivery'; icon: React.ElementType; label: string }[] = [
+    { id: 'table',    icon: List,     label: 'Список' },
+    { id: 'kanban',   icon: Columns3, label: 'Канбан' },
+    ...(isCleaningProduct ? [{ id: 'delivery' as const, icon: Truck, label: 'Доставка' }] : []),
+  ]
+
   return (
     <div className="flex flex-col h-full">
-      <OrdersTabsStrip active="list" />
       <div className="px-4 lg:px-[18px] pt-4 lg:pt-6">
       <PageHeader
         title={t('nav.orders')}
         description={total > 0 ? `${total} ${t('orders.shortOrders')}` : undefined}
       >
-        <div className="flex items-center gap-1.5">
-          {/* Вид: сегментированная панель с подписями */}
-          <div className="inline-flex bg-muted rounded-xl p-1 gap-0.5">
-            <button
-              onClick={() => setViewMode('table')}
-              className={cn(
-                'flex items-center gap-1.5 px-3 h-8 rounded-lg font-semibold text-xs transition-colors',
-                viewMode === 'table'
-                  ? 'bg-background text-primary shadow-sm'
-                  : 'text-muted-foreground hover:bg-background/60'
-              )}
-            >
-              <List className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Список</span>
-            </button>
-            <button
-              onClick={() => setViewMode('kanban')}
-              className={cn(
-                'flex items-center gap-1.5 px-3 h-8 rounded-lg font-semibold text-xs transition-colors',
-                viewMode === 'kanban'
-                  ? 'bg-background text-primary shadow-sm'
-                  : 'text-muted-foreground hover:bg-background/60'
-              )}
-            >
-              <Columns3 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Канбан</span>
-            </button>
-            {isCleaningProduct && (
+        <div className="flex items-center gap-1">
+          {/* Вид: иконочный сегмент-контрол */}
+          <div className="inline-flex bg-muted/70 rounded-lg p-0.5 gap-0.5">
+            {VIEW_MODES.map(({ id, icon: Icon, label }) => (
               <button
-                onClick={() => setViewMode('delivery')}
+                key={id}
+                onClick={() => setViewMode(id)}
+                title={label}
+                aria-label={label}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 h-8 rounded-lg font-semibold text-xs transition-colors',
-                  viewMode === 'delivery'
+                  'flex items-center justify-center w-8 h-8 rounded-md transition-all',
+                  viewMode === id
                     ? 'bg-background text-primary shadow-sm'
-                    : 'text-muted-foreground hover:bg-background/60'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                <Truck className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Доставка</span>
+                <Icon className="h-4 w-4" />
               </button>
-            )}
+            ))}
           </div>
-          {/* Массовая рассылка — только для cleaning */}
-          {isCleaningProduct && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMassMessage(true)}
-              className="h-8 gap-1.5 border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950"
-              title="Массовая рассылка клиентам"
-            >
-              <SendHorizontal className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Рассылка</span>
-            </Button>
-          )}
           {/* Период */}
           <Button
             variant="ghost" size="icon"
@@ -723,17 +682,64 @@ function OrdersListMain() {
           >
             <CalendarRange className="h-4 w-4" />
           </Button>
-          {/* Удалить все — десктоп */}
-          {orders.length > 0 && (
-            <Button
-              variant="ghost" size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive hidden sm:inline-flex"
-              title={t('orders.deleteAll')}
-              onClick={() => setDeleteAllOpen(true)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
+          {/* Шестерёнка: Промокоды / Лояльность / Рассылка / Удалить все */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost" size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                title="Настройки и действия"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Скидки
+              </DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => navigate('/orders?tab=promo')}
+                className="gap-2"
+              >
+                <Tag className="h-4 w-4 text-orange-600" />
+                Промокоды
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigate('/orders?tab=loyalty')}
+                className="gap-2"
+              >
+                <Gift className="h-4 w-4 text-rose-600" />
+                Лояльность
+              </DropdownMenuItem>
+              {isCleaningProduct && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Действия
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem
+                    onClick={() => setMassMessage(true)}
+                    className="gap-2"
+                  >
+                    <SendHorizontal className="h-4 w-4 text-blue-600" />
+                    Массовая рассылка
+                  </DropdownMenuItem>
+                </>
+              )}
+              {orders.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setDeleteAllOpen(true)}
+                    className="gap-2 text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {t('orders.deleteAll')}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <NewOrderButtons newOrderLabel={t('orders.newOrder')} />
         </div>
       </PageHeader>

@@ -3,10 +3,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Plus, Search, Wrench, Loader2, AlertTriangle, X, ClipboardList, Wallet,
-  List, LayoutGrid, TrendingUp, Camera, User, Tag, Gift,
+  List, LayoutGrid, TrendingUp, Camera, User, Tag, Gift, Settings, ArrowLeft as ArrowLeftIcon,
 } from 'lucide-react'
 import { PromoTab } from '@/pages/marketing/tabs/PromoTab'
 import { LoyaltyTab } from '@/pages/marketing/tabs/LoyaltyTab'
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -48,36 +51,24 @@ const STATUS_COLORS: Record<WorkshopOrderStatus, string> = {
   cancelled:        'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
 }
 
-// ── Полоска табов «Заказы / Промокоды / Лояльность» ───────────────────────────
-function WorkshopOrdersTabsStrip({ active }: { active: 'list' | 'promo' | 'loyalty' }) {
+// ── Шапка sub-страницы (Промокоды / Лояльность) с кнопкой «Назад» ────────────
+function WorkshopSubpageHeader({ title, icon: Icon }: { title: string; icon: React.ElementType }) {
   const [, setParams] = useSearchParams()
-  const tabs: { id: 'list' | 'promo' | 'loyalty'; label: string; icon: React.ElementType }[] = [
-    { id: 'list',    label: 'Заказы',     icon: Wrench },
-    { id: 'promo',   label: 'Промокоды',  icon: Tag },
-    { id: 'loyalty', label: 'Лояльность', icon: Gift },
-  ]
   return (
-    <div className="px-4 sm:px-6 pt-3 border-b">
-      <div className="flex gap-1 overflow-x-auto scrollbar-none">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => {
-              if (id === 'list') setParams({}, { replace: true })
-              else setParams({ tab: id }, { replace: true })
-            }}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
-              active === id
-                ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </button>
-        ))}
+    <div className="px-4 sm:px-6 pt-4 pb-3 border-b flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setParams({}, { replace: true })}
+        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        title="Вернуться к списку заказов"
+      >
+        <ArrowLeftIcon className="h-4 w-4" />
+        Заказы
+      </button>
+      <span className="text-muted-foreground/40">/</span>
+      <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+        <Icon className="h-4 w-4 text-primary" />
+        {title}
       </div>
     </div>
   )
@@ -90,7 +81,7 @@ export function WorkshopOrdersListPage() {
   if (subtab === 'promo') {
     return (
       <div className="flex flex-col h-full">
-        <WorkshopOrdersTabsStrip active="promo" />
+        <WorkshopSubpageHeader title="Промокоды" icon={Tag} />
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pb-20 lg:pb-6">
           <PromoTab />
         </div>
@@ -100,7 +91,7 @@ export function WorkshopOrdersListPage() {
   if (subtab === 'loyalty') {
     return (
       <div className="flex flex-col h-full">
-        <WorkshopOrdersTabsStrip active="loyalty" />
+        <WorkshopSubpageHeader title="Лояльность" icon={Gift} />
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pb-20 lg:pb-6">
           <LoyaltyTab />
         </div>
@@ -143,7 +134,6 @@ function WorkshopOrdersListMain() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <WorkshopOrdersTabsStrip active="list" />
       <div className="flex-1 flex flex-col min-h-0 px-4 sm:px-6 py-4 sm:py-5 gap-4">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -151,9 +141,29 @@ function WorkshopOrdersListMain() {
           <h1 className="text-2xl font-semibold text-foreground">{t('workshop.list.title')}</h1>
           <p className="hidden sm:block text-sm text-muted-foreground mt-0.5">{t('workshop.list.subtitle')}</p>
         </div>
-        <Button onClick={() => navigate('/orders/new')}>
-          <Plus className="h-4 w-4 mr-2" /> {t('workshop.list.newOrder')}
-        </Button>
+        <div className="flex items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground" title="Настройки">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Скидки
+              </DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => navigate('/orders?tab=promo')} className="gap-2">
+                <Tag className="h-4 w-4 text-orange-600" /> Промокоды
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/orders?tab=loyalty')} className="gap-2">
+                <Gift className="h-4 w-4 text-rose-600" /> Лояльность
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button onClick={() => navigate('/orders/new')}>
+            <Plus className="h-4 w-4 mr-2" /> {t('workshop.list.newOrder')}
+          </Button>
+        </div>
       </div>
 
       {/* Stats — содержательные метрики, не дублируют колонки канбана */}
@@ -247,22 +257,34 @@ function WorkshopOrdersListMain() {
           </>
         )}
 
-        <div className="inline-flex rounded-md border overflow-hidden shrink-0">
+        <div className="inline-flex bg-muted/70 rounded-lg p-0.5 gap-0.5 shrink-0">
           <button
             type="button"
             onClick={() => toggleView('list')}
-            className={cn('px-3 py-2 text-sm flex items-center gap-1',
-              view === 'list' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent')}
+            title="Список"
+            aria-label="Список"
+            className={cn(
+              'flex items-center justify-center w-8 h-8 rounded-md transition-all',
+              view === 'list'
+                ? 'bg-background text-primary shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
           >
-            <List className="h-4 w-4" /> Список
+            <List className="h-4 w-4" />
           </button>
           <button
             type="button"
             onClick={() => toggleView('board')}
-            className={cn('px-3 py-2 text-sm flex items-center gap-1',
-              view === 'board' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent')}
+            title="Доска"
+            aria-label="Доска"
+            className={cn(
+              'flex items-center justify-center w-8 h-8 rounded-md transition-all',
+              view === 'board'
+                ? 'bg-background text-primary shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
           >
-            <LayoutGrid className="h-4 w-4" /> Доска
+            <LayoutGrid className="h-4 w-4" />
           </button>
         </div>
       </div>
