@@ -137,12 +137,14 @@ async function fetchTeamScope(userId: string, teamOnlyFor: string | null): Promi
     }
   }
 
-  // Case B: user owns a team
-  const { data: ownedTeam } = await supabase
+  // Case B: user owns a team (берём первую — защита от дублей)
+  const { data: ownedRows } = await supabase
     .from('teams')
     .select('id, name, slug, product')
     .eq('owner_id', userId)
-    .maybeSingle()
+    .order('created_at', { ascending: true })
+    .limit(1)
+  const ownedTeam = ownedRows?.[0] ?? null
   if (ownedTeam) {
     return {
       team_id: ownedTeam.id,
@@ -154,12 +156,14 @@ async function fetchTeamScope(userId: string, teamOnlyFor: string | null): Promi
   }
 
   // Case C: user is active member (not owner, not team_only_for)
-  const { data: membership } = await supabase
+  const { data: membershipRows } = await supabase
     .from('team_members')
     .select('role, team:teams(id, name, slug, product)')
     .eq('user_id', userId)
     .eq('status', 'active')
-    .maybeSingle()
+    .order('joined_at', { ascending: true })
+    .limit(1)
+  const membership = membershipRows?.[0] ?? null
   if (membership && (membership as any).team) {
     const team: any = (membership as any).team
     return {

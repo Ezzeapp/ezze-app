@@ -27,11 +27,14 @@ export function useMyTeam() {
       if (!user) return { team: null, role: null, isOwner: false, isMember: false }
 
       // 1. Проверяем — является ли пользователь владельцем команды
-      const { data: ownedTeam } = await supabase
+      // Берём самую старую запись (на случай дублей — пока не схлопнули UNIQUE)
+      const { data: ownedRows } = await supabase
         .from('teams')
         .select('*, owner:users(*)')
         .eq('owner_id', user.id)
-        .maybeSingle()
+        .order('created_at', { ascending: true })
+        .limit(1)
+      const ownedTeam = ownedRows?.[0] ?? null
 
       if (ownedTeam) {
         const t = { ...ownedTeam, expand: { owner: (ownedTeam as any).owner } } as Team
@@ -39,12 +42,14 @@ export function useMyTeam() {
       }
 
       // 2. Проверяем — является ли участником команды
-      const { data: membership } = await supabase
+      const { data: membershipRows } = await supabase
         .from('team_members')
         .select('*, team:teams(*)')
         .eq('user_id', user.id)
         .eq('status', 'active')
-        .maybeSingle()
+        .order('joined_at', { ascending: true })
+        .limit(1)
+      const membership = membershipRows?.[0] ?? null
 
       if (membership) {
         const team = (membership as any).team ?? null
@@ -144,15 +149,17 @@ export function useCreateTeam() {
 
   return useMutation({
     mutationFn: async (data: { name: string; slug: string; description?: string }) => {
-      // DIAG: дамп всех id-источников для отладки RLS-несоответствия
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      // eslint-disable-next-line no-console
-      console.log('[team-diag] before-insert', {
-        appUserId: user?.id,
-        authUid: authUser?.id,
-        match: user?.id === authUser?.id,
-        product: PRODUCT,
-      })
+      // Защита от случайного создания второй команды у того же владельца
+      const { data: existing } = await supabase
+        .from('teams')
+        .select('id')
+        .eq('owner_id', user!.id)
+        .limit(1)
+      if (existing && existing.length > 0) {
+        const err: any = new Error('team_already_exists')
+        err.code = 'team_already_exists'
+        throw err
+      }
 
       const { data: team, error } = await supabase
         .from('teams')
@@ -166,31 +173,6 @@ export function useCreateTeam() {
         .select()
         .single()
       if (error) throw error
-
-      // DIAG: сразу читаем то что вставили — если RLS режет SELECT, count=0
-      const { data: check, count } = await supabase
-        .from('teams')
-        .select('id, owner_id, name, product', { count: 'exact' })
-        .eq('id', (team as any).id)
-      // eslint-disable-next-line no-console
-      console.log('[team-diag] post-insert read', {
-        insertedId: (team as any).id,
-        rowsReadable: count,
-        row: check?.[0],
-      })
-
-      // DIAG: read-by-owner — то что делает useMyTeam
-      const { data: byOwner, count: countOwner } = await supabase
-        .from('teams')
-        .select('id, owner_id, name', { count: 'exact' })
-        .eq('owner_id', user!.id)
-      // eslint-disable-next-line no-console
-      console.log('[team-diag] read-by-owner_id', {
-        ownerId: user?.id,
-        rowsFound: countOwner,
-        rows: byOwner,
-      })
-
       return team as Team
     },
     onSuccess: () => {
