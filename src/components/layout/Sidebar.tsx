@@ -211,7 +211,10 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
           <SidebarNavItem icon={CreditCard} iconColor="dark:text-yellow-400"  label={t('nav.billing')}  to="/billing"  onClick={onClose} />
         )}
         <SidebarNavItem icon={LifeBuoy}   iconColor="dark:text-red-400"     label={t('nav.support')}  to="/support"  onClick={onClose} />
-        <SidebarNavItem icon={User}       iconColor="dark:text-violet-400"  label={t('nav.profile')}  to="/profile"  onClick={onClose} />
+        {/* Cleaning: профиль объединён с настройками — отдельный пункт не нужен */}
+        {PRODUCT !== 'cleaning' && (
+          <SidebarNavItem icon={User}       iconColor="dark:text-violet-400"  label={t('nav.profile')}  to="/profile"  onClick={onClose} />
+        )}
         {/* Worker не видит Settings (нечего ему там настраивать) */}
         {!isWorker && (
           <SidebarNavItem icon={Settings}   iconColor="dark:text-slate-400"   label={t('nav.settings')} to="/settings" onClick={onClose} />

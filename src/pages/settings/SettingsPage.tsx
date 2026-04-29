@@ -29,6 +29,7 @@ import { ExamRoomsSettingsTab } from './ExamRoomsSettingsTab'
 import { WorkshopItemTypesSettingsTab } from './WorkshopItemTypesSettingsTab'
 import { WorkshopNotificationTemplatesTab } from './WorkshopNotificationTemplatesTab'
 import { WorkshopReceiptTemplateTab } from './WorkshopReceiptTemplateTab'
+import { CleaningProfileTab } from './CleaningProfileTab'
 import { PRODUCT } from '@/lib/config'
 
 const LANGUAGES = [
@@ -218,23 +219,26 @@ export function SettingsPage() {
       {/* ── Профиль ── */}
       {tab === 'profile' && (
         <div className="space-y-6">
-          {/* Account info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <User className="h-4 w-4" />
-                {t('settings.account')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <div>
-                  <p className="font-medium text-sm">{user?.name}</p>
-                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+          {PRODUCT === 'cleaning' ? (
+            <CleaningProfileTab />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {t('settings.account')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <p className="font-medium text-sm">{user?.name}</p>
+                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Change Password */}
           <Card>

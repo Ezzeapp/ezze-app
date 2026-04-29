@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  LayoutDashboard, CalendarDays, Users, MoreHorizontal, Bot, Megaphone,
+  LayoutDashboard, CalendarDays, Users, MoreHorizontal, Bot,
   Package, User, Settings, ShieldCheck, X, UsersRound, ChevronRight, LogOut, CreditCard, LifeBuoy,
   ClipboardList, Wrench, Tag, Gift,
 } from 'lucide-react'
@@ -18,19 +18,19 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
   const { user, logout } = useAuth()
   const hasInventory = useFeature('inventory')
   const hasTeams     = useFeature('teams')
-  const hasMarketing = useFeature('marketing')
 
   const canServices  = useTeamAccess('services')
   const canPromo     = useTeamAccess('promo')
   const canLoyalty   = useTeamAccess('loyalty')
-  const canMarketing = useTeamAccess('marketing')
   const canInventory = useTeamAccess('inventory')
 
   // Cleaning/workshop: промо и лояльность лежат в табах /orders, в Ещё их не дублируем
   const showPromoLoyalty = PRODUCT !== 'cleaning' && PRODUCT !== 'workshop'
+  // Cleaning: профиль объединён с настройками — отдельный пункт не нужен
+  const showProfile = PRODUCT !== 'cleaning'
 
   const items = [
-    { icon: User,        label: t('nav.profile'),    to: '/profile',   highlight: false },
+    showProfile && { icon: User,        label: t('nav.profile'),    to: '/profile',   highlight: false },
     canServices && { icon: ServiceIcon, label: t('nav.services'),   to: '/services',  highlight: false },
     showPromoLoyalty && canPromo    && { icon: Tag,  label: t('marketing.tabPromo'),   to: '/promo',   highlight: false },
     showPromoLoyalty && canLoyalty  && { icon: Gift, label: t('marketing.tabLoyalty'), to: '/loyalty', highlight: false },
@@ -107,7 +107,7 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
               onClick={onClose}
               className={({ isActive }) =>
                 cn(
-                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 )
               }
@@ -121,7 +121,7 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
               onClick={onClose}
               className={({ isActive }) =>
                 cn(
-                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 )
               }
@@ -135,7 +135,7 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
               onClick={onClose}
               className={({ isActive }) =>
                 cn(
-                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 )
               }
@@ -149,7 +149,7 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
             onClick={onClose}
             className={({ isActive }) =>
               cn(
-                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                 isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )
             }
@@ -163,7 +163,7 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
             onClick={onClose}
             className={({ isActive }) =>
               cn(
-                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                 isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )
             }
@@ -171,26 +171,10 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
             <LayoutDashboard className="h-5 w-5" />
             <span>{t('nav.dashboard')}</span>
           </NavLink>
-          {/* Маркетинг — скрыт пока модуль не готов */}
-          {false && canMarketing && hasMarketing && (
-            <NavLink
-              to="/marketing"
-              onClick={onClose}
-              className={({ isActive }) =>
-                cn(
-                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-                )
-              }
-            >
-              <Megaphone className="h-5 w-5" />
-              <span>{t('nav.marketing')}</span>
-            </NavLink>
-          )}
           {/* Active "More" button */}
           <button
             onClick={onClose}
-            className="w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium text-primary"
+            className="flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium text-primary"
           >
             <MoreHorizontal className="h-5 w-5" />
             <span>{t('nav.more')}</span>
@@ -208,8 +192,6 @@ export function BottomNav() {
 
   const canClients   = useTeamAccess('clients')
   const canDashboard = useTeamAccess('dashboard')
-  const canMarketing = useTeamAccess('marketing')
-  const hasMarketing = useFeature('marketing')
 
   return (
     <>
@@ -224,7 +206,7 @@ export function BottomNav() {
               to="/orders"
               className={({ isActive }) =>
                 cn(
-                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 )
               }
@@ -237,7 +219,7 @@ export function BottomNav() {
               to="/orders"
               className={({ isActive }) =>
                 cn(
-                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 )
               }
@@ -250,7 +232,7 @@ export function BottomNav() {
               to="/calendar"
               className={({ isActive }) =>
                 cn(
-                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 )
               }
@@ -266,7 +248,7 @@ export function BottomNav() {
               to="/clients"
               className={({ isActive }) =>
                 cn(
-                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 )
               }
@@ -282,7 +264,7 @@ export function BottomNav() {
               to={PRODUCT === 'workshop' || PRODUCT === 'cleaning' ? '/stats' : '/dashboard'}
               className={({ isActive }) =>
                 cn(
-                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 )
               }
@@ -292,27 +274,11 @@ export function BottomNav() {
             </NavLink>
           )}
 
-          {/* Маркетинг — скрыт пока модуль не готов */}
-          {false && canMarketing && hasMarketing && (
-            <NavLink
-              to="/marketing"
-              className={({ isActive }) =>
-                cn(
-                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-                )
-              }
-            >
-              <Megaphone className="h-5 w-5" />
-              <span>{t('nav.marketing')}</span>
-            </NavLink>
-          )}
-
           {/* Ещё */}
           <button
             onClick={() => setMoreOpen((v) => !v)}
             className={cn(
-              'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+              'flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
               moreOpen ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             )}
           >

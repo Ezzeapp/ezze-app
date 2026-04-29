@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useHomeScreenConfig, isTilesLikeMode } from '@/hooks/useAppSettings'
+import { PRODUCT } from '@/lib/config'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -99,10 +100,13 @@ export function TopBar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/profile')}>
-                <User className="mr-2 h-4 w-4" />
-                {t('nav.profile')}
-              </DropdownMenuItem>
+              {/* Cleaning: профиль объединён с настройками — отдельный пункт не нужен */}
+              {PRODUCT !== 'cleaning' && (
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <User className="mr-2 h-4 w-4" />
+                  {t('nav.profile')}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <ExternalLink className="mr-2 h-4 w-4" />
                 {t('nav.settings')}
