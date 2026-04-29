@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { Zap, Phone } from 'lucide-react'
+import { Zap, Phone, Send } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAppSettings } from '@/hooks/useAppSettings'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,10 @@ import { toast } from '@/components/shared/Toaster'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { supabase } from '@/lib/supabase'
 import { isTelegramMiniApp, initMiniApp } from '@/lib/telegramWebApp'
-import { PRODUCT } from '@/lib/config'
+import { PRODUCT, MASTER_BOT } from '@/lib/config'
+
+const TG_BOT_URL = `https://t.me/${MASTER_BOT}`
+const TG_BOT_REGISTER_URL = `${TG_BOT_URL}?start=register`
 
 function getDefaultPath(): string {
   if (PRODUCT === 'cleaning') return '/orders'
@@ -54,6 +57,7 @@ export function LoginPage() {
   const [phoneCodeError, setPhoneCodeError] = useState('')
   const [phoneCooldown, setPhoneCooldown] = useState(0)
   const [phoneNotFound, setPhoneNotFound] = useState(false)
+  const [tgUnavailable, setTgUnavailable] = useState(false)
 
   const isTg = isTelegramMiniApp()
   const [tgLoading, setTgLoading] = useState(isTg)
@@ -130,16 +134,17 @@ export function LoginPage() {
     if (!phoneNumber || phoneNumber.replace(/\D/g, '').length < 7 || phoneSending || phoneCooldown > 0) return
     setPhoneSending(true)
     setPhoneNotFound(false)
+    setTgUnavailable(false)
     try {
       const { data, error } = await supabase.functions.invoke('phone-auth', {
         body: { action: 'send_code', phone: phoneNumber },
       })
       if (error || !data?.ok) {
-        const msg = data?.message || ''
+        const msg = data?.message || (error as any)?.context?.message || ''
         if (msg === 'not_found') {
           setPhoneNotFound(true)
         } else if (msg === 'telegram_send_failed') {
-          toast.error(t('auth.codeSendError'))
+          setTgUnavailable(true)
         } else {
           toast.error(t('auth.codeSendError'))
         }
@@ -268,6 +273,34 @@ export function LoginPage() {
             {loginMode === 'phone' ? (
               /* Phone login form */
               <div className="space-y-4">
+                {/* CTA для незарегистрированных */}
+                {phoneNotFound && (
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3 text-center">
+                    <p className="text-sm font-medium">{t('auth.phoneNotRegistered')}</p>
+                    <p className="text-xs text-muted-foreground">{t('auth.registerViaBotHint')}</p>
+                    <a href={TG_BOT_REGISTER_URL} target="_blank" rel="noreferrer" className="block">
+                      <Button type="button" className="w-full gap-2" size="sm">
+                        <Send className="h-4 w-4" />
+                        {t('auth.registerViaTelegramBtn')}
+                      </Button>
+                    </a>
+                  </div>
+                )}
+
+                {/* CTA если бот заблокирован/удалён */}
+                {tgUnavailable && (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-3 text-center">
+                    <p className="text-sm font-medium">{t('auth.tgBotUnavailable')}</p>
+                    <p className="text-xs text-muted-foreground">{t('auth.tgBotReopenHint')}</p>
+                    <a href={TG_BOT_URL} target="_blank" rel="noreferrer" className="block">
+                      <Button type="button" variant="outline" className="w-full gap-2" size="sm">
+                        <Send className="h-4 w-4" />
+                        {t('auth.openBotBtn')}
+                      </Button>
+                    </a>
+                  </div>
+                )}
+
                 {phoneStep === 'phone' ? (
                   <>
                     <div className="space-y-2">
@@ -277,7 +310,7 @@ export function LoginPage() {
                         placeholder="+998 90 123 45 67"
                         autoComplete="tel"
                         value={phoneNumber}
-                        onChange={e => setPhoneNumber(e.target.value)}
+                        onChange={e => { setPhoneNumber(e.target.value); setPhoneNotFound(false); setTgUnavailable(false) }}
                       />
                     </div>
                     <Button
@@ -314,12 +347,6 @@ export function LoginPage() {
                     />
                     {phoneCodeError && (
                       <p className="text-xs text-destructive text-center">{phoneCodeError}</p>
-                    )}
-                    {phoneNotFound && (
-                      <p className="text-xs text-destructive text-center">
-                        {t('auth.noAccount')}{' '}
-                        <Link to="/register" className="underline">{t('auth.register')}</Link>
-                      </p>
                     )}
                     <Button
                       type="button"
@@ -388,12 +415,15 @@ export function LoginPage() {
               </form>
             )}
 
-            <p className="text-center text-sm text-muted-foreground">
-              {t('auth.noAccount')}{' '}
-              <Link to="/register" className="font-medium text-primary hover:underline">
-                {t('auth.register')}
-              </Link>
-            </p>
+            <div className="pt-2 border-t border-border/40 space-y-2">
+              <p className="text-center text-xs text-muted-foreground">{t('auth.noAccount')}</p>
+              <a href={TG_BOT_REGISTER_URL} target="_blank" rel="noreferrer" className="block">
+                <Button type="button" variant="outline" className="w-full gap-2" size="sm">
+                  <Send className="h-4 w-4" />
+                  {t('auth.registerViaTelegramBtn')}
+                </Button>
+              </a>
+            </div>
           </CardContent>
         </Card>
       </div>
