@@ -18,10 +18,12 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
   const { user, logout } = useAuth()
   const hasInventory = useFeature('inventory')
   const hasTeams     = useFeature('teams')
+  const hasMarketing = useFeature('marketing')
 
   const canServices  = useTeamAccess('services')
   const canPromo     = useTeamAccess('promo')
   const canLoyalty   = useTeamAccess('loyalty')
+  const canMarketing = useTeamAccess('marketing')
   const canInventory = useTeamAccess('inventory')
 
   // Cleaning/workshop: промо и лояльность лежат в табах /orders, в Ещё их не дублируем
@@ -170,19 +172,21 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
             <span>{t('nav.dashboard')}</span>
           </NavLink>
           {/* Маркетинг */}
-          <NavLink
-            to="/marketing"
-            onClick={onClose}
-            className={({ isActive }) =>
-              cn(
-                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-              )
-            }
-          >
-            <Megaphone className="h-5 w-5" />
-            <span>{t('nav.marketing')}</span>
-          </NavLink>
+          {canMarketing && hasMarketing && (
+            <NavLink
+              to="/marketing"
+              onClick={onClose}
+              className={({ isActive }) =>
+                cn(
+                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                )
+              }
+            >
+              <Megaphone className="h-5 w-5" />
+              <span>{t('nav.marketing')}</span>
+            </NavLink>
+          )}
           {/* Active "More" button */}
           <button
             onClick={onClose}
@@ -205,6 +209,7 @@ export function BottomNav() {
   const canClients   = useTeamAccess('clients')
   const canDashboard = useTeamAccess('dashboard')
   const canMarketing = useTeamAccess('marketing')
+  const hasMarketing = useFeature('marketing')
 
   return (
     <>
@@ -288,7 +293,7 @@ export function BottomNav() {
           )}
 
           {/* Маркетинг */}
-          {canMarketing && (
+          {canMarketing && hasMarketing && (
             <NavLink
               to="/marketing"
               className={({ isActive }) =>

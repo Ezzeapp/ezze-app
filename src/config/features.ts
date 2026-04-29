@@ -179,6 +179,14 @@ export const FEATURES: FeatureConfig[] = [
   },
   // ── Маркетинг ─────────────────────────────────────────────────────────────
   {
+    key: 'marketing',
+    label: 'Маркетинг',
+    description: 'Раздел маркетинга — рассылки клиентам, авто-уведомления, отзывы',
+    defaultPlan: 'free',
+    behavior: 'hidden',
+    section: 'marketing',
+  },
+  {
     key: 'reviews',
     label: 'Отзывы',
     description: 'Сбор и управление отзывами клиентов после визита',
@@ -190,6 +198,14 @@ export const FEATURES: FeatureConfig[] = [
     key: 'promo_codes',
     label: 'Промокоды',
     description: 'Создание скидочных кодов и спецпредложений для клиентов',
+    defaultPlan: 'pro',
+    behavior: 'hidden',
+    section: 'marketing',
+  },
+  {
+    key: 'loyalty',
+    label: 'Лояльность',
+    description: 'Программа лояльности — баллы, уровни клиентов, реферальная система',
     defaultPlan: 'pro',
     behavior: 'hidden',
     section: 'marketing',

@@ -181,7 +181,7 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
           <>
             {/* ── Маркетинг ── */}
             <SidebarGroupLabel label={t('nav.groupMarketing')} />
-            <NavItemAccess icon={Megaphone} iconColor="dark:text-pink-400" label={t('nav.marketing')} to="/marketing" module="marketing" onClick={onClose} />
+            <NavItemGated icon={Megaphone} iconColor="dark:text-pink-400" label={t('nav.marketing')} to="/marketing" feature="marketing" module="marketing" onClick={onClose} />
           </>
         )}
 
