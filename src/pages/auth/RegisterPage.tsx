@@ -22,6 +22,7 @@ import {
   saveProfession,
 } from '@/lib/onboarding-utils'
 import { autoImportCleaningCatalog } from '@/lib/cleaningAutoImport'
+import { autoImportBeautyCatalog } from '@/lib/beautyAutoImport'
 import { PRODUCT_URL_MAP } from '@/lib/products'
 import { ProductSelectionStep } from '@/components/onboarding/ProductSelectionStep'
 
@@ -310,6 +311,9 @@ export function RegisterPage() {
       if (!alreadyRegistered && finalProduct === 'cleaning') {
         await autoImportCleaningCatalog().catch(() => { /* non-critical */ })
       }
+      if (!alreadyRegistered && finalProduct === 'beauty') {
+        await autoImportBeautyCatalog(userId).catch(() => { /* non-critical */ })
+      }
 
       await completeOnboarding(userId, String(tgId), formName.trim(), formLang, finalProduct, finalAppUrl)
 
@@ -353,6 +357,9 @@ export function RegisterPage() {
                 // Автозагрузка прайса для cleaning (idempotent upsert).
                 if (fallbackProduct === 'cleaning') {
                   await autoImportCleaningCatalog().catch(() => { /* non-critical */ })
+                }
+                if (fallbackProduct === 'beauty') {
+                  await autoImportBeautyCatalog(sbUser.id).catch(() => { /* non-critical */ })
                 }
 
                 await completeOnboarding(sbUser.id, String(tgId), formName.trim(), formLang, fallbackProduct, fallbackAppUrl)
