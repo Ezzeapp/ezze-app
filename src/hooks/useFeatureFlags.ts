@@ -50,13 +50,18 @@ export function useFeature(key: string): boolean {
   const config = FEATURE_MAP[key]
 
   if (!config) return true
-  if (user?.is_admin) return true
 
   const flag = flagMap.get(key)
 
+  // Глобальный kill-switch (admin отключил фичу в панели) и явный блок
+  // юзера — выигрывают у is_admin-байпаса. is_admin байпасит только
+  // план-тиер-чек (чтобы видеть Pro/Enterprise-фичи), а не on/off.
+  if (flag && !flag.enabled) return false
+  if (user && flag?.blocked_users?.includes(user.id)) return false
+
+  if (user?.is_admin) return true
+
   if (flag) {
-    if (!flag.enabled) return false
-    if (user && flag.blocked_users?.includes(user.id)) return false
     if (user && flag.overrides?.includes(user.id)) return true
     const requiredPlan = flag.min_plan || config.defaultPlan
     return hasRequiredPlan(userPlan, requiredPlan)

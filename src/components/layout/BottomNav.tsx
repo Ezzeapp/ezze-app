@@ -171,8 +171,8 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
             <LayoutDashboard className="h-5 w-5" />
             <span>{t('nav.dashboard')}</span>
           </NavLink>
-          {/* Маркетинг */}
-          {canMarketing && hasMarketing && (
+          {/* Маркетинг — скрыт пока модуль не готов */}
+          {false && canMarketing && hasMarketing && (
             <NavLink
               to="/marketing"
               onClick={onClose}
@@ -292,8 +292,8 @@ export function BottomNav() {
             </NavLink>
           )}
 
-          {/* Маркетинг */}
-          {canMarketing && hasMarketing && (
+          {/* Маркетинг — скрыт пока модуль не готов */}
+          {false && canMarketing && hasMarketing && (
             <NavLink
               to="/marketing"
               className={({ isActive }) =>

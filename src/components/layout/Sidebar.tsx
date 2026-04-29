@@ -177,7 +177,9 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
           </>
         )}
 
-        {PRODUCT !== 'farm' && (
+        {/* Маркетинг — скрыт пока модуль не готов. Конфиг фичи остаётся
+            в features.ts для админ-панели. Чтобы вернуть: убрать `false &&` */}
+        {false && PRODUCT !== 'farm' && (
           <>
             {/* ── Маркетинг ── */}
             <SidebarGroupLabel label={t('nav.groupMarketing')} />
