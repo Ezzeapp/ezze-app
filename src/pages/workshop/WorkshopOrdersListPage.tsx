@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Plus, Search, Wrench, Loader2, AlertTriangle, X, ClipboardList, Wallet,
-  List, LayoutGrid, TrendingUp, Camera, User,
+  List, LayoutGrid, TrendingUp, Camera, User, Tag, Gift,
 } from 'lucide-react'
+import { PromoTab } from '@/pages/marketing/tabs/PromoTab'
+import { LoyaltyTab } from '@/pages/marketing/tabs/LoyaltyTab'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -46,7 +48,69 @@ const STATUS_COLORS: Record<WorkshopOrderStatus, string> = {
   cancelled:        'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
 }
 
+// ── Полоска табов «Заказы / Промокоды / Лояльность» ───────────────────────────
+function WorkshopOrdersTabsStrip({ active }: { active: 'list' | 'promo' | 'loyalty' }) {
+  const [, setParams] = useSearchParams()
+  const tabs: { id: 'list' | 'promo' | 'loyalty'; label: string; icon: React.ElementType }[] = [
+    { id: 'list',    label: 'Заказы',     icon: Wrench },
+    { id: 'promo',   label: 'Промокоды',  icon: Tag },
+    { id: 'loyalty', label: 'Лояльность', icon: Gift },
+  ]
+  return (
+    <div className="px-4 sm:px-6 pt-3 border-b">
+      <div className="flex gap-1 overflow-x-auto scrollbar-none">
+        {tabs.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => {
+              if (id === 'list') setParams({}, { replace: true })
+              else setParams({ tab: id }, { replace: true })
+            }}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
+              active === id
+                ? 'border-primary text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function WorkshopOrdersListPage() {
+  const [searchParams] = useSearchParams()
+  const subtab = searchParams.get('tab')
+
+  if (subtab === 'promo') {
+    return (
+      <div className="flex flex-col h-full">
+        <WorkshopOrdersTabsStrip active="promo" />
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pb-20 lg:pb-6">
+          <PromoTab />
+        </div>
+      </div>
+    )
+  }
+  if (subtab === 'loyalty') {
+    return (
+      <div className="flex flex-col h-full">
+        <WorkshopOrdersTabsStrip active="loyalty" />
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pb-20 lg:pb-6">
+          <LoyaltyTab />
+        </div>
+      </div>
+    )
+  }
+  return <WorkshopOrdersListMain />
+}
+
+function WorkshopOrdersListMain() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
@@ -78,7 +142,9 @@ export function WorkshopOrdersListPage() {
   const unpaid = stats?.unpaid_amount ?? 0
 
   return (
-    <div className="flex flex-col h-full min-h-0 px-4 sm:px-6 py-4 sm:py-5 gap-4">
+    <div className="flex flex-col h-full min-h-0">
+      <WorkshopOrdersTabsStrip active="list" />
+      <div className="flex-1 flex flex-col min-h-0 px-4 sm:px-6 py-4 sm:py-5 gap-4">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
@@ -244,6 +310,7 @@ export function WorkshopOrdersListPage() {
             </div>
           </>
         )}
+      </div>
       </div>
     </div>
   )

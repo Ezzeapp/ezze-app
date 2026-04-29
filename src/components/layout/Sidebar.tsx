@@ -130,7 +130,9 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
         {PRODUCT !== 'farm' && (
           <NavItemGated icon={Users} iconColor="dark:text-emerald-400" label={PRODUCT === 'clinic' ? t('clinic.nav.patients') : t('nav.clients')} to="/clients" feature="clients" module="clients" onClick={onClose} />
         )}
-        {PRODUCT !== 'farm' && (
+        {/* Промокоды/Лояльность для cleaning и workshop вынесены в табы /orders,
+            чтобы не раздувать сайдбар. Для остальных продуктов — отдельные пункты. */}
+        {PRODUCT !== 'farm' && PRODUCT !== 'cleaning' && PRODUCT !== 'workshop' && (
           <>
             <NavItemAccess icon={Tag}  iconColor="dark:text-orange-400" label={t('marketing.tabPromo')}   to="/promo"   module="promo"   onClick={onClose} />
             <NavItemAccess icon={Gift} iconColor="dark:text-rose-400"   label={t('marketing.tabLoyalty')} to="/loyalty" module="loyalty" onClick={onClose} />

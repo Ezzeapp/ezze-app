@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Plus, Search, ClipboardList, Loader2,
   AlertTriangle, Trash2, CalendarRange, X,
   ArrowUpDown, ArrowUp, ArrowDown, List, Columns3, Truck,
-  Send, Printer, SendHorizontal,
+  Send, Printer, SendHorizontal, Tag, Gift,
 } from 'lucide-react'
+import { PromoTab } from '@/pages/marketing/tabs/PromoTab'
+import { LoyaltyTab } from '@/pages/marketing/tabs/LoyaltyTab'
 import { MessageModal } from '@/components/orders/MessageModal'
 import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 import { PRODUCT } from '@/lib/config'
@@ -416,8 +418,73 @@ function NewOrderButtons({ newOrderLabel }: { newOrderLabel: string }) {
   )
 }
 
-// ── Главный компонент ──────────────────────────────────────────────────────────
+// ── Полоска табов «Список / Промокоды / Лояльность» ───────────────────────────
+// Промокоды и Лояльность раньше были отдельными пунктами сайдбара — вынесли
+// сюда, чтобы основной хаб работы (Заказы) держал все смежные настройки рядом.
+function OrdersTabsStrip({ active }: { active: 'list' | 'promo' | 'loyalty' }) {
+  const [, setParams] = useSearchParams()
+  const tabs: { id: 'list' | 'promo' | 'loyalty'; label: string; icon: React.ElementType }[] = [
+    { id: 'list',    label: 'Заказы',     icon: ClipboardList },
+    { id: 'promo',   label: 'Промокоды',  icon: Tag },
+    { id: 'loyalty', label: 'Лояльность', icon: Gift },
+  ]
+  return (
+    <div className="px-4 lg:px-[18px] pt-3 lg:pt-4 border-b">
+      <div className="flex gap-1 overflow-x-auto scrollbar-none">
+        {tabs.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => {
+              if (id === 'list') setParams({}, { replace: true })
+              else setParams({ tab: id }, { replace: true })
+            }}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
+              active === id
+                ? 'border-primary text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Wrapper: читает ?tab= и переключает между списком/промо/лояльностью ───────
 export function OrdersListPage() {
+  const [searchParams] = useSearchParams()
+  const subtab = searchParams.get('tab')
+
+  if (subtab === 'promo') {
+    return (
+      <div className="flex flex-col h-full">
+        <OrdersTabsStrip active="promo" />
+        <div className="flex-1 overflow-y-auto px-4 lg:px-[18px] py-4 pb-20 lg:pb-6">
+          <PromoTab />
+        </div>
+      </div>
+    )
+  }
+  if (subtab === 'loyalty') {
+    return (
+      <div className="flex flex-col h-full">
+        <OrdersTabsStrip active="loyalty" />
+        <div className="flex-1 overflow-y-auto px-4 lg:px-[18px] py-4 pb-20 lg:pb-6">
+          <LoyaltyTab />
+        </div>
+      </div>
+    )
+  }
+  return <OrdersListMain />
+}
+
+// ── Главный компонент: список заказов ─────────────────────────────────────────
+function OrdersListMain() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const symbol = useCurrencySymbol()
@@ -586,6 +653,7 @@ export function OrdersListPage() {
 
   return (
     <div className="flex flex-col h-full">
+      <OrdersTabsStrip active="list" />
       <div className="px-4 lg:px-[18px] pt-4 lg:pt-6">
       <PageHeader
         title={t('nav.orders')}

@@ -24,11 +24,14 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
   const canLoyalty   = useTeamAccess('loyalty')
   const canInventory = useTeamAccess('inventory')
 
+  // Cleaning/workshop: промо и лояльность лежат в табах /orders, в Ещё их не дублируем
+  const showPromoLoyalty = PRODUCT !== 'cleaning' && PRODUCT !== 'workshop'
+
   const items = [
     { icon: User,        label: t('nav.profile'),    to: '/profile',   highlight: false },
     canServices && { icon: ServiceIcon, label: t('nav.services'),   to: '/services',  highlight: false },
-    canPromo    && { icon: Tag,         label: t('marketing.tabPromo'),   to: '/promo',   highlight: false },
-    canLoyalty  && { icon: Gift,        label: t('marketing.tabLoyalty'), to: '/loyalty', highlight: false },
+    showPromoLoyalty && canPromo    && { icon: Tag,  label: t('marketing.tabPromo'),   to: '/promo',   highlight: false },
+    showPromoLoyalty && canLoyalty  && { icon: Gift, label: t('marketing.tabLoyalty'), to: '/loyalty', highlight: false },
     hasInventory && canInventory && { icon: Package,    label: t('nav.inventory'), to: '/inventory', highlight: false },
     hasTeams     && { icon: UsersRound, label: t('nav.team'),      to: '/team',      highlight: false },
     { icon: Bot,         label: 'AI',                to: '/ai',        highlight: false },
