@@ -105,7 +105,7 @@ function SortablePortfolioItem({ id, url, isDeleting, onDelete }: {
   )
 }
 
-export function ProfilePage() {
+export function ProfilePage({ embedded = false }: { embedded?: boolean } = {}) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const { data: profile, isLoading } = useProfile()
@@ -357,31 +357,50 @@ export function ProfilePage() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <PageHeader title={t('nav.profile')} description={t('profile.subtitle')} className="items-center sm:items-start">
-        {/* Мастер настройки: иконка на мобиле, текст на десктопе */}
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="sm:hidden"
-          onClick={() => setWizardOpen(true)}
-          title={t('profile.setupWizard')}
-        >
-          <Wand2 className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setWizardOpen(true)}
-          className="hidden sm:flex items-center gap-1.5"
-        >
-          <Wand2 className="h-4 w-4" />
-          {t('profile.setupWizard')}
-        </Button>
-        <Button type="submit" loading={upsert.isPending} disabled={!isDirty && !avatarFile && portfolioFiles.length === 0}>
-          {t('common.save')}
-        </Button>
-      </PageHeader>
+      {!embedded && (
+        <PageHeader title={t('nav.profile')} description={t('profile.subtitle')} className="items-center sm:items-start">
+          {/* Мастер настройки: иконка на мобиле, текст на десктопе */}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="sm:hidden"
+            onClick={() => setWizardOpen(true)}
+            title={t('profile.setupWizard')}
+          >
+            <Wand2 className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setWizardOpen(true)}
+            className="hidden sm:flex items-center gap-1.5"
+          >
+            <Wand2 className="h-4 w-4" />
+            {t('profile.setupWizard')}
+          </Button>
+          <Button type="submit" loading={upsert.isPending} disabled={!isDirty && !avatarFile && portfolioFiles.length === 0}>
+            {t('common.save')}
+          </Button>
+        </PageHeader>
+      )}
+      {embedded && (
+        <div className="flex items-center justify-end gap-2 -mb-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setWizardOpen(true)}
+            className="flex items-center gap-1.5"
+          >
+            <Wand2 className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('profile.setupWizard')}</span>
+          </Button>
+          <Button type="submit" size="sm" loading={upsert.isPending} disabled={!isDirty && !avatarFile && portfolioFiles.length === 0}>
+            {t('common.save')}
+          </Button>
+        </div>
+      )}
 
       <OnboardingWizard
         open={wizardOpen}

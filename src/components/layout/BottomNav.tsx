@@ -27,10 +27,12 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
   // Cleaning/workshop: промо/лояльность в табах /orders;
   // beauty: иконки в шапке Календаря — в Ещё не дублируем.
   const showPromoLoyalty = PRODUCT !== 'cleaning' && PRODUCT !== 'workshop' && PRODUCT !== 'beauty'
-  // Cleaning: профиль объединён с настройками — отдельный пункт не нужен
-  const showProfile = PRODUCT !== 'cleaning'
-  // Beauty: склад скрыт пока модуль не нужен
-  const showInventory = PRODUCT !== 'beauty'
+  // Cleaning/beauty: профиль объединён с настройками — отдельный пункт не нужен
+  const showProfile = PRODUCT !== 'cleaning' && PRODUCT !== 'beauty'
+  // Cleaning/beauty: склад не используется (cleaning принимает вещи; beauty модуль не готов)
+  const showInventory = PRODUCT !== 'cleaning' && PRODUCT !== 'beauty'
+  // Cleaning: AI-помощник в десктоп-сайдбаре отсутствует — на мобиле тоже скрываем
+  const showAI = PRODUCT !== 'cleaning'
 
   const items = [
     showProfile && { icon: User,        label: t('nav.profile'),    to: '/profile',   highlight: false },
@@ -39,7 +41,7 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
     showPromoLoyalty && canLoyalty  && { icon: Gift, label: t('marketing.tabLoyalty'), to: '/loyalty', highlight: false },
     showInventory && hasInventory && canInventory && { icon: Package,    label: t('nav.inventory'), to: '/inventory', highlight: false },
     hasTeams     && { icon: UsersRound, label: t('nav.team'),      to: '/team',      highlight: false },
-    { icon: Bot,         label: 'AI',                to: '/ai',        highlight: false },
+    showAI       && { icon: Bot,         label: 'AI',                to: '/ai',        highlight: false },
     { icon: CreditCard,  label: t('nav.billing'),    to: '/billing',   highlight: false },
     { icon: LifeBuoy,    label: t('nav.support'),    to: '/support',   highlight: false },
     { icon: Settings,    label: t('nav.settings'),   to: '/settings',  highlight: false },
