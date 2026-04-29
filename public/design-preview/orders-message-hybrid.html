@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Модалка отправки — гибрид 3+2 (Compact + Split)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 600; }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  .modal-shell {
+    transition: width 0.32s cubic-bezier(.4,0,.2,1), max-width 0.32s cubic-bezier(.4,0,.2,1);
+  }
+  .pane-fade { transition: opacity 0.18s ease; }
+</style>
+</head>
+<body class="bg-gray-100 p-8">
+
+<div class="max-w-7xl mx-auto space-y-6">
+
+  <header>
+    <h1 class="text-2xl font-bold mb-1">Гибрид: Compact + Split + точки входа</h1>
+    <p class="text-gray-600 text-sm">Две независимые точки входа: индивидуальная (📨 на строке заказа) → compact, и массовая (📤 Рассылка в шапке) → expanded. Плюс переключение между ними внутри модалки.</p>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Точки входа — мокап страницы «Заказы»
+       ═══════════════════════════════════════════════════════════════ -->
+  <section class="space-y-3">
+    <div class="label">Точки входа в модалку (мокап страницы «Заказы»)</div>
+    <p class="text-sm text-gray-600">Кликни «📨» в строке → compact для конкретного клиента. Кликни «📤 Рассылка» в шапке → expanded с пустым выбором.</p>
+    <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+      <!-- Page header -->
+      <div class="px-5 py-4 border-b flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <h2 class="text-xl font-bold">Заказы</h2>
+          <span class="text-sm text-gray-500">4 зак.</span>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Сегментированный переключатель режимов -->
+          <div class="inline-flex bg-gray-100 rounded-xl p-1 gap-0.5">
+            <button class="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-white text-blue-600 shadow-sm font-semibold text-xs">
+              <i data-lucide="list" class="h-3.5 w-3.5"></i> Список
+            </button>
+            <button class="flex items-center gap-1.5 px-3 h-8 rounded-lg text-gray-600 hover:bg-white/60 font-semibold text-xs">
+              <i data-lucide="columns-3" class="h-3.5 w-3.5"></i> Канбан
+            </button>
+            <button class="flex items-center gap-1.5 px-3 h-8 rounded-lg text-gray-600 hover:bg-white/60 font-semibold text-xs">
+              <i data-lucide="truck" class="h-3.5 w-3.5"></i> Доставка
+            </button>
+          </div>
+          <!-- Кнопка массовой рассылки -->
+          <button onclick="openMassMode()" class="px-3 h-9 rounded-lg border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-semibold flex items-center gap-1.5 transition relative">
+            <i data-lucide="send-horizontal" class="h-4 w-4"></i>
+            Рассылка
+            <span class="ml-1 text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded font-bold">5 готов</span>
+          </button>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5">
+            <i data-lucide="plus" class="h-4 w-4"></i> Новый заказ
+          </button>
+        </div>
+      </div>
+
+      <!-- Mock orders table -->
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
+          <tr>
+            <th class="text-left px-5 py-2.5">№</th>
+            <th class="text-left py-2.5">Клиент</th>
+            <th class="text-left py-2.5">Статус</th>
+            <th class="text-right py-2.5">Сумма</th>
+            <th class="text-right py-2.5">Срок</th>
+            <th class="w-24 text-right py-2.5 px-5">Действия</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          <tr class="hover:bg-gray-50 group">
+            <td class="px-5 py-3 font-semibold">КВ-0039</td>
+            <td>Клиент 403<br><span class="text-[11px] text-gray-500">+998 99 403-87-64</span></td>
+            <td><span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded">Готов</span></td>
+            <td class="text-right font-mono font-semibold">75 000 so'm</td>
+            <td class="text-right text-xs">02.05</td>
+            <td class="px-5 text-right">
+              <div class="flex items-center justify-end gap-1">
+                <button onclick="openCompact('Клиент 403', 'КВ-0039')" class="h-8 w-8 rounded-lg hover:bg-blue-100 text-blue-600 flex items-center justify-center transition" title="Написать клиенту">
+                  <i data-lucide="send" class="h-4 w-4"></i>
+                </button>
+                <button class="h-8 w-8 rounded-lg hover:bg-gray-100 text-gray-500 flex items-center justify-center" title="Печать">
+                  <i data-lucide="printer" class="h-4 w-4"></i>
+                </button>
+                <button class="h-8 w-8 rounded-lg hover:bg-red-100 text-gray-500 hover:text-red-600 flex items-center justify-center" title="Удалить">
+                  <i data-lucide="trash-2" class="h-4 w-4"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3 font-semibold">КВ-0038</td>
+            <td>Клиент 2<br><span class="text-[11px] text-gray-500">+998 90 123-45-67</span></td>
+            <td><span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-bold rounded">В работе</span></td>
+            <td class="text-right font-mono font-semibold">165 000 so'm</td>
+            <td class="text-right text-xs">02.05</td>
+            <td class="px-5 text-right">
+              <div class="flex items-center justify-end gap-1">
+                <button onclick="openCompact('Клиент 2', 'КВ-0038')" class="h-8 w-8 rounded-lg hover:bg-blue-100 text-blue-600 flex items-center justify-center transition">
+                  <i data-lucide="send" class="h-4 w-4"></i>
+                </button>
+                <button class="h-8 w-8 rounded-lg hover:bg-gray-100 text-gray-500 flex items-center justify-center">
+                  <i data-lucide="printer" class="h-4 w-4"></i>
+                </button>
+                <button class="h-8 w-8 rounded-lg hover:bg-red-100 text-gray-500 hover:text-red-600 flex items-center justify-center">
+                  <i data-lucide="trash-2" class="h-4 w-4"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3 font-semibold">КВ-0037</td>
+            <td>Назим Каримов<br><span class="text-[11px] text-gray-500">+998 99 555-12-34</span></td>
+            <td><span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded">Готов</span></td>
+            <td class="text-right font-mono font-semibold">120 000 so'm</td>
+            <td class="text-right text-xs">01.05</td>
+            <td class="px-5 text-right">
+              <div class="flex items-center justify-end gap-1">
+                <button onclick="openCompact('Назим Каримов', 'КВ-0037')" class="h-8 w-8 rounded-lg hover:bg-blue-100 text-blue-600 flex items-center justify-center transition">
+                  <i data-lucide="send" class="h-4 w-4"></i>
+                </button>
+                <button class="h-8 w-8 rounded-lg hover:bg-gray-100 text-gray-500 flex items-center justify-center">
+                  <i data-lucide="printer" class="h-4 w-4"></i>
+                </button>
+                <button class="h-8 w-8 rounded-lg hover:bg-red-100 text-gray-500 hover:text-red-600 flex items-center justify-center">
+                  <i data-lucide="trash-2" class="h-4 w-4"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-900 flex items-start gap-2">
+      <i data-lucide="info" class="h-4 w-4 mt-0.5 shrink-0"></i>
+      <div>
+        <strong>📨 в строке заказа</strong> — открывает модалку в Compact-режиме сразу для этого клиента.<br>
+        <strong>📤 Рассылка в шапке</strong> — открывает модалку в Expanded-режиме с пустым выбором, мастер фильтрует получателей. Бейдж «5 готов» намекает на самый частый сценарий (рассылка тем у кого статус Готов).
+      </div>
+    </div>
+  </section>
+
+  <!-- Toolbar / контролы демо -->
+  <div class="bg-white rounded-xl border p-4 flex flex-wrap items-center gap-3 text-sm">
+    <span class="label mr-2">Демо</span>
+    <button onclick="setMode('compact')" id="ctl-compact" class="px-3 h-9 rounded-lg bg-blue-600 text-white font-semibold">1. Compact (вход)</button>
+    <button onclick="setMode('expanded')" id="ctl-expanded" class="px-3 h-9 rounded-lg border font-semibold text-gray-600">2. Expanded (массовая)</button>
+    <button onclick="setTab('quick')" id="ctl-quick" class="ml-4 px-3 h-9 rounded-lg border font-semibold text-gray-600">Tab: Быстрые</button>
+    <button onclick="setTab('write')" id="ctl-write" class="px-3 h-9 rounded-lg border font-semibold text-gray-600">Tab: Своё</button>
+    <button onclick="setTab('history')" id="ctl-history" class="px-3 h-9 rounded-lg border font-semibold text-gray-600">Tab: История</button>
+    <span class="text-xs text-gray-500 ml-auto">Пробуй кликать на шаблоны, табы, фильтры</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Сама модалка — гибрид
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="bg-black/40 rounded-2xl p-6 flex justify-center">
+    <div id="modal" class="modal-shell bg-white rounded-2xl shadow-2xl overflow-hidden" style="width: 760px;">
+
+      <!-- ── Header ── -->
+      <div class="px-5 pt-4 pb-0 border-b">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+              <i data-lucide="send" class="h-4 w-4"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="font-bold truncate">
+                <span id="title-compact">Сообщение клиенту</span>
+                <span id="title-expanded" class="hidden">Массовая рассылка</span>
+              </div>
+              <div class="text-xs text-gray-500">
+                <span id="subtitle-compact"><span id="ctx-client">Клиент 403</span> · <span id="ctx-order">КВ-0039</span></span>
+                <span id="subtitle-expanded" class="hidden">Выбери получателей и шаблон</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <!-- В compact: кнопка «Сделать массовой» -->
+            <button id="btn-expand" onclick="setMode('expanded')" class="text-xs text-blue-600 font-semibold hover:underline flex items-center gap-1.5 px-2 h-7 rounded hover:bg-blue-50">
+              <i data-lucide="users" class="h-3.5 w-3.5"></i> Сделать массовой
+            </button>
+            <!-- В expanded: кнопка «Свернуть» -->
+            <button id="btn-collapse" onclick="setMode('compact')" class="hidden text-xs text-gray-600 font-semibold hover:underline flex items-center gap-1.5 px-2 h-7 rounded hover:bg-gray-100">
+              <i data-lucide="user" class="h-3.5 w-3.5"></i> К одному клиенту
+            </button>
+            <!-- Канал -->
+            <div class="inline-flex bg-gray-100 rounded-lg p-1 gap-0.5">
+              <button class="flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-white shadow-sm text-blue-600 text-xs font-semibold">
+                <i data-lucide="send" class="h-3 w-3"></i> Telegram
+              </button>
+              <button class="flex items-center gap-1.5 px-2.5 h-7 rounded-md text-gray-600 hover:bg-white/60 text-xs font-semibold">
+                <i data-lucide="message-square" class="h-3 w-3"></i> SMS
+              </button>
+            </div>
+            <button class="text-gray-400 hover:text-gray-700 p-1"><i data-lucide="x" class="h-5 w-5"></i></button>
+          </div>
+        </div>
+        <!-- Табы -->
+        <div class="flex gap-4 -mb-px">
+          <button id="tab-quick" onclick="setTab('quick')" class="pb-2 text-xs font-semibold border-b-2 border-blue-600 text-blue-600 flex items-center gap-1.5">
+            <i data-lucide="zap" class="h-3.5 w-3.5"></i> Быстрые
+          </button>
+          <button id="tab-write" onclick="setTab('write')" class="pb-2 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 flex items-center gap-1.5">
+            <i data-lucide="edit-3" class="h-3.5 w-3.5"></i> Своё сообщение
+          </button>
+          <button id="tab-history" onclick="setTab('history')" class="pb-2 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 flex items-center gap-1.5">
+            <i data-lucide="history" class="h-3.5 w-3.5"></i> История <span class="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded">3</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Body ── -->
+      <div id="body-compact" class="pane-fade">
+        <!-- Compact mode -->
+        <div id="pane-quick-compact" class="p-5 min-h-[340px]">
+          <div class="text-[10px] uppercase font-bold text-gray-500 mb-2">Один клик — сообщение уйдёт</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="sendQuick('Готов к выдаче')" class="p-3 border-2 border-emerald-200 hover:border-emerald-500 hover:bg-emerald-50 rounded-xl text-left transition">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="h-8 w-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i data-lucide="check-circle" class="h-4 w-4"></i></div>
+                <div class="font-semibold text-sm">Готов к выдаче</div>
+              </div>
+              <div class="text-[11px] text-gray-500 line-clamp-2">«Здравствуйте, Клиент 403! Ваш заказ КВ-0039 готов. Сумма: 75 000 so'm»</div>
+            </button>
+            <button onclick="sendQuick('Просрочка')" class="p-3 border-2 border-orange-200 hover:border-orange-500 hover:bg-orange-50 rounded-xl text-left transition">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="h-8 w-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center"><i data-lucide="alert-triangle" class="h-4 w-4"></i></div>
+                <div class="font-semibold text-sm">Напомнить о просрочке</div>
+              </div>
+              <div class="text-[11px] text-gray-500 line-clamp-2">«Заказ КВ-0039 ожидает выдачи. Заберите при возможности»</div>
+            </button>
+            <button onclick="sendQuick('Курьер выехал')" class="p-3 border-2 border-blue-200 hover:border-blue-500 hover:bg-blue-50 rounded-xl text-left transition">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><i data-lucide="truck" class="h-4 w-4"></i></div>
+                <div class="font-semibold text-sm">Курьер выехал</div>
+              </div>
+              <div class="text-[11px] text-gray-500 line-clamp-2">«Курьер выехал к вам с заказом КВ-0039, ожидайте 30 мин»</div>
+            </button>
+            <button onclick="sendQuick('Скидка')" class="p-3 border-2 border-violet-200 hover:border-violet-500 hover:bg-violet-50 rounded-xl text-left transition">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="h-8 w-8 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center"><i data-lucide="gift" class="h-4 w-4"></i></div>
+                <div class="font-semibold text-sm">Скидка для постоянных</div>
+              </div>
+              <div class="text-[11px] text-gray-500 line-clamp-2">«Дарим −10% на следующий заказ. Промокод LOVE10»</div>
+            </button>
+            <button onclick="sendQuick('Отзыв')" class="p-3 border-2 border-amber-200 hover:border-amber-500 hover:bg-amber-50 rounded-xl text-left transition">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="h-8 w-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center"><i data-lucide="star" class="h-4 w-4"></i></div>
+                <div class="font-semibold text-sm">Попросить отзыв</div>
+              </div>
+              <div class="text-[11px] text-gray-500 line-clamp-2">«Спасибо! Будем благодарны за отзыв: ezze.uz/r/...»</div>
+            </button>
+            <button class="p-3 border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-xl text-center text-gray-500 hover:text-blue-600 flex flex-col items-center justify-center gap-1 transition">
+              <i data-lucide="plus" class="h-5 w-5"></i>
+              <div class="text-xs font-semibold">Создать шаблон</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Compact: своё сообщение -->
+        <div id="pane-write-compact" class="hidden p-5 min-h-[340px] space-y-3">
+          <div>
+            <div class="text-[10px] uppercase font-bold text-gray-500 mb-1 flex items-center justify-between">
+              <span>Текст для Клиент 403</span>
+              <div class="flex gap-1">
+                <button onclick="insertVar('{{имя}}', 'cmp-text')" class="text-[10px] text-blue-600 hover:underline">{{имя}}</button>
+                <button onclick="insertVar('{{номер}}', 'cmp-text')" class="text-[10px] text-blue-600 hover:underline">{{номер}}</button>
+                <button onclick="insertVar('{{сумма}}', 'cmp-text')" class="text-[10px] text-blue-600 hover:underline">{{сумма}}</button>
+              </div>
+            </div>
+            <textarea id="cmp-text" rows="5" class="w-full p-3 border rounded-lg text-sm resize-none" placeholder="Свой текст или нажми переменную выше..."></textarea>
+            <div class="text-[10px] text-gray-500 mt-1"><span id="cmp-count">0</span> символов</div>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <div class="text-[10px] uppercase font-bold text-gray-500 mb-2">Превью</div>
+            <div class="bg-white rounded-2xl p-3 shadow-sm border max-w-xs ml-auto text-sm" id="cmp-preview-text">Начни печатать или выбери переменную...</div>
+          </div>
+        </div>
+
+        <!-- Compact: история -->
+        <div id="pane-history-compact" class="hidden p-5 min-h-[340px] space-y-2">
+          <div class="text-[10px] uppercase font-bold text-gray-500 mb-2">Сообщения этому клиенту</div>
+          <div class="border rounded-lg p-3 space-y-1">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-semibold text-emerald-700">✓ Готов к выдаче</span>
+              <span class="text-gray-400">28.04.2026, 14:22</span>
+            </div>
+            <div class="text-xs text-gray-600 line-clamp-1">Здравствуйте, Клиент 403! Ваш заказ КВ-0035 готов...</div>
+          </div>
+          <div class="border rounded-lg p-3 space-y-1">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-semibold text-blue-700">📦 Принят</span>
+              <span class="text-gray-400">25.04.2026, 11:08</span>
+            </div>
+            <div class="text-xs text-gray-600 line-clamp-1">Заказ КВ-0035 принят. Срок готовности: 28.04.2026</div>
+          </div>
+          <div class="border rounded-lg p-3 space-y-1">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-semibold text-violet-700">🎁 Скидка для постоянных</span>
+              <span class="text-gray-400">15.03.2026, 18:14</span>
+            </div>
+            <div class="text-xs text-gray-600 line-clamp-1">Дарим −10% на следующий заказ. Промокод LOVE10</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expanded mode (split-screen) -->
+      <div id="body-expanded" class="hidden pane-fade">
+        <div class="grid grid-cols-[320px_1fr] gap-0 max-h-[480px]">
+          <!-- LEFT: получатели -->
+          <div class="border-r p-4 space-y-3 overflow-y-auto scrollbar-thin">
+            <div>
+              <div class="text-[10px] uppercase font-bold text-gray-500 mb-1.5">Кому</div>
+              <div class="flex flex-wrap gap-1">
+                <button class="h-7 px-2.5 rounded-full bg-blue-600 text-white text-[11px] font-semibold flex items-center gap-1">
+                  <i data-lucide="check" class="h-3 w-3"></i> Все (47)
+                </button>
+                <button class="h-7 px-2.5 rounded-full bg-white border text-[11px] font-semibold text-gray-600">Готов (5)</button>
+                <button class="h-7 px-2.5 rounded-full bg-white border text-[11px] font-semibold text-gray-600">Просрочено (3)</button>
+                <button class="h-7 px-2.5 rounded-full bg-white border text-[11px] font-semibold text-gray-600">Не оплачено (17)</button>
+                <button class="h-7 px-2.5 rounded-full bg-white border text-[11px] font-semibold text-gray-600">VIP (8)</button>
+              </div>
+            </div>
+            <div class="relative">
+              <i data-lucide="search" class="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+              <input type="text" placeholder="Поиск имени или телефона..." class="w-full h-8 pl-8 pr-2 rounded-md border text-xs" />
+            </div>
+            <div class="space-y-1">
+              <label class="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50 cursor-pointer">
+                <input type="checkbox" checked class="h-3.5 w-3.5 rounded">
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold text-xs">Клиент 403</div>
+                  <div class="text-[10px] text-gray-500">КВ-0039 · 99 403-87-64</div>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold">TG</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50 cursor-pointer">
+                <input type="checkbox" checked class="h-3.5 w-3.5 rounded">
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold text-xs">Клиент 2</div>
+                  <div class="text-[10px] text-gray-500">КВ-0038 · 90 123-45-67</div>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold">TG</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50 cursor-pointer">
+                <input type="checkbox" checked class="h-3.5 w-3.5 rounded">
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold text-xs">Назим Каримов</div>
+                  <div class="text-[10px] text-gray-500">КВ-0037 · 99 555-12-34</div>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-bold">SMS</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50 cursor-pointer opacity-60">
+                <input type="checkbox" disabled class="h-3.5 w-3.5 rounded">
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold text-xs">Без клиента</div>
+                  <div class="text-[10px] text-gray-500">КВ-0036 · нет контакта</div>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-500 font-bold">—</span>
+              </label>
+            </div>
+            <div class="border-t pt-3 text-[11px] text-gray-600 space-y-1">
+              <div class="flex justify-between"><span>Выбрано:</span><span class="font-bold text-blue-600">3 чел.</span></div>
+              <div class="flex justify-between"><span>· Telegram:</span><span class="text-emerald-700 font-bold">2</span></div>
+              <div class="flex justify-between"><span>· SMS (платно):</span><span class="text-amber-700 font-bold">1 · 350 so'm</span></div>
+            </div>
+          </div>
+
+          <!-- RIGHT: сообщение -->
+          <div class="p-4 space-y-3 flex flex-col overflow-hidden">
+            <div>
+              <div class="text-[10px] uppercase font-bold text-gray-500 mb-1.5">Шаблон</div>
+              <div class="flex gap-1.5 flex-wrap">
+                <button onclick="setExpTpl('ready')" id="exp-tpl-ready" class="h-7 px-2.5 rounded-full bg-blue-600 text-white text-[11px] font-semibold">Готов к выдаче</button>
+                <button onclick="setExpTpl('overdue')" id="exp-tpl-overdue" class="h-7 px-2.5 rounded-full bg-white border text-[11px] font-semibold text-gray-600">Просрочка</button>
+                <button onclick="setExpTpl('promo')" id="exp-tpl-promo" class="h-7 px-2.5 rounded-full bg-white border text-[11px] font-semibold text-gray-600">Скидка −10%</button>
+                <button onclick="setExpTpl('thanks')" id="exp-tpl-thanks" class="h-7 px-2.5 rounded-full bg-white border text-[11px] font-semibold text-gray-600">Поздравление</button>
+                <button class="h-7 px-2.5 rounded-full border-dashed border text-[11px] text-gray-500"><i data-lucide="plus" class="h-3 w-3 inline"></i> Свой</button>
+              </div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-bold text-gray-500 mb-1 flex items-center justify-between">
+                <span>Текст</span>
+                <div class="flex gap-1">
+                  <button onclick="insertVar('{{имя}}', 'exp-text')" class="text-[10px] text-blue-600 hover:underline">{{имя}}</button>
+                  <button onclick="insertVar('{{номер}}', 'exp-text')" class="text-[10px] text-blue-600 hover:underline">{{номер}}</button>
+                  <button onclick="insertVar('{{сумма}}', 'exp-text')" class="text-[10px] text-blue-600 hover:underline">{{сумма}}</button>
+                  <button onclick="insertVar('{{адрес}}', 'exp-text')" class="text-[10px] text-blue-600 hover:underline">{{адрес}}</button>
+                </div>
+              </div>
+              <textarea id="exp-text" rows="5" class="w-full p-3 border rounded-lg text-sm resize-none">Добрый день, {{имя}}! Ваш заказ {{номер}} готов к выдаче. Адрес: {{адрес}}. Сумма к оплате: {{сумма}} so'm. Ждём вас!</textarea>
+              <div class="flex items-center justify-between text-[10px] text-gray-500 mt-1">
+                <span><span id="exp-count">110</span> символов</span>
+                <span>≈ 1 SMS на номер</span>
+              </div>
+            </div>
+            <div class="flex-1 bg-gray-50 rounded-lg p-3 overflow-y-auto scrollbar-thin">
+              <div class="text-[10px] uppercase font-bold text-gray-500 mb-2">Превью для «Клиент 403»</div>
+              <div class="bg-white rounded-2xl p-3 shadow-sm border max-w-xs ml-auto">
+                <div id="exp-preview" class="text-sm">Добрый день, Клиент 403! Ваш заказ КВ-0039 готов к выдаче. Адрес: Ташкент ул. Амир Темура 55. Сумма к оплате: 75 000 so'm. Ждём вас!</div>
+                <div class="text-[10px] text-gray-400 text-right mt-1">22:43</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Footer ── -->
+      <div class="px-5 py-3 border-t flex items-center justify-between bg-gray-50">
+        <div class="flex items-center gap-3 text-xs">
+          <div class="flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span class="text-gray-600">Telegram доступен</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+            <span class="text-gray-600">SMS — резерв</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="px-4 h-9 rounded-lg border text-sm font-semibold text-gray-600">Отмена</button>
+          <button id="btn-send-compact" class="px-4 h-9 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center gap-1.5">
+            <i data-lucide="send" class="h-4 w-4"></i> Отправить клиенту
+          </button>
+          <button id="btn-send-expanded" class="hidden px-5 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold flex items-center gap-2">
+            <i data-lucide="send" class="h-4 w-4"></i> Отправить <span id="recipients-count">3</span> сообщения
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast уведомление -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all">
+    <i data-lucide="check-circle" class="h-4 w-4"></i>
+    <span id="toast-text">Сообщение отправлено</span>
+  </div>
+
+  <!-- Подсказки -->
+  <div class="bg-white rounded-xl border p-5 space-y-3">
+    <h3 class="font-bold">Логика гибрида</h3>
+    <div class="space-y-2 text-sm text-gray-700">
+      <p><strong>1. Compact (по умолчанию)</strong> — открывается для конкретного заказа из карточки или строки списка. Ширина ~760px. Шапка с именем клиента и номером заказа. Кнопка «Отправить клиенту» одна, целевая — никакого выбора получателей.</p>
+      <p><strong>2. Expanded</strong> — клик «👥 Сделать массовой» в шапке. Модалка плавно расширяется до ~1080px, появляется левая колонка с фильтрами и списком получателей. Текст и превью — справа. Кнопка отправки меняется на «Отправить N сообщений» с подсчётом.</p>
+      <p><strong>3. Возврат</strong> — кнопка «👤 К одному клиенту» в шапке возвращает в Compact с сохранением текста.</p>
+      <p><strong>4. Табы общие</strong> — Быстрые / Своё / История работают в обоих режимах. В History — только в Compact (история конкретного клиента).</p>
+    </div>
+  </div>
+
+  <footer class="text-center text-sm text-gray-500 pt-4">
+    Скажи «ОК» — собираю реальную модалку и подключаю к карточке заказа в Заказах.
+  </footer>
+
+</div>
+
+<script>
+  lucide.createIcons()
+
+  // ── Mode (compact / expanded) ─────────────────────────────────────
+  let mode = 'compact'
+  let tab = 'quick'
+
+  function setMode(m) {
+    mode = m
+    const modal = document.getElementById('modal')
+    if (m === 'compact') {
+      modal.style.width = '760px'
+      document.getElementById('body-compact').classList.remove('hidden')
+      document.getElementById('body-expanded').classList.add('hidden')
+      document.getElementById('btn-expand').classList.remove('hidden')
+      document.getElementById('btn-collapse').classList.add('hidden')
+      document.getElementById('title-compact').classList.remove('hidden')
+      document.getElementById('title-expanded').classList.add('hidden')
+      document.getElementById('subtitle-compact').classList.remove('hidden')
+      document.getElementById('subtitle-expanded').classList.add('hidden')
+      document.getElementById('btn-send-compact').classList.remove('hidden')
+      document.getElementById('btn-send-expanded').classList.add('hidden')
+      document.getElementById('tab-history').parentElement.style.display = ''
+    } else {
+      modal.style.width = '1080px'
+      document.getElementById('body-compact').classList.add('hidden')
+      document.getElementById('body-expanded').classList.remove('hidden')
+      document.getElementById('btn-expand').classList.add('hidden')
+      document.getElementById('btn-collapse').classList.remove('hidden')
+      document.getElementById('title-compact').classList.add('hidden')
+      document.getElementById('title-expanded').classList.remove('hidden')
+      document.getElementById('subtitle-compact').classList.add('hidden')
+      document.getElementById('subtitle-expanded').classList.remove('hidden')
+      document.getElementById('btn-send-compact').classList.add('hidden')
+      document.getElementById('btn-send-expanded').classList.remove('hidden')
+      // В expanded скрываем «История» — она про одного клиента
+      if (tab === 'history') setTab('quick')
+    }
+    // Кнопки в тулбаре
+    document.getElementById('ctl-compact').className = `px-3 h-9 rounded-lg ${m==='compact'?'bg-blue-600 text-white':'border text-gray-600'} font-semibold`
+    document.getElementById('ctl-expanded').className = `px-3 h-9 rounded-lg ${m==='expanded'?'bg-blue-600 text-white':'border text-gray-600'} font-semibold`
+  }
+
+  // ── Tabs ──────────────────────────────────────────────────────────
+  function setTab(t) {
+    tab = t
+    ;['quick','write','history'].forEach(name => {
+      const tabBtn = document.getElementById(`tab-${name}`)
+      tabBtn.className = `pb-2 text-xs font-semibold border-b-2 ${name===t?'border-blue-600 text-blue-600':'border-transparent text-gray-500 hover:text-gray-700'} flex items-center gap-1.5`
+      // В compact — переключаем pane
+      const pane = document.getElementById(`pane-${name}-compact`)
+      if (pane) {
+        if (name === t) pane.classList.remove('hidden')
+        else pane.classList.add('hidden')
+      }
+    })
+    // Обновим тулбар-кнопки
+    ;['quick','write','history'].forEach(name => {
+      const btn = document.getElementById(`ctl-${name}`)
+      btn.className = `${name==='quick'?'ml-4 ':''}px-3 h-9 rounded-lg ${name===t?'bg-blue-600 text-white':'border text-gray-600'} font-semibold`
+    })
+    // В expanded режиме история не показывается — сбрасываем на quick
+    if (mode === 'expanded' && t === 'history') setTab('quick')
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────
+  function showToast(text) {
+    const t = document.getElementById('toast')
+    document.getElementById('toast-text').textContent = text
+    t.style.opacity = '1'
+    t.style.transform = 'translate(-50%, 0)'
+    setTimeout(() => {
+      t.style.opacity = '0'
+      t.style.transform = 'translate(-50%, 20px)'
+    }, 2000)
+  }
+
+  function sendQuick(name) {
+    showToast(`Шаблон «${name}» отправлен Клиенту 403`)
+  }
+
+  // ── Templates (expanded) ──────────────────────────────────────────
+  const TEMPLATES = {
+    ready:   'Добрый день, {{имя}}! Ваш заказ {{номер}} готов к выдаче. Адрес: {{адрес}}. Сумма к оплате: {{сумма}} so\'m. Ждём вас!',
+    overdue: 'Здравствуйте, {{имя}}. Ваш заказ {{номер}} ожидает выдачи уже неделю. Просим забрать в ближайшее время.',
+    promo:   'Спасибо что вы наш клиент, {{имя}}! Дарим −10% на следующий заказ. Промокод: LOVE10. Действует 14 дней.',
+    thanks:  'Дорогой {{имя}}! Поздравляем с праздником и желаем чистоты во всём. С уважением, Химчистка Каскад.',
+  }
+  function setExpTpl(key) {
+    document.getElementById('exp-text').value = TEMPLATES[key]
+    updateExpPreview()
+    Object.keys(TEMPLATES).forEach(k => {
+      const b = document.getElementById(`exp-tpl-${k}`)
+      if (k === key) b.className = 'h-7 px-2.5 rounded-full bg-blue-600 text-white text-[11px] font-semibold'
+      else b.className = 'h-7 px-2.5 rounded-full bg-white border text-[11px] font-semibold text-gray-600'
+    })
+  }
+  function updateExpPreview() {
+    const tpl = document.getElementById('exp-text').value
+    const filled = tpl
+      .replace(/{{имя}}/g, 'Клиент 403')
+      .replace(/{{номер}}/g, 'КВ-0039')
+      .replace(/{{сумма}}/g, '75 000')
+      .replace(/{{адрес}}/g, 'Ташкент ул. Амир Темура 55')
+    document.getElementById('exp-preview').textContent = filled
+    document.getElementById('exp-count').textContent = tpl.length
+  }
+  document.getElementById('exp-text').addEventListener('input', updateExpPreview)
+
+  // ── Compact 'своё' ────────────────────────────────────────────────
+  function insertVar(v, target) {
+    const ta = document.getElementById(target)
+    const pos = ta.selectionStart
+    ta.value = ta.value.slice(0, pos) + v + ta.value.slice(pos)
+    ta.focus()
+    if (target === 'cmp-text') updateCmpPreview()
+    if (target === 'exp-text') updateExpPreview()
+  }
+  function updateCmpPreview() {
+    const tpl = document.getElementById('cmp-text').value
+    const filled = tpl
+      .replace(/{{имя}}/g, 'Клиент 403')
+      .replace(/{{номер}}/g, 'КВ-0039')
+      .replace(/{{сумма}}/g, '75 000')
+    document.getElementById('cmp-preview-text').textContent = filled || 'Начни печатать или выбери переменную...'
+    document.getElementById('cmp-count').textContent = tpl.length
+  }
+  document.getElementById('cmp-text').addEventListener('input', updateCmpPreview)
+
+  // Send buttons
+  document.getElementById('btn-send-compact').addEventListener('click', () => showToast('Сообщение отправлено Клиенту 403'))
+  document.getElementById('btn-send-expanded').addEventListener('click', () => showToast('3 сообщения отправлены'))
+
+  // ── Точки входа в модалку ────────────────────────────────────────
+  function openCompact(clientName, orderNum) {
+    document.getElementById('ctx-client').textContent = clientName
+    document.getElementById('ctx-order').textContent = orderNum
+    setMode('compact')
+    setTab('quick')
+    document.getElementById('modal').scrollIntoView({ behavior: 'smooth', block: 'center' })
+    flashModal()
+  }
+  function openMassMode() {
+    setMode('expanded')
+    setTab('quick')
+    document.getElementById('modal').scrollIntoView({ behavior: 'smooth', block: 'center' })
+    flashModal()
+  }
+  function flashModal() {
+    const m = document.getElementById('modal')
+    m.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.5)'
+    setTimeout(() => { m.style.boxShadow = '' }, 600)
+  }
+
+  setMode('compact')
+  setTab('quick')
+</script>
+
+</body>
+</html>

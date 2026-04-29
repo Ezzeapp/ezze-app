@@ -1,11 +1,14 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Plus, Search, ClipboardList, Loader2,
   AlertTriangle, Trash2, CalendarRange, X,
   ArrowUpDown, ArrowUp, ArrowDown, List, Columns3, Truck,
+  Send, Printer, SendHorizontal,
 } from 'lucide-react'
+import { MessageModal } from '@/components/orders/MessageModal'
+import { ReceiptModal, type ReceiptData } from '@/components/orders/ReceiptModal'
 import { PRODUCT } from '@/lib/config'
 import { DeliveryContent } from '@/pages/cleaning/DeliveryPage'
 import { Button } from '@/components/ui/button'
@@ -208,11 +211,13 @@ function KanbanView({ orders, symbol, onNavigate, isOverdueMap, isDueTodayMap, t
 }
 
 // ── Таблица-вид ────────────────────────────────────────────────────────────────
-function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDueTodayMap, t, sortBy, onSort }: {
+function OrdersTable({ orders, symbol, onNavigate, onDelete, onMessage, onPrint, isOverdueMap, isDueTodayMap, t, sortBy, onSort }: {
   orders: CleaningOrder[]
   symbol: string
   onNavigate: (id: string) => void
   onDelete: (id: string) => void
+  onMessage: (id: string) => void
+  onPrint: (id: string) => void
   isOverdueMap: Record<string, boolean>
   isDueTodayMap: Record<string, boolean>
   t: (key: string, opts?: Record<string, unknown>) => string
@@ -339,12 +344,29 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, isOverdueMap, isDue
                     )}
                   </td>
                   <td className="px-2 py-2.5">
-                    <button
-                      onClick={e => { e.stopPropagation(); onDelete(order.id) }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={e => { e.stopPropagation(); onMessage(order.id) }}
+                        className="p-1.5 rounded text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                        title="Написать клиенту"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); onPrint(order.id) }}
+                        className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                        title="Печать квитанции"
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); onDelete(order.id) }}
+                        className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        title="Удалить"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )
@@ -423,6 +445,10 @@ export function OrdersListPage() {
 
   const [deleteId,       setDeleteId]       = useState<string | null>(null)
   const [deleteAllOpen,  setDeleteAllOpen]  = useState(false)
+  const [messageOrderId, setMessageOrderId] = useState<string | null>(null)
+  const [massMessage,    setMassMessage]    = useState(false)
+  const [printOrderId,   setPrintOrderId]   = useState<string | null>(null)
+  const [printData,      setPrintData]      = useState<ReceiptData | null>(null)
   const [viewMode,       setViewMode]       = useState<'table' | 'kanban' | 'delivery'>('table')
   const { mutateAsync: deleteOrder } = useDeleteOrder()
 
@@ -466,6 +492,48 @@ export function OrdersListPage() {
     isOverdueMap[order.id]  = overdue
     isDueTodayMap[order.id] = dueToday
   }
+
+  // ── Загрузка полной квитанции для печати из таблицы ─────────────────────────
+  useEffect(() => {
+    if (!printOrderId) { setPrintData(null); return }
+    let cancelled = false
+    ;(async () => {
+      const { data: order } = await supabase
+        .from('cleaning_orders')
+        .select('id, number, created_at, order_type, total_amount, prepaid_amount, paid_amount, ready_date, notes, payment_method, payment_provider, visit_address, tags, client:clients(first_name, last_name, phone), items:cleaning_order_items(*)')
+        .eq('id', printOrderId)
+        .maybeSingle()
+      if (cancelled || !order) { setPrintData(null); return }
+      const o = order as any
+      setPrintData({
+        id:             o.id,
+        number:         o.number,
+        created_at:     o.created_at,
+        order_type:     o.order_type,
+        client:         o.client,
+        items:          (o.items ?? []).map((i: any) => ({
+          item_type_name: i.item_type_name,
+          price:          i.price,
+          ready_date:     i.ready_date,
+          color:          i.color,
+          brand:          i.brand,
+          defects:        i.defects,
+          area_m2:        i.area_m2,
+          width_m:        i.width_m,
+          length_m:       i.length_m,
+        })),
+        total_amount:   o.total_amount,
+        prepaid_amount: o.prepaid_amount,
+        notes:          o.notes,
+        payment_method: o.payment_method,
+        payment_provider: o.payment_provider,
+        visit_address:  o.visit_address,
+        ready_date:     o.ready_date,
+        tags:           o.tags,
+      })
+    })()
+    return () => { cancelled = true }
+  }, [printOrderId])
 
   async function handleDeleteOne(id: string) {
     try {
@@ -565,6 +633,19 @@ export function OrdersListPage() {
               </button>
             )}
           </div>
+          {/* Массовая рассылка — только для cleaning */}
+          {isCleaningProduct && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMassMessage(true)}
+              className="h-8 gap-1.5 border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950"
+              title="Массовая рассылка клиентам"
+            >
+              <SendHorizontal className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Рассылка</span>
+            </Button>
+          )}
           {/* Период */}
           <Button
             variant="ghost" size="icon"
@@ -770,6 +851,8 @@ export function OrdersListPage() {
                 symbol={symbol}
                 onNavigate={id => navigate(`/orders/${id}`)}
                 onDelete={id => setDeleteId(id)}
+                onMessage={id => setMessageOrderId(id)}
+                onPrint={id => setPrintOrderId(id)}
                 isOverdueMap={isOverdueMap}
                 isDueTodayMap={isDueTodayMap}
                 t={t as (key: string, opts?: Record<string, unknown>) => string}
@@ -891,6 +974,27 @@ export function OrdersListPage() {
           cantUndoLabel={t('orders.cantUndo')}
           cancelLabel={t('common.cancel')}
           deleteLabel={t('common.delete')}
+        />
+      )}
+      {/* Модалка отправки сообщения — для одного клиента */}
+      {messageOrderId && (
+        <MessageModal
+          orderId={messageOrderId}
+          onClose={() => setMessageOrderId(null)}
+        />
+      )}
+      {/* Модалка массовой рассылки */}
+      {massMessage && (
+        <MessageModal
+          initialMode="expanded"
+          onClose={() => setMassMessage(false)}
+        />
+      )}
+      {/* Печать квитанции из таблицы */}
+      {printData && (
+        <ReceiptModal
+          data={printData}
+          onClose={() => { setPrintOrderId(null); setPrintData(null) }}
         />
       )}
     </div>
