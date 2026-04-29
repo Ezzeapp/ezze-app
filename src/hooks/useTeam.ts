@@ -26,22 +26,32 @@ export function useMyTeam() {
     queryFn: async (): Promise<MyTeamResult> => {
       if (!user) return { team: null, role: null, isOwner: false, isMember: false }
 
-      // 1. Проверяем — является ли пользователь владельцем команды
-      // Без embedded users — RLS на users могла резать JOIN и роняла весь запрос
-      const { data: ownedRows, error: ownedErr } = await supabase
+      // ── 1. ownership: ищем все команды этого owner (для авточистки дублей)
+      const { data: allOwned, error: ownedErr } = await supabase
         .from('teams')
         .select('*')
         .eq('owner_id', user.id)
         .order('created_at', { ascending: true })
-        .limit(1)
       if (ownedErr) {
         // eslint-disable-next-line no-console
         console.error('[useMyTeam] owned teams error', ownedErr)
       }
-      const ownedTeam = ownedRows?.[0] ?? null
+
+      // Авто-очистка: если у owner накопились дубли (баг старого pattern) —
+      // оставляем самую старую, остальные удаляем + связанные members/invites
+      if (allOwned && allOwned.length > 1) {
+        const keep = allOwned[0]
+        const dropIds = allOwned.slice(1).map(t => t.id)
+        // eslint-disable-next-line no-console
+        console.log('[useMyTeam] cleaning duplicate teams', { keep: keep.id, drop: dropIds })
+        await supabase.from('team_members').delete().in('team_id', dropIds)
+        await supabase.from('team_invites').delete().in('team_id', dropIds)
+        await supabase.from('teams').delete().in('id', dropIds)
+      }
+
+      const ownedTeam = allOwned?.[0] ?? null
 
       if (ownedTeam) {
-        // owner данные подтягиваем отдельным запросом (опциональный, не блокирующий)
         const { data: ownerData } = await supabase
           .from('users')
           .select('*')
@@ -51,7 +61,7 @@ export function useMyTeam() {
         return { team: t, role: 'owner', isOwner: true, isMember: false }
       }
 
-      // 2. Проверяем — является ли участником команды
+      // ── 2. membership: участник чужой команды
       const { data: membershipRows, error: memErr } = await supabase
         .from('team_members')
         .select('*, team:teams(*)')
@@ -73,7 +83,7 @@ export function useMyTeam() {
       return { team: null, role: null, isOwner: false, isMember: false }
     },
     enabled: !!user,
-    staleTime: 5 * 60_000, // 5 минут кэш
+    staleTime: 5 * 60_000,
   })
 }
 
