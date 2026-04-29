@@ -26,6 +26,7 @@ import { cn, generateSlug, getFileUrl } from '@/lib/utils'
 import { TeamAnalyticsTab } from './TeamAnalyticsTab'
 import { TeamCalendarTab } from './TeamCalendarTab'
 import { TeamSettingsTab } from './TeamSettingsTab'
+import { TeamAccessTab } from './TeamAccessTab'
 import { PRODUCT } from '@/lib/config'
 import dayjs from 'dayjs'
 
@@ -721,7 +722,7 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
 
 // ── Owner View с 4 вкладками ─────────────────────────────────────────────────
 
-type OwnerTab = 'members' | 'calendar' | 'analytics' | 'settings'
+type OwnerTab = 'members' | 'calendar' | 'analytics' | 'access' | 'settings'
 
 function OwnerView({ team }: { team: any }) {
   const { t } = useTranslation()
@@ -761,6 +762,7 @@ function OwnerView({ team }: { team: any }) {
           { key: 'analytics' as OwnerTab, label: t('team.tabAnalytics') },
         ]
       : []),
+    { key: 'access', label: 'Доступы' },
     { key: 'settings', label: t('team.tabSettings') },
   ]
 
@@ -807,6 +809,9 @@ function OwnerView({ team }: { team: any }) {
       )}
       {activeTab === 'analytics' && (
         <TeamAnalyticsTab team={team} members={allMasters} membersLoading={membersLoading} />
+      )}
+      {activeTab === 'access' && (
+        <TeamAccessTab team={team} />
       )}
       {activeTab === 'settings' && (
         <TeamSettingsTab team={team} />

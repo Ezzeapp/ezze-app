@@ -17,11 +17,12 @@ import { useFeature } from '@/hooks/useFeatureFlags'
 import { useMyTeam } from '@/hooks/useTeam'
 import { useAppSettings } from '@/hooks/useAppSettings'
 import { useProfileIcon } from '@/hooks/useProfileIcon'
+import { useTeamAccess, type TeamModule } from '@/hooks/useTeamAccess'
 import { PRODUCT } from '@/lib/config'
 
 /** Пункт меню, который сам проверяет feature flag и не рендерится если нет доступа */
 const NavItemGated = memo(function NavItemGated({
-  icon, iconColor, label, to, onClick, feature,
+  icon, iconColor, label, to, onClick, feature, module,
 }: {
   icon: React.ComponentType<{ className?: string }>
   iconColor?: string
@@ -29,10 +30,30 @@ const NavItemGated = memo(function NavItemGated({
   to: string
   onClick?: () => void
   feature: string | null
+  module?: TeamModule
 }) {
   // Хук вызывается безусловно (правила хуков), feature=null → всегда true
   const hasAccess = useFeature(feature ?? '')
+  // module=undefined → доступ есть (хук возвращает true для не-team-only)
+  const hasModuleAccess = useTeamAccess(module ?? 'orders')
   if (feature !== null && !hasAccess) return null
+  if (module && !hasModuleAccess) return null
+  return <SidebarNavItem icon={icon} iconColor={iconColor} label={label} to={to} onClick={onClick} />
+})
+
+/** Пункт меню без feature-gate, с проверкой team module access */
+const NavItemAccess = memo(function NavItemAccess({
+  icon, iconColor, label, to, onClick, module,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  iconColor?: string
+  label: string
+  to: string
+  onClick?: () => void
+  module: TeamModule
+}) {
+  const has = useTeamAccess(module)
+  if (!has) return null
   return <SidebarNavItem icon={icon} iconColor={iconColor} label={label} to={to} onClick={onClick} />
 })
 
@@ -91,13 +112,13 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
         {/* ── Основное ── */}
         <SidebarGroupLabel label={t('nav.groupMain')} />
         {PRODUCT === 'cleaning' ? (
-          <SidebarNavItem icon={BarChart3} iconColor="dark:text-blue-400" label={t('nav.stats')} to="/stats" onClick={onClose} />
+          <NavItemAccess icon={BarChart3} iconColor="dark:text-blue-400" label={t('nav.stats')} to="/stats" module="dashboard" onClick={onClose} />
         ) : PRODUCT === 'workshop' ? (
-          <SidebarNavItem icon={BarChart3} iconColor="dark:text-blue-400" label={t('nav.stats')} to="/stats" onClick={onClose} />
+          <NavItemAccess icon={BarChart3} iconColor="dark:text-blue-400" label={t('nav.stats')} to="/stats" module="dashboard" onClick={onClose} />
         ) : PRODUCT === 'farm' ? (
           <SidebarNavItem icon={LayoutDashboard} iconColor="dark:text-blue-400" label={t('farm.nav.dashboard')} to="/farm" end onClick={onClose} />
         ) : (
-          <NavItemGated icon={LayoutDashboard} iconColor="dark:text-blue-400" label={t('nav.dashboard')} to="/dashboard" feature={null} onClick={onClose} />
+          <NavItemGated icon={LayoutDashboard} iconColor="dark:text-blue-400" label={t('nav.dashboard')} to="/dashboard" feature={null} module="dashboard" onClick={onClose} />
         )}
         {PRODUCT === 'cleaning' ? (<>
           <SidebarNavItem icon={ClipboardList} iconColor="dark:text-indigo-400" label={t('nav.orders')} to="/orders" onClick={onClose} />
@@ -107,12 +128,12 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
           <NavItemGated icon={CalendarDays} iconColor="dark:text-indigo-400" label={PRODUCT === 'clinic' ? t('clinic.nav.appointments') : t('nav.calendar')} to="/calendar" feature="calendar" onClick={onClose} />
         )}
         {PRODUCT !== 'farm' && (
-          <NavItemGated icon={Users} iconColor="dark:text-emerald-400" label={PRODUCT === 'clinic' ? t('clinic.nav.patients') : t('nav.clients')} to="/clients" feature="clients" onClick={onClose} />
+          <NavItemGated icon={Users} iconColor="dark:text-emerald-400" label={PRODUCT === 'clinic' ? t('clinic.nav.patients') : t('nav.clients')} to="/clients" feature="clients" module="clients" onClick={onClose} />
         )}
         {PRODUCT !== 'farm' && (
           <>
-            <SidebarNavItem icon={Tag}  iconColor="dark:text-orange-400" label={t('marketing.tabPromo')}   to="/promo"   onClick={onClose} />
-            <SidebarNavItem icon={Gift} iconColor="dark:text-rose-400"   label={t('marketing.tabLoyalty')} to="/loyalty" onClick={onClose} />
+            <NavItemAccess icon={Tag}  iconColor="dark:text-orange-400" label={t('marketing.tabPromo')}   to="/promo"   module="promo"   onClick={onClose} />
+            <NavItemAccess icon={Gift} iconColor="dark:text-rose-400"   label={t('marketing.tabLoyalty')} to="/loyalty" module="loyalty" onClick={onClose} />
           </>
         )}
         {PRODUCT === 'clinic' && (
@@ -147,9 +168,9 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
           <>
             {/* ── Каталог ── */}
             <SidebarGroupLabel label={t('nav.groupCatalog')} />
-            <NavItemGated icon={ServiceIcon} iconColor="dark:text-purple-400"  label={t('nav.services')}  to="/services"  feature={null}       onClick={onClose} />
+            <NavItemGated icon={ServiceIcon} iconColor="dark:text-purple-400"  label={t('nav.services')}  to="/services"  feature={null}       module="services"  onClick={onClose} />
             {PRODUCT !== 'cleaning' && (
-              <NavItemGated icon={Package}     iconColor="dark:text-orange-400"  label={t('nav.inventory')} to="/inventory" feature="inventory"  onClick={onClose} />
+              <NavItemGated icon={Package}     iconColor="dark:text-orange-400"  label={t('nav.inventory')} to="/inventory" feature="inventory"  module="inventory" onClick={onClose} />
             )}
           </>
         )}
@@ -158,7 +179,7 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
           <>
             {/* ── Маркетинг ── */}
             <SidebarGroupLabel label={t('nav.groupMarketing')} />
-            <SidebarNavItem icon={Megaphone} iconColor="dark:text-pink-400" label={t('nav.marketing')} to="/marketing" onClick={onClose} />
+            <NavItemAccess icon={Megaphone} iconColor="dark:text-pink-400" label={t('nav.marketing')} to="/marketing" module="marketing" onClick={onClose} />
           </>
         )}
 

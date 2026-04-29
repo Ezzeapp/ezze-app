@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFeature } from '@/hooks/useFeatureFlags'
 import { useProfileIcon } from '@/hooks/useProfileIcon'
+import { useTeamAccess } from '@/hooks/useTeamAccess'
 import { PRODUCT } from '@/lib/config'
 
 function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: React.ComponentType<{ className?: string }> }) {
@@ -18,12 +19,17 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
   const hasInventory = useFeature('inventory')
   const hasTeams     = useFeature('teams')
 
+  const canServices  = useTeamAccess('services')
+  const canPromo     = useTeamAccess('promo')
+  const canLoyalty   = useTeamAccess('loyalty')
+  const canInventory = useTeamAccess('inventory')
+
   const items = [
     { icon: User,        label: t('nav.profile'),    to: '/profile',   highlight: false },
-    { icon: ServiceIcon, label: t('nav.services'),   to: '/services',  highlight: false },
-    { icon: Tag,         label: t('marketing.tabPromo'),   to: '/promo',   highlight: false },
-    { icon: Gift,        label: t('marketing.tabLoyalty'), to: '/loyalty', highlight: false },
-    hasInventory && { icon: Package,    label: t('nav.inventory'), to: '/inventory', highlight: false },
+    canServices && { icon: ServiceIcon, label: t('nav.services'),   to: '/services',  highlight: false },
+    canPromo    && { icon: Tag,         label: t('marketing.tabPromo'),   to: '/promo',   highlight: false },
+    canLoyalty  && { icon: Gift,        label: t('marketing.tabLoyalty'), to: '/loyalty', highlight: false },
+    hasInventory && canInventory && { icon: Package,    label: t('nav.inventory'), to: '/inventory', highlight: false },
     hasTeams     && { icon: UsersRound, label: t('nav.team'),      to: '/team',      highlight: false },
     { icon: Bot,         label: 'AI',                to: '/ai',        highlight: false },
     { icon: CreditCard,  label: t('nav.billing'),    to: '/billing',   highlight: false },
@@ -193,6 +199,10 @@ export function BottomNav() {
   const [moreOpen, setMoreOpen] = useState(false)
   const ServiceIcon = useProfileIcon()
 
+  const canClients   = useTeamAccess('clients')
+  const canDashboard = useTeamAccess('dashboard')
+  const canMarketing = useTeamAccess('marketing')
+
   return (
     <>
       {moreOpen && <MoreMenu onClose={() => setMoreOpen(false)} ServiceIcon={ServiceIcon} />}
@@ -243,46 +253,52 @@ export function BottomNav() {
           )}
 
           {/* Клиенты / Пациенты */}
-          <NavLink
-            to="/clients"
-            className={({ isActive }) =>
-              cn(
-                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-              )
-            }
-          >
-            <Users className="h-5 w-5" />
-            <span>{PRODUCT === 'clinic' ? t('clinic.nav.patients') : t('nav.clients')}</span>
-          </NavLink>
+          {canClients && (
+            <NavLink
+              to="/clients"
+              className={({ isActive }) =>
+                cn(
+                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                )
+              }
+            >
+              <Users className="h-5 w-5" />
+              <span>{PRODUCT === 'clinic' ? t('clinic.nav.patients') : t('nav.clients')}</span>
+            </NavLink>
+          )}
 
           {/* Статистика */}
-          <NavLink
-            to={PRODUCT === 'workshop' || PRODUCT === 'cleaning' ? '/stats' : '/dashboard'}
-            className={({ isActive }) =>
-              cn(
-                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-              )
-            }
-          >
-            <LayoutDashboard className="h-5 w-5" />
-            <span>{t('nav.dashboard')}</span>
-          </NavLink>
+          {canDashboard && (
+            <NavLink
+              to={PRODUCT === 'workshop' || PRODUCT === 'cleaning' ? '/stats' : '/dashboard'}
+              className={({ isActive }) =>
+                cn(
+                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                )
+              }
+            >
+              <LayoutDashboard className="h-5 w-5" />
+              <span>{t('nav.dashboard')}</span>
+            </NavLink>
+          )}
 
           {/* Маркетинг */}
-          <NavLink
-            to="/marketing"
-            className={({ isActive }) =>
-              cn(
-                'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-              )
-            }
-          >
-            <Megaphone className="h-5 w-5" />
-            <span>{t('nav.marketing')}</span>
-          </NavLink>
+          {canMarketing && (
+            <NavLink
+              to="/marketing"
+              className={({ isActive }) =>
+                cn(
+                  'w-1/5 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                )
+              }
+            >
+              <Megaphone className="h-5 w-5" />
+              <span>{t('nav.marketing')}</span>
+            </NavLink>
+          )}
 
           {/* Ещё */}
           <button
