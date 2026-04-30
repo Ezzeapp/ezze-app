@@ -441,7 +441,7 @@ export function ServicesPage() {
 
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent mobileFullscreen className="max-w-lg flex flex-col max-h-[90vh] overflow-hidden p-0 gap-0">
+        <DialogContent mobileFullscreen className="max-w-2xl flex flex-col max-h-[90vh] overflow-hidden p-0 gap-0">
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
             <DialogTitle>{editService ? t('services.edit') : t('services.add')}</DialogTitle>
           </DialogHeader>
@@ -548,7 +548,7 @@ export function ServicesPage() {
                           </div>
                         </div>
                         {/* Список */}
-                        <div className="max-h-44 overflow-y-auto py-1">
+                        <div className="max-h-72 overflow-y-auto py-1">
                           {/* Без категории */}
                           {!catSearch.trim() && (
                             <button type="button"
