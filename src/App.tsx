@@ -49,7 +49,6 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage').then(m => ({ default: m.ProfilePage })))
 const InventoryPage = lazy(() => import('@/pages/inventory/InventoryPage').then(m => ({ default: m.InventoryPage })))
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage').then(m => ({ default: m.SettingsPage })))
-const AdminPage = lazy(() => import('@/pages/admin/AdminPage').then(m => ({ default: m.AdminPage })))
 const TeamPage = lazy(() => import('@/pages/team/TeamPage').then(m => ({ default: m.TeamPage })))
 const JoinTeamPage = lazy(() => import('@/pages/team/JoinTeamPage').then(m => ({ default: m.JoinTeamPage })))
 const TeamAnalyticsPage = lazy(() => import('@/pages/team/TeamAnalyticsPage').then(m => ({ default: m.TeamAnalyticsPage })))
@@ -167,7 +166,6 @@ const router = createBrowserRouter([
       { path: 'inventory', element: <InventoryPage /> },
       { path: 'calendar', element: PRODUCT === 'workshop' ? <Navigate to="/orders" replace /> : <CalendarPage /> },
       { path: 'settings', element: <SettingsPage /> },
-      { path: 'admin', element: <AdminPage /> },
       { path: 'team', element: <TeamPage /> },
       { path: 'team/analytics', element: <TeamAnalyticsPage /> },
       { path: 'marketing', element: <MarketingPage /> },
@@ -271,7 +269,6 @@ function AppSettingsInitializer() {
       import('@/pages/inventory/InventoryPage')
       import('@/pages/settings/SettingsPage')
       import('@/pages/team/TeamPage')
-      import('@/pages/admin/AdminPage')
     }, 3000)
     return () => clearTimeout(id)
   }, [])

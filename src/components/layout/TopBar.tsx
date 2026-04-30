@@ -83,20 +83,8 @@ export function TopBar() {
         </Button>
 
         <div className="ml-auto flex items-center gap-1">
-          {/* Админ — только иконкой (выделен цветом, работает как индикатор admin-режима).
-              Поддержка/Настройки переехали в дропдаун аватара. */}
-          {user?.is_admin && !teamScope.isTeamOnly && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/admin')}
-              className="hidden lg:flex h-9 w-9 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
-              title={t('nav.admin')}
-              aria-label={t('nav.admin')}
-            >
-              <Shield className="h-4 w-4" />
-            </Button>
-          )}
+          {/* Админ-настройки переехали в superadmin (admin.ezze.site).
+              В продуктовой админке /admin больше нет. */}
 
           <LanguageSwitcher />
           <ThemeToggle />

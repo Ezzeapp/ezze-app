@@ -41,7 +41,6 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
     { icon: CreditCard,  label: t('nav.billing'),    to: '/billing',   highlight: false },
     { icon: LifeBuoy,    label: t('nav.support'),    to: '/support',   highlight: false },
     { icon: Settings,    label: t('nav.settings'),   to: '/settings',  highlight: false },
-    user?.is_admin && { icon: ShieldCheck, label: t('nav.admin'), to: '/admin', highlight: true },
   ].filter(Boolean) as { icon: React.ComponentType<{ className?: string }>; label: string; to: string; highlight: boolean }[]
 
   return (
