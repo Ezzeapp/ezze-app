@@ -20,6 +20,7 @@ function DefaultRedirect() {
   if (PRODUCT === 'cleaning') return <Navigate to="/orders" replace />
   if (PRODUCT === 'workshop') return <Navigate to="/orders" replace />
   if (PRODUCT === 'farm')     return <Navigate to="/farm" replace />
+  if (PRODUCT === 'rental')   return <Navigate to="/rental/items" replace />
   return <Navigate to="/calendar" replace />
 }
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -107,6 +108,7 @@ const FarmAdvisorPage     = lazy(() => import('@/pages/farm/AdvisorPage').then(m
 const FarmQrTagsPage      = lazy(() => import('@/pages/farm/QrTagsPage').then(m => ({ default: m.QrTagsPage })))
 const FarmQrScannerPage   = lazy(() => import('@/pages/farm/QrScannerPage').then(m => ({ default: m.QrScannerPage })))
 const FarmReproductionPage = lazy(() => import('@/pages/farm/ReproductionPage').then(m => ({ default: m.ReproductionPage })))
+const RentalItemsPage     = lazy(() => import('@/pages/rental/RentalItemsPage').then(m => ({ default: m.RentalItemsPage })))
 
 const router = createBrowserRouter([
   // Public routes
@@ -193,6 +195,9 @@ const router = createBrowserRouter([
         { path: 'clinic/hospitalizations', element: <ClinicHospPage /> },
         { path: 'clinic/surgery', element: <ClinicSurgeryPage /> },
         { path: 'clinic/nutrition', element: <ClinicNutritionPage /> },
+      ] : []),
+      ...(PRODUCT === 'rental' ? [
+        { path: 'rental/items', element: <RentalItemsPage /> },
       ] : []),
       ...(PRODUCT === 'farm' ? [
         { path: 'farm',                 element: <FarmDashboardPage /> },

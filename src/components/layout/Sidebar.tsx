@@ -6,7 +6,7 @@ import {
   Zap, X, UsersRound, Megaphone,
   ClipboardList, BarChart3, Beef, Wheat, Milk, Wallet, ShoppingCart,
   FlaskConical, Pill, Tractor, TreePine, Egg, Syringe, Sparkles, QrCode,
-  BedDouble, UtensilsCrossed, Heart, Wrench, Tag, Gift,
+  BedDouble, UtensilsCrossed, Heart, Wrench, Tag, Gift, KeyRound,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -164,9 +164,15 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
           <>
             {/* ── Каталог ── */}
             <SidebarGroupLabel label={t('nav.groupCatalog')} />
-            <NavItemGated icon={ServiceIcon} iconColor="dark:text-purple-400"  label={t('nav.services')}  to="/services"  feature={null}       module="services"  onClick={onClose} />
-            {PRODUCT !== 'cleaning' && PRODUCT !== 'beauty' && (
-              <NavItemGated icon={Package}     iconColor="dark:text-orange-400"  label={t('nav.inventory')} to="/inventory" feature="inventory"  module="inventory" onClick={onClose} />
+            {PRODUCT === 'rental' ? (
+              <SidebarNavItem icon={KeyRound} iconColor="dark:text-amber-400" label={t('rental.nav.items', 'Объекты аренды')} to="/rental/items" onClick={onClose} />
+            ) : (
+              <>
+                <NavItemGated icon={ServiceIcon} iconColor="dark:text-purple-400"  label={t('nav.services')}  to="/services"  feature={null}       module="services"  onClick={onClose} />
+                {PRODUCT !== 'cleaning' && PRODUCT !== 'beauty' && (
+                  <NavItemGated icon={Package}     iconColor="dark:text-orange-400"  label={t('nav.inventory')} to="/inventory" feature="inventory"  module="inventory" onClick={onClose} />
+                )}
+              </>
             )}
           </>
         )}
