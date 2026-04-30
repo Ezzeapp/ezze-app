@@ -413,13 +413,20 @@ export function ProfilePage({ embedded = false }: { embedded?: boolean } = {}) {
       />
 
       {/* Вкладки */}
-      <div className="grid grid-cols-4 gap-1">
-        {([
-          { id: 'main',     label: t('profile.tabMain'),     icon: User           },
-          { id: 'contacts', label: t('profile.contacts'),    icon: Phone          },
-          { id: 'settings', label: t('profile.tabBooking'),  icon: Settings       },
-          { id: 'transfer', label: t('profile.transfer'),    icon: ArrowLeftRight },
-        ] as const).map(tab => (
+      <div className={cn('grid gap-1', embedded ? 'grid-cols-3' : 'grid-cols-4')}>
+        {(embedded
+          ? [
+              { id: 'main',     label: t('profile.tabMain'),    icon: User     },
+              { id: 'contacts', label: t('profile.contacts'),   icon: Phone    },
+              { id: 'settings', label: t('profile.tabBooking'), icon: Settings },
+            ] as const
+          : [
+              { id: 'main',     label: t('profile.tabMain'),     icon: User           },
+              { id: 'contacts', label: t('profile.contacts'),    icon: Phone          },
+              { id: 'settings', label: t('profile.tabBooking'),  icon: Settings       },
+              { id: 'transfer', label: t('profile.transfer'),    icon: ArrowLeftRight },
+            ] as const
+        ).map(tab => (
           <button key={tab.id} type="button" title={tab.label} onClick={() => setProfileTab(tab.id)}
             className={cn(
               'flex flex-col items-center gap-1 px-1 py-2 rounded-lg text-xs font-medium transition-colors',
@@ -547,7 +554,7 @@ export function ProfilePage({ embedded = false }: { embedded?: boolean } = {}) {
               <Input placeholder={t('profile.displayNamePlaceholder')} {...register('display_name')} />
             </div>
             {/* Сфера деятельности (read-only) */}
-            {activityTypeName && (
+            {!embedded && activityTypeName && (
               <div className="space-y-2">
                 <Label>{t('specialty.activityType')}</Label>
                 <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted/40 px-3 text-sm text-muted-foreground">
@@ -556,7 +563,7 @@ export function ProfilePage({ embedded = false }: { embedded?: boolean } = {}) {
               </div>
             )}
             {/* Профессия (только отображение) */}
-            {watch('profession') && (
+            {!embedded && watch('profession') && (
               <div className="space-y-2">
                 <Label>{t('profile.profession')}</Label>
                 <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted/40 px-3 text-sm text-muted-foreground">
@@ -727,10 +734,12 @@ export function ProfilePage({ embedded = false }: { embedded?: boolean } = {}) {
                 <Label className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />{t('profile.phone')}</Label>
                 <Input placeholder="+998 00 000 00 00" {...register('phone')} readOnly={!!profile?.tg_chat_id} className={profile?.tg_chat_id ? 'bg-muted/40 cursor-not-allowed' : ''} />
               </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />{t('profile.website')}</Label>
-                <Input placeholder="https://..." {...register('website')} />
-              </div>
+              {!embedded && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />{t('profile.website')}</Label>
+                  <Input placeholder="https://..." {...register('website')} />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5"><Instagram className="h-3.5 w-3.5" />Instagram</Label>
                 <Input placeholder="@username" {...register('instagram')} />
@@ -753,27 +762,31 @@ export function ProfilePage({ embedded = false }: { embedded?: boolean } = {}) {
                 <Label className="flex items-center gap-1.5"><MessageCircle className="h-3.5 w-3.5" />WhatsApp</Label>
                 <Input placeholder="+998 00 000 00 00" {...register('whatsapp')} />
               </div>
-              <div className="space-y-2">
-                <Label>VK</Label>
-                <Input placeholder="vk.com/username" {...register('vk')} />
-              </div>
-            </div>
-            {/* Email для уведомлений */}
-            <div className="pt-2 border-t space-y-2">
-              <Label className="flex items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5" />
-                {t('profile.notificationEmail')}
-              </Label>
-              <Input
-                type="email"
-                placeholder={user?.email || 'your@email.com'}
-                {...register('notification_email')}
-              />
-              <p className="text-xs text-muted-foreground">{t('profile.notificationEmailHint')}</p>
-              {errors.notification_email && (
-                <p className="text-xs text-destructive">{errors.notification_email.message}</p>
+              {!embedded && (
+                <div className="space-y-2">
+                  <Label>VK</Label>
+                  <Input placeholder="vk.com/username" {...register('vk')} />
+                </div>
               )}
             </div>
+            {/* Email для уведомлений */}
+            {!embedded && (
+              <div className="pt-2 border-t space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5" />
+                  {t('profile.notificationEmail')}
+                </Label>
+                <Input
+                  type="email"
+                  placeholder={user?.email || 'your@email.com'}
+                  {...register('notification_email')}
+                />
+                <p className="text-xs text-muted-foreground">{t('profile.notificationEmailHint')}</p>
+                {errors.notification_email && (
+                  <p className="text-xs text-destructive">{errors.notification_email.message}</p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
