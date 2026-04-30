@@ -204,7 +204,7 @@ export function SettingsPage() {
   ]
 
   return (
-    <div className={cn('space-y-0', PRODUCT === 'beauty' && tab === 'profile' ? 'max-w-5xl' : 'max-w-6xl')}>
+    <div className={cn('space-y-0', PRODUCT === 'beauty' && tab === 'profile' ? 'max-w-7xl' : 'max-w-6xl')}>
       <PageHeader title={t('nav.settings')} />
 
       <div className="flex flex-col lg:flex-row lg:gap-8 lg:items-start">
