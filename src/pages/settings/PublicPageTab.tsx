@@ -1,21 +1,17 @@
 import { useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Globe, Copy, Check, Instagram, Send, Phone, Youtube, Link2, MapPin, ShoppingBag, Plus, Pencil, Trash2, X, ExternalLink, Share2, QrCode, Sparkles, Type, Zap, LayoutTemplate } from 'lucide-react'
+import { Globe, Copy, Check, Instagram, Send, Phone, Youtube, Link2, MapPin, X, ExternalLink, Share2, QrCode, Sparkles, Type, Zap, LayoutTemplate } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useProfile, useUpsertProfile } from '@/hooks/useProfile'
-import { useMyProducts, useUpsertProduct, useDeleteProduct } from '@/hooks/useMasterProducts'
 import { useAuth } from '@/contexts/AuthContext'
 import { uploadImage } from '@/lib/storage'
-import { TEMPLATE_LIST } from '@/lib/pageTheme'
 import { toast } from '@/components/shared/Toaster'
-import { formatCurrency } from '@/lib/utils'
 import { PRODUCT } from '@/lib/config'
-import type { MasterProduct, PageSettings, LandingTemplate, LandingContent } from '@/types'
+import type { PageSettings, LandingTemplate, LandingContent } from '@/types'
 import { LandingContentEditor } from './LandingContentEditor'
 
 const LANDING_TEMPLATES: { id: LandingTemplate; label: string; tagline: string; icon: typeof Sparkles; preview: React.ReactNode }[] = [
@@ -116,121 +112,13 @@ function Card({ title, icon: Icon, children }: { title: string; icon: React.Comp
     </div>
   )
 }
-interface ProductDialogProps {
-  product: Partial<MasterProduct> | null
-  onClose: () => void
-}
-
-function ProductDialog({ product, onClose }: ProductDialogProps) {
-  const { t } = useTranslation()
-  const { user } = useAuth()
-  const upsert = useUpsertProduct()
-  const [name, setName] = useState(product?.name ?? '')
-  const [description, setDescription] = useState(product?.description ?? '')
-  const [price, setPrice] = useState(String(product?.price ?? ''))
-  const [isAvailable, setIsAvailable] = useState(product?.is_available ?? true)
-  const [photoUrl, setPhotoUrl] = useState(product?.photo_url ?? '')
-  const [uploading, setUploading] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !user?.id) return
-    setUploading(true)
-    try {
-      const path = await uploadImage('products', user.id + '/' + Date.now(), file, 'service')
-      setPhotoUrl(storageUrl('products', path))
-    } catch { toast.error('Ошибка загрузки') }
-    finally { setUploading(false) }
-  }
-
-  const handleSave = async () => {
-    if (!name.trim()) return
-    try {
-      await upsert.mutateAsync({
-        ...(product?.id ? { id: product.id } : {}),
-        name: name.trim(),
-        description: description.trim() || undefined,
-        price: Number(price) || 0,
-        is_available: isAvailable,
-        photo_url: photoUrl || undefined,
-        order_index: product?.order_index ?? 0,
-      })
-      toast.success(t('common.saved', 'Сохранено'))
-      onClose()
-    } catch { toast.error(t('common.error', 'Ошибка')) }
-  }
-  return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>
-            {product?.id ? t('publicPage.editProduct', 'Редактировать товар') : t('publicPage.addProduct', 'Добавить товар')}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-            {photoUrl ? (
-              <div className="relative">
-                <img src={photoUrl} alt="" className="w-full h-36 object-cover rounded-lg" />
-                <button
-                  onClick={() => setPhotoUrl('')}
-                  className="absolute top-2 right-2 bg-black/50 rounded-full p-1 text-white hover:bg-black/70"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                className="w-full h-24 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary transition-colors"
-              >
-                <ShoppingBag className="h-6 w-6" />
-                <span className="text-xs">{uploading ? t('common.uploading', 'Загрузка...') : t('common.addPhoto', 'Добавить фото')}</span>
-              </button>
-            )}
-          </div>
-          <div>
-            <Label>{t('common.name', 'Название')}</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder={t('publicPage.productNamePlaceholder', 'Например: Маска для волос')} />
-          </div>
-          <div>
-            <Label>{t('common.description', 'Описание')}</Label>
-            <Input value={description} onChange={e => setDescription(e.target.value)} placeholder={t('common.optional', 'Необязательно')} />
-          </div>
-          <div>
-            <Label>{t('billing.price', 'Цена')} (UZS)</Label>
-            <Input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="0" />
-          </div>
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" checked={isAvailable} onChange={e => setIsAvailable(e.target.checked)} className="h-4 w-4 rounded" />
-            <span className="text-sm">{t('publicPage.isAvailable', 'В наличии')}</span>
-          </label>
-          <div className="flex gap-2 pt-1">
-            <Button variant="outline" className="flex-1" onClick={onClose}>
-              {t('common.cancel', 'Отмена')}
-            </Button>
-            <Button className="flex-1" onClick={handleSave} disabled={!name.trim() || upsert.isPending}>
-              {t('common.save', 'Сохранить')}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
 export function PublicPageTab() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { user } = useAuth()
   const { data: profile, isLoading } = useProfile()
   const upsertProfile = useUpsertProfile()
-  const { data: products = [], isLoading: productsLoading } = useMyProducts()
-  const deleteProduct = useDeleteProduct()
   const [copied, setCopied] = useState(false)
   const [showBigQr, setShowBigQr] = useState(false)
-  const [editProduct, setEditProduct] = useState<Partial<MasterProduct> | null>(null)
   const [coverUploading, setCoverUploading] = useState(false)
   const coverFileRef = useRef<HTMLInputElement>(null)
   const [socials, setSocials] = useState({
@@ -477,74 +365,6 @@ export function PublicPageTab() {
         </Card>
       )}
 
-      <Card title={t('publicPage.design', 'Дизайн страницы')} icon={Globe}>
-        <div>
-          <p className="text-xs text-muted-foreground mb-2">{t('publicPage.template', 'Шаблон')}</p>
-          <div className="grid grid-cols-2 gap-2">
-            {TEMPLATE_LIST.map(tpl => (
-              <button
-                key={tpl.id}
-                onClick={() => saveDesign({ ...currentSettings, template: tpl.id as PageSettings['template'] })}
-                className={['p-3 rounded-lg border-2 text-left transition-all', currentSettings.template === tpl.id || (!currentSettings.template && tpl.id === 'minimal') ? 'border-primary' : 'border-border hover:border-primary/50'].join(' ')}
-                style={{ backgroundColor: tpl.bg }}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="h-4 w-4 rounded-full" style={{ backgroundColor: tpl.accent }} />
-                  <div className="h-2 w-12 rounded-full bg-gray-300/50" />
-                </div>
-                <div className="h-1.5 w-full rounded-full bg-gray-200/50 mb-1" />
-                <div className="h-1.5 w-3/4 rounded-full bg-gray-200/50" />
-                <p className="text-[10px] font-medium mt-2" style={{ color: tpl.accent }}>{tpl.label}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground mb-2">{t('publicPage.accentColor', 'Цвет акцента')}</p>
-          <div className="flex items-center gap-2 flex-wrap">
-            {['#6366f1','#ec4899','#f59e0b','#10b981','#ef4444','#0ea5e9'].map(color => (
-              <button
-                key={color}
-                onClick={() => saveDesign({ ...currentSettings, accent: color })}
-                className={['h-7 w-7 rounded-full border-2 transition-transform hover:scale-110', currentSettings.accent === color ? 'border-zinc-900 dark:border-white scale-110' : 'border-transparent'].join(' ')}
-                style={{ backgroundColor: color }}
-              />
-            ))}
-            <input
-              type="color"
-              value={currentSettings.accent ?? '#6366f1'}
-              onChange={e => saveDesign({ ...currentSettings, accent: e.target.value })}
-              className="h-7 w-7 rounded-full cursor-pointer border-0 bg-transparent"
-              title={t('publicPage.customColor', 'Свой цвет')}
-            />
-          </div>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground mb-2">{t('publicPage.btnShape', 'Форма кнопок')}</p>
-          <div className="flex gap-2">
-            {([{id:'rounded',label:t('publicPage.btnRounded','Скруглённые'),radius:'12px'},{id:'pill',label:t('publicPage.btnPill','Пилюля'),radius:'9999px'},{id:'square',label:t('publicPage.btnSquare','Прямые'),radius:'4px'}] as const).map(({id,label,radius}) => (
-              <button
-                key={id}
-                onClick={() => saveDesign({ ...currentSettings, btn_shape: id })}
-                className={['flex-1 py-2 text-xs font-medium border transition-colors', currentSettings.btn_shape === id || (!currentSettings.btn_shape && id === 'rounded') ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'].join(' ')}
-                style={{ borderRadius: radius }}
-              >{label}</button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground mb-2">{t('publicPage.font', 'Шрифт')}</p>
-          <div className="flex gap-2">
-            {([{id:'inter',label:'Inter'},{id:'montserrat',label:'Montserrat'},{id:'playfair',label:'Playfair'}] as const).map(({id,label}) => (
-              <button
-                key={id}
-                onClick={() => saveDesign({ ...currentSettings, font: id })}
-                className={['flex-1 py-2 text-xs font-medium border rounded-lg transition-colors', currentSettings.font === id || (!currentSettings.font && id === 'inter') ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'].join(' ')}
-              >{label}</button>
-            ))}
-          </div>
-        </div>
-      </Card>
       <Card title={t('publicPage.coverPhoto', 'Обложка')} icon={Globe}>
         <input ref={coverFileRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
         {profile?.cover_url ? (
@@ -606,61 +426,6 @@ export function PublicPageTab() {
         </div>
         <Button onClick={saveLocation} disabled={upsertProfile.isPending} size="sm" className="w-full">{t('common.save', 'Сохранить')}</Button>
       </Card>
-      <Card title={t('publicPage.products', 'Товары')} icon={ShoppingBag}>
-        {productsLoading ? (
-          <div className="space-y-2">
-            {[1,2].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {products.map(product => (
-              <div key={product.id} className="flex items-center gap-3 p-2 rounded-lg border bg-card">
-                {product.photo_url ? (
-                  <img src={product.photo_url} alt="" className="h-12 w-12 rounded-lg object-cover flex-shrink-0" />
-                ) : (
-                  <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                    <ShoppingBag className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{product.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatCurrency(product.price, 'UZS', i18n.language)}
-                    {!product.is_available && (
-                      <span className="ml-2 text-amber-600">{t('publicPage.outOfStock', 'Нет в наличии')}</span>
-                    )}
-                  </p>
-                </div>
-                <div className="flex gap-1">
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditProduct(product)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => deleteProduct.mutate(product.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full gap-2"
-              onClick={() => setEditProduct({ is_available: true, order_index: products.length, price: 0 })}
-            >
-              <Plus className="h-4 w-4" />
-              {t('publicPage.addProduct', 'Добавить товар')}
-            </Button>
-          </div>
-        )}
-      </Card>
-      {editProduct !== null && (
-        <ProductDialog product={editProduct} onClose={() => setEditProduct(null)} />
-      )}
     </div>
   )
 }
