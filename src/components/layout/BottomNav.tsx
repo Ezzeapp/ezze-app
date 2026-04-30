@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  LayoutDashboard, CalendarDays, Users, MoreHorizontal, Bot,
+  LayoutDashboard, CalendarDays, Users, MoreHorizontal,
   Package, User, Settings, ShieldCheck, X, UsersRound, ChevronRight, LogOut, CreditCard, LifeBuoy,
   ClipboardList, Wrench, Tag, Gift,
 } from 'lucide-react'
@@ -31,9 +31,6 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
   const showProfile = PRODUCT !== 'cleaning' && PRODUCT !== 'beauty' && PRODUCT !== 'workshop'
   // Cleaning/beauty: склад не используется (cleaning принимает вещи; beauty модуль не готов)
   const showInventory = PRODUCT !== 'cleaning' && PRODUCT !== 'beauty'
-  // Cleaning: AI-помощник в десктоп-сайдбаре отсутствует — на мобиле тоже скрываем
-  const showAI = PRODUCT !== 'cleaning'
-
   const items = [
     showProfile && { icon: User,        label: t('nav.profile'),    to: '/profile',   highlight: false },
     canServices && { icon: ServiceIcon, label: t('nav.services'),   to: '/services',  highlight: false },
@@ -41,7 +38,6 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
     showPromoLoyalty && canLoyalty  && { icon: Gift, label: t('marketing.tabLoyalty'), to: '/loyalty', highlight: false },
     showInventory && hasInventory && canInventory && { icon: Package,    label: t('nav.inventory'), to: '/inventory', highlight: false },
     hasTeams     && { icon: UsersRound, label: t('nav.team'),      to: '/team',      highlight: false },
-    showAI       && { icon: Bot,         label: 'AI',                to: '/ai',        highlight: false },
     { icon: CreditCard,  label: t('nav.billing'),    to: '/billing',   highlight: false },
     { icon: LifeBuoy,    label: t('nav.support'),    to: '/support',   highlight: false },
     { icon: Settings,    label: t('nav.settings'),   to: '/settings',  highlight: false },

@@ -166,8 +166,8 @@ function WorkshopOrdersListMain() {
         </div>
       </div>
 
-      {/* Stats — содержательные метрики, не дублируют колонки канбана */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Stats — на мобиле в один компактный ряд, на десктопе — крупные карточки */}
+      <div className="grid grid-cols-4 lg:grid-cols-4 gap-1.5 sm:gap-3">
         <StatCard
           icon={ClipboardList}
           label={t('workshop.stats.today')}
@@ -177,7 +177,7 @@ function WorkshopOrdersListMain() {
         />
         <StatCard
           icon={TrendingUp}
-          label="Средний чек"
+          label="Ср. чек"
           value={formatCurrency(stats?.avg_check ?? 0)}
           sub={`за месяц · ${stats?.total_month ?? 0} шт`}
           color="purple"
@@ -229,26 +229,28 @@ function WorkshopOrdersListMain() {
               </SelectContent>
             </Select>
 
-            <Input
-              type={dateFrom ? 'date' : 'text'}
-              placeholder="01.01.2000"
-              value={dateFrom}
-              onFocus={e => { e.currentTarget.type = 'date'; e.currentTarget.showPicker?.() }}
-              onBlur={e => { if (!e.currentTarget.value) e.currentTarget.type = 'text' }}
-              onChange={e => setDateFrom(e.target.value)}
-              className="sm:w-40"
-              aria-label="Дата с"
-            />
-            <Input
-              type={dateTo ? 'date' : 'text'}
-              placeholder="01.01.2000"
-              value={dateTo}
-              onFocus={e => { e.currentTarget.type = 'date'; e.currentTarget.showPicker?.() }}
-              onBlur={e => { if (!e.currentTarget.value) e.currentTarget.type = 'text' }}
-              onChange={e => setDateTo(e.target.value)}
-              className="sm:w-40"
-              aria-label="Дата по"
-            />
+            <div className="grid grid-cols-2 gap-2 sm:contents">
+              <Input
+                type={dateFrom ? 'date' : 'text'}
+                placeholder="от"
+                value={dateFrom}
+                onFocus={e => { e.currentTarget.type = 'date'; e.currentTarget.showPicker?.() }}
+                onBlur={e => { if (!e.currentTarget.value) e.currentTarget.type = 'text' }}
+                onChange={e => setDateFrom(e.target.value)}
+                className="sm:w-40"
+                aria-label="Дата с"
+              />
+              <Input
+                type={dateTo ? 'date' : 'text'}
+                placeholder="до"
+                value={dateTo}
+                onFocus={e => { e.currentTarget.type = 'date'; e.currentTarget.showPicker?.() }}
+                onBlur={e => { if (!e.currentTarget.value) e.currentTarget.type = 'text' }}
+                onChange={e => setDateTo(e.target.value)}
+                className="sm:w-40"
+                aria-label="Дата по"
+              />
+            </div>
             {(dateFrom || dateTo) && (
               <Button variant="ghost" size="sm" onClick={() => { setDateFrom(''); setDateTo('') }}>
                 <X className="h-4 w-4" />
@@ -571,13 +573,13 @@ function StatCard({ icon: Icon, label, value, sub, color }: {
     amber: 'text-amber-600 dark:text-amber-400',
   }
   return (
-    <div className="rounded-lg border bg-card p-3">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-        <Icon className={cn('h-3.5 w-3.5', colorMap[color])} />
+    <div className="rounded-lg border bg-card p-1.5 sm:p-3 min-w-0">
+      <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">
+        <Icon className={cn('h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0', colorMap[color])} />
         <span className="truncate">{label}</span>
       </div>
-      <div className="text-xl font-bold truncate">{value}</div>
-      {sub && <div className="text-xs text-muted-foreground truncate">{sub}</div>}
+      <div className="text-sm sm:text-xl font-bold truncate">{value}</div>
+      {sub && <div className="hidden sm:block text-xs text-muted-foreground truncate">{sub}</div>}
     </div>
   )
 }

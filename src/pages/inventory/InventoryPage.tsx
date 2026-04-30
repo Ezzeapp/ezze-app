@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Search, Package, AlertTriangle, MoreVertical, Edit, Trash2, ArrowDownToLine, History, Download, X, Square, CheckSquare, Tags, Check, Pencil, ArrowUpDown } from 'lucide-react'
+import { Plus, Search, Package, MoreVertical, Edit, Trash2, ArrowDownToLine, History, Download, X, Tags, Check, Pencil, ArrowUpDown } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -20,7 +20,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
-import { BulkActionBar } from '@/components/shared/BulkActionBar'
 import { toast } from '@/components/shared/Toaster'
 import { ImportProductsDialog } from '@/components/inventory/ImportProductsDialog'
 import { formatCurrency } from '@/lib/utils'
@@ -82,8 +81,7 @@ export function InventoryPage() {
   const [editItem, setEditItem] = useState<InventoryItem | null>(null)
   const [receiptItem, setReceiptItem] = useState<InventoryItem | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false)
   const [catDialogOpen, setCatDialogOpen] = useState(false)
   const [editingCat, setEditingCat] = useState<string | null>(null)
   const [editCatValue, setEditCatValue] = useState('')
@@ -275,37 +273,12 @@ export function InventoryPage() {
     }
   }
 
-  const toggleSelect = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  const isAllSelected = useMemo(
-    () => filteredItems.length > 0 && filteredItems.every(i => selectedIds.has(i.id)),
-    [filteredItems, selectedIds]
-  )
-  const isSomeSelected = useMemo(
-    () => filteredItems.some(i => selectedIds.has(i.id)),
-    [filteredItems, selectedIds]
-  )
-
-  const toggleSelectAll = () => {
-    if (isAllSelected) {
-      setSelectedIds(new Set())
-    } else {
-      setSelectedIds(new Set(filteredItems.map(i => i.id)))
-    }
-  }
-
-  const handleBulkDelete = async () => {
+  const handleDeleteAll = async () => {
+    if (!allItems?.length) return
     try {
-      await Promise.all([...selectedIds].map(id => del.mutateAsync(id)))
-      toast.success(t('inventory.deletedMultiple', { count: selectedIds.size }))
-      setSelectedIds(new Set())
-      setBulkDeleteOpen(false)
+      await Promise.all(allItems.map(i => del.mutateAsync(i.id)))
+      toast.success(t('inventory.deletedMultiple', { count: allItems.length }))
+      setDeleteAllOpen(false)
     } catch {
       toast.error(t('common.deleteError'))
     }
@@ -349,17 +322,6 @@ export function InventoryPage() {
         {/* Row 1: title */}
         <h1 className="text-2xl font-semibold text-foreground">{t('nav.inventory')}</h1>
 
-        {/* Bulk action bar */}
-        {isSomeSelected && (
-          <BulkActionBar
-            count={selectedIds.size}
-            isAllSelected={isAllSelected}
-            onToggleAll={toggleSelectAll}
-            onCancel={() => setSelectedIds(new Set())}
-            onDelete={() => setBulkDeleteOpen(true)}
-          />
-        )}
-
         {/* Row 2: search + buttons */}
         <div className="flex items-center gap-2">
           {!isLoading && (totalItems > 0 || !!debouncedSearch) && (
@@ -385,6 +347,17 @@ export function InventoryPage() {
             {hasGlobalProducts && (
               <Button variant="outline" size="icon" className="sm:hidden" onClick={() => setImportOpen(true)}>
                 <Download className="h-4 w-4" />
+              </Button>
+            )}
+            {(allItems?.length ?? 0) > 0 && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setDeleteAllOpen(true)}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                title={t('inventory.deleteAll', 'Удалить все')}
+              >
+                <Trash2 className="h-4 w-4" />
               </Button>
             )}
             <Button variant="outline" className="hidden sm:flex" onClick={() => setCatDialogOpen(true)}>
@@ -467,22 +440,12 @@ export function InventoryPage() {
         <>
           {/* Карточный вид */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:hidden">
-              {filteredItems.map((item) => {
-                const isSelected = selectedIds.has(item.id)
-                return (
+              {filteredItems.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => openEdit(item)}
-                  className={`relative rounded-xl border bg-card hover:bg-accent/30 transition-colors cursor-pointer px-3 py-2.5 flex items-center gap-2 ${isSelected ? 'border-primary/60 bg-primary/5' : ''}`}
+                  className="relative rounded-xl border bg-card hover:bg-accent/30 transition-colors cursor-pointer px-3 py-2.5 flex items-center gap-2"
                 >
-                  {/* Чекбокс */}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); toggleSelect(item.id) }}
-                    className="flex items-center justify-center text-muted-foreground hover:text-primary transition-colors shrink-0"
-                  >
-                    {isSelected ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
-                  </button>
                   {/* Основная инфо */}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate leading-tight">{item.name}</p>
@@ -523,13 +486,20 @@ export function InventoryPage() {
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(item) }}>
                         <Edit className="mr-2 h-4 w-4" />{t('common.edit')}
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(item.id) }}>
-                        <Trash2 className="mr-2 h-4 w-4" />{t('common.delete')}
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  {/* Удалить */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => { e.stopPropagation(); setDeleteId(item.id) }}
+                    title={t('common.delete')}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-              )})}
+              ))}
           </div>
 
           {/* Табличный вид */}
@@ -537,16 +507,6 @@ export function InventoryPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
-                  {/* Чекбокс "выделить все" */}
-                  <th className="p-3 w-10">
-                    <button
-                      type="button"
-                      onClick={toggleSelectAll}
-                      className="flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      {isAllSelected ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
-                    </button>
-                  </th>
                   <th className="text-left p-3 font-medium">
                     <button className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => toggleSort('name')}>
                       {t('inventory.name')}
@@ -582,7 +542,7 @@ export function InventoryPage() {
                     </button>
                   </th>
                   <th className="text-right p-3 font-medium hidden lg:table-cell">{t('inventory.price')}</th>
-                  <th className="w-10"></th>
+                  <th className="w-20"></th>
                 </tr>
               </thead>
               <tbody>
@@ -590,19 +550,8 @@ export function InventoryPage() {
                   const status = getStockStatus(item)
                   const dotColor = status === 'outOfStock' ? 'bg-destructive' : status === 'lowStock' ? 'bg-amber-500' : 'bg-emerald-500'
                   const unitLabel = item.unit ? t(`inventory.units.${item.unit}`, { defaultValue: item.unit }) : ''
-                  const isSelected = selectedIds.has(item.id)
                   return (
-                  <tr key={item.id} className={`border-t hover:bg-accent/40 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`} onClick={() => openEdit(item)}>
-                    {/* Чекбокс */}
-                    <td className="p-3 w-10">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); toggleSelect(item.id) }}
-                        className="flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        {isSelected ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
-                      </button>
-                    </td>
+                  <tr key={item.id} className="border-t hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => openEdit(item)}>
                     <td className="p-3">
                       <p className="font-medium leading-tight">{item.name}</p>
                       {item.sku && <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>}
@@ -638,29 +587,37 @@ export function InventoryPage() {
                       {item.sell_price ? formatCurrency(item.sell_price, currency, i18n.language) : '—'}
                     </td>
                     <td className="p-3 pr-2">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openReceipt(item) }}>
-                            <ArrowDownToLine className="mr-2 h-4 w-4 text-emerald-600" />
-                            {t('inventory.receiptAdd')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openHistory(item) }}>
-                            <History className="mr-2 h-4 w-4" />
-                            {t('inventory.receiptHistory')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(item) }}>
-                            <Edit className="mr-2 h-4 w-4" />{t('common.edit')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(item.id) }}>
-                            <Trash2 className="mr-2 h-4 w-4" />{t('common.delete')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center justify-end gap-0.5">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openReceipt(item) }}>
+                              <ArrowDownToLine className="mr-2 h-4 w-4 text-emerald-600" />
+                              {t('inventory.receiptAdd')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openHistory(item) }}>
+                              <History className="mr-2 h-4 w-4" />
+                              {t('inventory.receiptHistory')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(item) }}>
+                              <Edit className="mr-2 h-4 w-4" />{t('common.edit')}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => { e.stopPropagation(); setDeleteId(item.id) }}
+                          title={t('common.delete')}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                   )
@@ -897,8 +854,8 @@ export function InventoryPage() {
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete}
         title={t('inventory.deleteConfirm')} loading={del.isPending} />
 
-      <ConfirmDialog open={bulkDeleteOpen} onClose={() => setBulkDeleteOpen(false)} onConfirm={handleBulkDelete}
-        title={t('inventory.bulkDeleteConfirm', { count: selectedIds.size })} loading={del.isPending} />
+      <ConfirmDialog open={deleteAllOpen} onClose={() => setDeleteAllOpen(false)} onConfirm={handleDeleteAll}
+        title={t('inventory.bulkDeleteConfirm', { count: allItems?.length ?? 0 })} loading={del.isPending} />
 
       <ImportProductsDialog open={importOpen} onClose={() => setImportOpen(false)} />
 
