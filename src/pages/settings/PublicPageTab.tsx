@@ -14,7 +14,10 @@ import { PRODUCT } from '@/lib/config'
 import type { PageSettings, LandingTemplate, LandingContent } from '@/types'
 import { LandingContentEditor } from './LandingContentEditor'
 
-const LANDING_TEMPLATES: { id: LandingTemplate; label: string; tagline: string; icon: typeof Sparkles; preview: React.ReactNode }[] = [
+type TemplateOption = { id: LandingTemplate; label: string; tagline: string; icon: typeof Sparkles; preview: React.ReactNode }
+
+// Cleaning-шаблоны (старые)
+const CLEANING_TEMPLATES: TemplateOption[] = [
   {
     id: 'premium',
     label: 'Premium Glass',
@@ -86,6 +89,85 @@ const LANDING_TEMPLATES: { id: LandingTemplate; label: string; tagline: string; 
     ),
   },
 ]
+
+// Beauty-шаблоны
+const BEAUTY_TEMPLATES: TemplateOption[] = [
+  {
+    id: 'glamour',
+    label: 'Glamour',
+    tagline: 'Премиум на чёрном с золотом, журнальный стиль',
+    icon: Sparkles,
+    preview: (
+      <div className="rounded-lg overflow-hidden h-full" style={{ background: '#0e0d0c' }}>
+        <div className="p-2.5 h-full flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <div className="h-1 w-6 rounded" style={{ background: '#c9a14a' }} />
+            <div className="h-1 w-3 rounded" style={{ background: '#c9a14a', opacity: 0.6 }} />
+          </div>
+          <div className="h-2.5 w-3/4 rounded bg-white/85 mt-1" />
+          <div className="h-2.5 w-1/2 rounded italic" style={{ background: '#c9a14a' }} />
+          <div className="h-px w-6" style={{ background: '#c9a14a' }} />
+          <div className="space-y-0.5 mt-0.5">
+            <div className="h-0.5 w-full rounded bg-white/30" />
+            <div className="h-0.5 w-3/4 rounded bg-white/30" />
+          </div>
+          <div className="h-3 rounded mt-auto" style={{ background: '#c9a14a' }} />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'soft',
+    label: 'Soft Pastel',
+    tagline: 'Кремовый+коралл, дружелюбный, универсальный',
+    icon: Type,
+    preview: (
+      <div className="rounded-lg overflow-hidden h-full" style={{ background: '#fdf9f3' }}>
+        <div className="p-2.5 h-full flex flex-col gap-1.5">
+          <div className="flex items-center gap-1">
+            <div className="h-2 w-2 rounded-lg" style={{ background: '#e8927c' }} />
+            <div className="h-1 w-8 rounded bg-stone-700" />
+          </div>
+          <div className="h-2.5 w-3/4 rounded bg-stone-800 mt-1" />
+          <div className="h-2.5 w-1/2 rounded italic" style={{ background: '#d77a63' }} />
+          <div className="grid grid-cols-2 gap-1 mt-0.5">
+            <div className="h-4 rounded-lg bg-white border border-stone-200" />
+            <div className="h-4 rounded-lg bg-white border border-stone-200" />
+          </div>
+          <div className="h-3 rounded-full mt-auto" style={{ background: '#e8927c' }} />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'editorial',
+    label: 'Editorial Bold',
+    tagline: 'Огромная типографика, бренд-led, fashion-edge',
+    icon: Zap,
+    preview: (
+      <div className="rounded-lg overflow-hidden h-full border-2 border-stone-900" style={{ background: '#f5f1ea' }}>
+        <div className="p-2 h-full flex flex-col gap-1">
+          <div className="bg-stone-900 -mx-2 -mt-2 px-2 py-1 flex items-center gap-1 mb-1">
+            <span className="h-0.5 w-4 rounded bg-amber-100" />
+            <span className="h-0.5 w-3 rounded bg-amber-100/60" />
+          </div>
+          <div className="h-3 w-full rounded-sm bg-stone-900 mt-0.5" />
+          <div className="h-3 w-5/6 rounded-sm" style={{ background: '#ff5b3a' }} />
+          <div className="grid grid-cols-2 gap-1 mt-0.5">
+            <div className="h-3 rounded-sm bg-stone-900/10 border border-stone-900" />
+            <div className="h-3 rounded-sm bg-stone-900/10 border border-stone-900" />
+          </div>
+          <div className="h-3 rounded-sm mt-auto border-2 border-stone-900" style={{ background: '#ff5b3a' }} />
+        </div>
+      </div>
+    ),
+  },
+]
+
+const DEFAULT_TEMPLATE: Record<string, LandingTemplate> = {
+  cleaning: 'premium',
+  beauty:   'soft',
+}
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
@@ -321,14 +403,15 @@ export function PublicPageTab() {
           </div>
         </div>
       )}
-      {PRODUCT === 'cleaning' && (
+      {(PRODUCT === 'cleaning' || PRODUCT === 'beauty') && (
         <Card title={t('publicPage.landingTemplate', 'Шаблон лендинга')} icon={LayoutTemplate}>
           <p className="text-xs text-muted-foreground -mt-2">
-            {t('publicPage.landingTemplateHint', 'Выберите визуальный стиль публичной страницы. Категории, цены и контакты подтягиваются автоматически.')}
+            {t('publicPage.landingTemplateHint', 'Выберите визуальный стиль публичной страницы. Услуги, цены, контакты, адрес и портфолио подтягиваются автоматически из вашего профиля.')}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {LANDING_TEMPLATES.map(tpl => {
-              const isActive = (currentSettings.landing_template ?? 'premium') === tpl.id
+            {(PRODUCT === 'beauty' ? BEAUTY_TEMPLATES : CLEANING_TEMPLATES).map(tpl => {
+              const defaultTpl = DEFAULT_TEMPLATE[PRODUCT] ?? 'premium'
+              const isActive = (currentSettings.landing_template ?? defaultTpl) === tpl.id
               const Icon = tpl.icon
               return (
                 <button

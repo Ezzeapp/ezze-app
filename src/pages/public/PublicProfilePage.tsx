@@ -12,6 +12,7 @@ import { buildTheme } from '@/lib/pageTheme'
 import { formatCurrency } from '@/lib/utils'
 import type { MasterProfile, MasterProduct } from '@/types'
 import { CleaningLanding } from './cleaning/CleaningLanding'
+import { BeautyLanding } from './beauty/BeautyLanding'
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -235,6 +236,19 @@ export function PublicProfilePage() {
         promoCodes={promoCodes}
         avatarUrl={avatarUrl}
         coverUrl={coverUrl}
+      />
+    )
+  }
+
+  // Beauty: один из 3 шаблонов из page_settings.landing_template
+  if (PRODUCT === 'beauty') {
+    return (
+      <BeautyLanding
+        profile={profile}
+        services={services}
+        avatarUrl={avatarUrl}
+        coverUrl={coverUrl}
+        portfolioUrls={portfolioUrls}
       />
     )
   }

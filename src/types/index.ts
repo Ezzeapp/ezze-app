@@ -61,7 +61,8 @@ export interface GlobalProduct extends BaseRecord {
   order?: number
 }
 
-export type LandingTemplate = 'premium' | 'minimal' | 'bold'
+// premium/minimal/bold — для cleaning, glamour/soft/editorial — для beauty
+export type LandingTemplate = 'premium' | 'minimal' | 'bold' | 'glamour' | 'soft' | 'editorial'
 
 export interface LandingHowStep {
   title: string
