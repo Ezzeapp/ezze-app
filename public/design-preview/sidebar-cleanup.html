@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Sidebar cleanup — 3 варианта</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --text: #0f172a;
+    --muted: #64748b;
+    --primary: #2563eb;
+    --primary-soft: #dbeafe;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --green: #10b981;
+    --purple: #8b5cf6;
+    --indigo: #6366f1;
+    --orange: #f97316;
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page-header {
+    padding: 24px 32px;
+    background: white;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header h1 { margin: 0 0 6px; font-size: 22px; }
+  .page-header p { margin: 0; color: var(--muted); font-size: 14px; max-width: 800px; }
+  .variants {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 24px;
+  }
+  @media (min-width: 1280px) {
+    .variants { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  }
+
+  .variant {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .variant-head {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .variant-head .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .variant-head h2 { margin: 0; font-size: 14px; font-weight: 600; }
+  .variant-head .desc { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 3px; }
+
+  /* App layout */
+  .app {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    height: 600px;
+    background: var(--card);
+    position: relative;
+  }
+  .sidebar {
+    background: white;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 14px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .logo-text { font-weight: 700; font-size: 14px; }
+
+  .nav-group { padding: 10px 8px 4px; }
+  .nav-group-label {
+    padding: 6px 10px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--slate-400);
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-size: 13px;
+    color: var(--slate-700);
+    cursor: pointer;
+    text-decoration: none;
+    margin-bottom: 1px;
+  }
+  .nav-item:hover { background: var(--slate-100); }
+  .nav-item.active { background: var(--primary-soft); color: var(--primary); font-weight: 500; }
+  .nav-item .ic { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.85; }
+  .nav-item.active .ic { opacity: 1; }
+  .sidebar-spacer { flex: 1; }
+  .sidebar-footer {
+    border-top: 1px solid var(--border);
+    padding: 8px;
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+  .topbar {
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    background: white;
+  }
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    max-width: 480px;
+  }
+  .search-box {
+    flex: 1;
+    height: 32px;
+    border-radius: 7px;
+    background: var(--slate-100);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--slate-600);
+    position: relative;
+  }
+  .icon-btn:hover { background: var(--slate-100); }
+  .icon-btn.has-dot::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--orange);
+  }
+  .lang-btn { font-size: 11px; font-weight: 600; padding: 0 8px; width: auto; min-width: 28px; }
+  .avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .page-area {
+    padding: 18px;
+    flex: 1;
+    overflow: auto;
+  }
+  .page-title { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+  .page-sub { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stat {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 10px;
+  }
+  .stat-label { font-size: 10px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+  .stat-value { font-size: 16px; font-weight: 700; margin-top: 2px; }
+
+  .table-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 11px;
+  }
+  .table-row {
+    display: grid;
+    grid-template-columns: 60px 90px 1fr 80px 80px;
+    align-items: center;
+    padding: 8px 10px;
+    border-top: 1px solid var(--border);
+  }
+  .table-row.head {
+    background: var(--slate-100);
+    font-size: 10px;
+    color: var(--muted);
+    border-top: 0;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  .pill {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .pill.purple { background: #ede9fe; color: #6d28d9; }
+  .pill.blue { background: #dbeafe; color: #1d4ed8; }
+  .pill.amber { background: #fef3c7; color: #b45309; }
+  .pill.green { background: #d1fae5; color: #047857; }
+  .pill.indigo { background: #e0e7ff; color: #4338ca; }
+
+  /* Variant A — open avatar dropdown */
+  .dropdown {
+    position: absolute;
+    right: 12px;
+    top: 50px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    width: 220px;
+    padding: 4px;
+    z-index: 5;
+  }
+  .dropdown .dd-head {
+    padding: 10px 10px 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+  .dropdown .dd-head .name { font-weight: 600; font-size: 12px; }
+  .dropdown .dd-head .email { color: var(--muted); font-size: 11px; }
+  .dropdown a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    font-size: 12px;
+    color: var(--slate-700);
+    text-decoration: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .dropdown a:hover { background: var(--slate-100); }
+  .dropdown a.admin { color: var(--orange); }
+  .dropdown a .right { margin-left: auto; font-size: 10px; color: var(--muted); }
+  .dropdown .sep { height: 1px; background: var(--border); margin: 4px 0; }
+  .dropdown a .ic { width: 14px; height: 14px; opacity: 0.85; flex-shrink: 0; }
+
+  /* Variant B — icon strip */
+  .icon-strip {
+    display: flex;
+    justify-content: space-around;
+    padding: 6px 4px 4px;
+  }
+  .strip-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--slate-600);
+    cursor: pointer;
+    position: relative;
+  }
+  .strip-btn:hover { background: var(--slate-100); color: var(--text); }
+  .strip-btn.admin { color: var(--orange); }
+  .strip-btn.admin:hover { background: #fff7ed; }
+  .strip-btn .tip {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--slate-800);
+    color: white;
+    padding: 3px 7px;
+    border-radius: 5px;
+    font-size: 10px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+  }
+  .strip-btn:hover .tip { opacity: 1; }
+
+  /* Variant C — plan card */
+  .plan-card {
+    margin: 8px;
+    padding: 10px;
+    background: linear-gradient(135deg, #ede9fe 0%, #dbeafe 100%);
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid #c7d2fe;
+  }
+  .plan-card .plan-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--slate-700);
+  }
+  .plan-card .plan-head strong { color: var(--purple); }
+  .plan-card .plan-progress {
+    height: 4px;
+    background: white;
+    border-radius: 999px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .plan-card .plan-progress > span {
+    display: block;
+    height: 100%;
+    width: 64%;
+    background: linear-gradient(90deg, #8b5cf6, #6366f1);
+  }
+  .plan-card .plan-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 5px;
+  }
+  .plan-actions {
+    display: flex;
+    gap: 4px;
+    margin: 0 8px 8px;
+  }
+  .plan-actions a {
+    flex: 1;
+    text-align: center;
+    font-size: 11px;
+    padding: 6px 0;
+    background: white;
+    border-radius: 6px;
+    color: var(--slate-700);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .plan-actions a:hover { background: var(--slate-100); }
+
+  .ic { display: inline-block; vertical-align: middle; flex-shrink: 0; }
+
+  .note {
+    padding: 12px 16px;
+    background: var(--slate-50);
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--slate-600);
+    line-height: 1.55;
+  }
+  .note strong { color: var(--slate-800); }
+  .note .pros, .note .cons { display: block; margin-top: 4px; }
+  .note .pros::before { content: '+ '; color: var(--green); font-weight: 700; }
+  .note .cons::before { content: '− '; color: var(--danger); font-weight: 700; }
+</style>
+</head>
+<body>
+<header class="page-header">
+  <h1>Sidebar cleanup — 3 варианта</h1>
+  <p>Сейчас внизу сайдбара 4 строки: <strong>Подписка · Поддержка · Настройки · Администратор</strong>. Цель — освободить вертикальное место и сохранить быстрый доступ к этим разделам. Ниже три подхода с плюсами и минусами.</p>
+</header>
+
+<div class="variants" id="variants"></div>
+
+<script>
+// ── SVG icon library ───────────────────────────────────────────────────────
+function svg(d, size) {
+  size = size || 16;
+  return '<svg class="ic" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
+}
+const I = {
+  chart:    svg('<polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/>'),
+  wrench:   svg('<path d="M14.7 6.3a4 4 0 0 0 5 5l-7.4 7.4a2 2 0 1 1-2.8-2.8z"/>'),
+  users:    svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>'),
+  briefcase:svg('<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>'),
+  package:  svg('<path d="m7.5 4.27 9 5.15"/><path d="M21 8.5 12 13 3 8.5"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="M12 22V13"/>'),
+  team:     svg('<circle cx="9" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><path d="M2 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/><path d="M22 21v-2a5 5 0 0 0-3-4.6"/>'),
+  search:   svg('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>', 14),
+  moon:     svg('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>', 16),
+  credit:   svg('<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>', 14),
+  life:     svg('<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>', 14),
+  settings: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>', 14),
+  shield:   svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>', 14),
+  logout:   svg('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>', 14),
+  alert:    svg('<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>', 14),
+  trend:    svg('<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>', 14),
+  wallet:   svg('<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>', 14),
+  clipboard:svg('<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/>', 14),
+  arrow:    svg('<polyline points="9 18 15 12 9 6"/>', 12),
+};
+
+// ── Sidebar nav (common for all 3 variants) ────────────────────────────────
+function navHTML() {
+  return `
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">Ezze Workshop</div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Основное</div>
+      <a class="nav-item">${I.chart} Статистика</a>
+      <a class="nav-item active">${I.wrench} Заказы в ремонт</a>
+      <a class="nav-item">${I.users} Клиенты</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Каталог</div>
+      <a class="nav-item">${I.briefcase} Услуги</a>
+      <a class="nav-item">${I.package} Склад</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Команда</div>
+      <a class="nav-item">${I.team} Команда</a>
+    </div>
+  `;
+}
+
+function pageBody() {
+  return `
+    <h2 class="page-title">Заказы в ремонт</h2>
+    <div class="page-sub">Приём, диагностика, ремонт и выдача</div>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">${I.clipboard} Сегодня</div><div class="stat-value">0</div></div>
+      <div class="stat"><div class="stat-label">${I.trend} Ср. чек</div><div class="stat-value">221k</div></div>
+      <div class="stat"><div class="stat-label">${I.wallet} К доплате</div><div class="stat-value">805k</div></div>
+      <div class="stat"><div class="stat-label">${I.alert} Просрочено</div><div class="stat-value" style="color:var(--danger)">2</div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-row head">
+        <div>№</div><div>Статус</div><div>Устройство</div><div>Срок</div><div style="text-align:right">Сумма</div>
+      </div>
+      <div class="table-row">
+        <div>PM-0005</div><div><span class="pill purple">В ремонте</span></div>
+        <div>Samsung UE55TU8500U</div><div style="color:var(--warn)">30.04</div>
+        <div style="text-align:right;font-weight:600">530&nbsp;000</div>
+      </div>
+      <div class="table-row">
+        <div>PM-0003</div><div><span class="pill blue">Принят</span></div>
+        <div>iPhone 13</div><div style="color:var(--danger)">29.04</div>
+        <div style="text-align:right;color:var(--muted)">—</div>
+      </div>
+      <div class="table-row">
+        <div>PM-0004</div><div><span class="pill indigo">Диагностика</span></div>
+        <div>Lenovo ThinkPad T480</div><div>01.05</div>
+        <div style="text-align:right;font-weight:600">80&nbsp;000</div>
+      </div>
+      <div class="table-row">
+        <div>PM-0007</div><div><span class="pill amber">Ждём клиента</span></div>
+        <div>Bosch WAW28560BY</div><div>03.05</div>
+        <div style="text-align:right;font-weight:600">370&nbsp;000</div>
+      </div>
+      <div class="table-row">
+        <div>PM-0006</div><div><span class="pill green">Готов</span></div>
+        <div>Casio G-Shock GA-2100</div><div style="color:var(--danger)">25.04</div>
+        <div style="text-align:right;font-weight:600">125&nbsp;000</div>
+      </div>
+    </div>
+  `;
+}
+
+// ── 3 variants ─────────────────────────────────────────────────────────────
+function variantA() {
+  return `
+    <section class="variant">
+      <div class="variant-head">
+        <span class="badge">A</span>
+        <div>
+          <h2>Аватар-меню</h2>
+          <div class="desc">Все 4 пункта в дропдауне аватара. Сайдбар — только навигация.</div>
+        </div>
+      </div>
+      <div class="app">
+        <aside class="sidebar">
+          ${navHTML()}
+          <div class="sidebar-spacer"></div>
+        </aside>
+        <div class="content">
+          <div class="topbar">
+            <div class="topbar-left">
+              <div class="search-box">${I.search} Поиск клиентов, записей...</div>
+            </div>
+            <div class="topbar-right">
+              <button class="icon-btn lang-btn">RU</button>
+              <button class="icon-btn">${I.moon}</button>
+              <div class="avatar">A</div>
+            </div>
+          </div>
+          <div class="dropdown">
+            <div class="dd-head">
+              <div class="name">Алексей</div>
+              <div class="email">alex@workshop.uz</div>
+            </div>
+            <a>${I.credit} Подписка <span class="right">Pro</span></a>
+            <a>${I.life} Поддержка</a>
+            <a>${I.settings} Настройки</a>
+            <div class="sep"></div>
+            <a class="admin">${I.shield} Администратор</a>
+            <div class="sep"></div>
+            <a>${I.logout} Выйти</a>
+          </div>
+          <div class="page-area">${pageBody()}</div>
+        </div>
+      </div>
+      <div class="note">
+        <strong>Как работает:</strong> клик по аватару → выпадает меню с пользовательскими разделами.
+        <span class="pros">Сайдбар очищен (−4 строки), внизу освобождается заметное вертикальное пространство.</span>
+        <span class="pros">Знакомый паттерн (GitHub, Linear, Notion).</span>
+        <span class="cons">Настройки и админ-панель в 2 клика вместо 1.</span>
+      </div>
+    </section>
+  `;
+}
+
+function variantB() {
+  return `
+    <section class="variant">
+      <div class="variant-head">
+        <span class="badge">B</span>
+        <div>
+          <h2>Иконочный стрип</h2>
+          <div class="desc">4 иконки в одну строку внизу сайдбара. Подписи в тултипе.</div>
+        </div>
+      </div>
+      <div class="app">
+        <aside class="sidebar">
+          ${navHTML()}
+          <div class="sidebar-spacer"></div>
+          <div class="sidebar-footer">
+            <div class="icon-strip">
+              <div class="strip-btn">${I.credit}<span class="tip">Подписка · Pro</span></div>
+              <div class="strip-btn">${I.life}<span class="tip">Поддержка</span></div>
+              <div class="strip-btn">${I.settings}<span class="tip">Настройки</span></div>
+              <div class="strip-btn admin">${I.shield}<span class="tip">Администратор</span></div>
+            </div>
+          </div>
+        </aside>
+        <div class="content">
+          <div class="topbar">
+            <div class="topbar-left">
+              <div class="search-box">${I.search} Поиск клиентов, записей...</div>
+            </div>
+            <div class="topbar-right">
+              <button class="icon-btn lang-btn">RU</button>
+              <button class="icon-btn">${I.moon}</button>
+              <div class="avatar">A</div>
+            </div>
+          </div>
+          <div class="page-area">${pageBody()}</div>
+        </div>
+      </div>
+      <div class="note">
+        <strong>Как работает:</strong> 4 строки сжимаются в 1 (4 иконки в ряд), подписи появляются в тултипе.
+        <span class="pros">Один клик — скорость сохраняется. Все 4 пункта видны одновременно.</span>
+        <span class="pros">Минимум места — компактно и аккуратно.</span>
+        <span class="cons">Иконки без подписей менее очевидны новым пользователям до первого ховера.</span>
+      </div>
+    </section>
+  `;
+}
+
+function variantC() {
+  return `
+    <section class="variant">
+      <div class="variant-head">
+        <span class="badge">C</span>
+        <div>
+          <h2>Гибрид: план внизу + шапка</h2>
+          <div class="desc">Подписка — карточка плана. Поддержка/Настройки/Админ — иконки в шапке.</div>
+        </div>
+      </div>
+      <div class="app">
+        <aside class="sidebar">
+          ${navHTML()}
+          <div class="sidebar-spacer"></div>
+          <div class="plan-card">
+            <div class="plan-head">
+              <span><strong>Pro</strong> · до 28.05</span>
+              <span style="color: var(--muted)">28 дн.</span>
+            </div>
+            <div class="plan-progress"><span></span></div>
+            <div class="plan-meta">
+              <span>Тариф</span>
+              <span>${I.arrow}</span>
+            </div>
+          </div>
+        </aside>
+        <div class="content">
+          <div class="topbar">
+            <div class="topbar-left">
+              <div class="search-box">${I.search} Поиск клиентов, записей...</div>
+            </div>
+            <div class="topbar-right">
+              <button class="icon-btn" title="Поддержка">${I.life}</button>
+              <button class="icon-btn has-dot" title="Настройки">${I.settings}</button>
+              <button class="icon-btn" title="Администратор" style="color: var(--orange)">${I.shield}</button>
+              <span style="width:1px;height:18px;background:var(--border);margin:0 4px"></span>
+              <button class="icon-btn lang-btn">RU</button>
+              <button class="icon-btn">${I.moon}</button>
+              <div class="avatar">A</div>
+            </div>
+          </div>
+          <div class="page-area">${pageBody()}</div>
+        </div>
+      </div>
+      <div class="note">
+        <strong>Как работает:</strong> Подписка — это карточка плана с прогресс-баром (показывает срок). Поддержка / Настройки / Админ — иконки в шапке.
+        <span class="pros">Самый «живой» вариант — карточка сама подсказывает «осталось 28 дней».</span>
+        <span class="pros">Один клик до Настроек и Админа — мышь ближе к шапке, чем к низу сайдбара.</span>
+        <span class="cons">Шапка плотнее. Карточка плана требует, чтобы знать срок и сумму подписки.</span>
+      </div>
+    </section>
+  `;
+}
+
+document.getElementById('variants').innerHTML = variantA() + variantB() + variantC();
+</script>
+</body>
+</html>

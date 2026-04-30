@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { LogOut, User, ExternalLink, Search, ChevronLeft, Shield } from 'lucide-react'
+import { LogOut, User, ExternalLink, Search, ChevronLeft, Shield, Settings, LifeBuoy } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTeamScope } from '@/contexts/TeamContext'
 import { useHomeScreenConfig, isTilesLikeMode } from '@/hooks/useAppSettings'
 import { PRODUCT } from '@/lib/config'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,8 @@ export function TopBar() {
   const { data: homeScreenConfig } = useHomeScreenConfig()
   const isTilesMode = isTilesLikeMode(homeScreenConfig?.mode)
   const showHomeButton = isTilesMode && location.pathname !== '/'
+  const teamScope = useTeamScope()
+  const isWorker = teamScope.role === 'worker'
 
   // Cmd+K / Ctrl+K shortcut
   useEffect(() => {
@@ -80,6 +83,44 @@ export function TopBar() {
         </Button>
 
         <div className="ml-auto flex items-center gap-1">
+          {/* Иконки sidebar-cleanup (вариант C): Поддержка / Настройки / Админ.
+              Только на lg, где виден sidebar — на мобиле эти пункты есть в BottomNav More. */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/support')}
+            className="hidden lg:flex h-9 w-9"
+            title={t('nav.support')}
+            aria-label={t('nav.support')}
+          >
+            <LifeBuoy className="h-4 w-4" />
+          </Button>
+          {!isWorker && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/settings')}
+              className="hidden lg:flex h-9 w-9"
+              title={t('nav.settings')}
+              aria-label={t('nav.settings')}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          )}
+          {user?.is_admin && !teamScope.isTeamOnly && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/admin')}
+              className="hidden lg:flex h-9 w-9 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+              title={t('nav.admin')}
+              aria-label={t('nav.admin')}
+            >
+              <Shield className="h-4 w-4" />
+            </Button>
+          )}
+          <span className="hidden lg:inline-block w-px h-5 bg-border mx-1" />
+
           <LanguageSwitcher />
           <ThemeToggle />
 

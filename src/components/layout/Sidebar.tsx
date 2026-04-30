@@ -2,8 +2,8 @@ import { NavLink } from 'react-router-dom'
 import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  LayoutDashboard, User, Users, Package, CalendarDays,
-  Settings, Zap, X, ShieldCheck, UsersRound, Megaphone, CreditCard, LifeBuoy,
+  LayoutDashboard, Users, Package, CalendarDays,
+  Zap, X, UsersRound, Megaphone,
   ClipboardList, BarChart3, Beef, Wheat, Milk, Wallet, ShoppingCart,
   FlaskConical, Pill, Tractor, TreePine, Egg, Syringe, Sparkles, QrCode,
   BedDouble, UtensilsCrossed, Heart, Wrench, Tag, Gift,
@@ -11,7 +11,6 @@ import {
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { useAuth } from '@/contexts/AuthContext'
 import { useTeamScope } from '@/contexts/TeamContext'
 import { useFeature } from '@/hooks/useFeatureFlags'
 import { useMyTeam } from '@/hooks/useTeam'
@@ -19,6 +18,7 @@ import { useAppSettings } from '@/hooks/useAppSettings'
 import { useProfileIcon } from '@/hooks/useProfileIcon'
 import { useTeamAccess, type TeamModule } from '@/hooks/useTeamAccess'
 import { PRODUCT } from '@/lib/config'
+import { PlanCard } from './PlanCard'
 
 /** Пункт меню, который сам проверяет feature flag и не рендерится если нет доступа */
 const NavItemGated = memo(function NavItemGated({
@@ -73,15 +73,9 @@ interface SidebarProps {
 
 export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const { data: teamData } = useMyTeam()
   const teamScope = useTeamScope()
   const { data: appSettings } = useAppSettings()
-  // Сотрудник в команде (team_only_for) — урезанный sidebar без Settings/Billing/Admin
-  const isTeamOnly = teamScope.isTeamOnly
-  const role = teamScope.role
-  // Worker — самый ограниченный: только заказы и базовые пункты
-  const isWorker = role === 'worker'
   const platformName = appSettings?.platform_name ?? 'Ezze'
   const logoUrl = appSettings?.logo_url
   const ServiceIcon = useProfileIcon()
@@ -204,31 +198,9 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
 
       <Separator className="bg-sidebar-border" />
 
-      {/* Bottom nav */}
-      <div className="py-4 px-2 space-y-1">
-        {/* Сотруднику не показываем биллинг (платит владелец) и админку */}
-        {!isTeamOnly && (
-          <SidebarNavItem icon={CreditCard} iconColor="dark:text-yellow-400"  label={t('nav.billing')}  to="/billing"  onClick={onClose} />
-        )}
-        <SidebarNavItem icon={LifeBuoy}   iconColor="dark:text-red-400"     label={t('nav.support')}  to="/support"  onClick={onClose} />
-        {/* Cleaning/beauty/workshop: профиль объединён с настройками — отдельный пункт не нужен */}
-        {PRODUCT !== 'cleaning' && PRODUCT !== 'beauty' && PRODUCT !== 'workshop' && (
-          <SidebarNavItem icon={User}       iconColor="dark:text-violet-400"  label={t('nav.profile')}  to="/profile"  onClick={onClose} />
-        )}
-        {/* Worker не видит Settings (нечего ему там настраивать) */}
-        {!isWorker && (
-          <SidebarNavItem icon={Settings}   iconColor="dark:text-slate-400"   label={t('nav.settings')} to="/settings" onClick={onClose} />
-        )}
-        {user?.is_admin && !isTeamOnly && (
-          <SidebarNavItem
-            icon={ShieldCheck}
-            label={t('nav.admin')}
-            to="/admin"
-            onClick={onClose}
-            highlight
-          />
-        )}
-      </div>
+      {/* Карточка тарифа: ссылка на /billing с прогрессом подписки.
+          Поддержка/Настройки/Админ переехали в TopBar (на десктопе) и в BottomNav More (на мобиле). */}
+      <PlanCard />
     </div>
   )
 })
