@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { LogOut, User, ExternalLink, Search, ChevronLeft, Shield, Settings, LifeBuoy } from 'lucide-react'
+import { LogOut, User, Search, ChevronLeft, Shield, Settings, LifeBuoy } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
@@ -140,24 +140,14 @@ export function TopBar() {
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {/* Cleaning/beauty/workshop: профиль объединён с настройками — отдельный пункт не нужен */}
+              {/* Cleaning/beauty/workshop: профиль объединён с настройками — отдельный пункт не нужен.
+                  Настройки и Админ продублированы как иконки в шапке слева — здесь не показываем. */}
               {PRODUCT !== 'cleaning' && PRODUCT !== 'beauty' && PRODUCT !== 'workshop' && (
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
-                  <User className="mr-2 h-4 w-4" />
-                  {t('nav.profile')}
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
-                <ExternalLink className="mr-2 h-4 w-4" />
-                {t('nav.settings')}
-              </DropdownMenuItem>
-              {isTilesMode && user?.is_admin && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/admin')}>
-                    <Shield className="mr-2 h-4 w-4" />
-                    {t('nav.admin')}
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <User className="mr-2 h-4 w-4" />
+                    {t('nav.profile')}
                   </DropdownMenuItem>
                 </>
               )}
