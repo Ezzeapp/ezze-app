@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Plus, Trash2, Search, X, Download, KeyRound, Pencil,
   Car, Wrench, PartyPopper, Bike, Package, ChevronDown,
@@ -601,6 +602,7 @@ function ItemCard({ item, onEdit, onDelete }: {
 // ── Главная страница ──────────────────────────────────────────────────────────
 
 export function RentalItemsPage() {
+  const { t } = useTranslation()
   const { data: items = [], isLoading } = useRentalItems()
   const deleteItem = useDeleteRentalItem()
 
@@ -653,18 +655,18 @@ export function RentalItemsPage() {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <KeyRound className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold">Объекты аренды</h1>
+          <h1 className="text-2xl font-bold">{t('rental.items.title', 'Объекты аренды')}</h1>
           <Badge variant="secondary" className="ml-1">{items.length}</Badge>
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
             <Download className="h-3.5 w-3.5 mr-1.5" />
-            <span className="hidden sm:inline">Из справочника</span>
-            <span className="sm:hidden">Импорт</span>
+            <span className="hidden sm:inline">{t('rental.items.importBtn', 'Из справочника')}</span>
+            <span className="sm:hidden">{t('rental.items.importBtnShort', 'Импорт')}</span>
           </Button>
           <Button size="sm" onClick={() => setAddOpen(true)}>
             <Plus className="h-3.5 w-3.5 mr-1.5" />
-            Добавить
+            {t('rental.items.addBtn', 'Добавить')}
           </Button>
         </div>
       </div>

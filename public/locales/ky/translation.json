@@ -1421,5 +1421,45 @@
     "item": {
       "unnamed": "Аттары жок"
     }
+  },
+  "rental": {
+    "nav": {
+      "items": "Ижара объекттери",
+      "bookings": "Брондор",
+      "availability": "Календарь",
+      "maintenance": "Техникалык тейлөө"
+    },
+    "items": { "title": "Ижара объекттери" },
+    "bookings": { "title": "Брондор", "newBtn": "Жаңы брон" },
+    "availability": { "title": "Жеткиликтүүлүк календары", "today": "Бүгүн" },
+    "maintenance": { "title": "Техникалык тейлөө", "scheduleBtn": "ТТ пландоо" },
+    "statuses": {
+      "pending": "Күтүүдө",
+      "confirmed": "Тастыкталды",
+      "active": "Ижарада",
+      "returned": "Кайтарылды",
+      "cancelled": "Жокко чыгарылды",
+      "overdue": "Мөөнөтү өтүп кеткен"
+    },
+    "itemStatuses": {
+      "available": "Жеткиликтүү",
+      "rented": "Ижарада",
+      "maintenance": "ТТде",
+      "retired": "Эсептен чыгарылды"
+    },
+    "categories": {
+      "transport": "Транспорт",
+      "tool": "Аспап",
+      "event": "Иш-чаралар",
+      "sport": "Спорт",
+      "household": "Тиричилик",
+      "other": "Башка"
+    },
+    "units": {
+      "hour": "саат",
+      "day": "күн",
+      "week": "апта",
+      "month": "ай"
+    }
   }
 }

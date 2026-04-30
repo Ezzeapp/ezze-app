@@ -1421,5 +1421,45 @@
     "item": {
       "unnamed": "Бе ном"
     }
+  },
+  "rental": {
+    "nav": {
+      "items": "Объектҳои иҷора",
+      "bookings": "Бронҳо",
+      "availability": "Тақвим",
+      "maintenance": "Хизматрасонии техникӣ"
+    },
+    "items": { "title": "Объектҳои иҷора" },
+    "bookings": { "title": "Бронҳо", "newBtn": "Брони нав" },
+    "availability": { "title": "Тақвими дастрасӣ", "today": "Имрӯз" },
+    "maintenance": { "title": "Хизматрасонии техникӣ", "scheduleBtn": "Банақшагирии ХТ" },
+    "statuses": {
+      "pending": "Дар интизорӣ",
+      "confirmed": "Тасдиқшуда",
+      "active": "Дар иҷора",
+      "returned": "Баргардонида шуд",
+      "cancelled": "Бекор шуд",
+      "overdue": "Мӯҳлаташ гузашта"
+    },
+    "itemStatuses": {
+      "available": "Дастрас",
+      "rented": "Дар иҷора",
+      "maintenance": "Дар ХТ",
+      "retired": "Аз ҳисоб баровардашуда"
+    },
+    "categories": {
+      "transport": "Нақлиёт",
+      "tool": "Асбоб",
+      "event": "Тадбирҳо",
+      "sport": "Варзиш",
+      "household": "Маишӣ",
+      "other": "Дигар"
+    },
+    "units": {
+      "hour": "соат",
+      "day": "рӯз",
+      "week": "ҳафта",
+      "month": "моҳ"
+    }
   }
 }

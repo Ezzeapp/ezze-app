@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Wrench, Plus, Trash2, Search, X, ChevronDown, AlertTriangle, CheckCircle2, Clock, Loader2,
 } from 'lucide-react'
@@ -308,6 +309,7 @@ function MaintenanceFormDialog({ open, onClose, initial, items, defaultItemId }:
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function RentalMaintenancePage() {
+  const { t } = useTranslation()
   const { data: maintenance = [], isLoading } = useRentalMaintenance()
   const { data: items = [] } = useRentalItems()
   const deleteItem = useDeleteRentalMaintenance()
@@ -371,12 +373,12 @@ export function RentalMaintenancePage() {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Wrench className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold">Техническое обслуживание</h1>
+          <h1 className="text-2xl font-bold">{t('rental.maintenance.title', 'Техническое обслуживание')}</h1>
           <Badge variant="secondary" className="ml-1">{maintenance.length}</Badge>
         </div>
         <Button size="sm" onClick={() => setAddOpen(true)} disabled={items.length === 0}>
           <Plus className="h-3.5 w-3.5 mr-1.5" />
-          Запланировать ТО
+          {t('rental.maintenance.scheduleBtn', 'Запланировать ТО')}
         </Button>
       </div>
 

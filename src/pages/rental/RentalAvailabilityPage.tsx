@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import {
   CalendarDays, ChevronLeft, ChevronRight, KeyRound, Plus, Search, X,
@@ -67,6 +68,7 @@ const RANGE_OPTIONS = [
 ] as const
 
 export function RentalAvailabilityPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { data: items = [], isLoading: loadingItems } = useRentalItems()
   const { data: bookings = [], isLoading: loadingBookings } = useRentalBookings()
@@ -166,12 +168,12 @@ export function RentalAvailabilityPage() {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <CalendarDays className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold">Календарь доступности</h1>
+          <h1 className="text-2xl font-bold">{t('rental.availability.title', 'Календарь доступности')}</h1>
           <Badge variant="secondary" className="ml-1">{filteredItems.length} объ.</Badge>
         </div>
         <Button size="sm" onClick={() => navigate('/rental/bookings/new')}>
           <Plus className="h-3.5 w-3.5 mr-1.5" />
-          Новая бронь
+          {t('rental.availability.newBookingBtn', 'Новая бронь')}
         </Button>
       </div>
 

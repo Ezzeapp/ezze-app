@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus, Search, X, ClipboardList, ChevronDown, Trash2, AlertCircle,
@@ -51,6 +52,7 @@ function formatPeriod(startAt: string, endAt: string): string {
 }
 
 export function RentalBookingsPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { data: bookings = [], isLoading } = useRentalBookings()
   const { data: items = [] } = useRentalItems()
@@ -107,12 +109,12 @@ export function RentalBookingsPage() {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <ClipboardList className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold">Брони</h1>
+          <h1 className="text-2xl font-bold">{t('rental.bookings.title', 'Брони')}</h1>
           <Badge variant="secondary" className="ml-1">{bookings.length}</Badge>
         </div>
         <Button size="sm" onClick={() => navigate('/rental/bookings/new')}>
           <Plus className="h-3.5 w-3.5 mr-1.5" />
-          Новая бронь
+          {t('rental.bookings.newBtn', 'Новая бронь')}
         </Button>
       </div>
 

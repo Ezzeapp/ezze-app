@@ -1428,5 +1428,45 @@
     "item": {
       "unnamed": "Атысыз"
     }
+  },
+  "rental": {
+    "nav": {
+      "items": "Жалға беру нысандары",
+      "bookings": "Брондар",
+      "availability": "Күнтізбе",
+      "maintenance": "Техникалық қызмет"
+    },
+    "items": { "title": "Жалға беру нысандары" },
+    "bookings": { "title": "Брондар", "newBtn": "Жаңа брон" },
+    "availability": { "title": "Қолжетімділік күнтізбесі", "today": "Бүгін" },
+    "maintenance": { "title": "Техникалық қызмет", "scheduleBtn": "ТҚ жоспарлау" },
+    "statuses": {
+      "pending": "Күтуде",
+      "confirmed": "Расталды",
+      "active": "Жалда",
+      "returned": "Қайтарылды",
+      "cancelled": "Бас тартылды",
+      "overdue": "Мерзімі өтті"
+    },
+    "itemStatuses": {
+      "available": "Қолжетімді",
+      "rented": "Жалда",
+      "maintenance": "ТҚ-да",
+      "retired": "Есептен шығарылды"
+    },
+    "categories": {
+      "transport": "Көлік",
+      "tool": "Құрал",
+      "event": "Іс-шаралар",
+      "sport": "Спорт",
+      "household": "Тұрмыстық",
+      "other": "Басқа"
+    },
+    "units": {
+      "hour": "сағат",
+      "day": "күн",
+      "week": "апта",
+      "month": "ай"
+    }
   }
 }
