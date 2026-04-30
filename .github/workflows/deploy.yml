@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  # ── Frontend: 12 продуктов + регистрационный портал ──────────────────────────
+  # ── Frontend: 13 продуктов + регистрационный портал ──────────────────────────
   frontend:
     name: Build & Deploy ${{ matrix.label || matrix.product }}
     runs-on: ubuntu-latest
@@ -57,6 +57,9 @@ jobs:
           - product: cleaning
             app_url: https://cleaning.ezze.site
             web_path: /var/www/ezze-cleaning/
+          - product: rental
+            app_url: https://rental.ezze.site
+            web_path: /var/www/ezze-rental/
 
     steps:
       - name: Checkout code
@@ -196,4 +199,4 @@ jobs:
           '
 
       - name: Notify success
-        run: echo "✅ All 12 products + registration portal deployed successfully"
+        run: echo "✅ All 13 products + registration portal deployed successfully"

@@ -10,7 +10,7 @@ import { Globe } from 'lucide-react'
 import {
   Scissors, Stethoscope, Wrench, GraduationCap,
   BedDouble, UtensilsCrossed, PartyPopper, Wheat,
-  Car, HardHat, ShoppingCart, WashingMachine, type LucideIcon,
+  Car, HardHat, ShoppingCart, WashingMachine, KeyRound, type LucideIcon,
 } from 'lucide-react'
 import { usePlatformProducts, getProductName, getProductDesc } from '@/hooks/usePlatformProducts'
 
@@ -32,6 +32,7 @@ const PRODUCT_ICONS: Record<string, LucideIcon> = {
   build:     HardHat,
   trade:     ShoppingCart,
   cleaning:  WashingMachine,
+  rental:    KeyRound,
 }
 
 const LANGS = [
@@ -99,7 +100,7 @@ export function ProductSelectionStep({ onSelect, initialLang }: Props) {
       {/* Сетка продуктов */}
       <div className="grid grid-cols-3 gap-2 w-full max-w-xs">
         {isLoading
-          ? Array.from({ length: 12 }).map((_, i) => (
+          ? Array.from({ length: 13 }).map((_, i) => (
               <div
                 key={i}
                 className="h-20 rounded-xl border-2 border-border bg-card animate-pulse"

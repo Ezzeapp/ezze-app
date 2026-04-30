@@ -144,6 +144,7 @@ const PRODUCT_MAP = {
   build:     "https://build.ezze.site",
   trade:     "https://trade.ezze.site",
   cleaning:  "https://cleaning.ezze.site",
+  rental:    "https://rental.ezze.site",
 };
 
 function getProductUrl(product) {
