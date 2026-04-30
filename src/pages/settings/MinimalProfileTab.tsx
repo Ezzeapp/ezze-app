@@ -16,7 +16,7 @@ import { toast } from '@/components/shared/Toaster'
 import { getFileUrl } from '@/lib/utils'
 import { MASTER_BOT } from '@/lib/config'
 
-export function CleaningProfileTab() {
+export function MinimalProfileTab() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const { data: profile } = useProfile()

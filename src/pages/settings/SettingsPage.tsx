@@ -29,7 +29,7 @@ import { ExamRoomsSettingsTab } from './ExamRoomsSettingsTab'
 import { WorkshopItemTypesSettingsTab } from './WorkshopItemTypesSettingsTab'
 import { WorkshopNotificationTemplatesTab } from './WorkshopNotificationTemplatesTab'
 import { WorkshopReceiptTemplateTab } from './WorkshopReceiptTemplateTab'
-import { CleaningProfileTab } from './CleaningProfileTab'
+import { MinimalProfileTab } from './MinimalProfileTab'
 import { ProfilePage } from '@/pages/profile/ProfilePage'
 import { PRODUCT } from '@/lib/config'
 
@@ -220,8 +220,8 @@ export function SettingsPage() {
       {/* ── Профиль ── */}
       {tab === 'profile' && (
         <div className="space-y-6">
-          {PRODUCT === 'cleaning' ? (
-            <CleaningProfileTab />
+          {(PRODUCT === 'cleaning' || PRODUCT === 'workshop') ? (
+            <MinimalProfileTab />
           ) : PRODUCT === 'beauty' ? (
             <ProfilePage embedded />
           ) : (
