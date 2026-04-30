@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Trash2, Clock, Tags, X, Pencil, Download, Search, Check, ChevronsUpDown, ArrowUpDown } from 'lucide-react'
+import { Plus, Trash2, Clock, X, Download, Search, ChevronsUpDown, ArrowUpDown } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useServicesPage, useServices, useServiceCategories, useServicesNoCatCount, useCreateService, useUpdateService, useDeleteService, useDeleteAllServices, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/hooks/useServices'
+import { useServicesPage, useServiceCategories, useServicesNoCatCount, useCreateService, useUpdateService, useDeleteService, useDeleteAllServices } from '@/hooks/useServices'
 import { PaginationBar } from '@/components/shared/PaginationBar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,12 +31,6 @@ import type { Service, ServiceCategory } from '@/types'
 
 const DURATION_PRESETS = [15, 30, 45, 60]
 
-const CATEGORY_COLORS = [
-  '#ef4444', '#f97316', '#eab308', '#22c55e',
-  '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
-  '#64748b', '#78716c',
-]
-
 const schema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
@@ -49,205 +43,6 @@ const schema = z.object({
 })
 type FormValues = z.infer<typeof schema>
 
-// ── Categories management dialog ──────────────────────────────────────────
-function CategoriesDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { t } = useTranslation()
-  const { data: categories } = useServiceCategories()
-  const { data: allServices } = useServices()
-  const createCat = useCreateCategory()
-  const updateCat = useUpdateCategory()
-  const deleteCat = useDeleteCategory()
-  const [newName, setNewName] = useState('')
-  const [newColor, setNewColor] = useState(CATEGORY_COLORS[5])
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editName, setEditName] = useState('')
-  const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [listSearch, setListSearch] = useState('')
-
-  const catCount = useMemo(() => {
-    const map: Record<string, number> = {}
-    allServices?.forEach((s) => {
-      const catId = (s as any).category_id as string | null
-      if (catId) map[catId] = (map[catId] || 0) + 1
-    })
-    return map
-  }, [allServices])
-
-  const handleCreate = async () => {
-    if (!newName.trim()) return
-    try {
-      await createCat.mutateAsync({ name: newName.trim(), color: newColor })
-      setNewName('')
-      toast.success(t('services.categoryCreated'))
-    } catch {
-      toast.error(t('common.saveError'))
-    }
-  }
-
-  const handleUpdate = async (id: string) => {
-    if (!editName.trim()) return
-    try {
-      await updateCat.mutateAsync({ id, data: { name: editName.trim() } })
-      setEditingId(null)
-      toast.success(t('common.saved'))
-    } catch {
-      toast.error(t('common.saveError'))
-    }
-  }
-
-  const handleDelete = async () => {
-    if (!deleteId) return
-    try {
-      await deleteCat.mutateAsync(deleteId)
-      setDeleteId(null)
-      toast.success(t('services.categoryDeleted'))
-    } catch {
-      toast.error(t('common.deleteError'))
-    }
-  }
-
-  return (
-    <>
-      <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent mobileFullscreen className="max-w-md max-sm:flex max-sm:flex-col max-sm:justify-start">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Tags className="h-4 w-4" />
-              {t('services.manageCategories')}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="flex flex-col gap-4 max-sm:flex-1 max-sm:min-h-0">
-            {/* Create new */}
-            <div className="space-y-2 shrink-0">
-              <Label>{t('services.categoryName')}</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder={t('services.categoryNamePlaceholder')}
-                  onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  onClick={handleCreate}
-                  loading={createCat.isPending}
-                  disabled={!newName.trim()}
-                  size="icon"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              {/* Color picker */}
-              <div className="flex gap-1.5 flex-wrap">
-                {CATEGORY_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setNewColor(c)}
-                    className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110"
-                    style={{
-                      backgroundColor: c,
-                      borderColor: newColor === c ? 'white' : 'transparent',
-                      outline: newColor === c ? `2px solid ${c}` : 'none',
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Поиск по категориям */}
-            {(categories?.length ?? 0) > 3 && (
-              <div className="relative shrink-0">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                <input
-                  className="w-full pl-8 pr-8 py-1.5 text-base sm:text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder={t('services.search')}
-                  value={listSearch}
-                  onChange={(e) => setListSearch(e.target.value)}
-                />
-                {listSearch && (
-                  <button className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setListSearch('')}>
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* List */}
-            <div className="space-y-1 overflow-y-auto max-h-60 max-sm:max-h-none max-sm:flex-1">
-              {categories?.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">{t('services.noCategoriesYet')}</p>
-              )}
-              {categories
-                ?.filter((cat: ServiceCategory) => !listSearch.trim() || cat.name.toLowerCase().includes(listSearch.toLowerCase()))
-                .map((cat: ServiceCategory) => (
-                <div key={cat.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted/50">
-                  <div
-                    className="w-3 h-3 rounded-full shrink-0"
-                    style={{ backgroundColor: cat.color || '#64748b' }}
-                  />
-                  {editingId === cat.id ? (
-                    <>
-                      <Input
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="h-7 text-sm flex-1"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleUpdate(cat.id)
-                          if (e.key === 'Escape') setEditingId(null)
-                        }}
-                      />
-                      <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => handleUpdate(cat.id)}>
-                        <Check className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => setEditingId(null)}>
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <span className="flex-1 text-sm">{cat.name}</span>
-                      <span className="text-xs text-muted-foreground shrink-0 min-w-[1.5rem] text-right">
-                        {catCount[cat.id] || 0}
-                      </span>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0"
-                        onClick={() => { setEditingId(cat.id); setEditName(cat.name) }}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0 text-destructive"
-                        onClick={() => setDeleteId(cat.id)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              ))}
-              {listSearch.trim() && categories?.filter((c: ServiceCategory) => c.name.toLowerCase().includes(listSearch.toLowerCase())).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">{t('services.notFound')}</p>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter className="shrink-0">
-            <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <ConfirmDialog
-        open={!!deleteId}
-        onClose={() => setDeleteId(null)}
-        onConfirm={handleDelete}
-        title={t('services.categoryDeleteConfirm')}
-        loading={deleteCat.isPending}
-      />
-    </>
-  )
-}
-
 type SortKey = 'name' | 'price' | 'duration' | 'category'
 
 // ── Main page ──────────────────────────────────────────────────────────────
@@ -257,7 +52,6 @@ export function ServicesPage() {
   const [editService, setEditService] = useState<Service | null>(null)
   const [activeTab, setActiveTab] = useState('main')
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [catDialogOpen, setCatDialogOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -272,7 +66,6 @@ export function ServicesPage() {
   const [catSearch, setCatSearch] = useState('')
   const [catOpen, setCatOpen] = useState(false)
   const [selectedCatId, setSelectedCatId] = useState<string>('__none__')
-  const [inlineCatColor, setInlineCatColor] = useState(CATEGORY_COLORS[5])
   const catDropRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!catOpen) return
@@ -317,7 +110,6 @@ export function ServicesPage() {
   const update = useUpdateService()
   const del = useDeleteService()
   const delAll = useDeleteAllServices()
-  const createCat = useCreateCategory()
 
   const categoryMap = useMemo(
     () => new Map((categories ?? []).map(c => [c.id, c])),
@@ -445,9 +237,6 @@ export function ServicesPage() {
             </div>
           )}
           <div className="flex items-center gap-2 shrink-0 ml-auto">
-            <Button variant="outline" size="icon" className="sm:hidden" onClick={() => setCatDialogOpen(true)}>
-              <Tags className="h-4 w-4" />
-            </Button>
             {hasGlobalServices && (
               <Button variant="outline" size="icon" className="sm:hidden" onClick={() => setImportOpen(true)}>
                 <Download className="h-4 w-4" />
@@ -464,10 +253,6 @@ export function ServicesPage() {
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
-            <Button variant="outline" className="hidden sm:flex" onClick={() => setCatDialogOpen(true)}>
-              <Tags className="h-4 w-4 mr-2" />
-              {t('services.manageCategories')}
-            </Button>
             {hasGlobalServices && (
               <Button variant="outline" className="hidden sm:flex" onClick={() => setImportOpen(true)}>
                 <Download className="h-4 w-4 mr-2" />
@@ -729,16 +514,7 @@ export function ServicesPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>{t('services.category')}</Label>
-                    <button
-                      type="button"
-                      className="text-xs text-primary hover:underline"
-                      onClick={() => { setDialogOpen(false); setCatDialogOpen(true) }}
-                    >
-                      {t('services.manageCategories')}
-                    </button>
-                  </div>
+                  <Label>{t('services.category')}</Label>
                   {/* Кастомный селект с поиском */}
                   <div className="relative" ref={catDropRef}>
                     <button
@@ -757,7 +533,7 @@ export function ServicesPage() {
                       <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0 opacity-50" />
                     </button>
                     {catOpen && (
-                      <div className="absolute left-0 bottom-full mb-1 z-50 w-full bg-white dark:bg-zinc-900 border border-border rounded-xl shadow-xl overflow-hidden">
+                      <div className="absolute left-0 top-full mt-1 z-50 w-full bg-white dark:bg-zinc-900 border border-border rounded-xl shadow-xl overflow-hidden">
                         {/* Поиск */}
                         <div className="p-2 border-b">
                           <div className="relative">
@@ -795,35 +571,8 @@ export function ServicesPage() {
                             ))
                           }
                           {catSearch.trim() && (categories ?? []).filter(c => c.name.toLowerCase().includes(catSearch.toLowerCase())).length === 0 && (
-                            <div className="border-t px-3 py-2 space-y-2">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                {CATEGORY_COLORS.map((color) => (
-                                  <button
-                                    key={color}
-                                    type="button"
-                                    onClick={() => setInlineCatColor(color)}
-                                    className={`w-5 h-5 rounded-full shrink-0 transition-transform hover:scale-110 ${inlineCatColor === color ? 'ring-2 ring-offset-1 ring-primary scale-110' : ''}`}
-                                    style={{ backgroundColor: color }}
-                                  />
-                                ))}
-                              </div>
-                              <button
-                                type="button"
-                                className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
-                                onClick={async () => {
-                                  try {
-                                    const created = await createCat.mutateAsync({ name: catSearch.trim(), color: inlineCatColor })
-                                    setSelectedCatId(created.id)
-                                    setValue('category', created.id, { shouldDirty: true })
-                                    setCatOpen(false)
-                                    setCatSearch('')
-                                    setInlineCatColor(CATEGORY_COLORS[5])
-                                  } catch { /* ignore */ }
-                                }}
-                              >
-                                <Plus className="h-3.5 w-3.5 shrink-0" />
-                                {t('inventory.addCategory', { name: catSearch.trim() })}
-                              </button>
+                            <div className="px-3 py-3 text-xs text-muted-foreground text-center">
+                              {t('services.categoryNotFound', 'Категория не найдена. Импортируйте услугу из справочника — категория появится автоматически.')}
                             </div>
                           )}
                         </div>
@@ -883,7 +632,6 @@ export function ServicesPage() {
         </DialogContent>
       </Dialog>
 
-      <CategoriesDialog open={catDialogOpen} onClose={() => setCatDialogOpen(false)} />
       <ImportServicesDialog open={importOpen} onClose={() => setImportOpen(false)} />
 
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete}
