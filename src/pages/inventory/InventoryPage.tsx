@@ -379,47 +379,70 @@ export function InventoryPage() {
       </div>
 
       {!isLoading && inventoryStats.total > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-xs text-muted-foreground">{t('inventory.statTotal')}</p>
-            <p className="text-2xl font-bold mt-1 tabular-nums">{inventoryStats.total}</p>
+        <>
+          {/* Мобильная компактная статистика — 4 ключевые метрики в один ряд */}
+          <div className="grid grid-cols-4 gap-1.5 sm:hidden">
+            <div className="rounded-lg border bg-card p-2 min-w-0">
+              <p className="text-[10px] text-muted-foreground truncate">{t('inventory.statTotal')}</p>
+              <p className="text-sm font-bold mt-0.5 tabular-nums">{inventoryStats.total}</p>
+            </div>
+            <div className="rounded-lg border bg-card p-2 min-w-0">
+              <p className="text-[10px] text-muted-foreground truncate">{t('inventory.statCategories')}</p>
+              <p className="text-sm font-bold mt-0.5 tabular-nums">{categories.length}</p>
+            </div>
+            <div className="rounded-lg border bg-card p-2 min-w-0">
+              <p className="text-[10px] text-muted-foreground truncate">{t('inventory.statLowStock')}</p>
+              <p className="text-sm font-bold text-amber-500 mt-0.5 tabular-nums">{inventoryStats.lowStock}</p>
+            </div>
+            <div className="rounded-lg border bg-card p-2 min-w-0">
+              <p className="text-[10px] text-muted-foreground truncate">{t('inventory.statOutOfStock')}</p>
+              <p className="text-sm font-bold text-destructive mt-0.5 tabular-nums">{inventoryStats.outOfStock}</p>
+            </div>
           </div>
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-xs text-muted-foreground">{t('inventory.statCategories')}</p>
-            <p className="text-2xl font-bold mt-1 tabular-nums">{categories.length}</p>
-          </div>
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-xs text-muted-foreground">{t('inventory.statLowStock')}</p>
-            <p className="text-2xl font-bold text-amber-500 mt-1 tabular-nums">{inventoryStats.lowStock}</p>
-          </div>
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-xs text-muted-foreground">{t('inventory.statOutOfStock')}</p>
-            <p className="text-2xl font-bold text-destructive mt-1 tabular-nums">{inventoryStats.outOfStock}</p>
-          </div>
-          <div className="rounded-xl border bg-card p-4 sm:col-span-2 lg:col-span-1">
-            <p className="text-xs text-muted-foreground">{t('inventory.statCostValue')}</p>
-            <p className="font-bold mt-1 leading-snug" style={{ fontSize: 'clamp(0.85rem, 4.5vw, 1.25rem)' }}>
-              {new Intl.NumberFormat(i18n.language).format(inventoryStats.totalValue)}
-              <span className="text-xs font-medium text-muted-foreground ml-1">{currency}</span>
-            </p>
-          </div>
-          <div className="rounded-xl border bg-card p-4 col-span-2 sm:col-span-2 lg:col-span-1">
-            <p className="text-xs text-muted-foreground">{t('inventory.statSellValue')}</p>
-            <p className="font-bold mt-1 leading-snug" style={{ fontSize: 'clamp(0.85rem, 4.5vw, 1.25rem)' }}>
-              {new Intl.NumberFormat(i18n.language).format(inventoryStats.totalSellValue)}
-              <span className="text-xs font-medium text-muted-foreground ml-1">{currency}</span>
-            </p>
-          </div>
-          {inventoryStats.totalSellValue > 0 && inventoryStats.totalValue > 0 && (
-            <div className="rounded-xl border bg-card p-4 col-span-2 sm:col-span-4 lg:col-span-1">
-              <p className="text-xs text-muted-foreground">{t('inventory.statMargin')}</p>
-              <p className="font-bold mt-1 leading-snug text-emerald-500" style={{ fontSize: 'clamp(0.85rem, 4.5vw, 1.25rem)' }}>
-                {new Intl.NumberFormat(i18n.language).format(inventoryStats.totalSellValue - inventoryStats.totalValue)}
+
+          {/* Десктопная полная статистика */}
+          <div className="hidden sm:grid sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            <div className="rounded-xl border bg-card p-4">
+              <p className="text-xs text-muted-foreground">{t('inventory.statTotal')}</p>
+              <p className="text-2xl font-bold mt-1 tabular-nums">{inventoryStats.total}</p>
+            </div>
+            <div className="rounded-xl border bg-card p-4">
+              <p className="text-xs text-muted-foreground">{t('inventory.statCategories')}</p>
+              <p className="text-2xl font-bold mt-1 tabular-nums">{categories.length}</p>
+            </div>
+            <div className="rounded-xl border bg-card p-4">
+              <p className="text-xs text-muted-foreground">{t('inventory.statLowStock')}</p>
+              <p className="text-2xl font-bold text-amber-500 mt-1 tabular-nums">{inventoryStats.lowStock}</p>
+            </div>
+            <div className="rounded-xl border bg-card p-4">
+              <p className="text-xs text-muted-foreground">{t('inventory.statOutOfStock')}</p>
+              <p className="text-2xl font-bold text-destructive mt-1 tabular-nums">{inventoryStats.outOfStock}</p>
+            </div>
+            <div className="rounded-xl border bg-card p-4 sm:col-span-2 lg:col-span-1">
+              <p className="text-xs text-muted-foreground">{t('inventory.statCostValue')}</p>
+              <p className="font-bold mt-1 leading-snug" style={{ fontSize: 'clamp(0.85rem, 2.5vw, 1.25rem)' }}>
+                {new Intl.NumberFormat(i18n.language).format(inventoryStats.totalValue)}
                 <span className="text-xs font-medium text-muted-foreground ml-1">{currency}</span>
               </p>
             </div>
-          )}
-        </div>
+            <div className="rounded-xl border bg-card p-4 sm:col-span-2 lg:col-span-1">
+              <p className="text-xs text-muted-foreground">{t('inventory.statSellValue')}</p>
+              <p className="font-bold mt-1 leading-snug" style={{ fontSize: 'clamp(0.85rem, 2.5vw, 1.25rem)' }}>
+                {new Intl.NumberFormat(i18n.language).format(inventoryStats.totalSellValue)}
+                <span className="text-xs font-medium text-muted-foreground ml-1">{currency}</span>
+              </p>
+            </div>
+            {inventoryStats.totalSellValue > 0 && inventoryStats.totalValue > 0 && (
+              <div className="rounded-xl border bg-card p-4 sm:col-span-4 lg:col-span-1">
+                <p className="text-xs text-muted-foreground">{t('inventory.statMargin')}</p>
+                <p className="font-bold mt-1 leading-snug text-emerald-500" style={{ fontSize: 'clamp(0.85rem, 2.5vw, 1.25rem)' }}>
+                  {new Intl.NumberFormat(i18n.language).format(inventoryStats.totalSellValue - inventoryStats.totalValue)}
+                  <span className="text-xs font-medium text-muted-foreground ml-1">{currency}</span>
+                </p>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {isLoading ? (
