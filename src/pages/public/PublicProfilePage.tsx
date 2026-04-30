@@ -11,6 +11,7 @@ import { PRODUCT } from '@/lib/config'
 import { buildTheme } from '@/lib/pageTheme'
 import { formatCurrency } from '@/lib/utils'
 import type { MasterProfile, MasterProduct } from '@/types'
+import { CleaningLanding } from './cleaning/CleaningLanding'
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -52,7 +53,7 @@ function usePublicServices(userId: string | undefined) {
         .limit(12)
       return data ?? []
     },
-    enabled: !!userId,
+    enabled: !!userId && PRODUCT !== 'cleaning',
     staleTime: 120_000,
   })
 }
@@ -69,27 +70,8 @@ function usePublicProducts(userId: string | undefined) {
         .order('order_index', { ascending: true })
       return (data ?? []) as MasterProduct[]
     },
-    enabled: !!userId,
+    enabled: !!userId && PRODUCT !== 'cleaning',
     staleTime: 120_000,
-  })
-}
-
-interface CleaningItemRow { id: string; name: string; default_price: number; category: string | null; sort_order: number }
-
-function usePublicCleaningPrices() {
-  return useQuery({
-    queryKey: ['public-cleaning-prices', PRODUCT],
-    queryFn: async (): Promise<CleaningItemRow[]> => {
-      const { data } = await supabase
-        .from('cleaning_item_types')
-        .select('id, name, default_price, category, sort_order')
-        .eq('product', PRODUCT)
-        .order('category', { ascending: true })
-        .order('sort_order', { ascending: true })
-      return (data ?? []) as CleaningItemRow[]
-    },
-    enabled: PRODUCT === 'cleaning',
-    staleTime: 300_000,
   })
 }
 
@@ -210,7 +192,6 @@ export function PublicProfilePage() {
   const { data: profile, isLoading } = usePublicMasterProfile(slug ?? '')
   const { data: services = [] } = usePublicServices(profile?.user)
   const { data: products = [] } = usePublicProducts(profile?.user)
-  const { data: cleaningPrices = [] } = usePublicCleaningPrices()
   const { data: promoCodes = [] } = usePublicPromoCodes(profile?.user)
 
   // Loading state
@@ -245,6 +226,18 @@ export function PublicProfilePage() {
   const avatarUrl = profile.avatar ? storageUrl('avatars', profile.avatar) : null
   const coverUrl  = profile.cover_url ? storageUrl('covers', profile.cover_url) : null
   const portfolioUrls = (profile.portfolio ?? []).slice(0, 12).map(f => storageUrl('portfolio', f))
+
+  // Cleaning: рендерим выбранный landing-шаблон вместо общего layout
+  if (PRODUCT === 'cleaning') {
+    return (
+      <CleaningLanding
+        profile={profile}
+        promoCodes={promoCodes}
+        avatarUrl={avatarUrl}
+        coverUrl={coverUrl}
+      />
+    )
+  }
 
   return (
     <div
@@ -414,51 +407,6 @@ export function PublicProfilePage() {
           </Link>
         </Section>
       )}
-
-      {/* -- Cleaning prices (только для cleaning) -- */}
-      {PRODUCT === 'cleaning' && cleaningPrices.length > 0 && (() => {
-        const groups = cleaningPrices.reduce((acc, p) => {
-          const key = p.category || 'Прочее'
-          if (!acc[key]) acc[key] = []
-          acc[key].push(p)
-          return acc
-        }, {} as Record<string, CleaningItemRow[]>)
-        const CATEGORY_LABELS: Record<string, string> = {
-          clothing: 'Одежда',
-          carpet: 'Ковры',
-          furniture: 'Мебель',
-          shoes: 'Обувь',
-          curtains: 'Шторы',
-          bedding: 'Постельное',
-        }
-        return (
-          <Section title={t('publicPage.priceList', 'Услуги и цены')}>
-            <div className="space-y-4">
-              {Object.entries(groups).map(([cat, items]) => (
-                <div key={cat}>
-                  <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--page-subtext)' }}>
-                    {CATEGORY_LABELS[cat] ?? cat}
-                  </p>
-                  <div className="space-y-1">
-                    {items.slice(0, 8).map(it => (
-                      <div
-                        key={it.id}
-                        className="flex items-center justify-between py-2 px-3"
-                        style={{ backgroundColor: 'var(--page-card)', borderRadius: 'var(--btn-radius)' }}
-                      >
-                        <span className="text-sm truncate" style={{ color: 'var(--page-text)' }}>{it.name}</span>
-                        <span className="text-sm font-bold shrink-0 ml-2" style={{ color: 'var(--page-accent)' }}>
-                          {formatCurrency(it.default_price, 'UZS', i18n.language)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Section>
-        )
-      })()}
 
       {/* -- Promo codes -- */}
       {promoCodes.length > 0 && (

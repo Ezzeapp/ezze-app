@@ -25,6 +25,14 @@ const FULLSCREEN_ROUTES = [
   ...(PRODUCT === 'cleaning' || PRODUCT === 'workshop' ? ['/orders'] : []),
 ]
 
+// Маршруты с собственным нижним action bar — глобальный BottomNav прячем,
+// чтобы не было двойного нижнего бара.
+const HIDE_BOTTOM_NAV_ROUTES = [
+  '/orders/pos',
+  '/orders/wizard',
+  '/orders/dnd',
+]
+
 // Маршруты с full-width таблицей (только px-[18px], без max-w-6xl)
 const WIDE_ROUTES = PRODUCT === 'cleaning'
   ? ['/services', '/inventory', '/clients']
@@ -34,6 +42,7 @@ export function AppLayout() {
   const { user } = useAuth()
   const location = useLocation()
   const isFullscreen = FULLSCREEN_ROUTES.includes(location.pathname)
+  const hideBottomNav = HIDE_BOTTOM_NAV_ROUTES.includes(location.pathname)
   const isWide = WIDE_ROUTES.includes(location.pathname)
   const queryClient = useQueryClient()
   const { data: existingProfile } = useProfile()
@@ -136,8 +145,8 @@ export function AppLayout() {
         </main>
       </div>
 
-      {/* Нижняя навигация — только на мобиле, скрыта в tiles-режиме */}
-      {!isTilesMode && <BottomNav />}
+      {/* Нижняя навигация — только на мобиле, скрыта в tiles-режиме и на маршрутах с собственным нижним баром */}
+      {!isTilesMode && !hideBottomNav && <BottomNav />}
 
       {showOnboarding && (
         <OnboardingWizard

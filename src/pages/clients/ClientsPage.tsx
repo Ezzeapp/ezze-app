@@ -655,11 +655,11 @@ export function ClientsPage() {
   const [statsClient, setStatsClient] = useState<Client | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false)
+  const [deletingAll, setDeletingAll] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const longPressFiredRef = useRef(false)
   const [analysisOpen, setAnalysisOpen] = useState(false)
   const [analysis, setAnalysis] = useState('')
   const [analysisLoading, setAnalysisLoading] = useState(false)
@@ -827,6 +827,29 @@ export function ClientsPage() {
     }
   }
 
+  const handleDeleteAll = async () => {
+    if (!user) return
+    setDeletingAll(true)
+    try {
+      const { data: all } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('master_id', user.id)
+      const ids = (all ?? []).map(r => r.id as string)
+      if (ids.length) {
+        await Promise.all(ids.map(id => del.mutateAsync(id)))
+      }
+      toast.success(t('clients.deletedMultiple', { count: ids.length }))
+      setSelectedIds(new Set())
+      setDeleteAllOpen(false)
+      setPage(1)
+    } catch {
+      toast.error(t('common.deleteError'))
+    } finally {
+      setDeletingAll(false)
+    }
+  }
+
 
   const generateAnalysis = useCallback(async () => {
     setAnalysisOpen(true)
@@ -874,7 +897,21 @@ export function ClientsPage() {
     <div className="space-y-6">
       <div className={`space-y-2 sticky top-0 z-10 bg-background -mt-4 pt-4 lg:-mt-6 lg:pt-6 pb-3 shadow-sm ${PRODUCT === 'cleaning' ? '-mx-[18px] px-[18px]' : '-mx-3 px-3 lg:-mx-6 lg:px-6'}`}>
         {/* Row 1: title */}
-        <h1 className="text-2xl font-semibold text-foreground">{t('nav.clients')}</h1>
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-2xl font-semibold text-foreground">{t('nav.clients')}</h1>
+          {totalItems > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-destructive hover:bg-destructive/10 lg:hidden"
+              onClick={() => setDeleteAllOpen(true)}
+              aria-label={t('clients.deleteAll', 'Удалить всех')}
+              title={t('clients.deleteAll', 'Удалить всех')}
+            >
+              <Trash2 className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
 
         {/* Bulk action bar */}
         {isSomeSelected && (
@@ -946,36 +983,14 @@ export function ClientsPage() {
         <>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:hidden">
           {items.map((client) => {
-            const isSelected = selectedIds.has(client.id)
             return (
             <Card
               key={client.id}
-              className={`transition-all cursor-pointer select-none ${isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/40'}`}
-              onClick={() => {
-                if (longPressFiredRef.current) { longPressFiredRef.current = false; return }
-                setStatsClient(client)
-              }}
-              onTouchStart={() => {
-                longPressFiredRef.current = false
-                longPressTimerRef.current = setTimeout(() => {
-                  longPressFiredRef.current = true
-                  toggleSelect(client.id)
-                }, 500)
-              }}
-              onTouchEnd={() => { if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null } }}
-              onTouchMove={() => { if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null } }}
-              onContextMenu={(e) => e.preventDefault()}
+              className="transition-all cursor-pointer select-none hover:border-primary/40"
+              onClick={() => setStatsClient(client)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  {/* Чекбокс */}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); toggleSelect(client.id) }}
-                    className="flex items-center justify-center text-muted-foreground hover:text-primary transition-colors shrink-0 mt-0.5"
-                  >
-                    {isSelected ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
-                  </button>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">
                       {client.first_name} {client.last_name}
@@ -1025,28 +1040,26 @@ export function ClientsPage() {
                       </div>
                     )}
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setStatsClient(client) }}>
-                        <BarChart2 className="mr-2 h-4 w-4" />{t('clients.viewHistory')}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(client) }}>
-                        <Edit className="mr-2 h-4 w-4" />{t('common.edit')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={(e) => { e.stopPropagation(); setDeleteId(client.id) }}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />{t('common.delete')}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={(e) => { e.stopPropagation(); openEdit(client) }}
+                      aria-label={t('common.edit')}
+                    >
+                      <Edit className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={(e) => { e.stopPropagation(); setDeleteId(client.id) }}
+                      aria-label={t('common.delete')}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1304,6 +1317,14 @@ export function ClientsPage() {
         loading={del.isPending}
       />
 
+      <ConfirmDialog
+        open={deleteAllOpen}
+        onClose={() => setDeleteAllOpen(false)}
+        onConfirm={handleDeleteAll}
+        title={t('clients.deleteAllConfirm', { count: totalItems, defaultValue: 'Удалить всех клиентов ({{count}})? Действие необратимо.' })}
+        loading={deletingAll}
+      />
+
       {statsClient && (
         <ClientStatsDialog client={statsClient} onClose={() => setStatsClient(null)} />
       )}
@@ -1313,7 +1334,7 @@ export function ClientsPage() {
         <button
           onClick={openCreate}
           className="fixed right-4 z-20 lg:hidden flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all active:scale-95 hover:brightness-110"
-          style={{ width: 52, height: 52, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}
+          style={{ width: 56, height: 56, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }}
           aria-label={t('clients.add')}
         >
           <Plus className="h-5 w-5" />

@@ -18,6 +18,7 @@ import { PRODUCT } from '@/lib/config'
 import { DeliveryContent } from '@/pages/cleaning/DeliveryPage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DateInput } from '@/components/ui/date-input'
 import { Label } from '@/components/ui/label'
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -748,7 +749,7 @@ function OrdersListMain() {
       <div className="flex-1 overflow-y-auto px-4 lg:px-[18px] pb-20 lg:pb-4 space-y-3">
 
         {/* Статистика */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none sticky top-0 z-10 bg-background py-2 -my-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:overflow-x-auto pb-2 scrollbar-none sticky top-0 z-10 bg-background py-2 -my-2">
 
           {/* Сегодня */}
           <div className="shrink-0 flex flex-col gap-0.5 rounded-xl border bg-muted/50 px-3 py-2 min-w-[105px]">
@@ -874,7 +875,20 @@ function OrdersListMain() {
                 />
               </div>
             </div>
-            <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
+            {/* Mobile: dropdown; Desktop: pills */}
+            <div className="sm:hidden">
+              <Select value={status} onValueChange={(v) => { setStatus(v as OrderStatus | 'all'); setPage(1) }}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_TABS.map(tab => (
+                    <SelectItem key={tab.value} value={tab.value}>{tab.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="hidden sm:flex gap-1 overflow-x-auto pb-1 scrollbar-none">
               {STATUS_TABS.map(tab => (
                 <button
                   key={tab.value}

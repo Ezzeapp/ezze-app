@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Globe, Copy, Check, Instagram, Send, Phone, Youtube, Link2, MapPin, ShoppingBag, Plus, Pencil, Trash2, X, ExternalLink, Share2, QrCode } from 'lucide-react'
+import { Globe, Copy, Check, Instagram, Send, Phone, Youtube, Link2, MapPin, ShoppingBag, Plus, Pencil, Trash2, X, ExternalLink, Share2, QrCode, Sparkles, Type, Zap, LayoutTemplate } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,81 @@ import { uploadImage } from '@/lib/storage'
 import { TEMPLATE_LIST } from '@/lib/pageTheme'
 import { toast } from '@/components/shared/Toaster'
 import { formatCurrency } from '@/lib/utils'
-import type { MasterProduct, PageSettings } from '@/types'
+import { PRODUCT } from '@/lib/config'
+import type { MasterProduct, PageSettings, LandingTemplate } from '@/types'
+
+const LANDING_TEMPLATES: { id: LandingTemplate; label: string; tagline: string; icon: typeof Sparkles; preview: React.ReactNode }[] = [
+  {
+    id: 'premium',
+    label: 'Premium Glass',
+    tagline: 'Тёмный, премиум-сегмент, glassmorphism',
+    icon: Sparkles,
+    preview: (
+      <div className="rounded-lg overflow-hidden h-full" style={{ background: 'linear-gradient(135deg, #0b1226, #0f1d3a 60%, #1a3060)' }}>
+        <div className="p-2.5 h-full flex flex-col gap-1.5">
+          <div className="flex items-center gap-1">
+            <div className="h-2 w-2 rounded bg-cyan-300" />
+            <div className="h-1 w-8 rounded bg-white/20" />
+          </div>
+          <div className="h-2 w-3/4 rounded bg-white/30 mt-1" />
+          <div className="h-2 w-1/2 rounded bg-cyan-300/70" />
+          <div className="grid grid-cols-2 gap-1 mt-1">
+            <div className="h-5 rounded-md bg-white/10 border border-white/10" />
+            <div className="h-5 rounded-md bg-white/10 border border-white/10" />
+          </div>
+          <div className="h-3 rounded bg-white mt-auto" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'minimal',
+    label: 'Clean Minimal',
+    tagline: 'Белый, типографика, эко-эстетика',
+    icon: Type,
+    preview: (
+      <div className="rounded-lg overflow-hidden h-full bg-white border border-slate-100">
+        <div className="p-2.5 h-full flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <div className="h-1.5 w-8 rounded bg-slate-900" />
+            <div className="h-2 w-5 rounded-full bg-slate-900" />
+          </div>
+          <div className="h-2.5 w-full rounded bg-slate-900 mt-1.5" />
+          <div className="h-2.5 w-3/5 rounded bg-emerald-600" />
+          <div className="space-y-0.5 mt-1">
+            <div className="h-1 w-full rounded bg-slate-200" />
+            <div className="h-1 w-4/5 rounded bg-slate-200" />
+          </div>
+          <div className="h-3 rounded-full bg-slate-900 mt-auto" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'bold',
+    label: 'Vibrant Bold',
+    tagline: 'Тёплый, дружелюбный, цветные блоки',
+    icon: Zap,
+    preview: (
+      <div className="rounded-lg overflow-hidden h-full" style={{ background: 'linear-gradient(180deg, #FFF7E6, #FFE9CF, #FFD9E0)' }}>
+        <div className="p-2.5 h-full flex flex-col gap-1.5">
+          <div className="flex items-center gap-1">
+            <div className="h-2.5 w-2.5 rounded-md bg-slate-900 -rotate-6" />
+            <div className="h-1 w-8 rounded bg-slate-900" />
+          </div>
+          <div className="h-2 w-2/3 rounded bg-slate-900 mt-1" />
+          <div className="grid grid-cols-2 gap-1 mt-1">
+            <div className="h-5 rounded-md bg-amber-300" />
+            <div className="h-5 rounded-md bg-rose-300" />
+            <div className="h-5 rounded-md bg-sky-300" />
+            <div className="h-5 rounded-md bg-emerald-300" />
+          </div>
+          <div className="h-3 rounded-md bg-slate-900 mt-auto" />
+        </div>
+      </div>
+    ),
+  },
+]
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
@@ -358,6 +432,38 @@ export function PublicPageTab() {
           </div>
         </div>
       )}
+      {PRODUCT === 'cleaning' && (
+        <Card title={t('publicPage.landingTemplate', 'Шаблон лендинга')} icon={LayoutTemplate}>
+          <p className="text-xs text-muted-foreground -mt-2">
+            {t('publicPage.landingTemplateHint', 'Выберите визуальный стиль публичной страницы. Категории, цены и контакты подтягиваются автоматически.')}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {LANDING_TEMPLATES.map(tpl => {
+              const isActive = (currentSettings.landing_template ?? 'premium') === tpl.id
+              const Icon = tpl.icon
+              return (
+                <button
+                  key={tpl.id}
+                  onClick={() => saveDesign({ ...currentSettings, landing_template: tpl.id })}
+                  className={[
+                    'rounded-xl border-2 transition-all text-left p-3 flex flex-col gap-2',
+                    isActive ? 'border-primary shadow-md' : 'border-border hover:border-primary/50',
+                  ].join(' ')}
+                >
+                  <div className="aspect-[4/5] w-full">{tpl.preview}</div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <Icon className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="text-sm font-semibold leading-tight">{tpl.label}</span>
+                    {isActive && <Check className="h-3.5 w-3.5 text-primary ml-auto shrink-0" />}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-tight">{tpl.tagline}</p>
+                </button>
+              )
+            })}
+          </div>
+        </Card>
+      )}
+
       <Card title={t('publicPage.design', 'Дизайн страницы')} icon={Globe}>
         <div>
           <p className="text-xs text-muted-foreground mb-2">{t('publicPage.template', 'Шаблон')}</p>

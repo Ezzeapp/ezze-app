@@ -647,7 +647,7 @@ export function OrderWizardPage() {
 
       {/* ── Progress ───────────────────────────────────────────── */}
       <div className="bg-background border-b shrink-0">
-        <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-3 flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none sm:justify-center">
+        <div className="max-w-[1600px] mx-auto px-2 sm:px-6 py-2 sm:py-3 flex gap-1 sm:gap-2 sm:overflow-x-auto scrollbar-none sm:justify-center">
           {steps.map((s) => {
             const done = step > s.n
             const active = step === s.n
@@ -657,13 +657,13 @@ export function OrderWizardPage() {
                 key={s.n}
                 onClick={() => { if (s.n < step || (s.n === step + 1 && canNext())) setStep(s.n as 1|2|3|4) }}
                 className={cn(
-                  'flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-2 rounded-lg border text-left transition-colors shrink-0',
+                  'flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2.5 px-2 sm:px-3.5 py-2 rounded-lg border text-left transition-colors',
                   active
                     ? 'border-primary bg-primary/10'
                     : done
                       ? 'border-emerald-500/40 bg-emerald-500/5'
                       : 'border-border bg-muted/40',
-                  'flex-1 min-w-[110px] sm:flex-none sm:min-w-0'
+                  'flex-1 min-w-0 sm:flex-none'
                 )}
               >
                 <div className={cn(
@@ -674,13 +674,16 @@ export function OrderWizardPage() {
                 )}>
                   {done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                 </div>
-                <div className="min-w-0 hidden xs:block">
+                <div className="min-w-0 hidden sm:block">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">
                     {t('wizard.step', 'Шаг')} {s.n}
                   </div>
                   <div className="text-sm font-semibold leading-tight mt-1 truncate">{s.label}</div>
                 </div>
-                <div className="text-sm font-semibold xs:hidden">{s.label}</div>
+                {/* На мобиле показываем подпись только для активного шага */}
+                {active && (
+                  <div className="text-xs sm:hidden font-semibold truncate">{s.label}</div>
+                )}
               </button>
             )
           })}
@@ -1235,7 +1238,7 @@ function Step2Items({
   favsCount: number
 }) {
   return (
-    <div className="flex flex-col gap-4 h-full">
+    <div className="flex flex-col gap-4 lg:h-full">
       {/* Тип услуги — компактные пилюли */}
       <div className="flex items-center gap-2 flex-wrap shrink-0">
         <span className="text-[10.5px] uppercase tracking-wider font-bold text-muted-foreground">Тип:</span>
@@ -1258,7 +1261,7 @@ function Step2Items({
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-4 lg:gap-5 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-4 lg:gap-5 lg:flex-1 lg:min-h-0">
       {/* Subgroups */}
       <div>
         <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Группы</div>
@@ -1286,7 +1289,7 @@ function Step2Items({
       </div>
 
       {/* Items */}
-      <div className="flex flex-col min-h-0">
+      <div className="flex flex-col lg:min-h-0">
         <h2 className="text-lg sm:text-xl font-bold tracking-tight">Что принимаем?</h2>
         <p className="text-sm text-muted-foreground mt-0.5 mb-3">
           Тапните по позиции, чтобы добавить. Количество и детали — на следующем шаге.
@@ -1316,7 +1319,7 @@ function Step2Items({
             <span className="hidden sm:inline">{favsCount}</span>
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto -mr-2 pr-2 min-h-0">
+        <div className="lg:flex-1 lg:overflow-y-auto lg:-mr-2 lg:pr-2 lg:min-h-0">
           <div className="grid gap-2 grid-cols-2 sm:[grid-template-columns:repeat(auto-fill,minmax(220px,1fr))]">
             {/* Своя позиция вне каталога */}
             <button
@@ -1426,7 +1429,7 @@ function Step3Details({
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4 lg:gap-5 h-full">
+    <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4 lg:gap-5 lg:h-full">
       {/* Список позиций */}
       <div>
         <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Позиции</div>
@@ -1459,7 +1462,7 @@ function Step3Details({
       </div>
 
       {/* Редактор */}
-      <div className="overflow-y-auto pr-1">
+      <div className="lg:overflow-y-auto lg:pr-1">
         <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
           Позиция {(cart.findIndex(l => l.key === focused.key)) + 1} из {cart.length}
         </div>

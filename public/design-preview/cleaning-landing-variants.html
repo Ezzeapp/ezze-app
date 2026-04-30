@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ezze Cleaning · Лендинг — 3 варианта × Mobile / Desktop</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; background: #f3f4f6; }
+  .phone {
+    width: 100%;
+    max-width: 420px;
+    min-height: 900px;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,0.35), 0 8px 24px -8px rgba(0,0,0,0.15);
+    position: relative;
+  }
+  .desktop-frame {
+    width: 100%;
+    max-width: 1280px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,0.35), 0 8px 24px -8px rgba(0,0,0,0.15);
+    position: relative;
+  }
+  .v1-bg {
+    background:
+      radial-gradient(circle at 20% 0%, rgba(56,189,248,0.35) 0%, transparent 45%),
+      radial-gradient(circle at 80% 30%, rgba(168,85,247,0.25) 0%, transparent 50%),
+      radial-gradient(circle at 50% 100%, rgba(34,211,238,0.30) 0%, transparent 50%),
+      linear-gradient(180deg, #0b1226 0%, #0f1d3a 60%, #0b1226 100%);
+  }
+  .v1-bg-desktop {
+    background:
+      radial-gradient(circle at 15% 20%, rgba(56,189,248,0.25) 0%, transparent 35%),
+      radial-gradient(circle at 85% 10%, rgba(168,85,247,0.20) 0%, transparent 40%),
+      radial-gradient(circle at 70% 80%, rgba(34,211,238,0.18) 0%, transparent 45%),
+      linear-gradient(180deg, #0b1226 0%, #0f1d3a 50%, #0b1226 100%);
+  }
+  .glass {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.14);
+  }
+  .glass-strong {
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.18);
+  }
+  .v1-noise::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 4px 4px;
+    mix-blend-mode: overlay;
+    opacity: 0.5;
+  }
+  .v2-display { font-family: 'Manrope', sans-serif; letter-spacing: -0.04em; }
+  .v3-display { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.02em; }
+  .blob {
+    position: absolute;
+    filter: blur(40px);
+    opacity: 0.6;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .ribbon { position: absolute; transform: rotate(-3deg); }
+  .stripe {
+    background: repeating-linear-gradient(45deg,
+      rgba(0,0,0,0.04) 0 12px, transparent 12px 24px);
+  }
+  .marquee {
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  }
+  .marquee-track {
+    display: inline-flex;
+    animation: marquee 28s linear infinite;
+    gap: 3rem;
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+</style>
+</head>
+<body class="text-slate-900">
+
+<!-- ────────────── Switcher ────────────── -->
+<div class="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-slate-200">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    <div class="flex items-center gap-2 min-w-0 flex-1">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-400 to-indigo-600 grid place-items-center text-white font-black shrink-0">E</div>
+      <div class="min-w-0">
+        <div class="text-sm font-bold leading-tight truncate">Ezze Cleaning · Landing</div>
+        <div class="text-[11px] text-slate-500 leading-tight">3 варианта × Mobile / Desktop</div>
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <div class="flex bg-slate-100 rounded-xl p-1 text-sm font-semibold">
+        <button data-variant="1" class="tab-btn px-3 sm:px-4 py-1.5 rounded-lg transition bg-white shadow-sm">V1 Premium</button>
+        <button data-variant="2" class="tab-btn px-3 sm:px-4 py-1.5 rounded-lg transition text-slate-600">V2 Minimal</button>
+        <button data-variant="3" class="tab-btn px-3 sm:px-4 py-1.5 rounded-lg transition text-slate-600">V3 Bold</button>
+      </div>
+      <div class="flex bg-slate-100 rounded-xl p-1 text-sm font-semibold">
+        <button data-view="mobile" class="view-btn px-3 py-1.5 rounded-lg transition bg-white shadow-sm flex items-center gap-1.5">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Mobile
+        </button>
+        <button data-view="desktop" class="view-btn px-3 py-1.5 rounded-lg transition text-slate-600 flex items-center gap-1.5">
+          <i data-lucide="monitor" class="w-3.5 h-3.5"></i> Desktop
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="max-w-[1400px] mx-auto px-4 py-8 flex justify-center">
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                        V1 · MOBILE                            ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="variant" data-variant="1" data-view="mobile">
+  <div class="phone v1-bg v1-noise text-white">
+    <div class="flex justify-between items-center px-6 pt-4 text-[11px] font-semibold opacity-70">
+      <span>9:41</span>
+      <span class="flex gap-1 items-center">
+        <i data-lucide="signal" class="w-3 h-3"></i><i data-lucide="wifi" class="w-3 h-3"></i><i data-lucide="battery-full" class="w-3.5 h-3.5"></i>
+      </span>
+    </div>
+
+    <header class="flex items-center justify-between px-5 pt-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-white/15 grid place-items-center backdrop-blur"><i data-lucide="sparkles" class="w-4 h-4 text-cyan-200"></i></div>
+        <div>
+          <div class="text-sm font-bold leading-tight">Kaskad</div>
+          <div class="text-[10px] text-white/60 leading-tight">Премиум химчистка</div>
+        </div>
+      </div>
+      <button class="w-9 h-9 rounded-xl glass grid place-items-center"><i data-lucide="menu" class="w-4 h-4"></i></button>
+    </header>
+
+    <section class="px-5 pt-10">
+      <div class="text-[11px] tracking-[0.3em] uppercase text-cyan-300 font-semibold mb-3">· Доставка 24/7 ·</div>
+      <h1 class="text-[40px] leading-[1.05] font-black tracking-tight">Чистота<br>как <span class="bg-gradient-to-r from-cyan-300 via-sky-400 to-indigo-300 bg-clip-text text-transparent">премиум</span></h1>
+      <p class="mt-4 text-[14px] text-white/70 leading-relaxed max-w-[300px]">Заберём, постираем, погладим и привезём обратно за 48 часов.</p>
+      <div class="mt-6 flex items-center gap-2">
+        <button class="flex-1 h-12 rounded-2xl bg-white text-slate-900 font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Оформить заказ</button>
+        <button class="h-12 px-4 rounded-2xl glass font-bold text-sm flex items-center gap-2"><i data-lucide="phone" class="w-4 h-4"></i></button>
+      </div>
+      <div class="mt-6 flex items-center gap-4 text-[11px] text-white/60">
+        <div class="flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-300"></i> Гарантия</div>
+        <div class="flex items-center gap-1.5"><i data-lucide="leaf" class="w-3.5 h-3.5 text-emerald-300"></i> Эко</div>
+        <div class="flex items-center gap-1.5"><i data-lucide="zap" class="w-3.5 h-3.5 text-amber-300"></i> 48ч</div>
+      </div>
+    </section>
+
+    <section class="px-5 mt-10">
+      <div class="glass rounded-2xl p-4 grid grid-cols-3 divide-x divide-white/10">
+        <div class="text-center"><div class="text-xl font-black">12K+</div><div class="text-[10px] text-white/50 mt-0.5">заказов</div></div>
+        <div class="text-center"><div class="text-xl font-black">4.9<span class="text-cyan-300 text-sm">★</span></div><div class="text-[10px] text-white/50 mt-0.5">рейтинг</div></div>
+        <div class="text-center"><div class="text-xl font-black">48ч</div><div class="text-[10px] text-white/50 mt-0.5">срок</div></div>
+      </div>
+    </section>
+
+    <section class="px-5 mt-8">
+      <div class="flex items-end justify-between mb-3">
+        <h2 class="text-lg font-bold">Категории</h2>
+        <a class="text-[11px] text-cyan-300 font-semibold flex items-center gap-1">все <i data-lucide="arrow-right" class="w-3 h-3"></i></a>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5">
+        <div class="glass rounded-2xl p-3.5"><div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 grid place-items-center mb-2.5"><i data-lucide="shirt" class="w-4 h-4"></i></div><div class="text-sm font-bold">Одежда</div><div class="text-[10px] text-white/50 mt-0.5">от 25 000 сум</div></div>
+        <div class="glass rounded-2xl p-3.5"><div class="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-400 to-fuchsia-600 grid place-items-center mb-2.5"><i data-lucide="bed-double" class="w-4 h-4"></i></div><div class="text-sm font-bold">Текстиль</div><div class="text-[10px] text-white/50 mt-0.5">от 35 000 сум</div></div>
+        <div class="glass rounded-2xl p-3.5"><div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 grid place-items-center mb-2.5"><i data-lucide="footprints" class="w-4 h-4"></i></div><div class="text-sm font-bold">Обувь</div><div class="text-[10px] text-white/50 mt-0.5">от 45 000 сум</div></div>
+        <div class="glass rounded-2xl p-3.5"><div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 grid place-items-center mb-2.5"><i data-lucide="layers" class="w-4 h-4"></i></div><div class="text-sm font-bold">Ковры</div><div class="text-[10px] text-white/50 mt-0.5">от 15 000 сум/м²</div></div>
+      </div>
+    </section>
+
+    <section class="px-5 mt-10">
+      <div class="text-[11px] tracking-[0.3em] uppercase text-cyan-300 font-semibold mb-3">Как это работает</div>
+      <div class="space-y-3">
+        <div class="glass rounded-2xl p-4 flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-cyan-400/20 border border-cyan-300/30 grid place-items-center"><span class="text-base font-black text-cyan-200">1</span></div><div class="flex-1"><div class="text-sm font-bold">Оставьте заявку</div><div class="text-[11px] text-white/60">2 минуты — и курьер уже в пути</div></div></div>
+        <div class="glass rounded-2xl p-4 flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-purple-400/20 border border-purple-300/30 grid place-items-center"><span class="text-base font-black text-purple-200">2</span></div><div class="flex-1"><div class="text-sm font-bold">Забираем у двери</div><div class="text-[11px] text-white/60">В удобное время, бесплатно от 200K</div></div></div>
+        <div class="glass rounded-2xl p-4 flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-emerald-400/20 border border-emerald-300/30 grid place-items-center"><span class="text-base font-black text-emerald-200">3</span></div><div class="flex-1"><div class="text-sm font-bold">Получаете чистое</div><div class="text-[11px] text-white/60">Через 48 часов, в фирменной упаковке</div></div></div>
+      </div>
+    </section>
+
+    <section class="px-5 mt-10 pb-28">
+      <div class="rounded-3xl p-6 bg-gradient-to-br from-cyan-500 to-indigo-700 relative overflow-hidden">
+        <div class="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10"></div>
+        <div class="text-[11px] tracking-[0.2em] uppercase font-semibold text-white/80 relative">Скидка 20%</div>
+        <div class="text-2xl font-black mt-1 relative">Первый заказ</div>
+        <div class="text-[12px] text-white/80 mt-2 relative">Промокод <span class="font-bold bg-white/20 px-1.5 py-0.5 rounded">FIRST20</span></div>
+      </div>
+    </section>
+
+    <div class="absolute bottom-4 left-4 right-4">
+      <button class="w-full h-14 rounded-2xl bg-white text-slate-900 font-bold flex items-center justify-center gap-2 shadow-2xl"><i data-lucide="sparkles" class="w-4 h-4"></i> Заказать сейчас<span class="ml-auto bg-slate-900 text-white text-[10px] font-semibold px-2 py-1 rounded-full">−20%</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                        V1 · DESKTOP                           ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="variant hidden" data-variant="1" data-view="desktop">
+  <div class="desktop-frame v1-bg-desktop v1-noise text-white">
+
+    <!-- Browser chrome mock -->
+    <div class="bg-slate-900/80 backdrop-blur border-b border-white/10 px-4 h-9 flex items-center gap-2">
+      <div class="flex gap-1.5">
+        <div class="w-2.5 h-2.5 rounded-full bg-rose-400"></div>
+        <div class="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
+        <div class="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+      </div>
+      <div class="flex-1 max-w-md mx-auto bg-white/10 rounded text-[11px] text-white/70 px-3 py-1 flex items-center gap-2">
+        <i data-lucide="lock" class="w-3 h-3 text-emerald-300"></i> kaskad.uz/p/kaskad
+      </div>
+    </div>
+
+    <!-- Top nav -->
+    <header class="px-12 py-5 flex items-center justify-between border-b border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-white/15 grid place-items-center backdrop-blur"><i data-lucide="sparkles" class="w-5 h-5 text-cyan-200"></i></div>
+        <div>
+          <div class="text-base font-bold leading-tight">Kaskad</div>
+          <div class="text-[11px] text-white/60 leading-tight">Премиум химчистка</div>
+        </div>
+      </div>
+      <nav class="flex items-center gap-7 text-sm font-medium text-white/70">
+        <a class="hover:text-white">Услуги</a>
+        <a class="hover:text-white">Цены</a>
+        <a class="hover:text-white">Как работает</a>
+        <a class="hover:text-white">Отзывы</a>
+        <a class="hover:text-white">Контакты</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a class="text-sm font-medium text-white/80 hover:text-white">+998 90 123 45 67</a>
+        <button class="h-10 px-5 rounded-xl bg-white text-slate-900 font-bold text-sm flex items-center gap-2"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Заказать</button>
+      </div>
+    </header>
+
+    <!-- Hero · 2 columns -->
+    <section class="px-12 pt-16 pb-20 grid grid-cols-12 gap-10 items-center">
+      <div class="col-span-7">
+        <div class="text-[11px] tracking-[0.3em] uppercase text-cyan-300 font-semibold mb-4">· Доставка 24/7 · Премиум-сервис ·</div>
+        <h1 class="text-[80px] leading-[0.95] font-black tracking-tight">
+          Чистота<br>
+          как <span class="bg-gradient-to-r from-cyan-300 via-sky-400 to-indigo-300 bg-clip-text text-transparent">премиум</span>
+        </h1>
+        <p class="mt-7 text-[18px] text-white/70 leading-relaxed max-w-[480px]">
+          Заберём, постираем, погладим и привезём обратно за 48 часов. Эко-средства, индивидуальный подход к каждой вещи. Вам остаётся только наслаждаться.
+        </p>
+        <div class="mt-9 flex items-center gap-3">
+          <button class="h-14 px-8 rounded-2xl bg-white text-slate-900 font-bold text-[15px] flex items-center gap-2.5 hover:scale-[1.02] transition"><i data-lucide="shopping-bag" class="w-5 h-5"></i> Оформить заказ</button>
+          <button class="h-14 px-6 rounded-2xl glass font-bold text-[15px] flex items-center gap-2"><i data-lucide="play" class="w-4 h-4"></i> Как это работает</button>
+        </div>
+        <div class="mt-10 flex items-center gap-7 text-[13px] text-white/70">
+          <div class="flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-300"></i> Гарантия качества</div>
+          <div class="flex items-center gap-2"><i data-lucide="leaf" class="w-4 h-4 text-emerald-300"></i> Эко-средства</div>
+          <div class="flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4 text-amber-300"></i> 48 часов</div>
+        </div>
+      </div>
+      <div class="col-span-5 relative h-[480px]">
+        <div class="absolute top-8 right-0 w-72 h-72 rounded-3xl glass-strong p-7 rotate-3 hover:rotate-0 transition">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 grid place-items-center mb-5"><i data-lucide="shirt" class="w-7 h-7"></i></div>
+          <div class="text-2xl font-black">Одежда</div>
+          <div class="text-sm text-white/60 mt-1">Костюмы, платья, рубашки</div>
+          <div class="mt-5 text-3xl font-black bg-gradient-to-r from-cyan-300 to-indigo-300 bg-clip-text text-transparent">от 25K</div>
+          <div class="text-[11px] text-white/50">сум за единицу</div>
+        </div>
+        <div class="absolute top-44 left-0 w-64 h-64 rounded-3xl glass-strong p-6 -rotate-6 hover:rotate-0 transition">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-400 to-fuchsia-600 grid place-items-center mb-4"><i data-lucide="bed-double" class="w-6 h-6"></i></div>
+          <div class="text-xl font-black">Текстиль</div>
+          <div class="text-xs text-white/60 mt-1">Шторы, пледы, бельё</div>
+          <div class="mt-4 text-2xl font-black bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">от 35K</div>
+        </div>
+        <div class="absolute bottom-0 right-12 w-56 h-56 rounded-3xl glass-strong p-5 rotate-2 hover:rotate-0 transition">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 grid place-items-center mb-3"><i data-lucide="footprints" class="w-5 h-5"></i></div>
+          <div class="text-lg font-black">Обувь</div>
+          <div class="text-xs text-white/60 mt-1">Кожа, замша</div>
+          <div class="mt-3 text-xl font-black bg-gradient-to-r from-emerald-300 to-teal-300 bg-clip-text text-transparent">от 45K</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="px-12 pb-20">
+      <div class="glass rounded-3xl p-10 grid grid-cols-4 divide-x divide-white/10">
+        <div class="text-center"><div class="text-5xl font-black">12K<span class="text-cyan-300">+</span></div><div class="text-[12px] text-white/50 mt-2 uppercase tracking-wider">Выполнено заказов</div></div>
+        <div class="text-center"><div class="text-5xl font-black">4.9<span class="text-cyan-300">★</span></div><div class="text-[12px] text-white/50 mt-2 uppercase tracking-wider">Рейтинг клиентов</div></div>
+        <div class="text-center"><div class="text-5xl font-black">48<span class="text-cyan-300">ч</span></div><div class="text-[12px] text-white/50 mt-2 uppercase tracking-wider">Среднее время</div></div>
+        <div class="text-center"><div class="text-5xl font-black">7<span class="text-cyan-300">/7</span></div><div class="text-[12px] text-white/50 mt-2 uppercase tracking-wider">Работаем без выходных</div></div>
+      </div>
+    </section>
+
+    <!-- Categories full grid -->
+    <section class="px-12 pb-20">
+      <div class="flex items-end justify-between mb-8">
+        <div>
+          <div class="text-[11px] tracking-[0.3em] uppercase text-cyan-300 font-semibold mb-2">Услуги</div>
+          <h2 class="text-5xl font-black tracking-tight">Что мы чистим</h2>
+        </div>
+        <a class="text-sm font-semibold text-cyan-300 flex items-center gap-1.5">смотреть весь прайс <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+      </div>
+      <div class="grid grid-cols-4 gap-5">
+        <div class="glass rounded-3xl p-6 hover:bg-white/12 transition cursor-pointer">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 grid place-items-center mb-5"><i data-lucide="shirt" class="w-6 h-6"></i></div>
+          <div class="text-xl font-black">Одежда</div>
+          <div class="text-[12px] text-white/60 mt-1">Костюмы, рубашки, брюки, платья</div>
+          <div class="mt-5 pt-5 border-t border-white/10 flex items-end justify-between">
+            <div><div class="text-[11px] text-white/50">от</div><div class="text-2xl font-black">25K сум</div></div>
+            <i data-lucide="arrow-up-right" class="w-5 h-5 text-cyan-300"></i>
+          </div>
+        </div>
+        <div class="glass rounded-3xl p-6 hover:bg-white/12 transition cursor-pointer">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-400 to-fuchsia-600 grid place-items-center mb-5"><i data-lucide="bed-double" class="w-6 h-6"></i></div>
+          <div class="text-xl font-black">Текстиль</div>
+          <div class="text-[12px] text-white/60 mt-1">Шторы, пледы, постельное</div>
+          <div class="mt-5 pt-5 border-t border-white/10 flex items-end justify-between">
+            <div><div class="text-[11px] text-white/50">от</div><div class="text-2xl font-black">35K сум</div></div>
+            <i data-lucide="arrow-up-right" class="w-5 h-5 text-cyan-300"></i>
+          </div>
+        </div>
+        <div class="glass rounded-3xl p-6 hover:bg-white/12 transition cursor-pointer">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 grid place-items-center mb-5"><i data-lucide="footprints" class="w-6 h-6"></i></div>
+          <div class="text-xl font-black">Обувь</div>
+          <div class="text-[12px] text-white/60 mt-1">Кожа, замша, текстильная</div>
+          <div class="mt-5 pt-5 border-t border-white/10 flex items-end justify-between">
+            <div><div class="text-[11px] text-white/50">от</div><div class="text-2xl font-black">45K сум</div></div>
+            <i data-lucide="arrow-up-right" class="w-5 h-5 text-cyan-300"></i>
+          </div>
+        </div>
+        <div class="glass rounded-3xl p-6 hover:bg-white/12 transition cursor-pointer">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 grid place-items-center mb-5"><i data-lucide="layers" class="w-6 h-6"></i></div>
+          <div class="text-xl font-black">Ковры</div>
+          <div class="text-[12px] text-white/60 mt-1">Любого размера и состава</div>
+          <div class="mt-5 pt-5 border-t border-white/10 flex items-end justify-between">
+            <div><div class="text-[11px] text-white/50">от</div><div class="text-2xl font-black">15K сум/м²</div></div>
+            <i data-lucide="arrow-up-right" class="w-5 h-5 text-cyan-300"></i>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Steps -->
+    <section class="px-12 pb-20">
+      <div class="text-[11px] tracking-[0.3em] uppercase text-cyan-300 font-semibold mb-3">Процесс</div>
+      <h2 class="text-5xl font-black tracking-tight mb-12">Как это работает</h2>
+      <div class="grid grid-cols-4 gap-5 relative">
+        <div class="absolute top-7 left-12 right-12 h-px bg-gradient-to-r from-cyan-400/0 via-cyan-400/40 to-cyan-400/0"></div>
+        <div class="relative">
+          <div class="w-14 h-14 rounded-2xl bg-cyan-400/20 border border-cyan-300/40 grid place-items-center backdrop-blur"><span class="text-xl font-black text-cyan-200">01</span></div>
+          <div class="mt-5 text-lg font-black">Оставляете заявку</div>
+          <div class="text-[13px] text-white/60 mt-2">Через сайт, бот или звонок. 2 минуты времени.</div>
+        </div>
+        <div class="relative">
+          <div class="w-14 h-14 rounded-2xl bg-purple-400/20 border border-purple-300/40 grid place-items-center backdrop-blur"><span class="text-xl font-black text-purple-200">02</span></div>
+          <div class="mt-5 text-lg font-black">Курьер забирает</div>
+          <div class="text-[13px] text-white/60 mt-2">В удобное окно. Бесплатный вывоз от 200K сум.</div>
+        </div>
+        <div class="relative">
+          <div class="w-14 h-14 rounded-2xl bg-amber-400/20 border border-amber-300/40 grid place-items-center backdrop-blur"><span class="text-xl font-black text-amber-200">03</span></div>
+          <div class="mt-5 text-lg font-black">Чистим и гладим</div>
+          <div class="text-[13px] text-white/60 mt-2">Эко-средства, технологи под каждый материал.</div>
+        </div>
+        <div class="relative">
+          <div class="w-14 h-14 rounded-2xl bg-emerald-400/20 border border-emerald-300/40 grid place-items-center backdrop-blur"><span class="text-xl font-black text-emerald-200">04</span></div>
+          <div class="mt-5 text-lg font-black">Привозим обратно</div>
+          <div class="text-[13px] text-white/60 mt-2">Через 48 часов, в фирменной упаковке.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reviews -->
+    <section class="px-12 pb-20">
+      <div class="flex items-end justify-between mb-8">
+        <div>
+          <div class="text-[11px] tracking-[0.3em] uppercase text-cyan-300 font-semibold mb-2">Отзывы</div>
+          <h2 class="text-5xl font-black tracking-tight">Любят клиенты</h2>
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+          <div class="flex gap-0.5"><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i></div>
+          <span class="text-white/70"><span class="font-bold text-white">4.9</span> · 1.2K отзывов</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-5">
+        <div class="glass rounded-3xl p-7">
+          <div class="flex gap-0.5 mb-4"><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i></div>
+          <p class="text-[14.5px] text-white/85 leading-relaxed">«Спасли свадебное платье после торжества. Идеальное состояние, как новое. Курьеры пунктуальные, упаковка премиум.»</p>
+          <div class="mt-6 flex items-center gap-3 pt-5 border-t border-white/10">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-rose-600 grid place-items-center font-bold">A</div>
+            <div><div class="text-sm font-semibold">Анастасия К.</div><div class="text-[11px] text-white/50">3 дня назад</div></div>
+          </div>
+        </div>
+        <div class="glass rounded-3xl p-7">
+          <div class="flex gap-0.5 mb-4"><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i></div>
+          <p class="text-[14.5px] text-white/85 leading-relaxed">«Костюм Boss из тонкой шерсти отдала с пятном — вернули как новый. Сервис на уровне европейских стандартов.»</p>
+          <div class="mt-6 flex items-center gap-3 pt-5 border-t border-white/10">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 grid place-items-center font-bold">М</div>
+            <div><div class="text-sm font-semibold">Михаил С.</div><div class="text-[11px] text-white/50">1 неделю назад</div></div>
+          </div>
+        </div>
+        <div class="glass rounded-3xl p-7">
+          <div class="flex gap-0.5 mb-4"><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i></div>
+          <p class="text-[14.5px] text-white/85 leading-relaxed">«Ковёр 4×5 м из персидской шерсти — забрали, привезли через 2 дня. Чистый, пахнет свежестью. Однозначно рекомендую.»</p>
+          <div class="mt-6 flex items-center gap-3 pt-5 border-t border-white/10">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 grid place-items-center font-bold">Д</div>
+            <div><div class="text-sm font-semibold">Дилшод Т.</div><div class="text-[11px] text-white/50">2 недели назад</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer CTA -->
+    <section class="px-12 pb-12">
+      <div class="rounded-3xl p-12 bg-gradient-to-br from-cyan-500 to-indigo-700 relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-white/10"></div>
+        <div class="absolute bottom-0 left-1/3 w-48 h-48 rounded-full bg-white/5"></div>
+        <div class="relative grid grid-cols-2 gap-12 items-center">
+          <div>
+            <div class="text-[11px] tracking-[0.3em] uppercase font-semibold text-white/80 mb-3">Промокод FIRST20</div>
+            <div class="text-5xl font-black tracking-tight">Первый заказ — со скидкой 20%</div>
+            <div class="mt-4 text-[15px] text-white/85">Введите промокод при оформлении и получите автоматическую скидку.</div>
+          </div>
+          <div class="flex flex-col items-end gap-3">
+            <button class="h-14 px-8 rounded-2xl bg-white text-slate-900 font-bold text-[15px] flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5"></i> Оформить заказ</button>
+            <div class="text-xs text-white/70">Срок акции — до конца месяца</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="px-12 py-10 border-t border-white/10 grid grid-cols-4 gap-8 text-sm">
+      <div>
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="w-9 h-9 rounded-xl bg-white/15 grid place-items-center"><i data-lucide="sparkles" class="w-4 h-4 text-cyan-200"></i></div>
+          <div class="text-base font-bold">Kaskad</div>
+        </div>
+        <p class="text-[12px] text-white/60 leading-relaxed">Премиум химчистка с доставкой. Эко-средства, индивидуальный подход.</p>
+      </div>
+      <div>
+        <div class="text-[11px] uppercase tracking-wider font-semibold text-white/50 mb-3">Услуги</div>
+        <div class="space-y-2 text-[13px] text-white/80">
+          <a class="block hover:text-white">Химчистка одежды</a>
+          <a class="block hover:text-white">Стирка текстиля</a>
+          <a class="block hover:text-white">Чистка обуви</a>
+          <a class="block hover:text-white">Чистка ковров</a>
+        </div>
+      </div>
+      <div>
+        <div class="text-[11px] uppercase tracking-wider font-semibold text-white/50 mb-3">Компания</div>
+        <div class="space-y-2 text-[13px] text-white/80">
+          <a class="block hover:text-white">О нас</a>
+          <a class="block hover:text-white">Прайс-лист</a>
+          <a class="block hover:text-white">Партнёрам</a>
+          <a class="block hover:text-white">Контакты</a>
+        </div>
+      </div>
+      <div>
+        <div class="text-[11px] uppercase tracking-wider font-semibold text-white/50 mb-3">Контакты</div>
+        <div class="space-y-2 text-[13px] text-white/80">
+          <div class="flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5 text-cyan-300"></i> +998 90 123 45 67</div>
+          <div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-cyan-300"></i> Ташкент, ул. Амира Темура 12</div>
+          <div class="flex items-center gap-2"><i data-lucide="clock" class="w-3.5 h-3.5 text-cyan-300"></i> 9:00 — 21:00, ежедневно</div>
+        </div>
+      </div>
+    </footer>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                        V2 · MOBILE                            ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="variant hidden" data-variant="2" data-view="mobile">
+  <div class="phone bg-white text-slate-900">
+    <div class="flex justify-between items-center px-6 pt-4 text-[11px] font-semibold text-slate-400">
+      <span>9:41</span>
+      <span class="flex gap-1 items-center"><i data-lucide="signal" class="w-3 h-3"></i><i data-lucide="wifi" class="w-3 h-3"></i><i data-lucide="battery-full" class="w-3.5 h-3.5"></i></span>
+    </div>
+
+    <header class="flex items-center justify-between px-6 pt-3 v2-display">
+      <div class="text-xl font-black tracking-tight">kaskad<span class="text-emerald-600">.</span></div>
+      <button class="w-9 h-9 rounded-full border border-slate-200 grid place-items-center"><i data-lucide="menu" class="w-4 h-4"></i></button>
+    </header>
+
+    <section class="px-6 pt-12 v2-display">
+      <div class="text-[11px] uppercase tracking-[0.25em] text-slate-400 font-semibold mb-3">Химчистка · Стирка · Доставка</div>
+      <h1 class="text-[44px] leading-[0.95] font-black tracking-tight">Свежесть<br><span class="italic font-light text-emerald-600">за 48 часов.</span></h1>
+      <p class="mt-5 text-[14px] text-slate-500 leading-relaxed font-medium" style="font-family:Inter;letter-spacing:0;">Без очередей. Без поездок. Курьер заберёт у двери и привезёт идеальную чистоту.</p>
+      <div class="mt-7 flex items-center gap-3">
+        <button class="flex-1 h-12 bg-slate-900 text-white font-semibold text-sm rounded-full flex items-center justify-center gap-2" style="font-family:Inter;">Оформить заказ <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+        <button class="w-12 h-12 rounded-full border border-slate-200 grid place-items-center"><i data-lucide="phone" class="w-4 h-4"></i></button>
+      </div>
+    </section>
+
+    <div class="px-6 mt-8">
+      <div class="relative aspect-[4/3] rounded-3xl bg-gradient-to-br from-emerald-50 via-emerald-100 to-emerald-200 overflow-hidden">
+        <div class="absolute inset-0 grid place-items-center text-emerald-700/40"><i data-lucide="shirt" class="w-24 h-24"></i></div>
+        <div class="absolute bottom-3 left-3 right-3 bg-white/90 backdrop-blur rounded-2xl p-3 flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white grid place-items-center shrink-0"><i data-lucide="leaf" class="w-4 h-4"></i></div>
+          <div class="flex-1 min-w-0"><div class="text-[12px] font-semibold leading-tight">Эко-химчистка</div><div class="text-[10px] text-slate-500 leading-tight">Безопасно для семьи и природы</div></div>
+        </div>
+      </div>
+    </div>
+
+    <section class="px-6 mt-10">
+      <div class="grid grid-cols-3 v2-display">
+        <div><div class="text-3xl font-black tracking-tight">12K<span class="text-emerald-600">+</span></div><div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1" style="font-family:Inter;">Заказов</div></div>
+        <div class="border-l border-slate-100 pl-4"><div class="text-3xl font-black tracking-tight">4.9<span class="text-emerald-600">★</span></div><div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1" style="font-family:Inter;">Рейтинг</div></div>
+        <div class="border-l border-slate-100 pl-4"><div class="text-3xl font-black tracking-tight">48<span class="text-emerald-600">ч</span></div><div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1" style="font-family:Inter;">Срок</div></div>
+      </div>
+    </section>
+
+    <section class="px-6 mt-12">
+      <div class="flex items-end justify-between mb-4">
+        <h2 class="text-[22px] v2-display font-black tracking-tight">Категории</h2>
+        <a class="text-[12px] font-semibold text-emerald-600 flex items-center gap-1">все <i data-lucide="arrow-right" class="w-3 h-3"></i></a>
+      </div>
+      <div class="divide-y divide-slate-100 border-y border-slate-100">
+        <a class="flex items-center gap-4 py-4"><div class="w-11 h-11 rounded-2xl bg-slate-50 grid place-items-center shrink-0"><i data-lucide="shirt" class="w-5 h-5 text-slate-700"></i></div><div class="flex-1 min-w-0"><div class="text-[15px] font-bold leading-tight">Одежда</div><div class="text-[11px] text-slate-400 leading-tight mt-0.5">Костюмы, рубашки, брюки</div></div><div class="text-right"><div class="text-[12px] font-semibold">от 25 000</div><div class="text-[10px] text-slate-400">сум</div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i></a>
+        <a class="flex items-center gap-4 py-4"><div class="w-11 h-11 rounded-2xl bg-slate-50 grid place-items-center shrink-0"><i data-lucide="bed-double" class="w-5 h-5 text-slate-700"></i></div><div class="flex-1 min-w-0"><div class="text-[15px] font-bold leading-tight">Текстиль</div><div class="text-[11px] text-slate-400 leading-tight mt-0.5">Бельё, шторы, пледы</div></div><div class="text-right"><div class="text-[12px] font-semibold">от 35 000</div><div class="text-[10px] text-slate-400">сум</div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i></a>
+        <a class="flex items-center gap-4 py-4"><div class="w-11 h-11 rounded-2xl bg-slate-50 grid place-items-center shrink-0"><i data-lucide="footprints" class="w-5 h-5 text-slate-700"></i></div><div class="flex-1 min-w-0"><div class="text-[15px] font-bold leading-tight">Обувь</div><div class="text-[11px] text-slate-400 leading-tight mt-0.5">Кожа, замша, текстиль</div></div><div class="text-right"><div class="text-[12px] font-semibold">от 45 000</div><div class="text-[10px] text-slate-400">сум</div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i></a>
+        <a class="flex items-center gap-4 py-4"><div class="w-11 h-11 rounded-2xl bg-slate-50 grid place-items-center shrink-0"><i data-lucide="layers" class="w-5 h-5 text-slate-700"></i></div><div class="flex-1 min-w-0"><div class="text-[15px] font-bold leading-tight">Ковры</div><div class="text-[11px] text-slate-400 leading-tight mt-0.5">Любого размера</div></div><div class="text-right"><div class="text-[12px] font-semibold">от 15 000</div><div class="text-[10px] text-slate-400">сум/м²</div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i></a>
+      </div>
+    </section>
+
+    <section class="px-6 mt-12">
+      <h2 class="text-[22px] v2-display font-black tracking-tight">Как это работает</h2>
+      <div class="mt-5 space-y-5">
+        <div class="flex gap-4"><div class="w-7 shrink-0 v2-display text-emerald-600 text-2xl font-black">01</div><div><div class="text-[15px] font-bold">Оставляете заявку</div><div class="text-[12px] text-slate-500 mt-0.5">Через сайт, бот или звонок</div></div></div>
+        <div class="flex gap-4"><div class="w-7 shrink-0 v2-display text-emerald-600 text-2xl font-black">02</div><div><div class="text-[15px] font-bold">Курьер забирает вещи</div><div class="text-[12px] text-slate-500 mt-0.5">В удобное окно. Бесплатно от 200К</div></div></div>
+        <div class="flex gap-4"><div class="w-7 shrink-0 v2-display text-emerald-600 text-2xl font-black">03</div><div><div class="text-[15px] font-bold">Чистим и гладим</div><div class="text-[12px] text-slate-500 mt-0.5">Эко-средства под каждый материал</div></div></div>
+        <div class="flex gap-4"><div class="w-7 shrink-0 v2-display text-emerald-600 text-2xl font-black">04</div><div><div class="text-[15px] font-bold">Привозим обратно</div><div class="text-[12px] text-slate-500 mt-0.5">Через 48 часов, в фирменной упаковке</div></div></div>
+      </div>
+    </section>
+
+    <section class="px-6 mt-14">
+      <div class="rounded-3xl bg-slate-50 p-6">
+        <i data-lucide="quote" class="w-7 h-7 text-emerald-600"></i>
+        <p class="mt-3 text-[15px] leading-relaxed font-medium text-slate-800 v2-display">«Спасли моё свадебное платье. Курьер вежливый, упаковка премиум, в срок. Теперь только сюда.»</p>
+        <div class="mt-5 flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-300 to-rose-500 grid place-items-center text-white font-bold">A</div><div><div class="text-[13px] font-semibold leading-tight">Анастасия К.</div><div class="flex gap-0.5 mt-0.5"><i data-lucide="star" class="w-3 h-3 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="w-3 h-3 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="w-3 h-3 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="w-3 h-3 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="w-3 h-3 fill-amber-400 text-amber-400"></i></div></div></div>
+      </div>
+    </section>
+
+    <section class="px-6 mt-10 pb-32">
+      <div class="rounded-3xl bg-emerald-600 text-white p-6 relative overflow-hidden">
+        <div class="absolute -bottom-8 -right-4 w-32 h-32 rounded-full bg-emerald-400 opacity-30"></div>
+        <div class="text-[11px] tracking-[0.25em] uppercase font-semibold text-white/70 relative">Промокод</div>
+        <div class="text-[34px] v2-display font-black tracking-tight mt-1 relative">−20%</div>
+        <div class="text-[13px] mt-1 relative font-medium" style="font-family:Inter;">на первый заказ · <span class="font-bold bg-white/20 px-2 py-0.5 rounded">FIRST20</span></div>
+      </div>
+    </section>
+
+    <div class="absolute bottom-4 left-4 right-4">
+      <button class="w-full h-14 rounded-full bg-slate-900 text-white font-semibold flex items-center justify-center gap-2 shadow-xl"><span>Заказать</span><i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                        V2 · DESKTOP                           ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="variant hidden" data-variant="2" data-view="desktop">
+  <div class="desktop-frame bg-white text-slate-900">
+
+    <div class="bg-slate-50 border-b border-slate-200 px-4 h-9 flex items-center gap-2">
+      <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-rose-400"></div><div class="w-2.5 h-2.5 rounded-full bg-amber-400"></div><div class="w-2.5 h-2.5 rounded-full bg-emerald-400"></div></div>
+      <div class="flex-1 max-w-md mx-auto bg-white border border-slate-200 rounded text-[11px] text-slate-500 px-3 py-1 flex items-center gap-2"><i data-lucide="lock" class="w-3 h-3 text-emerald-600"></i> kaskad.uz/p/kaskad</div>
+    </div>
+
+    <header class="px-12 py-6 flex items-center justify-between border-b border-slate-100">
+      <div class="text-2xl v2-display font-black tracking-tight">kaskad<span class="text-emerald-600">.</span></div>
+      <nav class="flex items-center gap-8 text-sm font-medium text-slate-600">
+        <a class="hover:text-slate-900">Услуги</a>
+        <a class="hover:text-slate-900">Цены</a>
+        <a class="hover:text-slate-900">Как работает</a>
+        <a class="hover:text-slate-900">Отзывы</a>
+        <a class="hover:text-slate-900">Контакты</a>
+      </nav>
+      <div class="flex items-center gap-4">
+        <a class="text-sm font-semibold text-slate-700 hover:text-slate-900">+998 90 123 45 67</a>
+        <button class="h-10 px-5 rounded-full bg-slate-900 text-white font-semibold text-sm flex items-center gap-2">Заказать <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+      </div>
+    </header>
+
+    <!-- Hero · large typographic -->
+    <section class="px-12 pt-24 pb-20 v2-display">
+      <div class="text-[11px] uppercase tracking-[0.3em] text-slate-400 font-semibold mb-6">Химчистка · Стирка · Доставка</div>
+      <h1 class="text-[160px] leading-[0.85] font-black tracking-tighter">
+        Свежесть<br>
+        <span class="italic font-extralight text-emerald-600">за 48 часов.</span>
+      </h1>
+      <div class="mt-12 grid grid-cols-12 gap-10 items-end">
+        <div class="col-span-7">
+          <p class="text-[20px] leading-relaxed text-slate-600 max-w-[560px]" style="font-family:Inter;letter-spacing:0;">
+            Без очередей. Без поездок. Курьер заберёт у двери и привезёт идеальную чистоту в фирменной упаковке.
+          </p>
+        </div>
+        <div class="col-span-5 flex justify-end gap-3">
+          <button class="h-14 px-8 rounded-full bg-slate-900 text-white font-semibold text-[15px] flex items-center gap-2.5" style="font-family:Inter;">Оформить заказ <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+          <button class="h-14 px-6 rounded-full border border-slate-200 font-semibold text-[15px] flex items-center gap-2" style="font-family:Inter;"><i data-lucide="phone" class="w-4 h-4"></i> +998 90 123 45 67</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="px-12 py-16 border-y border-slate-100 v2-display">
+      <div class="grid grid-cols-4">
+        <div><div class="text-7xl font-black tracking-tighter">12K<span class="text-emerald-600">+</span></div><div class="text-[12px] text-slate-400 font-semibold uppercase tracking-widest mt-3" style="font-family:Inter;">Выполнено заказов</div></div>
+        <div class="border-l border-slate-100 pl-8"><div class="text-7xl font-black tracking-tighter">4.9<span class="text-emerald-600">★</span></div><div class="text-[12px] text-slate-400 font-semibold uppercase tracking-widest mt-3" style="font-family:Inter;">Рейтинг клиентов</div></div>
+        <div class="border-l border-slate-100 pl-8"><div class="text-7xl font-black tracking-tighter">48<span class="text-emerald-600">ч</span></div><div class="text-[12px] text-slate-400 font-semibold uppercase tracking-widest mt-3" style="font-family:Inter;">Среднее время</div></div>
+        <div class="border-l border-slate-100 pl-8"><div class="text-7xl font-black tracking-tighter">7<span class="text-emerald-600">/7</span></div><div class="text-[12px] text-slate-400 font-semibold uppercase tracking-widest mt-3" style="font-family:Inter;">Без выходных</div></div>
+      </div>
+    </section>
+
+    <!-- Categories — list rows full-width -->
+    <section class="px-12 py-20">
+      <div class="flex items-end justify-between mb-12">
+        <div>
+          <div class="text-[11px] uppercase tracking-[0.3em] text-slate-400 font-semibold mb-3">Услуги и цены</div>
+          <h2 class="text-7xl v2-display font-black tracking-tighter">Что мы чистим</h2>
+        </div>
+        <a class="text-sm font-semibold text-emerald-600 flex items-center gap-2 hover:gap-3 transition-all">смотреть весь прайс <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+      </div>
+
+      <div class="divide-y divide-slate-100 border-y border-slate-100">
+        <a class="grid grid-cols-12 items-center gap-6 py-8 group cursor-pointer">
+          <div class="col-span-1 text-[11px] text-slate-400 font-semibold uppercase tracking-wider" style="font-family:Inter;">01</div>
+          <div class="col-span-1"><div class="w-14 h-14 rounded-2xl bg-emerald-50 grid place-items-center group-hover:bg-emerald-100 transition"><i data-lucide="shirt" class="w-7 h-7 text-emerald-700"></i></div></div>
+          <div class="col-span-5"><div class="text-3xl v2-display font-black tracking-tight">Одежда</div><div class="text-[13px] text-slate-500 mt-1.5" style="font-family:Inter;">Костюмы, рубашки, брюки, платья, верхняя одежда</div></div>
+          <div class="col-span-3 text-[12px] text-slate-500 leading-relaxed" style="font-family:Inter;">Эко-химчистка с индивидуальным подбором программы под материал.</div>
+          <div class="col-span-1 text-right v2-display"><div class="text-[11px] text-slate-400 font-semibold uppercase" style="font-family:Inter;">от</div><div class="text-2xl font-black">25K</div></div>
+          <div class="col-span-1 text-right"><i data-lucide="arrow-up-right" class="w-6 h-6 text-slate-300 group-hover:text-emerald-600 transition ml-auto"></i></div>
+        </a>
+        <a class="grid grid-cols-12 items-center gap-6 py-8 group cursor-pointer">
+          <div class="col-span-1 text-[11px] text-slate-400 font-semibold uppercase tracking-wider" style="font-family:Inter;">02</div>
+          <div class="col-span-1"><div class="w-14 h-14 rounded-2xl bg-emerald-50 grid place-items-center group-hover:bg-emerald-100 transition"><i data-lucide="bed-double" class="w-7 h-7 text-emerald-700"></i></div></div>
+          <div class="col-span-5"><div class="text-3xl v2-display font-black tracking-tight">Текстиль</div><div class="text-[13px] text-slate-500 mt-1.5" style="font-family:Inter;">Шторы, пледы, постельное бельё, скатерти</div></div>
+          <div class="col-span-3 text-[12px] text-slate-500 leading-relaxed" style="font-family:Inter;">Глубокая стирка с гипоаллергенными средствами и деликатной сушкой.</div>
+          <div class="col-span-1 text-right v2-display"><div class="text-[11px] text-slate-400 font-semibold uppercase" style="font-family:Inter;">от</div><div class="text-2xl font-black">35K</div></div>
+          <div class="col-span-1 text-right"><i data-lucide="arrow-up-right" class="w-6 h-6 text-slate-300 group-hover:text-emerald-600 transition ml-auto"></i></div>
+        </a>
+        <a class="grid grid-cols-12 items-center gap-6 py-8 group cursor-pointer">
+          <div class="col-span-1 text-[11px] text-slate-400 font-semibold uppercase tracking-wider" style="font-family:Inter;">03</div>
+          <div class="col-span-1"><div class="w-14 h-14 rounded-2xl bg-emerald-50 grid place-items-center group-hover:bg-emerald-100 transition"><i data-lucide="footprints" class="w-7 h-7 text-emerald-700"></i></div></div>
+          <div class="col-span-5"><div class="text-3xl v2-display font-black tracking-tight">Обувь</div><div class="text-[13px] text-slate-500 mt-1.5" style="font-family:Inter;">Кожа, замша, нубук, текстильная обувь</div></div>
+          <div class="col-span-3 text-[12px] text-slate-500 leading-relaxed" style="font-family:Inter;">Восстановление цвета, удаление пятен, реставрация подошвы.</div>
+          <div class="col-span-1 text-right v2-display"><div class="text-[11px] text-slate-400 font-semibold uppercase" style="font-family:Inter;">от</div><div class="text-2xl font-black">45K</div></div>
+          <div class="col-span-1 text-right"><i data-lucide="arrow-up-right" class="w-6 h-6 text-slate-300 group-hover:text-emerald-600 transition ml-auto"></i></div>
+        </a>
+        <a class="grid grid-cols-12 items-center gap-6 py-8 group cursor-pointer">
+          <div class="col-span-1 text-[11px] text-slate-400 font-semibold uppercase tracking-wider" style="font-family:Inter;">04</div>
+          <div class="col-span-1"><div class="w-14 h-14 rounded-2xl bg-emerald-50 grid place-items-center group-hover:bg-emerald-100 transition"><i data-lucide="layers" class="w-7 h-7 text-emerald-700"></i></div></div>
+          <div class="col-span-5"><div class="text-3xl v2-display font-black tracking-tight">Ковры</div><div class="text-[13px] text-slate-500 mt-1.5" style="font-family:Inter;">Любого размера, материала и состава</div></div>
+          <div class="col-span-3 text-[12px] text-slate-500 leading-relaxed" style="font-family:Inter;">Бесплатный вывоз и доставка. Аквачистка с антиаллергенной обработкой.</div>
+          <div class="col-span-1 text-right v2-display"><div class="text-[11px] text-slate-400 font-semibold uppercase" style="font-family:Inter;">от</div><div class="text-2xl font-black">15K<span class="text-base">/м²</span></div></div>
+          <div class="col-span-1 text-right"><i data-lucide="arrow-up-right" class="w-6 h-6 text-slate-300 group-hover:text-emerald-600 transition ml-auto"></i></div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Steps -->
+    <section class="px-12 py-20 bg-slate-50">
+      <div class="text-[11px] uppercase tracking-[0.3em] text-slate-400 font-semibold mb-3">Процесс</div>
+      <h2 class="text-7xl v2-display font-black tracking-tighter mb-16">Как это работает</h2>
+      <div class="grid grid-cols-4 gap-8">
+        <div><div class="text-7xl v2-display text-emerald-600 font-black tracking-tighter">01</div><div class="mt-6 text-2xl v2-display font-black tracking-tight">Заявка</div><div class="text-[13px] text-slate-500 mt-2 leading-relaxed" style="font-family:Inter;">Сайт, Telegram-бот или звонок. 2 минуты вашего времени.</div></div>
+        <div><div class="text-7xl v2-display text-emerald-600 font-black tracking-tighter">02</div><div class="mt-6 text-2xl v2-display font-black tracking-tight">Вывоз</div><div class="text-[13px] text-slate-500 mt-2 leading-relaxed" style="font-family:Inter;">Курьер приезжает в удобное окно. Бесплатно от 200K сум.</div></div>
+        <div><div class="text-7xl v2-display text-emerald-600 font-black tracking-tighter">03</div><div class="mt-6 text-2xl v2-display font-black tracking-tight">Чистка</div><div class="text-[13px] text-slate-500 mt-2 leading-relaxed" style="font-family:Inter;">Эко-средства, индивидуальная программа под каждый материал.</div></div>
+        <div><div class="text-7xl v2-display text-emerald-600 font-black tracking-tighter">04</div><div class="mt-6 text-2xl v2-display font-black tracking-tight">Доставка</div><div class="text-[13px] text-slate-500 mt-2 leading-relaxed" style="font-family:Inter;">Через 48 часов, в фирменной упаковке прямо к двери.</div></div>
+      </div>
+    </section>
+
+    <!-- Big quote -->
+    <section class="px-12 py-24 grid grid-cols-12 gap-10">
+      <div class="col-span-3">
+        <div class="text-[11px] uppercase tracking-[0.3em] text-slate-400 font-semibold mb-3">Отзыв</div>
+        <h2 class="text-3xl v2-display font-black tracking-tight">Что говорят клиенты</h2>
+        <div class="mt-6 flex items-center gap-3 text-sm">
+          <div class="flex gap-0.5"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i></div>
+          <span class="text-slate-500"><span class="font-bold text-slate-900">4.9</span> · 1 200 отзывов</span>
+        </div>
+      </div>
+      <div class="col-span-9">
+        <i data-lucide="quote" class="w-12 h-12 text-emerald-600"></i>
+        <p class="mt-4 text-[40px] v2-display font-light leading-tight text-slate-800 tracking-tight italic">«Спасли моё свадебное платье после торжества. Курьер вежливый, упаковка как из бутика, всё в срок. Теперь только сюда.»</p>
+        <div class="mt-8 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-pink-300 to-rose-500 grid place-items-center text-white font-bold">A</div>
+          <div><div class="text-base v2-display font-bold leading-tight">Анастасия К.</div><div class="text-[12px] text-slate-400 mt-0.5" style="font-family:Inter;">Постоянный клиент с 2024</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Promo -->
+    <section class="px-12 pb-20">
+      <div class="rounded-3xl bg-emerald-600 text-white p-16 relative overflow-hidden">
+        <div class="absolute -bottom-12 -right-12 w-72 h-72 rounded-full bg-emerald-400 opacity-30"></div>
+        <div class="absolute top-1/2 -left-20 w-40 h-40 rounded-full bg-emerald-700 opacity-40"></div>
+        <div class="relative grid grid-cols-2 gap-12 items-center">
+          <div>
+            <div class="text-[11px] uppercase tracking-[0.3em] font-semibold text-white/70 mb-3">Промокод FIRST20</div>
+            <div class="text-[120px] v2-display font-black leading-none tracking-tighter">−20%</div>
+            <div class="text-2xl v2-display font-bold mt-3 tracking-tight">на первый заказ</div>
+          </div>
+          <div class="flex flex-col items-end gap-4">
+            <div class="text-[15px] text-white/85 max-w-sm text-right">Введите промокод <span class="font-bold bg-white/20 px-2 py-0.5 rounded">FIRST20</span> при оформлении и получите автоматическую скидку на любой первый заказ.</div>
+            <button class="h-14 px-8 rounded-full bg-white text-emerald-700 font-bold text-[15px] flex items-center gap-2.5" style="font-family:Inter;">Оформить заказ <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="px-12 py-12 border-t border-slate-100 grid grid-cols-12 gap-8 text-sm">
+      <div class="col-span-4">
+        <div class="text-2xl v2-display font-black tracking-tight mb-4">kaskad<span class="text-emerald-600">.</span></div>
+        <p class="text-[13px] text-slate-500 leading-relaxed max-w-xs">Премиум химчистка с доставкой по Ташкенту. Эко-средства, индивидуальный подход к каждой вещи.</p>
+      </div>
+      <div class="col-span-2"><div class="text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-3">Услуги</div><div class="space-y-2 text-[13px] text-slate-700"><a class="block hover:text-emerald-600">Одежда</a><a class="block hover:text-emerald-600">Текстиль</a><a class="block hover:text-emerald-600">Обувь</a><a class="block hover:text-emerald-600">Ковры</a></div></div>
+      <div class="col-span-2"><div class="text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-3">Компания</div><div class="space-y-2 text-[13px] text-slate-700"><a class="block hover:text-emerald-600">О нас</a><a class="block hover:text-emerald-600">Прайс</a><a class="block hover:text-emerald-600">Партнёрам</a><a class="block hover:text-emerald-600">Контакты</a></div></div>
+      <div class="col-span-4"><div class="text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-3">Контакты</div><div class="space-y-2 text-[13px] text-slate-700"><div class="flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-600"></i> +998 90 123 45 67</div><div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-600"></i> Ташкент, ул. Амира Темура 12</div><div class="flex items-center gap-2"><i data-lucide="clock" class="w-3.5 h-3.5 text-emerald-600"></i> 9:00 — 21:00, без выходных</div></div></div>
+    </footer>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                        V3 · MOBILE                            ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="variant hidden" data-variant="3" data-view="mobile">
+  <div class="phone overflow-hidden v3-display" style="background: linear-gradient(180deg, #FFF7E6 0%, #FFE9CF 30%, #FFD9E0 100%);">
+    <div class="flex justify-between items-center px-6 pt-4 text-[11px] font-semibold text-slate-700">
+      <span>9:41</span>
+      <span class="flex gap-1 items-center"><i data-lucide="signal" class="w-3 h-3"></i><i data-lucide="wifi" class="w-3 h-3"></i><i data-lucide="battery-full" class="w-3.5 h-3.5"></i></span>
+    </div>
+    <div class="blob" style="top: 100px; left: -40px; width: 200px; height: 200px; background: #FFB74A;"></div>
+    <div class="blob" style="top: 240px; right: -60px; width: 180px; height: 180px; background: #FF6B9E;"></div>
+    <div class="blob" style="top: 600px; left: 50%; width: 220px; height: 220px; background: #7C9CFF; opacity: 0.4;"></div>
+
+    <header class="flex items-center justify-between px-5 pt-3 relative">
+      <div class="flex items-center gap-2">
+        <div class="w-10 h-10 rounded-2xl bg-slate-900 grid place-items-center -rotate-6 shadow-lg"><i data-lucide="sparkles" class="w-5 h-5 text-amber-300"></i></div>
+        <div class="text-xl font-black tracking-tight">Каскад!</div>
+      </div>
+      <button class="w-10 h-10 rounded-2xl bg-white shadow-sm grid place-items-center"><i data-lucide="menu" class="w-4 h-4"></i></button>
+    </header>
+
+    <section class="px-5 pt-8 relative">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 text-white text-[10px] font-bold uppercase tracking-wider"><i data-lucide="zap" class="w-3 h-3 text-amber-300"></i> Доставка 48 часов</div>
+      <h1 class="mt-4 text-[48px] leading-[0.92] font-black tracking-tight">Чистая <br>одежда — <br><span class="relative inline-block">без хлопот<svg class="absolute -bottom-1 left-0 w-full" height="10" viewBox="0 0 200 10" preserveAspectRatio="none"><path d="M2 7 Q 50 1, 100 5 T 198 4" fill="none" stroke="#FF4081" stroke-width="3" stroke-linecap="round"/></svg></span></h1>
+      <p class="mt-5 text-[14px] text-slate-700 max-w-[280px] leading-relaxed font-medium" style="font-family:Inter;">Заберём, постираем, вернём в срок. Без очередей и нервов.</p>
+      <div class="mt-6 flex items-center gap-2">
+        <button class="flex-1 px-6 py-3 rounded-2xl bg-slate-900 text-white font-bold text-sm shadow-xl flex items-center justify-center gap-2">Заказать вывоз<span class="w-6 h-6 rounded-full bg-amber-300 grid place-items-center"><i data-lucide="arrow-right" class="w-3 h-3 text-slate-900"></i></span></button>
+        <button class="w-12 h-12 rounded-2xl bg-white shadow-sm grid place-items-center"><i data-lucide="phone" class="w-4 h-4"></i></button>
+      </div>
+    </section>
+
+    <section class="mt-7 relative">
+      <div class="overflow-hidden py-2 stripe">
+        <div class="flex gap-6 items-center font-bold text-[13px] text-slate-700 px-5 whitespace-nowrap">
+          <span class="flex items-center gap-1.5"><i data-lucide="leaf" class="w-3.5 h-3.5 text-emerald-600"></i> ЭКО</span><span>·</span>
+          <span class="flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-blue-600"></i> ГАРАНТИЯ</span><span>·</span>
+          <span class="flex items-center gap-1.5"><i data-lucide="zap" class="w-3.5 h-3.5 text-amber-600"></i> 48Ч</span><span>·</span>
+          <span class="flex items-center gap-1.5"><i data-lucide="heart" class="w-3.5 h-3.5 text-rose-500"></i> 12K+</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="px-5 mt-8 relative">
+      <h2 class="text-[22px] font-black tracking-tight mb-3">Что чистим</h2>
+      <div class="grid grid-cols-2 gap-3">
+        <a class="rounded-3xl p-4 relative overflow-hidden bg-amber-300 shadow-md"><div class="absolute -bottom-3 -right-3 w-20 h-20 rounded-full bg-amber-400/60"></div><i data-lucide="shirt" class="w-8 h-8 relative"></i><div class="mt-4 text-base font-black relative">Одежда</div><div class="text-[11px] font-bold text-slate-700 mt-0.5 relative">от 25 000 сум</div></a>
+        <a class="rounded-3xl p-4 relative overflow-hidden bg-rose-300 shadow-md"><div class="absolute -bottom-3 -right-3 w-20 h-20 rounded-full bg-rose-400/60"></div><i data-lucide="bed-double" class="w-8 h-8 relative"></i><div class="mt-4 text-base font-black relative">Текстиль</div><div class="text-[11px] font-bold text-slate-700 mt-0.5 relative">от 35 000 сум</div></a>
+        <a class="rounded-3xl p-4 relative overflow-hidden bg-sky-300 shadow-md"><div class="absolute -bottom-3 -right-3 w-20 h-20 rounded-full bg-sky-400/60"></div><i data-lucide="footprints" class="w-8 h-8 relative"></i><div class="mt-4 text-base font-black relative">Обувь</div><div class="text-[11px] font-bold text-slate-700 mt-0.5 relative">от 45 000 сум</div></a>
+        <a class="rounded-3xl p-4 relative overflow-hidden bg-emerald-300 shadow-md"><div class="absolute -bottom-3 -right-3 w-20 h-20 rounded-full bg-emerald-400/60"></div><i data-lucide="layers" class="w-8 h-8 relative"></i><div class="mt-4 text-base font-black relative">Ковры</div><div class="text-[11px] font-bold text-slate-700 mt-0.5 relative">от 15К сум/м²</div></a>
+      </div>
+    </section>
+
+    <section class="px-5 mt-10 relative">
+      <h2 class="text-[22px] font-black tracking-tight">Просто как 1·2·3</h2>
+      <div class="mt-5 bg-white rounded-3xl p-5 shadow-sm">
+        <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-2xl bg-amber-300 grid place-items-center text-2xl font-black -rotate-6">1</div><div class="flex-1"><div class="text-base font-black">Оставь заявку</div><div class="text-[12px] text-slate-500 font-medium" style="font-family:Inter;">2 минуты — и мы в пути</div></div></div>
+        <div class="ml-6 my-2 w-0.5 h-6 bg-slate-200"></div>
+        <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-2xl bg-rose-300 grid place-items-center text-2xl font-black rotate-3">2</div><div class="flex-1"><div class="text-base font-black">Передай вещи</div><div class="text-[12px] text-slate-500 font-medium" style="font-family:Inter;">Курьер заберёт у двери</div></div></div>
+        <div class="ml-6 my-2 w-0.5 h-6 bg-slate-200"></div>
+        <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-2xl bg-emerald-300 grid place-items-center text-2xl font-black -rotate-3">3</div><div class="flex-1"><div class="text-base font-black">Получи чистое</div><div class="text-[12px] text-slate-500 font-medium" style="font-family:Inter;">Через 48 часов · упаковка</div></div></div>
+      </div>
+    </section>
+
+    <section class="px-5 mt-10 relative">
+      <div class="bg-slate-900 rounded-3xl p-5 text-white relative overflow-hidden">
+        <div class="absolute top-3 right-3"><div class="flex gap-0.5"><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i><i data-lucide="star" class="w-4 h-4 fill-amber-300 text-amber-300"></i></div></div>
+        <i data-lucide="quote" class="w-8 h-8 text-amber-300"></i>
+        <p class="mt-2 text-[14.5px] leading-relaxed font-medium" style="font-family:Inter;">Спасли моё свадебное платье! Курьер пунктуальный, упаковка как из бутика. Теперь только сюда.</p>
+        <div class="mt-4 flex items-center gap-3"><div class="w-9 h-9 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 grid place-items-center text-white font-bold text-sm">A</div><div><div class="text-[13px] font-bold">Анастасия К.</div><div class="text-[10px] text-white/60" style="font-family:Inter;">3 дня назад</div></div></div>
+      </div>
+    </section>
+
+    <section class="px-5 mt-8 pb-32 relative">
+      <div class="rounded-3xl p-6 relative overflow-hidden bg-amber-300 shadow-md">
+        <div class="absolute top-2 right-2 ribbon bg-rose-500 text-white text-[10px] font-black px-3 py-1 rounded-full">NEW</div>
+        <div class="text-[60px] font-black leading-none tracking-tight">−20%</div>
+        <div class="text-[15px] font-black mt-2">на первый заказ</div>
+        <div class="mt-3 inline-block bg-slate-900 text-white text-[12px] font-bold px-3 py-1.5 rounded-full" style="font-family:Inter;">FIRST20</div>
+      </div>
+    </section>
+
+    <div class="absolute bottom-4 left-4 right-4">
+      <button class="w-full h-14 rounded-2xl bg-slate-900 text-white font-bold flex items-center justify-center gap-2 shadow-2xl" style="font-family:Inter;"><span class="w-6 h-6 rounded-full bg-amber-300 grid place-items-center"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-slate-900"></i></span> Заказать сейчас</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                        V3 · DESKTOP                           ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="variant hidden" data-variant="3" data-view="desktop">
+  <div class="desktop-frame v3-display" style="background: linear-gradient(180deg, #FFF7E6 0%, #FFE9CF 100%);">
+    <!-- floating blobs -->
+    <div class="blob" style="top: 200px; left: -100px; width: 400px; height: 400px; background: #FFB74A; opacity: 0.5;"></div>
+    <div class="blob" style="top: 500px; right: -120px; width: 380px; height: 380px; background: #FF6B9E; opacity: 0.45;"></div>
+    <div class="blob" style="top: 1200px; left: 30%; width: 480px; height: 480px; background: #7C9CFF; opacity: 0.35;"></div>
+
+    <div class="bg-white/60 backdrop-blur border-b border-slate-200 px-4 h-9 flex items-center gap-2 relative">
+      <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-rose-400"></div><div class="w-2.5 h-2.5 rounded-full bg-amber-400"></div><div class="w-2.5 h-2.5 rounded-full bg-emerald-400"></div></div>
+      <div class="flex-1 max-w-md mx-auto bg-white border border-slate-200 rounded text-[11px] text-slate-500 px-3 py-1 flex items-center gap-2"><i data-lucide="lock" class="w-3 h-3 text-emerald-600"></i> kaskad.uz/p/kaskad</div>
+    </div>
+
+    <header class="px-12 py-6 flex items-center justify-between relative">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-slate-900 grid place-items-center -rotate-6 shadow-lg"><i data-lucide="sparkles" class="w-6 h-6 text-amber-300"></i></div>
+        <div class="text-2xl font-black tracking-tight">Каскад!</div>
+      </div>
+      <nav class="flex items-center gap-7 text-sm font-bold text-slate-700">
+        <a class="hover:text-slate-900">Услуги</a>
+        <a class="hover:text-slate-900">Прайс</a>
+        <a class="hover:text-slate-900">Как работает</a>
+        <a class="hover:text-slate-900">Отзывы</a>
+        <a class="hover:text-slate-900">Контакты</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a class="text-sm font-bold text-slate-700 flex items-center gap-1.5"><i data-lucide="phone" class="w-3.5 h-3.5"></i> +998 90 123 45 67</a>
+        <button class="h-11 px-5 rounded-2xl bg-slate-900 text-white font-bold text-sm flex items-center gap-2 shadow-lg" style="font-family:Inter;">Заказать <span class="w-5 h-5 rounded-full bg-amber-300 grid place-items-center"><i data-lucide="arrow-right" class="w-3 h-3 text-slate-900"></i></span></button>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="px-12 pt-12 pb-20 grid grid-cols-12 gap-10 items-center relative">
+      <div class="col-span-7">
+        <div class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-900 text-white text-[11px] font-bold uppercase tracking-wider"><i data-lucide="zap" class="w-3.5 h-3.5 text-amber-300"></i> Доставка 48 часов</div>
+        <h1 class="mt-6 text-[88px] leading-[0.92] font-black tracking-tight">
+          Чистая одежда — <br>
+          <span class="relative inline-block">
+            без хлопот
+            <svg class="absolute -bottom-2 left-0 w-full" height="14" viewBox="0 0 400 14" preserveAspectRatio="none">
+              <path d="M2 10 Q 100 1, 200 7 T 398 6" fill="none" stroke="#FF4081" stroke-width="5" stroke-linecap="round"/>
+            </svg>
+          </span>
+        </h1>
+        <p class="mt-7 text-[18px] text-slate-700 max-w-[520px] leading-relaxed font-semibold" style="font-family:Inter;">
+          Заберём из дома, постираем как для себя, привезём в фирменной упаковке. Никаких очередей и нервов.
+        </p>
+        <div class="mt-9 flex items-center gap-3">
+          <button class="h-14 px-7 rounded-2xl bg-slate-900 text-white font-bold text-[15px] shadow-xl flex items-center gap-3" style="font-family:Inter;">
+            Заказать вывоз
+            <span class="w-7 h-7 rounded-full bg-amber-300 grid place-items-center"><i data-lucide="arrow-right" class="w-4 h-4 text-slate-900"></i></span>
+          </button>
+          <button class="h-14 px-6 rounded-2xl bg-white shadow-md font-bold text-[15px] flex items-center gap-2" style="font-family:Inter;"><i data-lucide="phone" class="w-4 h-4"></i> Позвонить</button>
+        </div>
+      </div>
+
+      <!-- Right column: chunky cards collage -->
+      <div class="col-span-5 relative h-[480px]">
+        <div class="absolute top-0 left-8 w-56 h-56 rounded-3xl bg-amber-300 shadow-xl rotate-6 p-5 hover:rotate-0 transition">
+          <i data-lucide="shirt" class="w-10 h-10"></i>
+          <div class="mt-6 text-2xl font-black">Одежда</div>
+          <div class="text-[12px] font-bold text-slate-700 mt-1">от 25 000 сум</div>
+          <div class="absolute bottom-3 right-3 w-7 h-7 rounded-full bg-slate-900 grid place-items-center"><i data-lucide="arrow-up-right" class="w-4 h-4 text-amber-300"></i></div>
+        </div>
+        <div class="absolute top-12 right-0 w-52 h-52 rounded-3xl bg-rose-300 shadow-xl -rotate-6 p-5 hover:rotate-0 transition">
+          <i data-lucide="bed-double" class="w-10 h-10"></i>
+          <div class="mt-6 text-2xl font-black">Текстиль</div>
+          <div class="text-[12px] font-bold text-slate-700 mt-1">от 35 000 сум</div>
+          <div class="absolute bottom-3 right-3 w-7 h-7 rounded-full bg-slate-900 grid place-items-center"><i data-lucide="arrow-up-right" class="w-4 h-4 text-amber-300"></i></div>
+        </div>
+        <div class="absolute bottom-16 left-0 w-48 h-48 rounded-3xl bg-sky-300 shadow-xl -rotate-3 p-4 hover:rotate-0 transition">
+          <i data-lucide="footprints" class="w-9 h-9"></i>
+          <div class="mt-5 text-xl font-black">Обувь</div>
+          <div class="text-[11px] font-bold text-slate-700 mt-1">от 45 000 сум</div>
+          <div class="absolute bottom-3 right-3 w-6 h-6 rounded-full bg-slate-900 grid place-items-center"><i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-amber-300"></i></div>
+        </div>
+        <div class="absolute bottom-4 right-12 w-44 h-44 rounded-3xl bg-emerald-300 shadow-xl rotate-3 p-4 hover:rotate-0 transition">
+          <i data-lucide="layers" class="w-9 h-9"></i>
+          <div class="mt-5 text-xl font-black">Ковры</div>
+          <div class="text-[11px] font-bold text-slate-700 mt-1">от 15К сум/м²</div>
+          <div class="absolute bottom-3 right-3 w-6 h-6 rounded-full bg-slate-900 grid place-items-center"><i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-amber-300"></i></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Marquee trust strip -->
+    <section class="relative">
+      <div class="bg-slate-900 text-white py-5 marquee">
+        <div class="marquee-track text-[18px] font-black tracking-wide whitespace-nowrap">
+          <span class="flex items-center gap-3"><i data-lucide="leaf" class="w-5 h-5 text-emerald-300"></i> ЭКО-СРЕДСТВА</span>
+          <span class="text-amber-300">★</span>
+          <span class="flex items-center gap-3"><i data-lucide="shield-check" class="w-5 h-5 text-sky-300"></i> ГАРАНТИЯ КАЧЕСТВА</span>
+          <span class="text-amber-300">★</span>
+          <span class="flex items-center gap-3"><i data-lucide="zap" class="w-5 h-5 text-amber-300"></i> 48 ЧАСОВ</span>
+          <span class="text-amber-300">★</span>
+          <span class="flex items-center gap-3"><i data-lucide="heart" class="w-5 h-5 text-rose-300"></i> 12 000+ КЛИЕНТОВ</span>
+          <span class="text-amber-300">★</span>
+          <span class="flex items-center gap-3"><i data-lucide="truck" class="w-5 h-5 text-emerald-300"></i> БЕСПЛАТНАЯ ДОСТАВКА</span>
+          <span class="text-amber-300">★</span>
+          <span class="flex items-center gap-3"><i data-lucide="leaf" class="w-5 h-5 text-emerald-300"></i> ЭКО-СРЕДСТВА</span>
+          <span class="text-amber-300">★</span>
+          <span class="flex items-center gap-3"><i data-lucide="shield-check" class="w-5 h-5 text-sky-300"></i> ГАРАНТИЯ КАЧЕСТВА</span>
+          <span class="text-amber-300">★</span>
+          <span class="flex items-center gap-3"><i data-lucide="zap" class="w-5 h-5 text-amber-300"></i> 48 ЧАСОВ</span>
+          <span class="text-amber-300">★</span>
+          <span class="flex items-center gap-3"><i data-lucide="heart" class="w-5 h-5 text-rose-300"></i> 12 000+ КЛИЕНТОВ</span>
+          <span class="text-amber-300">★</span>
+          <span class="flex items-center gap-3"><i data-lucide="truck" class="w-5 h-5 text-emerald-300"></i> БЕСПЛАТНАЯ ДОСТАВКА</span>
+          <span class="text-amber-300">★</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Categories -->
+    <section class="px-12 py-20 relative">
+      <h2 class="text-7xl font-black tracking-tight">Что чистим</h2>
+      <p class="text-[16px] text-slate-700 font-semibold mt-3 max-w-md" style="font-family:Inter;">Каждая категория — индивидуальная программа. Никакого универсального подхода.</p>
+      <div class="grid grid-cols-4 gap-6 mt-12">
+        <a class="rounded-3xl p-7 relative overflow-hidden bg-amber-300 shadow-xl hover:-translate-y-2 transition">
+          <div class="absolute -bottom-4 -right-4 w-32 h-32 rounded-full bg-amber-400/60"></div>
+          <i data-lucide="shirt" class="w-12 h-12 relative"></i>
+          <div class="mt-8 text-3xl font-black relative">Одежда</div>
+          <div class="text-[12px] font-bold text-slate-700 mt-1 relative" style="font-family:Inter;">Костюмы, платья, рубашки</div>
+          <div class="mt-6 pt-5 border-t-2 border-amber-200/60 relative">
+            <div class="text-[11px] font-bold text-slate-700 uppercase tracking-wider" style="font-family:Inter;">от</div>
+            <div class="text-3xl font-black mt-0.5">25K сум</div>
+          </div>
+        </a>
+        <a class="rounded-3xl p-7 relative overflow-hidden bg-rose-300 shadow-xl hover:-translate-y-2 transition">
+          <div class="absolute -bottom-4 -right-4 w-32 h-32 rounded-full bg-rose-400/60"></div>
+          <i data-lucide="bed-double" class="w-12 h-12 relative"></i>
+          <div class="mt-8 text-3xl font-black relative">Текстиль</div>
+          <div class="text-[12px] font-bold text-slate-700 mt-1 relative" style="font-family:Inter;">Шторы, пледы, бельё</div>
+          <div class="mt-6 pt-5 border-t-2 border-rose-200/60 relative">
+            <div class="text-[11px] font-bold text-slate-700 uppercase tracking-wider" style="font-family:Inter;">от</div>
+            <div class="text-3xl font-black mt-0.5">35K сум</div>
+          </div>
+        </a>
+        <a class="rounded-3xl p-7 relative overflow-hidden bg-sky-300 shadow-xl hover:-translate-y-2 transition">
+          <div class="absolute -bottom-4 -right-4 w-32 h-32 rounded-full bg-sky-400/60"></div>
+          <i data-lucide="footprints" class="w-12 h-12 relative"></i>
+          <div class="mt-8 text-3xl font-black relative">Обувь</div>
+          <div class="text-[12px] font-bold text-slate-700 mt-1 relative" style="font-family:Inter;">Кожа, замша, текстиль</div>
+          <div class="mt-6 pt-5 border-t-2 border-sky-200/60 relative">
+            <div class="text-[11px] font-bold text-slate-700 uppercase tracking-wider" style="font-family:Inter;">от</div>
+            <div class="text-3xl font-black mt-0.5">45K сум</div>
+          </div>
+        </a>
+        <a class="rounded-3xl p-7 relative overflow-hidden bg-emerald-300 shadow-xl hover:-translate-y-2 transition">
+          <div class="absolute -bottom-4 -right-4 w-32 h-32 rounded-full bg-emerald-400/60"></div>
+          <i data-lucide="layers" class="w-12 h-12 relative"></i>
+          <div class="mt-8 text-3xl font-black relative">Ковры</div>
+          <div class="text-[12px] font-bold text-slate-700 mt-1 relative" style="font-family:Inter;">Любого размера</div>
+          <div class="mt-6 pt-5 border-t-2 border-emerald-200/60 relative">
+            <div class="text-[11px] font-bold text-slate-700 uppercase tracking-wider" style="font-family:Inter;">от</div>
+            <div class="text-3xl font-black mt-0.5">15K сум/м²</div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Steps -->
+    <section class="px-12 py-20 relative">
+      <h2 class="text-7xl font-black tracking-tight">Просто как 1·2·3</h2>
+      <div class="grid grid-cols-3 gap-6 mt-12">
+        <div class="bg-white rounded-3xl p-8 shadow-md">
+          <div class="w-20 h-20 rounded-3xl bg-amber-300 grid place-items-center text-5xl font-black -rotate-6 shadow-lg">1</div>
+          <div class="mt-6 text-2xl font-black">Оставь заявку</div>
+          <div class="text-[14px] text-slate-500 font-medium mt-2 leading-relaxed" style="font-family:Inter;">Через сайт, Telegram-бот или звонок. На всё — 2 минуты.</div>
+        </div>
+        <div class="bg-white rounded-3xl p-8 shadow-md">
+          <div class="w-20 h-20 rounded-3xl bg-rose-300 grid place-items-center text-5xl font-black rotate-3 shadow-lg">2</div>
+          <div class="mt-6 text-2xl font-black">Курьер забирает</div>
+          <div class="text-[14px] text-slate-500 font-medium mt-2 leading-relaxed" style="font-family:Inter;">Приедет в удобное окно. Бесплатно от 200К сум.</div>
+        </div>
+        <div class="bg-white rounded-3xl p-8 shadow-md">
+          <div class="w-20 h-20 rounded-3xl bg-emerald-300 grid place-items-center text-5xl font-black -rotate-3 shadow-lg">3</div>
+          <div class="mt-6 text-2xl font-black">Получи чистое</div>
+          <div class="text-[14px] text-slate-500 font-medium mt-2 leading-relaxed" style="font-family:Inter;">Через 48 часов в фирменной упаковке прямо к двери.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reviews -->
+    <section class="px-12 py-20 relative">
+      <div class="flex items-end justify-between mb-12">
+        <h2 class="text-7xl font-black tracking-tight">Любят клиенты</h2>
+        <div class="flex items-center gap-3 text-sm">
+          <div class="flex gap-0.5"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i></div>
+          <span class="text-slate-700 font-bold" style="font-family:Inter;">4.9 · 1.2K отзывов</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-6">
+        <div class="bg-slate-900 rounded-3xl p-7 text-white relative">
+          <i data-lucide="quote" class="w-10 h-10 text-amber-300"></i>
+          <p class="mt-3 text-[15px] leading-relaxed font-medium" style="font-family:Inter;">Спасли моё свадебное платье! Курьер пунктуальный, упаковка как из бутика.</p>
+          <div class="mt-6 flex items-center gap-3 pt-5 border-t border-white/10">
+            <div class="w-10 h-10 rounded-full bg-amber-300 grid place-items-center text-slate-900 font-bold">A</div>
+            <div><div class="text-sm font-bold">Анастасия К.</div><div class="text-[11px] text-white/60" style="font-family:Inter;">3 дня назад</div></div>
+          </div>
+        </div>
+        <div class="bg-amber-300 rounded-3xl p-7 relative">
+          <i data-lucide="quote" class="w-10 h-10"></i>
+          <p class="mt-3 text-[15px] leading-relaxed font-medium" style="font-family:Inter;">Костюм Boss из тонкой шерсти отдала с пятном — вернули как новый. Качество огонь.</p>
+          <div class="mt-6 flex items-center gap-3 pt-5 border-t border-amber-400/40">
+            <div class="w-10 h-10 rounded-full bg-slate-900 grid place-items-center text-amber-300 font-bold">М</div>
+            <div><div class="text-sm font-bold">Михаил С.</div><div class="text-[11px] text-slate-700" style="font-family:Inter;">1 неделю назад</div></div>
+          </div>
+        </div>
+        <div class="bg-rose-300 rounded-3xl p-7 relative">
+          <i data-lucide="quote" class="w-10 h-10"></i>
+          <p class="mt-3 text-[15px] leading-relaxed font-medium" style="font-family:Inter;">Ковёр 4×5 м из персидской шерсти забрали и привезли через 2 дня. Свежий, чистый!</p>
+          <div class="mt-6 flex items-center gap-3 pt-5 border-t border-rose-400/40">
+            <div class="w-10 h-10 rounded-full bg-slate-900 grid place-items-center text-rose-300 font-bold">Д</div>
+            <div><div class="text-sm font-bold">Дилшод Т.</div><div class="text-[11px] text-slate-700" style="font-family:Inter;">2 недели назад</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Promo -->
+    <section class="px-12 pb-20 relative">
+      <div class="rounded-[40px] p-16 bg-amber-300 shadow-2xl relative overflow-hidden">
+        <div class="absolute top-6 right-6 ribbon bg-rose-500 text-white text-sm font-black px-5 py-2 rounded-full shadow-lg">NEW · ОГОНЬ</div>
+        <div class="grid grid-cols-2 gap-12 items-center">
+          <div>
+            <div class="text-[180px] font-black leading-none tracking-tight">−20%</div>
+            <div class="text-3xl font-black mt-4">на первый заказ</div>
+            <div class="mt-5 inline-block bg-slate-900 text-white text-[15px] font-bold px-5 py-3 rounded-2xl" style="font-family:Inter;">Промокод FIRST20</div>
+          </div>
+          <div class="flex flex-col items-end gap-5">
+            <div class="text-[16px] text-slate-800 font-semibold max-w-md text-right" style="font-family:Inter;">
+              Введите промокод при оформлении и получите автоматическую скидку. Без подвоха — только чистота.
+            </div>
+            <button class="h-16 px-10 rounded-2xl bg-slate-900 text-white font-bold text-base flex items-center gap-3 shadow-2xl" style="font-family:Inter;">
+              Использовать сейчас
+              <span class="w-7 h-7 rounded-full bg-amber-300 grid place-items-center"><i data-lucide="arrow-right" class="w-4 h-4 text-slate-900"></i></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="px-12 py-12 bg-slate-900 text-white relative">
+      <div class="grid grid-cols-12 gap-8">
+        <div class="col-span-4">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-12 h-12 rounded-2xl bg-amber-300 grid place-items-center -rotate-6"><i data-lucide="sparkles" class="w-6 h-6 text-slate-900"></i></div>
+            <div class="text-2xl font-black tracking-tight">Каскад!</div>
+          </div>
+          <p class="text-[13px] text-white/70 leading-relaxed max-w-xs" style="font-family:Inter;">Чистота без хлопот. Заберём, постираем, вернём в срок.</p>
+        </div>
+        <div class="col-span-2"><div class="text-[11px] uppercase tracking-wider font-black text-amber-300 mb-3">Услуги</div><div class="space-y-2 text-[13px]" style="font-family:Inter;"><a class="block hover:text-amber-300 transition">Одежда</a><a class="block hover:text-amber-300 transition">Текстиль</a><a class="block hover:text-amber-300 transition">Обувь</a><a class="block hover:text-amber-300 transition">Ковры</a></div></div>
+        <div class="col-span-2"><div class="text-[11px] uppercase tracking-wider font-black text-amber-300 mb-3">Компания</div><div class="space-y-2 text-[13px]" style="font-family:Inter;"><a class="block hover:text-amber-300 transition">О нас</a><a class="block hover:text-amber-300 transition">Прайс</a><a class="block hover:text-amber-300 transition">Партнёрам</a><a class="block hover:text-amber-300 transition">Контакты</a></div></div>
+        <div class="col-span-4"><div class="text-[11px] uppercase tracking-wider font-black text-amber-300 mb-3">Контакты</div><div class="space-y-2 text-[13px]" style="font-family:Inter;"><div class="flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5 text-amber-300"></i> +998 90 123 45 67</div><div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-300"></i> Ташкент, ул. Амира Темура 12</div><div class="flex items-center gap-2"><i data-lucide="clock" class="w-3.5 h-3.5 text-amber-300"></i> 9:00 — 21:00, без выходных</div></div></div>
+      </div>
+    </footer>
+  </div>
+</div>
+
+
+</div>
+
+<div class="max-w-3xl mx-auto px-4 pb-12 text-center text-xs text-slate-500 leading-relaxed">
+  <p>3 варианта × 2 разрешения = 6 макетов. Контент идентичный, отличается только визуал. <br>Выбери понравившийся вариант — применю в <code class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-700">PublicProfilePage.tsx</code> для cleaning с реальными данными из БД.</p>
+</div>
+
+<script>
+  lucide.createIcons();
+
+  let currentVariant = '1';
+  let currentView = 'mobile';
+
+  function applyState() {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      const active = b.dataset.variant === currentVariant;
+      b.classList.toggle('bg-white', active);
+      b.classList.toggle('shadow-sm', active);
+      b.classList.toggle('text-slate-600', !active);
+    });
+    document.querySelectorAll('.view-btn').forEach(b => {
+      const active = b.dataset.view === currentView;
+      b.classList.toggle('bg-white', active);
+      b.classList.toggle('shadow-sm', active);
+      b.classList.toggle('text-slate-600', !active);
+    });
+    document.querySelectorAll('.variant').forEach(v => {
+      const show = v.dataset.variant === currentVariant && v.dataset.view === currentView;
+      v.classList.toggle('hidden', !show);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => lucide.createIcons(), 50);
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => {
+    currentVariant = b.dataset.variant; applyState();
+  }));
+  document.querySelectorAll('.view-btn').forEach(b => b.addEventListener('click', () => {
+    currentView = b.dataset.view; applyState();
+  }));
+</script>
+
+</body>
+</html>

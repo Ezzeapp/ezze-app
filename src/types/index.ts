@@ -61,6 +61,8 @@ export interface GlobalProduct extends BaseRecord {
   order?: number
 }
 
+export type LandingTemplate = 'premium' | 'minimal' | 'bold'
+
 export interface PageSettings {
   template?:   'minimal' | 'dark' | 'bold' | 'elegant'
   accent?:     string
@@ -68,6 +70,7 @@ export interface PageSettings {
   bg_custom?:  string
   btn_shape?:  'rounded' | 'pill' | 'square'
   font?:       'inter' | 'montserrat' | 'playfair'
+  landing_template?: LandingTemplate
 }
 
 export interface MasterProduct {
