@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { PRODUCT } from '@/lib/config'
 import { FEATURE_MAP, PLAN_ORDER, type FeaturePlan } from '@/config/features'
 
 // ─── Типы записи ────────────────────────────────────────────────────────────
@@ -19,11 +20,12 @@ export interface FeatureFlag {
 
 export function useFeatureFlags() {
   return useQuery<FeatureFlag[]>({
-    queryKey: ['feature_flags'],
+    queryKey: ['feature_flags', PRODUCT],
     queryFn: async () => {
       const { data } = await supabase
         .from('feature_flags')
         .select('*')
+        .eq('product', PRODUCT)
         .order('key')
       return (data ?? []) as FeatureFlag[]
     },
@@ -84,7 +86,10 @@ export function useUpsertFeatureFlag() {
       const { data, error } = await supabase
         .from('feature_flags')
         // flag_name — legacy NOT NULL column; pass key as fallback value
-        .upsert({ ...flag, flag_name: flag.key }, { onConflict: 'key' })
+        .upsert(
+          { ...flag, flag_name: flag.key, product: PRODUCT },
+          { onConflict: 'product,key' }
+        )
         .select()
         .single()
       if (error) throw error

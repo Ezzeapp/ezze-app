@@ -1,20 +1,19 @@
 import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
-import { Shield, Zap, Palette, LayoutGrid } from 'lucide-react'
+import { Shield, Palette, LayoutGrid } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
-import { AdminFeaturesTab } from '@/components/admin/AdminFeaturesTab'
 import { AdminAppearanceTab } from '@/components/admin/AdminAppearanceTab'
 import { AdminHomeScreenTab } from '@/components/admin/AdminHomeScreenTab'
 
-type Tab = 'features' | 'appearance' | 'home_screen'
+type Tab = 'appearance' | 'home_screen'
 
 export function AdminPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const [tab, setTab] = useState<Tab>('features')
+  const [tab, setTab] = useState<Tab>('appearance')
 
   // Защита — только is_admin
   if (!user?.is_admin) {
@@ -22,7 +21,6 @@ export function AdminPage() {
   }
 
   const tabs: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-    { id: 'features',    label: t('admin.tabFeatures'),       icon: Zap },
     { id: 'appearance',  label: t('admin.tabAppearance'),     icon: Palette },
     { id: 'home_screen', label: t('admin.homeScreen.title'),  icon: LayoutGrid },
   ]
@@ -79,7 +77,6 @@ export function AdminPage() {
 
         {/* Tab content */}
         <div className="flex-1 min-w-0">
-          {tab === 'features'    && <AdminFeaturesTab />}
           {tab === 'appearance'  && <AdminAppearanceTab />}
           {tab === 'home_screen' && <AdminHomeScreenTab />}
         </div>
