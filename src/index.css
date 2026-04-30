@@ -154,3 +154,86 @@ html {
     animation: slide-from-left 0.2s ease-out both;
   }
 }
+
+/* ── Booking page themed overrides ──────────────────────────────────────────
+   Применяется на корневом div с class="booking-themed" и data-theme=...
+   CSS-переменные --bk-* выставляются через style={buildBookingTheme(...)}.
+   Шаблоны влияют через цвет фона/градиент + декоративные blobs (playful)
+   и тёмный фон + золото (glamour). */
+.booking-themed {
+  background-color: var(--bk-bg);
+  background-image: var(--bk-bg-image);
+  background-attachment: fixed;
+  color: var(--bk-text);
+  font-family: var(--bk-font);
+  position: relative;
+  overflow-x: hidden;
+}
+
+.booking-themed h1, .booking-themed h2 {
+  letter-spacing: -0.01em;
+}
+
+/* Дети поверх декоративных blobs */
+.booking-themed > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Playful Pastel: цветные blobs в углах ─── */
+.booking-themed[data-theme="playful"]::before,
+.booking-themed[data-theme="playful"]::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: multiply;
+}
+.booking-themed[data-theme="playful"]::before {
+  top: -40px;
+  left: -60px;
+  width: 280px;
+  height: 280px;
+  background: rgba(251, 207, 232, 0.85); /* pink-200 */
+}
+.booking-themed[data-theme="playful"]::after {
+  top: -20px;
+  right: -80px;
+  width: 320px;
+  height: 320px;
+  background: rgba(186, 230, 253, 0.85); /* sky-200 */
+}
+
+/* Карточки и поля в playful — сглаженные, с лёгкой розовой обводкой */
+.booking-themed[data-theme="playful"] {
+  --card: 0 0% 100%;
+  --border: 326 73% 93%;
+  --input: 326 73% 93%;
+}
+
+/* ── Glamour Premium: тёмный фон + золотые акценты ─── */
+.booking-themed[data-theme="glamour"] {
+  --background: 24 10% 5%;
+  --foreground: 38 50% 95%;
+  --card: 24 14% 8%;
+  --card-foreground: 38 50% 95%;
+  --muted: 24 14% 12%;
+  --muted-foreground: 38 20% 70%;
+  --border: 38 35% 25%;
+  --input: 38 35% 25%;
+}
+.booking-themed[data-theme="glamour"]::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 480px;
+  height: 200px;
+  background: radial-gradient(closest-side, rgba(201, 161, 74, 0.35), transparent);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+}

@@ -19,7 +19,8 @@ import { formatCurrency, formatDuration, parseTimeToMinutes, minutesToTime, getF
 import type { MasterProfile, Service, Schedule, ScheduleBreak, Appointment, Review, DateBlock } from '@/types'
 import { isTelegramMiniApp, getTelegramUser, getTelegramUserId, hapticSuccess, buildClientCabinetLink } from '@/lib/telegramWebApp'
 import { validatePromoCode } from '@/hooks/usePromoCodes'
-import { getThemeVars } from '@/lib/bookingThemes'
+import { getThemeVars, buildBookingTheme, getBookingSettings } from '@/lib/bookingThemes'
+import type { BookingSettings } from '@/types'
 
 const clientSchema = z.object({
   client_name: z.string().min(2),
@@ -341,21 +342,44 @@ export function PublicBookingPage() {
     setServicesLoadingMore(false)
   }
 
+  // booking_settings из master.page_settings
+  const bookingSettings: BookingSettings = useMemo(
+    () => getBookingSettings((master as any)?.page_settings) ?? {},
+    [master]
+  )
+
   // Фильтрация: при 1 символе — клиентская; при 2+ — сервер уже обновил services
   const filteredServices = useMemo(() => {
     const q = serviceSearch.toLowerCase().trim()
-    if (!q || q.length >= 2) return services
-    // 1 символ — быстрый клиентский фильтр
-    return services.filter(s =>
-      s.name.toLowerCase().includes(q) ||
-      (s.description || '').toLowerCase().includes(q)
-    )
-  }, [services, serviceSearch])
+    let list = services
+    if (q && q.length < 2) {
+      list = list.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        (s.description || '').toLowerCase().includes(q)
+      )
+    }
+    // booking_settings: скрыть бесплатные/без цены
+    if (bookingSettings.hide_priceless) {
+      list = list.filter(s => (s.price ?? 0) > 0)
+    }
+    // booking_settings: сортировка
+    const sort = bookingSettings.service_sort
+    if (sort && sort !== 'manual') {
+      const arr = [...list]
+      if (sort === 'name')       arr.sort((a, b) => a.name.localeCompare(b.name))
+      if (sort === 'price_asc')  arr.sort((a, b) => (a.price ?? 0) - (b.price ?? 0))
+      if (sort === 'price_desc') arr.sort((a, b) => (b.price ?? 0) - (a.price ?? 0))
+      list = arr
+    }
+    return list
+  }, [services, serviceSearch, bookingSettings])
 
   const toggleService = (svc: Service) => {
     setSelectedServices(prev => {
       const exists = prev.find(s => s.id === svc.id)
       if (exists) return prev.filter(s => s.id !== svc.id)
+      // Если мультивыбор отключён — заменяем единственным
+      if (bookingSettings.multi_select === false) return [svc]
       return [...prev, svc]
     })
   }
@@ -712,13 +736,22 @@ export function PublicBookingPage() {
   }
 
   if (submitted && bookingDetails) {
+    const bks: BookingSettings = getBookingSettings((master as any)?.page_settings) ?? {}
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <div
+        className="min-h-screen flex items-center justify-center p-4 booking-themed"
+        data-theme={bks.theme || 'elegant'}
+        style={{ ...buildBookingTheme(bks) }}
+      >
         <Card className="max-w-md w-full">
           <CardContent className="p-8 text-center">
             <CheckCircle className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">{t('booking.confirmed')}</h2>
-            <p className="text-muted-foreground mb-6">{t('booking.confirmDesc')}</p>
+            <h2 className="text-2xl font-bold mb-2">
+              {bks.thanks_title || t('booking.confirmed')}
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              {bks.thanks_text || t('booking.confirmDesc')}
+            </p>
             <div className="space-y-2 text-left bg-muted/50 rounded-xl p-4 mb-4">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{t('appointments.service')}</span>
@@ -884,7 +917,8 @@ export function PublicBookingPage() {
       ? getFileUrl('avatars', master.expand.user.avatar)
       : undefined
 
-  const advanceDays = schedule?.advance_days || 30
+  // booking_settings.max_advance_days перекрывает schedule.advance_days если задан
+  const advanceDays = bookingSettings.max_advance_days ?? schedule?.advance_days ?? 30
   const availableDates = Array.from({ length: advanceDays }, (_, i) => {
     const d = dayjs().add(i + 1, 'day')
     const dow = d.day()
@@ -899,10 +933,12 @@ export function PublicBookingPage() {
 
   return (
     <div
-      className="bg-background"
+      className="booking-themed"
+      data-theme={bookingSettings.theme || 'elegant'}
       style={{
         minHeight: 'var(--tg-viewport-stable-height, 100dvh)',
         ...getThemeVars(master.booking_theme),
+        ...buildBookingTheme(bookingSettings),
       }}
     >
       {/* Header */}
@@ -1072,6 +1108,20 @@ export function PublicBookingPage() {
         {step === 1 && (
           <div className={`space-y-4${selectedServices.length > 0 ? ' pb-24' : ''}`}>
 
+            {/* Hero заголовок из настроек */}
+            {(bookingSettings.hero_title || bookingSettings.hero_subtitle) && (
+              <div className="pb-1">
+                {bookingSettings.hero_title && (
+                  <h2 className="text-2xl font-bold leading-tight" style={{ fontFamily: 'var(--bk-serif)' }}>
+                    {bookingSettings.hero_title}
+                  </h2>
+                )}
+                {bookingSettings.hero_subtitle && (
+                  <p className="text-sm text-muted-foreground mt-1">{bookingSettings.hero_subtitle}</p>
+                )}
+              </div>
+            )}
+
             {/* Поиск */}
             {(services.length > 4 || servicesTotal > 4) && (
               <div className="relative">
@@ -1124,7 +1174,7 @@ export function PublicBookingPage() {
                             {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                           </div>
                           {/* Картинка услуги */}
-                          {imgUrl && (
+                          {imgUrl && bookingSettings.show_service_image !== false && (
                             <img
                               src={imgUrl}
                               alt={svc.name}
@@ -1134,12 +1184,14 @@ export function PublicBookingPage() {
                           {/* Основная информация */}
                           <div className="flex-1 min-w-0">
                             <p className="font-medium leading-tight">{svc.name}</p>
-                            {svc.description && (
+                            {svc.description && bookingSettings.show_descriptions !== false && (
                               <p className="text-sm text-muted-foreground mt-0.5 leading-snug line-clamp-2">{svc.description}</p>
                             )}
-                            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                              <Clock className="h-3.5 w-3.5" />{formatDuration(svc.duration_min, t)}
-                            </p>
+                            {bookingSettings.show_duration !== false && (
+                              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                <Clock className="h-3.5 w-3.5" />{formatDuration(svc.duration_min, t)}
+                              </p>
+                            )}
                           </div>
                           {/* Цена */}
                           <div className="text-right shrink-0 self-center">
@@ -1531,7 +1583,7 @@ export function PublicBookingPage() {
             </div>
 
             {/* Промокод */}
-            {!promoApplied && (
+            {!promoApplied && bookingSettings.enable_promo !== false && (
               <div className="space-y-1.5">
                 <p className="text-sm font-medium flex items-center gap-1.5">
                   <Tag className="h-3.5 w-3.5" />
@@ -1575,14 +1627,32 @@ export function PublicBookingPage() {
                 <Input placeholder="+998 90 000 00 00" {...register('client_phone')} />
                 {errors.client_phone && <p className="text-xs text-destructive">{t('common.required')}</p>}
               </div>
-              <div className="space-y-2">
-                <Label>{PRODUCT === 'clinic' ? t('booking.reasonForVisit') : t('booking.comment')}</Label>
-                <textarea
-                  className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  placeholder={PRODUCT === 'clinic' ? t('booking.reasonPlaceholder') : t('booking.commentPlaceholder')}
-                  {...register('notes')}
-                />
-              </div>
+              {bookingSettings.fields_email && (
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input type="email" placeholder="email@example.com" {...register('client_email')} />
+                  {errors.client_email && <p className="text-xs text-destructive">{t('common.required')}</p>}
+                </div>
+              )}
+              {bookingSettings.fields_notes !== false && (
+                <div className="space-y-2">
+                  <Label>{PRODUCT === 'clinic' ? t('booking.reasonForVisit') : t('booking.comment')}</Label>
+                  <textarea
+                    className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    placeholder={
+                      bookingSettings.notes_placeholder
+                      || (PRODUCT === 'clinic' ? t('booking.reasonPlaceholder') : t('booking.commentPlaceholder'))
+                    }
+                    {...register('notes')}
+                  />
+                </div>
+              )}
+              {bookingSettings.require_consent && bookingSettings.consent_text && (
+                <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <input type="checkbox" required className="mt-0.5 accent-current" />
+                  <span>{bookingSettings.consent_text}</span>
+                </label>
+              )}
             </form>
           </div>
         )}
