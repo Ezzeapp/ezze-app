@@ -83,30 +83,8 @@ export function TopBar() {
         </Button>
 
         <div className="ml-auto flex items-center gap-1">
-          {/* Иконки sidebar-cleanup (вариант C): Поддержка / Настройки / Админ.
-              Только на lg, где виден sidebar — на мобиле эти пункты есть в BottomNav More. */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/support')}
-            className="hidden lg:flex h-9 w-9"
-            title={t('nav.support')}
-            aria-label={t('nav.support')}
-          >
-            <LifeBuoy className="h-4 w-4" />
-          </Button>
-          {!isWorker && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/settings')}
-              className="hidden lg:flex h-9 w-9"
-              title={t('nav.settings')}
-              aria-label={t('nav.settings')}
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          )}
+          {/* Админ — только иконкой (выделен цветом, работает как индикатор admin-режима).
+              Поддержка/Настройки переехали в дропдаун аватара. */}
           {user?.is_admin && !teamScope.isTeamOnly && (
             <Button
               variant="ghost"
@@ -119,7 +97,6 @@ export function TopBar() {
               <Shield className="h-4 w-4" />
             </Button>
           )}
-          <span className="hidden lg:inline-block w-px h-5 bg-border mx-1" />
 
           <LanguageSwitcher />
           <ThemeToggle />
@@ -140,17 +117,24 @@ export function TopBar() {
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
               </DropdownMenuLabel>
-              {/* Cleaning/beauty/workshop: профиль объединён с настройками — отдельный пункт не нужен.
-                  Настройки и Админ продублированы как иконки в шапке слева — здесь не показываем. */}
+              <DropdownMenuSeparator />
+              {/* Cleaning/beauty/workshop: профиль объединён с настройками — отдельный пункт не нужен */}
               {PRODUCT !== 'cleaning' && PRODUCT !== 'beauty' && PRODUCT !== 'workshop' && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
-                    <User className="mr-2 h-4 w-4" />
-                    {t('nav.profile')}
-                  </DropdownMenuItem>
-                </>
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <User className="mr-2 h-4 w-4" />
+                  {t('nav.profile')}
+                </DropdownMenuItem>
               )}
+              {!isWorker && (
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  {t('nav.settings')}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => navigate('/support')}>
+                <LifeBuoy className="mr-2 h-4 w-4" />
+                {t('nav.support')}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
