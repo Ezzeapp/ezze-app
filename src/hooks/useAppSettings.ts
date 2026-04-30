@@ -448,8 +448,12 @@ async function fetchAppSettings(): Promise<AppSettings> {
     paymentProviders = map.payment_providers ? JSON.parse(map.payment_providers) : []
   } catch { /* ignore */ }
 
-  const logoPath = map.platform_logo ?? null
-  const logoUrl = logoPath ? getFileUrl('teams', `app-logo`) : undefined
+  // Логотип per-product: бакет teams, файл "{product}-app-logo".
+  // Старый путь "app-logo" — fallback для legacy-настроек до 2026-05-01.
+  const logoMarker = map.platform_logo ?? null
+  const logoUrl = logoMarker
+    ? getFileUrl('teams', logoMarker === 'app-logo' ? 'app-logo' : `${PRODUCT}-app-logo`)
+    : undefined
 
   return {
     primary_color: map.primary_color ?? '239 84% 67%',
@@ -557,11 +561,12 @@ export function useUpdateAppLogo() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (file: File) => {
-      await uploadImage("teams", "app-logo", file, "logo")
-      // Store a marker that logo exists
+      // Per-product: каждый продукт пишет в свой файл "{product}-app-logo".
+      const path = `${PRODUCT}-app-logo`
+      await uploadImage("teams", path, file, "logo")
       const { data, error } = await supabase
         .from('app_settings')
-        .upsert({ product: PRODUCT, key: 'platform_logo', value: 'app-logo' }, { onConflict: 'product,key' })
+        .upsert({ product: PRODUCT, key: 'platform_logo', value: path }, { onConflict: 'product,key' })
         .select()
         .single()
       if (error) throw error
