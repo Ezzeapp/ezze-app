@@ -305,8 +305,14 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
   }
 
   const saveProfile = async (profileData: Record<string, any> | FormData) => {
+    const product = import.meta.env.VITE_PRODUCT || 'beauty'
+    // Профиль ищем строго по user_id + product — multi-product изоляция.
     const { data: existing } = await supabase
-      .from('master_profiles').select('id, booking_slug').eq('user_id', user!.id).maybeSingle()
+      .from('master_profiles')
+      .select('id, booking_slug')
+      .eq('user_id', user!.id)
+      .eq('product', product)
+      .maybeSingle()
     if (existing) {
       // Если booking_slug ещё не сгенерирован (профиль создан через saveTgProfile) — добавляем сейчас
       const missingSlug = !existing.booking_slug ? { booking_slug: generateSlug() } : {}
@@ -319,11 +325,11 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
       }
     } else {
       if (profileData instanceof FormData) {
-        const obj: Record<string, any> = { user_id: user!.id, booking_slug: generateSlug() }
+        const obj: Record<string, any> = { user_id: user!.id, product, booking_slug: generateSlug() }
         profileData.forEach((v, k) => { obj[k] = v })
         await supabase.from('master_profiles').insert(obj)
       } else {
-        await supabase.from('master_profiles').insert({ ...profileData, user_id: user!.id, booking_slug: generateSlug() })
+        await supabase.from('master_profiles').insert({ ...profileData, user_id: user!.id, product, booking_slug: generateSlug() })
       }
     }
   }
@@ -402,6 +408,7 @@ export function OnboardingWizard({ open, onComplete, onClose, prefill }: Props) 
               address: address.trim() || undefined,
             })
             .eq('user_id', user.id)
+            .eq('product', import.meta.env.VITE_PRODUCT || 'beauty')
         } catch { /* non-critical */ }
       })()
     }

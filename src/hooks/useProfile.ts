@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { getFileUrl, uploadFile, uploadImage } from '@/lib/storage'
+import { PRODUCT } from '@/lib/config'
 import type { MasterProfile } from '@/types'
 
 export const PROFILE_KEY = 'master_profile'
@@ -10,16 +11,17 @@ export function useProfile() {
   const { user } = useAuth()
 
   return useQuery({
-    queryKey: [PROFILE_KEY, user?.id],
+    queryKey: [PROFILE_KEY, user?.id, PRODUCT],
     queryFn: async () => {
       try {
         const { data, error } = await supabase
           .from('master_profiles')
           .select('*')
           .eq('user_id', user!.id)
-          .single()
+          .eq('product', PRODUCT)
+          .maybeSingle()
         if (error) return null
-        return data as MasterProfile
+        return data as MasterProfile | null
       } catch {
         return null
       }
@@ -77,7 +79,7 @@ export function useUpsertProfile() {
       } else {
         const { data: created, error } = await supabase
           .from('master_profiles')
-          .insert({ ...payload, user_id: user!.id })
+          .insert({ ...payload, user_id: user!.id, product: PRODUCT })
           .select()
           .single()
         if (error) throw error
