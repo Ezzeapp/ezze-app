@@ -63,6 +63,30 @@ export interface GlobalProduct extends BaseRecord {
 
 export type LandingTemplate = 'premium' | 'minimal' | 'bold'
 
+export interface LandingHowStep {
+  title: string
+  description: string
+}
+
+export interface LandingReview {
+  name: string
+  text: string
+  rating?: number
+  date?: string
+}
+
+export interface LandingContent {
+  hero_badge?: string
+  business_subtitle?: string
+  turnaround_hours?: number
+  free_pickup_threshold?: number
+  working_hours?: string
+  show_eco_badge?: boolean
+  show_quality_badge?: boolean
+  how_steps?: LandingHowStep[]
+  reviews?: LandingReview[]
+}
+
 export interface PageSettings {
   template?:   'minimal' | 'dark' | 'bold' | 'elegant'
   accent?:     string
@@ -71,6 +95,7 @@ export interface PageSettings {
   btn_shape?:  'rounded' | 'pill' | 'square'
   font?:       'inter' | 'montserrat' | 'playfair'
   landing_template?: LandingTemplate
+  landing_content?: LandingContent
 }
 
 export interface MasterProduct {

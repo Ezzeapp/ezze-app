@@ -1,7 +1,7 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useMemo } from 'react'
 import type { LandingTemplate, MasterProfile } from '@/types'
 import {
-  usePublicCleaningPrices, usePublicCleaningOrderTypes,
+  usePublicCleaningPrices, usePublicCleaningOrderTypes, resolveLandingContent,
   type PublicPromoCode,
 } from './landingShared'
 
@@ -26,7 +26,11 @@ export function CleaningLanding({ profile, promoCodes, avatarUrl, coverUrl }: Pr
 
   const template: LandingTemplate = profile.page_settings?.landing_template ?? 'premium'
   const bookingUrl = buildBookingUrl(profile.booking_slug)
-  const props = { profile, prices, orderTypes, promoCodes, avatarUrl, coverUrl, bookingUrl }
+  const content = useMemo(
+    () => resolveLandingContent(profile.page_settings?.landing_content),
+    [profile.page_settings?.landing_content],
+  )
+  const props = { profile, prices, orderTypes, promoCodes, avatarUrl, coverUrl, bookingUrl, content }
 
   return (
     <Suspense fallback={<div className="min-h-screen bg-zinc-50" />}>

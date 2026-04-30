@@ -15,7 +15,8 @@ import { TEMPLATE_LIST } from '@/lib/pageTheme'
 import { toast } from '@/components/shared/Toaster'
 import { formatCurrency } from '@/lib/utils'
 import { PRODUCT } from '@/lib/config'
-import type { MasterProduct, PageSettings, LandingTemplate } from '@/types'
+import type { MasterProduct, PageSettings, LandingTemplate, LandingContent } from '@/types'
+import { LandingContentEditor } from './LandingContentEditor'
 
 const LANDING_TEMPLATES: { id: LandingTemplate; label: string; tagline: string; icon: typeof Sparkles; preview: React.ReactNode }[] = [
   {
@@ -461,6 +462,18 @@ export function PublicPageTab() {
               )
             })}
           </div>
+        </Card>
+      )}
+
+      {PRODUCT === 'cleaning' && (
+        <Card title={t('publicPage.landingContent', 'Контент лендинга')} icon={LayoutTemplate}>
+          <p className="text-xs text-muted-foreground -mt-2">
+            {t('publicPage.landingContentHint', 'Тексты, числа и блоки которые отобразятся на вашем лендинге. Имя, телефон, адрес, услуги и цены подтягиваются автоматически — здесь вы настраиваете остальное.')}
+          </p>
+          <LandingContentEditor
+            value={currentSettings.landing_content ?? {}}
+            onCommit={(next: LandingContent) => saveDesign({ ...currentSettings, landing_content: next })}
+          />
         </Card>
       )}
 

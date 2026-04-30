@@ -2,16 +2,17 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Sparkles, Phone, ShoppingBag, ShieldCheck, Leaf, Zap, ArrowRight, ArrowUpRight,
-  Clock, MapPin, Star, Send, Instagram, MessageCircle, Globe,
+  Clock, MapPin, Star, Send, Instagram, MessageCircle, Globe, Quote,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import {
   buildPriceGroups, yearsInBusiness, buildPhoneHref, buildWhatsappHref, buildMapsHref,
+  interpolateStep,
   type CleaningLandingProps,
 } from './landingShared'
 
 export function CleaningLandingPremium({
-  profile, prices, orderTypes, promoCodes, avatarUrl, coverUrl, bookingUrl,
+  profile, prices, orderTypes, promoCodes, avatarUrl, coverUrl, bookingUrl, content,
 }: CleaningLandingProps) {
   const { i18n } = useTranslation()
   const groups = useMemo(() => buildPriceGroups(prices, orderTypes), [prices, orderTypes])
@@ -20,8 +21,9 @@ export function CleaningLandingPremium({
   const whatsappHref = buildWhatsappHref(profile.whatsapp || profile.phone)
   const mapsHref = buildMapsHref(profile)
   const businessName = profile.display_name || profile.profession || 'Cleaning'
-  const tagline = profile.bio || 'Заберём, постираем, погладим и привезём обратно за 48 часов.'
+  const tagline = profile.bio || `Заберём, постираем, погладим и привезём обратно за ${content.turnaroundHours} часов.`
   const topPromo = promoCodes[0]
+  const formatPrice = (n: number) => `${formatCurrency(n, profile.currency || 'UZS', i18n.language)}`
 
   return (
     <div
@@ -45,7 +47,7 @@ export function CleaningLandingPremium({
           )}
           <div className="min-w-0">
             <div className="text-sm lg:text-base font-bold leading-tight truncate">{businessName}</div>
-            <div className="text-[10px] lg:text-[11px] text-white/60 leading-tight">Премиум химчистка</div>
+            <div className="text-[10px] lg:text-[11px] text-white/60 leading-tight">{content.businessSubtitle}</div>
           </div>
         </div>
         <nav className="hidden lg:flex items-center gap-7 text-sm font-medium text-white/70">
@@ -72,9 +74,11 @@ export function CleaningLandingPremium({
       {/* Hero */}
       <section className="px-5 lg:px-12 pt-10 lg:pt-16 pb-12 lg:pb-20 grid lg:grid-cols-12 gap-10 items-center">
         <div className="lg:col-span-7">
-          <div className="text-[11px] tracking-[0.3em] uppercase text-cyan-300 font-semibold mb-3 lg:mb-4">
-            · Доставка 24/7 · Премиум-сервис ·
-          </div>
+          {content.heroBadge && (
+            <div className="text-[11px] tracking-[0.3em] uppercase text-cyan-300 font-semibold mb-3 lg:mb-4">
+              · {content.heroBadge} ·
+            </div>
+          )}
           <h1 className="text-[42px] sm:text-[56px] lg:text-[80px] leading-[0.95] font-black tracking-tight">
             Чистота<br />
             как <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-indigo-300 bg-clip-text text-transparent">премиум</span>
@@ -97,9 +101,13 @@ export function CleaningLandingPremium({
             )}
           </div>
           <div className="mt-7 lg:mt-10 flex flex-wrap items-center gap-4 lg:gap-7 text-[12px] lg:text-[13px] text-white/70">
-            <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-300" /> Гарантия качества</div>
-            <div className="flex items-center gap-2"><Leaf className="w-4 h-4 text-emerald-300" /> Эко-средства</div>
-            <div className="flex items-center gap-2"><Zap className="w-4 h-4 text-amber-300" /> 48 часов</div>
+            {content.showQualityBadge && (
+              <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-300" /> Гарантия качества</div>
+            )}
+            {content.showEcoBadge && (
+              <div className="flex items-center gap-2"><Leaf className="w-4 h-4 text-emerald-300" /> Эко-средства</div>
+            )}
+            <div className="flex items-center gap-2"><Zap className="w-4 h-4 text-amber-300" /> {content.turnaroundHours} часов</div>
           </div>
         </div>
 
@@ -171,7 +179,7 @@ export function CleaningLandingPremium({
             <div className="text-[10px] lg:text-[12px] text-white/50 mt-1 lg:mt-2 uppercase tracking-wider">Позиций в прайсе</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl lg:text-5xl font-black">48<span className="text-cyan-300">ч</span></div>
+            <div className="text-3xl lg:text-5xl font-black">{content.turnaroundHours}<span className="text-cyan-300">ч</span></div>
             <div className="text-[10px] lg:text-[12px] text-white/50 mt-1 lg:mt-2 uppercase tracking-wider">Среднее время</div>
           </div>
           <div className="text-center">
@@ -276,32 +284,64 @@ export function CleaningLandingPremium({
         <div className="text-[11px] tracking-[0.3em] uppercase text-cyan-300 font-semibold mb-2">Процесс</div>
         <h2 className="text-3xl lg:text-5xl font-black tracking-tight mb-6 lg:mb-12">Как это работает</h2>
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 lg:gap-5">
-          {[
-            { n: '01', t: 'Оставляете заявку', d: 'Через сайт, бот или звонок. 2 минуты вашего времени.', cls: 'bg-cyan-400/20 border-cyan-300/40 text-cyan-200' },
-            { n: '02', t: 'Курьер забирает', d: 'В удобное окно. Бесплатный вывоз от 200K сум.', cls: 'bg-purple-400/20 border-purple-300/40 text-purple-200' },
-            { n: '03', t: 'Чистим и гладим', d: 'Эко-средства, индивидуальная программа под материал.', cls: 'bg-amber-400/20 border-amber-300/40 text-amber-200' },
-            { n: '04', t: 'Привозим обратно', d: 'Через 48 часов в фирменной упаковке.', cls: 'bg-emerald-400/20 border-emerald-300/40 text-emerald-200' },
-          ].map(s => (
-            <div
-              key={s.n}
-              className="rounded-2xl lg:rounded-3xl p-5 lg:p-6 flex lg:block items-center gap-4"
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(255,255,255,0.12)',
-              }}
-            >
-              <div className={`w-12 h-12 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl grid place-items-center border shrink-0 ${s.cls}`}>
-                <span className="text-base lg:text-xl font-black">{s.n}</span>
+          {content.howSteps.map((step, i) => {
+            const palette = [
+              'bg-cyan-400/20 border-cyan-300/40 text-cyan-200',
+              'bg-purple-400/20 border-purple-300/40 text-purple-200',
+              'bg-amber-400/20 border-amber-300/40 text-amber-200',
+              'bg-emerald-400/20 border-emerald-300/40 text-emerald-200',
+            ]
+            return (
+              <div
+                key={i}
+                className="rounded-2xl lg:rounded-3xl p-5 lg:p-6 flex lg:block items-center gap-4"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  backdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                }}
+              >
+                <div className={`w-12 h-12 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl grid place-items-center border shrink-0 ${palette[i % palette.length]}`}>
+                  <span className="text-base lg:text-xl font-black">{String(i + 1).padStart(2, '0')}</span>
+                </div>
+                <div>
+                  <div className="text-base lg:text-lg font-black text-white">{step.title}</div>
+                  <div className="text-[12px] lg:text-[13px] text-white/60 mt-0.5 lg:mt-2 leading-relaxed">{interpolateStep(step.description, content, formatPrice)}</div>
+                </div>
               </div>
-              <div>
-                <div className="text-base lg:text-lg font-black text-white">{s.t}</div>
-                <div className="text-[12px] lg:text-[13px] text-white/60 mt-0.5 lg:mt-2 leading-relaxed">{s.d}</div>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </section>
+
+      {/* Reviews */}
+      {content.reviews.length > 0 && (
+        <section className="px-5 lg:px-12 pb-12 lg:pb-20">
+          <div className="text-[11px] tracking-[0.3em] uppercase text-cyan-300 font-semibold mb-2">Отзывы</div>
+          <h2 className="text-3xl lg:text-5xl font-black tracking-tight mb-6 lg:mb-10">Любят клиенты</h2>
+          <div className="grid lg:grid-cols-3 gap-4 lg:gap-5">
+            {content.reviews.slice(0, 6).map((r, i) => (
+              <div
+                key={i}
+                className="rounded-2xl lg:rounded-3xl p-5 lg:p-7"
+                style={{ background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.12)' }}
+              >
+                <Quote className="w-7 h-7 text-cyan-300" />
+                <div className="flex gap-0.5 mt-2">
+                  {Array.from({ length: r.rating ?? 5 }).map((_, j) => (
+                    <Star key={j} className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                  ))}
+                </div>
+                <p className="mt-3 text-[13px] lg:text-[14px] text-white/85 leading-relaxed">{r.text}</p>
+                <div className="mt-4 lg:mt-5 pt-4 lg:pt-5 border-t border-white/10 flex items-center justify-between">
+                  <div className="text-sm font-semibold">{r.name}</div>
+                  {r.date && <div className="text-[11px] text-white/50">{r.date}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Promo */}
       {topPromo && (
@@ -368,7 +408,7 @@ export function CleaningLandingPremium({
                 <span>{[profile.address, profile.city].filter(Boolean).join(', ')}</span>
               </a>
             )}
-            <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-cyan-300" /> 9:00 — 21:00, ежедневно</div>
+            <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-cyan-300" /> {content.workingHours}</div>
           </div>
         </div>
 

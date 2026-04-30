@@ -1,17 +1,18 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Phone, Mail, MapPin, ArrowRight, ArrowUpRight, Star, Clock,
+  Phone, Mail, MapPin, ArrowRight, ArrowUpRight, Star, Clock, Quote,
   Instagram, Send, MessageCircle, Globe, Leaf,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import {
   buildPriceGroups, yearsInBusiness, buildPhoneHref, buildWhatsappHref, buildMapsHref,
+  interpolateStep,
   type CleaningLandingProps,
 } from './landingShared'
 
 export function CleaningLandingMinimal({
-  profile, prices, orderTypes, promoCodes, avatarUrl, coverUrl, bookingUrl,
+  profile, prices, orderTypes, promoCodes, avatarUrl, coverUrl, bookingUrl, content,
 }: CleaningLandingProps) {
   const { i18n } = useTranslation()
   const groups = useMemo(() => buildPriceGroups(prices, orderTypes), [prices, orderTypes])
@@ -23,6 +24,7 @@ export function CleaningLandingMinimal({
   const tagline = profile.bio || 'Без очередей. Курьер заберёт у двери и привезёт идеальную чистоту.'
   const topPromo = promoCodes[0]
   const accent = profile.page_settings?.accent || '#059669'
+  const formatPrice = (n: number) => `${formatCurrency(n, profile.currency || 'UZS', i18n.language)}`
 
   return (
     <div className="min-h-screen bg-white text-slate-900" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
@@ -64,7 +66,7 @@ export function CleaningLandingMinimal({
         </div>
         <h1 className="text-[44px] sm:text-[80px] lg:text-[160px] leading-[0.85] font-black tracking-tighter">
           Свежесть<br />
-          <span className="italic font-extralight" style={{ color: accent }}>за 48 часов.</span>
+          <span className="italic font-extralight" style={{ color: accent }}>за {content.turnaroundHours} часов.</span>
         </h1>
         <div className="mt-8 lg:mt-12 grid lg:grid-cols-12 gap-6 lg:gap-10 items-end">
           <div className="lg:col-span-7">
@@ -96,15 +98,17 @@ export function CleaningLandingMinimal({
         <div className="mx-5 lg:mx-12 mb-12 lg:mb-20">
           <div className="relative aspect-[16/7] rounded-3xl overflow-hidden">
             <img src={coverUrl} alt="" className="w-full h-full object-cover" />
-            <div className="absolute bottom-3 left-3 right-3 lg:bottom-5 lg:left-5 lg:right-auto lg:max-w-sm bg-white/95 backdrop-blur rounded-2xl p-3 lg:p-4 flex items-center gap-3">
-              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl text-white grid place-items-center shrink-0" style={{ backgroundColor: accent }}>
-                <Leaf className="w-4 h-4 lg:w-5 lg:h-5" />
+            {content.showEcoBadge && (
+              <div className="absolute bottom-3 left-3 right-3 lg:bottom-5 lg:left-5 lg:right-auto lg:max-w-sm bg-white/95 backdrop-blur rounded-2xl p-3 lg:p-4 flex items-center gap-3">
+                <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl text-white grid place-items-center shrink-0" style={{ backgroundColor: accent }}>
+                  <Leaf className="w-4 h-4 lg:w-5 lg:h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] lg:text-sm font-semibold leading-tight">Эко-химчистка</div>
+                  <div className="text-[10px] lg:text-xs text-slate-500 leading-tight">Безопасно для семьи и природы</div>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[12px] lg:text-sm font-semibold leading-tight">Эко-химчистка</div>
-                <div className="text-[10px] lg:text-xs text-slate-500 leading-tight">Безопасно для семьи и природы</div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -121,7 +125,7 @@ export function CleaningLandingMinimal({
             <div className="text-[10px] lg:text-[12px] text-slate-400 font-semibold uppercase tracking-widest mt-1 lg:mt-3" style={{ fontFamily: 'Inter' }}>Позиций</div>
           </div>
           <div className="lg:border-l border-slate-100 lg:pl-8 mt-5 lg:mt-0">
-            <div className="text-3xl lg:text-7xl font-black tracking-tighter">48<span style={{ color: accent }}>ч</span></div>
+            <div className="text-3xl lg:text-7xl font-black tracking-tighter">{content.turnaroundHours}<span style={{ color: accent }}>ч</span></div>
             <div className="text-[10px] lg:text-[12px] text-slate-400 font-semibold uppercase tracking-widest mt-1 lg:mt-3" style={{ fontFamily: 'Inter' }}>Срок</div>
           </div>
           <div className="lg:border-l border-slate-100 lg:pl-8 mt-5 lg:mt-0">
@@ -226,20 +230,42 @@ export function CleaningLandingMinimal({
         <div className="text-[11px] uppercase tracking-[0.3em] text-slate-400 font-semibold mb-2 lg:mb-3">Процесс</div>
         <h2 className="text-3xl lg:text-7xl font-black tracking-tighter mb-8 lg:mb-16" style={{ fontFamily: 'Manrope, sans-serif', letterSpacing: '-0.04em' }}>Как это работает</h2>
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
-          {[
-            { n: '01', t: 'Заявка', d: 'Сайт, Telegram-бот или звонок. 2 минуты вашего времени.' },
-            { n: '02', t: 'Вывоз', d: 'Курьер приезжает в удобное окно. Бесплатно от 200K сум.' },
-            { n: '03', t: 'Чистка', d: 'Эко-средства, индивидуальная программа под каждый материал.' },
-            { n: '04', t: 'Доставка', d: 'Через 48 часов, в фирменной упаковке прямо к двери.' },
-          ].map(s => (
-            <div key={s.n}>
-              <div className="text-5xl lg:text-7xl font-black tracking-tighter" style={{ color: accent, fontFamily: 'Manrope, sans-serif', letterSpacing: '-0.04em' }}>{s.n}</div>
-              <div className="mt-3 lg:mt-6 text-xl lg:text-2xl font-black tracking-tight" style={{ fontFamily: 'Manrope, sans-serif', letterSpacing: '-0.04em' }}>{s.t}</div>
-              <div className="text-[13px] text-slate-500 mt-2 leading-relaxed" style={{ fontFamily: 'Inter' }}>{s.d}</div>
+          {content.howSteps.map((s, i) => (
+            <div key={i}>
+              <div className="text-5xl lg:text-7xl font-black tracking-tighter" style={{ color: accent, fontFamily: 'Manrope, sans-serif', letterSpacing: '-0.04em' }}>{String(i + 1).padStart(2, '0')}</div>
+              <div className="mt-3 lg:mt-6 text-xl lg:text-2xl font-black tracking-tight" style={{ fontFamily: 'Manrope, sans-serif', letterSpacing: '-0.04em' }}>{s.title}</div>
+              <div className="text-[13px] text-slate-500 mt-2 leading-relaxed" style={{ fontFamily: 'Inter' }}>{interpolateStep(s.description, content, formatPrice)}</div>
             </div>
           ))}
         </div>
       </section>
+
+      {/* Reviews */}
+      {content.reviews.length > 0 && (
+        <section className="px-5 lg:px-12 py-12 lg:py-20 grid lg:grid-cols-12 gap-6 lg:gap-10">
+          <div className="lg:col-span-4">
+            <div className="text-[11px] uppercase tracking-[0.3em] text-slate-400 font-semibold mb-2 lg:mb-3">Отзывы</div>
+            <h2 className="text-3xl lg:text-5xl font-black tracking-tighter" style={{ fontFamily: 'Manrope, sans-serif', letterSpacing: '-0.04em' }}>Что говорят клиенты</h2>
+          </div>
+          <div className="lg:col-span-8 space-y-6 lg:space-y-10">
+            {content.reviews.slice(0, 4).map((r, i) => (
+              <div key={i} className={i > 0 ? 'pt-6 lg:pt-10 border-t border-slate-100' : ''}>
+                <Quote className="w-7 h-7 lg:w-10 lg:h-10" style={{ color: accent }} />
+                <p className="mt-3 lg:mt-4 text-lg lg:text-2xl font-light leading-snug text-slate-800 italic" style={{ fontFamily: 'Manrope, sans-serif', letterSpacing: '-0.02em' }}>«{r.text}»</p>
+                <div className="mt-4 lg:mt-5 flex items-center gap-3">
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: r.rating ?? 5 }).map((_, j) => (
+                      <Star key={j} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <div className="text-sm font-semibold" style={{ fontFamily: 'Manrope, sans-serif' }}>{r.name}</div>
+                  {r.date && <div className="text-[11px] text-slate-400" style={{ fontFamily: 'Inter' }}>· {r.date}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Promo */}
       {topPromo && (
@@ -300,7 +326,7 @@ export function CleaningLandingMinimal({
                 <span>{[profile.address, profile.city].filter(Boolean).join(', ')}</span>
               </a>
             )}
-            <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5" style={{ color: accent }} /> 9:00 — 21:00, без выходных</div>
+            <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5" style={{ color: accent }} /> {content.workingHours}</div>
           </div>
         </div>
 

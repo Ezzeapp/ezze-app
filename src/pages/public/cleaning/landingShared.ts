@@ -6,7 +6,7 @@ import {
   getOrderTypeIcon, useCleaningEnabledOrderTypes,
   type CleaningOrderTypeConfig,
 } from '@/hooks/useCleaningOrders'
-import type { MasterProfile } from '@/types'
+import type { LandingContent, LandingHowStep, MasterProfile } from '@/types'
 
 export interface CleaningPriceRow {
   id: string
@@ -53,6 +53,46 @@ export interface CleaningLandingProps {
   avatarUrl: string | null
   coverUrl: string | null
   bookingUrl: string
+  content: ResolvedLandingContent
+}
+
+export interface ResolvedLandingContent {
+  heroBadge: string
+  businessSubtitle: string
+  turnaroundHours: number
+  freePickupThreshold: number
+  workingHours: string
+  showEcoBadge: boolean
+  showQualityBadge: boolean
+  howSteps: LandingHowStep[]
+  reviews: NonNullable<LandingContent['reviews']>
+}
+
+const DEFAULT_HOW_STEPS: LandingHowStep[] = [
+  { title: 'Оставляете заявку',  description: 'Через сайт, бот или звонок. 2 минуты вашего времени.' },
+  { title: 'Курьер забирает',    description: 'В удобное окно. Бесплатно от {free_pickup}.' },
+  { title: 'Чистим и гладим',    description: 'Эко-средства, индивидуальная программа под материал.' },
+  { title: 'Привозим обратно',   description: 'Через {turnaround_hours} часов в фирменной упаковке.' },
+]
+
+export function resolveLandingContent(content?: LandingContent): ResolvedLandingContent {
+  return {
+    heroBadge:           content?.hero_badge          ?? 'Доставка 24/7',
+    businessSubtitle:    content?.business_subtitle   ?? 'Премиум химчистка',
+    turnaroundHours:     content?.turnaround_hours    ?? 48,
+    freePickupThreshold: content?.free_pickup_threshold ?? 200_000,
+    workingHours:        content?.working_hours       ?? '9:00 — 21:00, ежедневно',
+    showEcoBadge:        content?.show_eco_badge      ?? true,
+    showQualityBadge:    content?.show_quality_badge  ?? true,
+    howSteps:            (content?.how_steps?.length ? content.how_steps : DEFAULT_HOW_STEPS).slice(0, 4),
+    reviews:             content?.reviews ?? [],
+  }
+}
+
+export function interpolateStep(text: string, c: ResolvedLandingContent, formatPrice: (n: number) => string): string {
+  return text
+    .replace('{free_pickup}', formatPrice(c.freePickupThreshold))
+    .replace('{turnaround_hours}', String(c.turnaroundHours))
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
