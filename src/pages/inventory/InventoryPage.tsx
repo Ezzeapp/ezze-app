@@ -341,9 +341,11 @@ export function InventoryPage() {
             </div>
           )}
           <div className="flex items-center gap-2 shrink-0 ml-auto">
-            <Button variant="outline" size="icon" className="sm:hidden" onClick={() => setCatDialogOpen(true)}>
-              <Tags className="h-4 w-4" />
-            </Button>
+            {PRODUCT !== 'workshop' && (
+              <Button variant="outline" size="icon" className="sm:hidden" onClick={() => setCatDialogOpen(true)}>
+                <Tags className="h-4 w-4" />
+              </Button>
+            )}
             {hasGlobalProducts && (
               <Button variant="outline" size="icon" className="sm:hidden" onClick={() => setImportOpen(true)}>
                 <Download className="h-4 w-4" />
@@ -360,10 +362,12 @@ export function InventoryPage() {
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
-            <Button variant="outline" className="hidden sm:flex" onClick={() => setCatDialogOpen(true)}>
-              <Tags className="h-4 w-4 mr-2" />
-              {t('inventory.manageCategories')}
-            </Button>
+            {PRODUCT !== 'workshop' && (
+              <Button variant="outline" className="hidden sm:flex" onClick={() => setCatDialogOpen(true)}>
+                <Tags className="h-4 w-4 mr-2" />
+                {t('inventory.manageCategories')}
+              </Button>
+            )}
             {hasGlobalProducts && (
               <Button variant="outline" className="hidden sm:flex" onClick={() => setImportOpen(true)}>
                 <Download className="h-4 w-4 mr-2" />
@@ -680,7 +684,7 @@ export function InventoryPage() {
                     placeholder={t('inventory.categoryNamePlaceholder')}
                     className="w-full px-3 py-1.5 text-base sm:text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   />
-                  {catDropOpen && (catSuggestions.length > 0 || (catValue.trim() && !allCategories.map(c => c.toLowerCase()).includes(catValue.trim().toLowerCase()))) && (
+                  {catDropOpen && (catSuggestions.length > 0 || (PRODUCT !== 'workshop' && catValue.trim() && !allCategories.map(c => c.toLowerCase()).includes(catValue.trim().toLowerCase()))) && (
                     <div className="absolute z-50 left-0 right-0 mt-1 rounded-lg border bg-white dark:bg-zinc-900 shadow-lg overflow-hidden">
                       <div className="max-h-48 overflow-y-auto py-1">
                         {catSuggestions.map((cat) => (
@@ -699,7 +703,7 @@ export function InventoryPage() {
                             <Check className={`h-3.5 w-3.5 shrink-0 ${catValue === cat ? 'text-primary' : 'opacity-0'}`} />
                           </button>
                         ))}
-                        {catValue.trim() && !allCategories.map(c => c.toLowerCase()).includes(catValue.trim().toLowerCase()) && (
+                        {PRODUCT !== 'workshop' && catValue.trim() && !allCategories.map(c => c.toLowerCase()).includes(catValue.trim().toLowerCase()) && (
                           <div className="border-t px-3 py-2 space-y-2">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {CAT_COLORS.map((color) => (
