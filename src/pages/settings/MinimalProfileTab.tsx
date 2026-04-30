@@ -100,7 +100,7 @@ export function MinimalProfileTab() {
   }
 
   return (
-    <>
+    <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -292,6 +292,6 @@ export function MinimalProfileTab() {
           </p>
         </CardContent>
       </Card>
-    </>
+    </div>
   )
 }

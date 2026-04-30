@@ -204,28 +204,32 @@ export function SettingsPage() {
   ]
 
   return (
-    <div className={cn('space-y-0', PRODUCT === 'beauty' && tab === 'profile' ? 'max-w-5xl' : 'max-w-2xl')}>
+    <div className={cn('space-y-0', PRODUCT === 'beauty' && tab === 'profile' ? 'max-w-5xl' : 'max-w-6xl')}>
       <PageHeader title={t('nav.settings')} />
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 overflow-x-auto pb-1 scrollbar-none">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={cn(
-              'flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors shrink-0 min-w-[64px]',
-              tab === id
-                ? 'bg-primary/10 text-primary'
-                : 'bg-muted/40 text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </button>
-        ))}
-      </div>
+      <div className="flex flex-col lg:flex-row lg:gap-8 lg:items-start">
+        {/* Tabs — горизонтально на мобиле, вертикально слева на десктопе */}
+        <nav className="flex gap-1 mb-6 overflow-x-auto pb-1 scrollbar-none lg:flex-col lg:gap-0.5 lg:w-56 lg:shrink-0 lg:mb-0 lg:overflow-visible lg:pb-0 lg:sticky lg:top-4">
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={cn(
+                'flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors shrink-0 min-w-[64px]',
+                'lg:flex-row lg:items-center lg:justify-start lg:gap-2.5 lg:w-full lg:text-sm lg:px-3 lg:py-2.5 lg:min-w-0',
+                tab === id
+                  ? 'bg-primary/10 text-primary'
+                  : 'bg-muted/40 text-muted-foreground hover:text-foreground lg:bg-transparent lg:hover:bg-muted/50'
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="lg:truncate">{label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="flex-1 min-w-0">
 
       {/* ── Профиль ── */}
       {tab === 'profile' && (
@@ -253,8 +257,8 @@ export function SettingsPage() {
             </Card>
           )}
 
-          {/* Change Password */}
-          <Card>
+          {/* Change Password — на десктопе ограничена половиной ширины */}
+          <Card className="lg:max-w-[calc(50%-12px)]">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Lock className="h-4 w-4" />
@@ -323,7 +327,8 @@ export function SettingsPage() {
 
       {/* ── Интерфейс ── */}
       {tab === 'interface' && (
-        <div className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+          <div className="space-y-6">
           {/* Theme */}
           <Card>
             <CardHeader>
@@ -388,6 +393,9 @@ export function SettingsPage() {
             </CardContent>
           </Card>
 
+          </div>
+
+          <div className="space-y-6">
           {/* Currency & Timezone */}
           <Card>
             <CardHeader>
@@ -398,54 +406,54 @@ export function SettingsPage() {
               <CardDescription>{t('settings.currencyTimezoneDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-1.5">
-                    <DollarSign className="h-3.5 w-3.5" />
-                    {t('settings.currency')}
-                  </Label>
-                  {currency && (
-                    <Select value={currency} onValueChange={onCurrencyChange}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CURRENCIES.map((c) => (
-                          <SelectItem key={c.code} value={c.code}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5" />
-                    {t('settings.timezone')}
-                  </Label>
-                  {timezone && (
-                    <Select value={timezone} onValueChange={onTimezoneChange}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60">
-                        {TIMEZONES.map((tz) => (
-                          <SelectItem key={tz.value} value={tz.value}>
-                            {tz.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5" />
+                  {t('settings.currency')}
+                </Label>
+                {currency && (
+                  <Select value={currency} onValueChange={onCurrencyChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" />
+                  {t('settings.timezone')}
+                </Label>
+                {timezone && (
+                  <Select value={timezone} onValueChange={onTimezoneChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {TIMEZONES.map((tz) => (
+                        <SelectItem key={tz.value} value={tz.value}>
+                          {tz.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
       )}
 
-
+        </div>
+      </div>
     </div>
   )
 }
