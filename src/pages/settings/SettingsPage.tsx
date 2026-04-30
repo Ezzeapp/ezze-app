@@ -30,7 +30,6 @@ import { WorkshopItemTypesSettingsTab } from './WorkshopItemTypesSettingsTab'
 import { WorkshopNotificationTemplatesTab } from './WorkshopNotificationTemplatesTab'
 import { WorkshopReceiptTemplateTab } from './WorkshopReceiptTemplateTab'
 import { MinimalProfileTab } from './MinimalProfileTab'
-import { ProfilePage } from '@/pages/profile/ProfilePage'
 import { PRODUCT } from '@/lib/config'
 
 const LANGUAGES = [
@@ -204,7 +203,7 @@ export function SettingsPage() {
   ]
 
   return (
-    <div className={cn('space-y-0', PRODUCT === 'beauty' && tab === 'profile' ? 'max-w-7xl' : 'max-w-6xl')}>
+    <div className="max-w-6xl space-y-0">
       <PageHeader title={t('nav.settings')} />
 
       <div className="flex flex-col lg:flex-row lg:gap-8 lg:items-start">
@@ -234,10 +233,8 @@ export function SettingsPage() {
       {/* ── Профиль ── */}
       {tab === 'profile' && (
         <div className="space-y-6">
-          {(PRODUCT === 'cleaning' || PRODUCT === 'workshop') ? (
+          {(PRODUCT === 'cleaning' || PRODUCT === 'workshop' || PRODUCT === 'beauty') ? (
             <MinimalProfileTab />
-          ) : PRODUCT === 'beauty' ? (
-            <ProfilePage embedded />
           ) : (
             <Card>
               <CardHeader>
