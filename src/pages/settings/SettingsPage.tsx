@@ -83,6 +83,16 @@ export function SettingsPage() {
 
   const [tab, setTab] = useState<Tab>('profile')
 
+  // Внешние секции (PublicPageTab) могут попросить переключить вкладку через CustomEvent
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail
+      if (detail) setTab(detail as Tab)
+    }
+    window.addEventListener('settings:set-tab', handler)
+    return () => window.removeEventListener('settings:set-tab', handler)
+  }, [])
+
   const [theme, setThemeState] = useState<Theme>(getStoredTheme)
   const [pwLoading, setPwLoading] = useState(false)
   const [currency, setCurrency] = useState<string>('')

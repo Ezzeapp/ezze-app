@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Globe, Copy, Check, Share2, ExternalLink, QrCode, X,
   LayoutTemplate, Sparkles, Type, Zap,
-  Image as ImageIcon, MapPin, Link2,
+  Image as ImageIcon, MapPin, Link2, ImagePlus, Trash2, Clock,
+  ScrollText, Briefcase, User as UserIcon, Camera,
   Instagram, Send, Phone, Mail, Youtube, Music2,
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
@@ -13,9 +15,12 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useProfile, useUpsertProfile } from '@/hooks/useProfile'
+import { useServices } from '@/hooks/useServices'
 import { useAuth } from '@/contexts/AuthContext'
 import { uploadImage } from '@/lib/storage'
 import { toast } from '@/components/shared/Toaster'
+import { formatCurrency } from '@/lib/utils'
+import { useCurrency } from '@/hooks/useCurrency'
 import { PRODUCT } from '@/lib/config'
 import type { LandingTemplate, LandingContent, PageSettings } from '@/types'
 import { LandingContentEditor } from './LandingContentEditor'
@@ -109,6 +114,75 @@ const CLEANING_TEMPLATES: TemplateOption[] = [
   },
 ]
 
+const BEAUTY_TEMPLATES: TemplateOption[] = [
+  {
+    id: 'glamour',
+    label: 'Glamour',
+    tagline: 'Премиум на чёрном с золотом, журнальный стиль',
+    icon: Sparkles,
+    preview: (
+      <div className="rounded-lg overflow-hidden h-full" style={{ background: '#0e0d0c' }}>
+        <div className="p-2.5 h-full flex flex-col gap-1.5">
+          <div className="h-1 w-6 rounded" style={{ background: '#c9a14a' }} />
+          <div className="h-2.5 w-3/4 rounded bg-white/85 mt-1" />
+          <div className="h-2.5 w-1/2 rounded italic" style={{ background: '#c9a14a' }} />
+          <div className="h-px w-6" style={{ background: '#c9a14a' }} />
+          <div className="space-y-0.5 mt-0.5">
+            <div className="h-0.5 w-full rounded bg-white/30" />
+            <div className="h-0.5 w-3/4 rounded bg-white/30" />
+          </div>
+          <div className="h-3 rounded mt-auto" style={{ background: '#c9a14a' }} />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'soft',
+    label: 'Soft Pastel',
+    tagline: 'Кремовый+коралл, дружелюбный, универсальный',
+    icon: Type,
+    preview: (
+      <div className="rounded-lg overflow-hidden h-full" style={{ background: '#fdf9f3' }}>
+        <div className="p-2.5 h-full flex flex-col gap-1.5">
+          <div className="h-2 w-2 rounded-lg" style={{ background: '#e8927c' }} />
+          <div className="h-2.5 w-3/4 rounded bg-stone-800 mt-1" />
+          <div className="h-2.5 w-1/2 rounded italic" style={{ background: '#d77a63' }} />
+          <div className="grid grid-cols-2 gap-1 mt-0.5">
+            <div className="h-4 rounded-lg bg-white border border-stone-200" />
+            <div className="h-4 rounded-lg bg-white border border-stone-200" />
+          </div>
+          <div className="h-3 rounded-full mt-auto" style={{ background: '#e8927c' }} />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'editorial',
+    label: 'Editorial Bold',
+    tagline: 'Огромная типографика, fashion-edge',
+    icon: Zap,
+    preview: (
+      <div className="rounded-lg overflow-hidden h-full border-2 border-stone-900" style={{ background: '#f5f1ea' }}>
+        <div className="p-2 h-full flex flex-col gap-1">
+          <div className="bg-stone-900 -mx-2 -mt-2 px-2 py-1 mb-1 flex items-center gap-1">
+            <span className="h-0.5 w-4 rounded bg-amber-100" />
+            <span className="h-0.5 w-3 rounded bg-amber-100/60" />
+          </div>
+          <div className="h-3 w-full rounded-sm bg-stone-900 mt-0.5" />
+          <div className="h-3 w-5/6 rounded-sm" style={{ background: '#ff5b3a' }} />
+          <div className="grid grid-cols-2 gap-1 mt-0.5">
+            <div className="h-3 rounded-sm border border-stone-900" />
+            <div className="h-3 rounded-sm border border-stone-900" />
+          </div>
+          <div className="h-3 rounded-sm mt-auto border-2 border-stone-900" style={{ background: '#ff5b3a' }} />
+        </div>
+      </div>
+    ),
+  },
+]
+
+const DEFAULT_TEMPLATE: Record<string, LandingTemplate> = { cleaning: 'premium', beauty: 'soft' }
+
 function TikTokIcon({ className }: { className?: string }) {
   return <Music2 className={className} />
 }
@@ -143,9 +217,13 @@ export function PublicPageTab() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const { data: profile, isLoading } = useProfile()
+  const { data: services = [] } = useServices()
   const upsertProfile = useUpsertProfile()
+  const currency = useCurrency()
 
   // Локальные drafts для контактов / соцсетей / адреса — комитим по blur.
+  const [displayName, setDisplayName] = useState('')
+  const [profession, setProfession] = useState('')
   const [bio, setBio] = useState('')
   const [phone, setPhone] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
@@ -163,12 +241,18 @@ export function PublicPageTab() {
   const [copied, setCopied] = useState(false)
   const [showBigQr, setShowBigQr] = useState(false)
   const [coverUploading, setCoverUploading] = useState(false)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [portfolioUploading, setPortfolioUploading] = useState(false)
   const coverFileRef = useRef<HTMLInputElement>(null)
+  const avatarFileRef = useRef<HTMLInputElement>(null)
+  const portfolioFileRef = useRef<HTMLInputElement>(null)
 
   const lastProfileIdRef = useRef<string | undefined>(undefined)
   useEffect(() => {
     if (!profile || profile.id === lastProfileIdRef.current) return
     lastProfileIdRef.current = profile.id
+    setDisplayName(profile.display_name ?? '')
+    setProfession(profile.profession ?? '')
     setBio(profile.bio ?? '')
     setPhone(profile.phone ?? '')
     setWhatsapp(profile.whatsapp ?? '')
@@ -257,8 +341,10 @@ export function PublicPageTab() {
   }
 
   const isCleaning = PRODUCT === 'cleaning'
-  const templates = isCleaning ? CLEANING_TEMPLATES : []
-  const activeTemplate = pageSettings.landing_template ?? 'premium'
+  const isBeauty = PRODUCT === 'beauty'
+  const templates = isBeauty ? BEAUTY_TEMPLATES : (isCleaning ? CLEANING_TEMPLATES : [])
+  const defaultTpl = DEFAULT_TEMPLATE[PRODUCT] ?? 'premium'
+  const activeTemplate = pageSettings.landing_template ?? defaultTpl
 
   return (
     <div className="space-y-4 max-w-2xl">
@@ -338,7 +424,7 @@ export function PublicPageTab() {
       )}
 
       {/* ─── Шаблон лендинга ────────────────────────────────────── */}
-      {isCleaning && (
+      {(isCleaning || isBeauty) && (
         <Card
           title={t('publicPage.landingTemplate', 'Шаблон лендинга')}
           description={t('publicPage.landingTemplateHint', 'Визуальный стиль публичной страницы. Услуги, цены и категории подтягиваются автоматически из раздела «Услуги».')}
@@ -371,22 +457,41 @@ export function PublicPageTab() {
         </Card>
       )}
 
-      {/* ─── Hero и описание ─────────────────────────────────────── */}
+      {/* ─── О мастере / Hero ─────────────────────────────────────── */}
       <Card
-        title={t('publicPage.hero', 'Описание бизнеса')}
-        description={t('publicPage.heroHint', 'Текст под заголовком и подзаголовок — отображаются на лендинге.')}
-        icon={Sparkles}
+        title={t('publicPage.hero', 'О мастере')}
+        description={t('publicPage.heroHint', 'Название, профессия и описание показываются в hero-блоке лендинга.')}
+        icon={Briefcase}
       >
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Название (отображается в шапке)</Label>
+            <Input
+              placeholder="Камила · Brow studio"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              onBlur={() => displayName !== (profile?.display_name ?? '') && commit({ display_name: displayName })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Профессия / специализация</Label>
+            <Input
+              placeholder="Brow & lash artist"
+              value={profession}
+              onChange={(e) => setProfession(e.target.value)}
+              onBlur={() => profession !== (profile?.profession ?? '') && commit({ profession })}
+            />
+          </div>
+        </div>
         <div className="space-y-1.5">
           <Label className="text-xs">{t('publicPage.bio', 'Описание (bio)')}</Label>
           <Textarea
             rows={3}
-            placeholder="Например: Премиум химчистка с доставкой за 48 часов. Эко-средства, бережная обработка."
+            placeholder="Например: 7 лет опыта, сертифицированный мастер. Работаю с премиум-материалами."
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             onBlur={() => bio !== (profile?.bio ?? '') && commit({ bio })}
           />
-          <p className="text-[11px] text-muted-foreground">Появляется в hero-блоке всех шаблонов.</p>
         </div>
       </Card>
 
@@ -403,6 +508,47 @@ export function PublicPageTab() {
           />
         </Card>
       )}
+
+      {/* ─── Аватар ────────────────────────────────────────────── */}
+      <Card
+        title={t('publicPage.avatar', 'Аватар / фото')}
+        description={t('publicPage.avatarHint', 'Круглое фото в hero и шапке лендинга. Квадратный кадр, до 2 МБ.')}
+        icon={UserIcon}
+      >
+        <input ref={avatarFileRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
+          const file = e.target.files?.[0]
+          if (!file || !user?.id) return
+          setAvatarUploading(true)
+          try {
+            const path = await uploadImage('avatars', `${user.id}/avatar`, file, 'avatar')
+            await up({ avatar: path })
+            toast.success(t('common.saved', 'Сохранено'))
+          } catch { toast.error(t('common.uploadError', 'Ошибка загрузки')) }
+          finally { setAvatarUploading(false); e.target.value = '' }
+        }} />
+        <div className="flex items-center gap-4">
+          {profile?.avatar ? (
+            <div className="relative">
+              <img src={storageUrl('avatars', profile.avatar)} alt="" className="h-20 w-20 rounded-full object-cover" />
+              <button
+                onClick={() => commitWithToast({ avatar: '' })}
+                className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow"
+                title={t('common.delete', 'Удалить')}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ) : (
+            <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
+              {(displayName || profession || '?')[0].toUpperCase()}
+            </div>
+          )}
+          <Button variant="outline" size="sm" disabled={avatarUploading} onClick={() => avatarFileRef.current?.click()}>
+            <Camera className="h-3.5 w-3.5 mr-1.5" />
+            {avatarUploading ? t('common.uploading', 'Загрузка...') : t('publicPage.uploadAvatar', 'Загрузить')}
+          </Button>
+        </div>
+      </Card>
 
       {/* ─── Обложка ────────────────────────────────────────────── */}
       <Card
@@ -557,6 +703,116 @@ export function PublicPageTab() {
           ))}
         </div>
       </Card>
+
+      {/* ─── График работы (ссылка на отдельную вкладку) ─────────── */}
+      <Card
+        title={t('publicPage.workingHours', 'График работы')}
+        description={t('publicPage.workingHoursHint', 'Часы работы по дням редактируются на отдельной вкладке «Расписание». Они автоматически отображаются на лендинге и используются при онлайн-записи.')}
+        icon={Clock}
+      >
+        <Button variant="outline" size="sm" asChild className="w-full">
+          <a href="#schedule" onClick={(e) => {
+            e.preventDefault()
+            window.dispatchEvent(new CustomEvent('settings:set-tab', { detail: 'schedule' }))
+          }}>
+            <Clock className="h-3.5 w-3.5 mr-1.5" />
+            {t('publicPage.openSchedule', 'Открыть расписание')}
+          </a>
+        </Button>
+      </Card>
+
+      {/* ─── Портфолио ────────────────────────────────────────────── */}
+      <Card
+        title={`${t('publicPage.portfolio', 'Портфолио')} (${(profile?.portfolio ?? []).length}/12)`}
+        description={t('publicPage.portfolioHint', 'Фото работ — отображаются в галерее лендинга. До 12 снимков.')}
+        icon={ImagePlus}
+      >
+        <input ref={portfolioFileRef} type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+          const files = Array.from(e.target.files ?? [])
+          if (!files.length || !user?.id) return
+          setPortfolioUploading(true)
+          try {
+            const current = profile?.portfolio ?? []
+            const remaining = Math.max(0, 12 - current.length)
+            const toUpload = files.slice(0, remaining)
+            const paths = await Promise.all(
+              toUpload.map((f, i) => uploadImage('portfolio', `${user.id}/portfolio-${Date.now()}-${i}`, f, 'service'))
+            )
+            await up({ portfolio: [...current, ...paths] })
+            toast.success(t('common.saved', 'Сохранено'))
+          } catch { toast.error(t('common.uploadError', 'Ошибка загрузки')) }
+          finally { setPortfolioUploading(false); e.target.value = '' }
+        }} />
+        {(profile?.portfolio ?? []).length === 0 ? (
+          <button
+            onClick={() => portfolioFileRef.current?.click()}
+            disabled={portfolioUploading}
+            className="w-full py-10 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary transition-colors"
+          >
+            <ImagePlus className="h-7 w-7" />
+            <span className="text-xs">{portfolioUploading ? t('common.uploading', 'Загрузка...') : t('publicPage.uploadPortfolio', 'Загрузить фото работ')}</span>
+          </button>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {(profile?.portfolio ?? []).map(filename => (
+                <div key={filename} className="relative group aspect-square">
+                  <img src={storageUrl('portfolio', filename)} alt="" className="w-full h-full object-cover rounded-lg" />
+                  <button
+                    onClick={() => commit({ portfolio: (profile?.portfolio ?? []).filter(f => f !== filename) })}
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                    title={t('common.delete', 'Удалить')}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            {(profile?.portfolio ?? []).length < 12 && (
+              <Button variant="outline" size="sm" onClick={() => portfolioFileRef.current?.click()} disabled={portfolioUploading} className="w-full mt-2">
+                <ImagePlus className="h-3.5 w-3.5 mr-1.5" />
+                {portfolioUploading ? t('common.uploading', 'Загрузка...') : t('publicPage.addPhotos', 'Добавить ещё')}
+              </Button>
+            )}
+          </>
+        )}
+      </Card>
+
+      {/* ─── Услуги (read-only превью) ────────────────────────────── */}
+      <Card
+        title={`${t('publicPage.services', 'Услуги на лендинге')} (${services.length})`}
+        description={t('publicPage.servicesHint', 'Услуги и цены подтягиваются автоматически из раздела «Услуги». Здесь только просмотр — для редактирования перейдите в раздел Услуг.')}
+        icon={ScrollText}
+      >
+        <Button variant="outline" size="sm" asChild className="w-full">
+          <Link to="/services">
+            <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+            {t('publicPage.editServices', 'Изменить услуги')}
+          </Link>
+        </Button>
+        {services.length === 0 ? (
+          <div className="py-8 text-center text-sm text-muted-foreground border border-dashed rounded-lg">
+            <ScrollText className="h-8 w-8 mx-auto mb-2 opacity-40" />
+            {t('publicPage.noServices', 'Пока нет услуг')}
+          </div>
+        ) : (
+          <div className="space-y-1 max-h-72 overflow-y-auto">
+            {services.slice(0, 30).map(s => (
+              <div key={s.id} className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm ${s.is_active ? '' : 'opacity-50'}`}>
+                <span className="truncate flex-1">{s.name}</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">{s.duration_min} {t('services.minutes', 'мин')}</span>
+                <span className="font-semibold whitespace-nowrap min-w-[80px] text-right">{formatCurrency(s.price, currency)}</span>
+              </div>
+            ))}
+            {services.length > 30 && (
+              <p className="text-[11px] text-center text-muted-foreground pt-2">
+                … и ещё {services.length - 30}.
+              </p>
+            )}
+          </div>
+        )}
+      </Card>
+
     </div>
   )
 }
