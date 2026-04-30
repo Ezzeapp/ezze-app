@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { Plus, Trash2, Loader2, X, Download, Search, Check, ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react'
 import { useCleaningItemTypes, useUpsertItemType, useDeleteItemType } from '@/hooks/useCleaningItemTypes'
 import type { CleaningItemType } from '@/hooks/useCleaningItemTypes'
@@ -85,10 +85,10 @@ interface AddDialogProps {
   onClose: () => void
   maxSortOrder: number
   orderTypes: CleaningOrderTypeConfig[]
-  existingSubcategories: string[]
+  categoriesByOrderType: Record<string, string[]>
 }
 
-function AddItemDialog({ open, onClose, maxSortOrder, orderTypes, existingSubcategories }: AddDialogProps) {
+function AddItemDialog({ open, onClose, maxSortOrder, orderTypes, categoriesByOrderType }: AddDialogProps) {
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [days, setDays] = useState('3')
@@ -99,15 +99,14 @@ function AddItemDialog({ open, onClose, maxSortOrder, orderTypes, existingSubcat
   // Auto-suggest category from name
   const suggestedCategory = useMemo(() => suggestCategory(name), [name])
 
-  // Subcategory suggestions filtered by selected category
-  const subcategorySuggestions = useMemo(() =>
-    existingSubcategories.filter(s => {
-      // We can't filter by category here since we don't know which items belong to which subcategory
-      // Just show unique subcategories that contain the typed text
-      return !subcategory.trim() || s.toLowerCase().includes(subcategory.toLowerCase())
-    }),
-    [existingSubcategories, subcategory]
-  )
+  const availableCategories = categoriesByOrderType[category] ?? []
+
+  // Reset subcategory if it's not valid for the selected order type
+  useEffect(() => {
+    if (subcategory && !availableCategories.includes(subcategory)) {
+      setSubcategory('')
+    }
+  }, [category, availableCategories, subcategory])
 
   const handleSubmit = async () => {
     if (!name.trim()) return
@@ -196,17 +195,25 @@ function AddItemDialog({ open, onClose, maxSortOrder, orderTypes, existingSubcat
 
           <div className="space-y-1.5">
             <Label>Категория</Label>
-            <Input
-              value={subcategory}
-              onChange={e => setSubcategory(e.target.value)}
-              placeholder="Например: Верхняя одежда"
-              list="subcategory-suggestions"
-            />
-            <datalist id="subcategory-suggestions">
-              {subcategorySuggestions.map(s => (
-                <option key={s} value={s} />
-              ))}
-            </datalist>
+            <div className="relative">
+              <select
+                value={subcategory}
+                onChange={e => setSubcategory(e.target.value)}
+                disabled={availableCategories.length === 0}
+                className="w-full h-9 appearance-none rounded-md border border-input bg-background px-3 pr-8 py-1 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="">Без категории</option>
+                {availableCategories.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            </div>
+            {availableCategories.length === 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                Нет категорий для этого типа заказа. Категории заводит администратор Ezze.
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -531,40 +538,53 @@ interface EditCellProps {
   onChangeValue: (v: string) => void
   onSave: () => void
   onCancel: () => void
-  suggestions?: string[]
+  /** Допустимые значения категории — используются только при field='subcategory' */
+  subcategoryOptions?: string[]
 }
 
-function EditCell({ item, field, editingCell, editingValue, savingId, onStartEdit, onChangeValue, onSave, onCancel, suggestions }: EditCellProps) {
+function EditCell({ item, field, editingCell, editingValue, savingId, onStartEdit, onChangeValue, onSave, onCancel, subcategoryOptions }: EditCellProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const isEditing = editingCell?.id === item.id && editingCell?.field === field
-  const isSaving = savingId === item.id
-  const listId = suggestions ? `ec-${item.id}-${field}` : undefined
+
+  if (isEditing && field === 'subcategory') {
+    const options = subcategoryOptions ?? []
+    return (
+      <select
+        autoFocus
+        className="w-full px-2 py-1 text-sm rounded border border-primary bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+        value={editingValue}
+        onChange={e => { onChangeValue(e.target.value); setTimeout(onSave, 0) }}
+        onBlur={onSave}
+        onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
+      >
+        <option value="">Без категории</option>
+        {options.map(s => <option key={s} value={s}>{s}</option>)}
+        {/* Если текущее значение не в списке (legacy) — показать его */}
+        {editingValue && !options.includes(editingValue) && (
+          <option value={editingValue}>{editingValue}</option>
+        )}
+      </select>
+    )
+  }
 
   if (isEditing) {
     return (
-      <>
-        <input
-          ref={inputRef}
-          autoFocus
-          type={field === 'name' || field === 'subcategory' ? 'text' : 'number'}
-          list={listId}
-          className="w-full px-2 py-1 text-sm rounded border border-primary bg-background focus:outline-none focus:ring-1 focus:ring-primary"
-          value={editingValue}
-          onChange={e => onChangeValue(e.target.value)}
-          onBlur={onSave}
-          onKeyDown={e => {
-            if (e.key === 'Enter') { e.preventDefault(); onSave() }
-            if (e.key === 'Escape') onCancel()
-          }}
-        />
-        {listId && suggestions && (
-          <datalist id={listId}>
-            {suggestions.map(s => <option key={s} value={s} />)}
-          </datalist>
-        )}
-      </>
+      <input
+        ref={inputRef}
+        autoFocus
+        type={field === 'name' ? 'text' : 'number'}
+        className="w-full px-2 py-1 text-sm rounded border border-primary bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+        value={editingValue}
+        onChange={e => onChangeValue(e.target.value)}
+        onBlur={onSave}
+        onKeyDown={e => {
+          if (e.key === 'Enter') { e.preventDefault(); onSave() }
+          if (e.key === 'Escape') onCancel()
+        }}
+      />
     )
   }
+  const isSaving = savingId === item.id
 
   const displayValue = field === 'name'
     ? item.name
@@ -657,12 +677,30 @@ export function CleaningCatalogTab() {
     [items]
   )
 
-  // Unique subcategory values for autocomplete suggestions
-  const subcategorySuggestions = useMemo(() => {
-    const seen = new Set<string>()
-    items.forEach(item => { if (item.subcategory) seen.add(item.subcategory) })
-    return Array.from(seen).sort((a, b) => a.localeCompare(b, 'ru'))
-  }, [items])
+  // Категории из глобального справочника, сгруппированные по slug типа заказа.
+  // Существующие subcategory мастера добавляются как fallback для legacy данных.
+  const { data: globalServicesAll = [] } = useGlobalServices()
+  const categoriesByOrderType = useMemo(() => {
+    const map: Record<string, Set<string>> = {}
+    for (const s of globalServicesAll) {
+      if (!s.category) continue
+      const slug = (s as any).order_type || mapGlobalCategoryToSlug(s.category)
+      if (!map[slug]) map[slug] = new Set()
+      map[slug].add(s.category)
+    }
+    // Legacy: добавляем категории, которые мастер уже использует, к их order_type
+    for (const item of items) {
+      if (!item.subcategory) continue
+      const slug = item.category || 'clothing'
+      if (!map[slug]) map[slug] = new Set()
+      map[slug].add(item.subcategory)
+    }
+    const result: Record<string, string[]> = {}
+    for (const [slug, set] of Object.entries(map)) {
+      result[slug] = Array.from(set).sort((a, b) => a.localeCompare(b, 'ru'))
+    }
+    return result
+  }, [globalServicesAll, items])
 
   const startEdit = (item: CleaningItemType, field: 'name' | 'price' | 'days' | 'subcategory') => {
     const value = field === 'name'
@@ -980,7 +1018,7 @@ export function CleaningCatalogTab() {
                         onChangeValue={setEditingValue}
                         onSave={saveEdit}
                         onCancel={cancelEdit}
-                        suggestions={subcategorySuggestions}
+                        subcategoryOptions={categoriesByOrderType[item.category || 'clothing'] ?? []}
                       />
                     </td>
 
@@ -1065,7 +1103,7 @@ export function CleaningCatalogTab() {
         onClose={() => setAddOpen(false)}
         maxSortOrder={maxSortOrder}
         orderTypes={orderTypesConfig}
-        existingSubcategories={subcategorySuggestions}
+        categoriesByOrderType={categoriesByOrderType}
       />
 
       <ImportCleaningDialog
