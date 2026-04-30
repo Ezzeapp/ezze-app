@@ -710,14 +710,14 @@ export function PublicPageTab() {
         description={t('publicPage.workingHoursHint', 'Часы работы по дням редактируются на отдельной вкладке «Расписание». Они автоматически отображаются на лендинге и используются при онлайн-записи.')}
         icon={Clock}
       >
-        <Button variant="outline" size="sm" asChild className="w-full">
-          <a href="#schedule" onClick={(e) => {
-            e.preventDefault()
-            window.dispatchEvent(new CustomEvent('settings:set-tab', { detail: 'schedule' }))
-          }}>
-            <Clock className="h-3.5 w-3.5 mr-1.5" />
-            {t('publicPage.openSchedule', 'Открыть расписание')}
-          </a>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => window.dispatchEvent(new CustomEvent('settings:set-tab', { detail: 'schedule' }))}
+        >
+          <Clock className="h-3.5 w-3.5 mr-1.5" />
+          {t('publicPage.openSchedule', 'Открыть расписание')}
         </Button>
       </Card>
 
@@ -784,12 +784,13 @@ export function PublicPageTab() {
         description={t('publicPage.servicesHint', 'Услуги и цены подтягиваются автоматически из раздела «Услуги». Здесь только просмотр — для редактирования перейдите в раздел Услуг.')}
         icon={ScrollText}
       >
-        <Button variant="outline" size="sm" asChild className="w-full">
-          <Link to="/services">
-            <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-            {t('publicPage.editServices', 'Изменить услуги')}
-          </Link>
-        </Button>
+        <Link
+          to="/services"
+          className="inline-flex w-full items-center justify-center gap-1.5 h-8 rounded-md border border-input bg-background px-3 text-xs font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          {t('publicPage.editServices', 'Изменить услуги')}
+        </Link>
         {services.length === 0 ? (
           <div className="py-8 text-center text-sm text-muted-foreground border border-dashed rounded-lg">
             <ScrollText className="h-8 w-8 mx-auto mb-2 opacity-40" />
