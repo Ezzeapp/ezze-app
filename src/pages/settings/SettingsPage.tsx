@@ -179,8 +179,9 @@ export function SettingsPage() {
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'profile',   label: t('settings.tabProfile'),                        icon: User     },
     { id: 'interface', label: t('settings.tabInterface'),                      icon: Sun      },
-    // Расписание не применимо к workshop (приёмка, а не запись)
-    ...(PRODUCT !== 'workshop' ? [
+    // Расписание / онлайн-запись / публичная страница не применимы к workshop (приёмка)
+    // и rental (аренда объектов вместо записи к мастеру)
+    ...(PRODUCT !== 'workshop' && PRODUCT !== 'rental' ? [
       { id: 'schedule' as Tab, label: t('nav.schedule'),                           icon: Clock  },
       { id: 'public'   as Tab, label: t('settings.tabPublicPage', 'Моя страница'), icon: Layout },
       { id: 'booking'  as Tab, label: t('settings.tabBooking', 'Онлайн-запись'),   icon: CalendarCheck },
@@ -236,7 +237,7 @@ export function SettingsPage() {
       {/* ── Профиль ── */}
       {tab === 'profile' && (
         <div className="space-y-6">
-          {(PRODUCT === 'cleaning' || PRODUCT === 'workshop' || PRODUCT === 'beauty') ? (
+          {(PRODUCT === 'cleaning' || PRODUCT === 'workshop' || PRODUCT === 'beauty' || PRODUCT === 'rental') ? (
             <MinimalProfileTab />
           ) : (
             <Card>
