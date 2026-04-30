@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, Save, Loader2, AlertTriangle, CheckCircle2, ChevronDown, Search, KeyRound,
+  FileText, RotateCcw,
 } from 'lucide-react'
 import {
   useUpsertRentalBooking, useRentalBooking, calcRentalPrice, checkRentalAvailability,
@@ -9,6 +10,8 @@ import {
 } from '@/hooks/useRentalBookings'
 import { useRentalItems } from '@/hooks/useRentalItems'
 import { useClients } from '@/hooks/useClients'
+import { useRentalHandovers } from '@/hooks/useRentalHandovers'
+import { useAuth } from '@/contexts/AuthContext'
 import {
   RENTAL_PRICING_UNIT_LABELS,
   type RentalPricingUnit, type RentalBookingStatus,
@@ -20,6 +23,8 @@ import { toast } from '@/components/shared/Toaster'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { HandoverWizard } from './HandoverWizard'
+import { ContractDialog } from './ContractDialog'
 
 // ── Утилиты дат ───────────────────────────────────────────────────────────────
 
@@ -75,7 +80,16 @@ export function RentalBookingFormPage() {
   const { data: existing, isLoading: loadingExisting } = useRentalBooking(isEdit ? id : undefined)
   const { data: items = [], isLoading: loadingItems } = useRentalItems()
   const { data: clients = [], isLoading: loadingClients } = useClients()
+  const { data: handovers = [] } = useRentalHandovers(isEdit ? id : undefined)
+  const { user } = useAuth()
   const currencySymbol = useCurrencySymbol()
+  const masterName = user?.email ?? ''
+
+  const [handoverOpen, setHandoverOpen] = useState<null | 'pickup' | 'return'>(null)
+  const [contractOpen, setContractOpen] = useState(false)
+
+  const hasPickup = handovers.some(h => h.type === 'pickup')
+  const hasReturn = handovers.some(h => h.type === 'return')
 
   // Pre-fill из query (?itemId=...&start=...&end=...) при создании из календаря
   const initialItemId = !isEdit ? (searchParams.get('itemId') ?? '') : ''
@@ -503,6 +517,42 @@ export function RentalBookingFormPage() {
           />
         </div>
 
+        {/* Действия (только для существующих броней) */}
+        {isEdit && existing && (
+          <div className="border rounded-lg p-3 space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Документы и операции</p>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => setContractOpen(true)}>
+                <FileText className="h-3.5 w-3.5 mr-1.5" />
+                Договор
+              </Button>
+              {!hasPickup && existing.status !== 'cancelled' && existing.status !== 'returned' && (
+                <Button size="sm" variant="outline" onClick={() => setHandoverOpen('pickup')}>
+                  <KeyRound className="h-3.5 w-3.5 mr-1.5" />
+                  Выдать клиенту
+                </Button>
+              )}
+              {hasPickup && !hasReturn && existing.status !== 'returned' && existing.status !== 'cancelled' && (
+                <Button size="sm" variant="outline" onClick={() => setHandoverOpen('return')}>
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                  Принять у клиента
+                </Button>
+              )}
+            </div>
+            {(hasPickup || hasReturn) && (
+              <div className="text-xs text-muted-foreground space-y-0.5 pt-1 border-t">
+                {handovers.map(h => (
+                  <p key={h.id}>
+                    {h.type === 'pickup' ? '→ Выдан' : '← Принят'} ·{' '}
+                    {new Date(h.created_at).toLocaleString('ru', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    {h.charges_total > 0 && ` · удержано ${formatCurrency(h.charges_total)} ${currencySymbol}`}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Итого */}
         <div className="rounded-lg border bg-muted/30 p-4 space-y-1">
           <div className="flex justify-between text-sm">
@@ -540,6 +590,29 @@ export function RentalBookingFormPage() {
           </Button>
         </div>
       </div>
+
+      {/* Диалоги действий (только для существующих броней) */}
+      {isEdit && existing && (
+        <>
+          {handoverOpen && (
+            <HandoverWizard
+              open={!!handoverOpen}
+              onClose={() => setHandoverOpen(null)}
+              booking={existing}
+              item={selectedItem}
+              type={handoverOpen}
+            />
+          )}
+          <ContractDialog
+            open={contractOpen}
+            onClose={() => setContractOpen(false)}
+            booking={existing}
+            item={selectedItem}
+            client={selectedClient}
+            masterName={masterName}
+          />
+        </>
+      )}
     </div>
   )
 }
