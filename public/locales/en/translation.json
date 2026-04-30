@@ -659,7 +659,8 @@
     "tabNotifications": "Notifications",
     "tabIntegrations": "Integrations",
     "tabAdmin": "Administration",
-    "tabPublicPage": "My Page"
+    "tabPublicPage": "My Page",
+    "tabBooking": "Online booking"
   },
   "catalog": {
     "searchServices": "Search services or categories...",

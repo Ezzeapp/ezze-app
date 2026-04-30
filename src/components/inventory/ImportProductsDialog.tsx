@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Search, Download, Check, Package, ChevronDown, ChevronRight, Tag } from 'lucide-react'
 import { useGlobalProducts } from '@/hooks/useGlobalCatalogs'
-import { useCreateInventoryItem, useInventory } from '@/hooks/useInventory'
+import { useBulkCreateInventoryItems, useInventory } from '@/hooks/useInventory'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -27,7 +27,7 @@ export function ImportProductsDialog({ open, onClose }: Props) {
 
   const { data: products, isLoading } = useGlobalProducts()
   const { data: myItems } = useInventory()
-  const createItem = useCreateInventoryItem()
+  const bulkCreate = useBulkCreateInventoryItems()
 
   // Уникальные категории из существующего инвентаря пользователя
   const existingCategories = useMemo(() => {
@@ -83,29 +83,25 @@ export function ImportProductsDialog({ open, onClose }: Props) {
     if (!products || selected.size === 0) return
     setImporting(true)
     const toImport = products.filter((p) => selected.has(p.id))
-    let count = 0
-    let errors = 0
-    for (const p of toImport) {
-      try {
-        await createItem.mutateAsync({
-          name: p.name,
-          description: p.description || undefined,
-          category: targetCategory.trim() || p.category || undefined,
-          unit: p.unit || undefined,
-          quantity: 0,
-          cost_price: p.price || undefined,
-          sell_price: p.price || undefined,
-        } as any)
-        count++
-      } catch {
-        errors++
-      }
+    const rows = toImport.map((p) => ({
+      name: p.name,
+      description: p.description || undefined,
+      category: targetCategory.trim() || p.category || undefined,
+      unit: p.unit || undefined,
+      quantity: 0,
+      cost_price: p.price || undefined,
+      sell_price: p.price || undefined,
+    }))
+    try {
+      const count = await bulkCreate.mutateAsync(rows as any)
+      if (count > 0) toast.success(t('catalog.importedProducts', { count }))
+    } catch {
+      toast.error(t('common.saveError'))
+    } finally {
+      setImporting(false)
+      setSelected(new Set())
+      onClose()
     }
-    setImporting(false)
-    if (count > 0) toast.success(t('catalog.importedProducts', { count }))
-    if (errors > 0) toast.error(t('common.saveError'))
-    setSelected(new Set())
-    onClose()
   }
 
   const allSelected = allFilteredProducts.length > 0 && selected.size === allFilteredProducts.length

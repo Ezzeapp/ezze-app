@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout, FileText, Layers, FlaskConical, BedDouble, Syringe, UtensilsCrossed, DoorOpen, Wrench,
+  Moon, Sun, Globe, User, Lock, DollarSign, Clock, Layout, FileText, Layers, FlaskConical, BedDouble, Syringe, UtensilsCrossed, DoorOpen, Wrench, CalendarCheck,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '@/contexts/AuthContext'
@@ -18,6 +18,7 @@ import { cn, CURRENCIES, LANG_TO_CURRENCY } from '@/lib/utils'
 import { useProfile, useUpsertProfile } from '@/hooks/useProfile'
 import { ScheduleTab } from '@/pages/schedule/ScheduleTab'
 import { PublicPageTab } from './PublicPageTab'
+import { BookingSettingsTab } from './BookingSettingsTab'
 import { ReceiptSettingsTab } from './ReceiptSettingsTab'
 import { OrderTypesSettingsTab } from './OrderTypesSettingsTab'
 import { VisitTemplatesSettingsTab } from './VisitTemplatesSettingsTab'
@@ -74,7 +75,7 @@ const TIMEZONES = [
   { value: 'UTC', label: 'UTC (UTC+0)' },
 ]
 
-type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config' | 'exam_rooms' | 'workshop_types' | 'workshop_notifications' | 'workshop_receipt'
+type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'booking' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config' | 'exam_rooms' | 'workshop_types' | 'workshop_notifications' | 'workshop_receipt'
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -178,16 +179,18 @@ export function SettingsPage() {
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'profile',   label: t('settings.tabProfile'),                        icon: User     },
     { id: 'interface', label: t('settings.tabInterface'),                      icon: Sun      },
-    // Расписание и публичная витрина не применимы к workshop (приёмка, а не запись)
+    // Расписание не применимо к workshop (приёмка, а не запись)
     ...(PRODUCT !== 'workshop' ? [
       { id: 'schedule' as Tab, label: t('nav.schedule'),                           icon: Clock  },
       { id: 'public'   as Tab, label: t('settings.tabPublicPage', 'Моя страница'), icon: Layout },
+      { id: 'booking'  as Tab, label: t('settings.tabBooking', 'Онлайн-запись'),   icon: CalendarCheck },
     ] : []),
     ...(PRODUCT === 'cleaning' ? [
       { id: 'order_types' as Tab, label: 'Типы заказов', icon: Layers },
       { id: 'receipt' as Tab, label: 'Квитанция', icon: FileText },
     ] : []),
     ...(PRODUCT === 'workshop' ? [
+      { id: 'public' as Tab, label: t('settings.tabPublicPage', 'Моя страница'), icon: Layout },
       { id: 'workshop_types' as Tab, label: 'Типы устройств', icon: Wrench },
       { id: 'workshop_receipt' as Tab, label: 'Квитанция', icon: FileText },
       { id: 'workshop_notifications' as Tab, label: 'Уведомления', icon: FileText },
@@ -288,6 +291,9 @@ export function SettingsPage() {
 
       {/* ── Моя страница ── */}
       {tab === 'public' && <PublicPageTab />}
+
+      {/* ── Онлайн-запись ── */}
+      {tab === 'booking' && <BookingSettingsTab />}
 
       {/* ── Типы заказов (только cleaning) ── */}
       {tab === 'order_types' && <OrderTypesSettingsTab />}

@@ -61,8 +61,12 @@ export interface GlobalProduct extends BaseRecord {
   order?: number
 }
 
-// premium/minimal/bold — для cleaning, glamour/soft/editorial — для beauty
-export type LandingTemplate = 'premium' | 'minimal' | 'bold' | 'glamour' | 'soft' | 'editorial'
+// premium/minimal/bold — для cleaning, glamour/soft/editorial — для beauty,
+// pro_tech/minimal_clean/local_friendly — для workshop
+export type LandingTemplate =
+  | 'premium' | 'minimal' | 'bold'
+  | 'glamour' | 'soft' | 'editorial'
+  | 'pro_tech' | 'minimal_clean' | 'local_friendly'
 
 export interface LandingHowStep {
   title: string
@@ -86,6 +90,13 @@ export interface LandingContent {
   show_quality_badge?: boolean
   how_steps?: LandingHowStep[]
   reviews?: LandingReview[]
+  // Workshop-специфика
+  warranty_months?: number       // гарантия на ремонт (мес.)
+  diagnostics_free?: boolean     // бесплатная диагностика
+  diagnostics_minutes?: number   // время диагностики
+  success_rate_percent?: number  // % успешных ремонтов
+  total_repairs?: number         // выполнено ремонтов всего
+  years_in_business?: number     // лет работы
 }
 
 export interface PageSettings {
@@ -97,6 +108,67 @@ export interface PageSettings {
   font?:       'inter' | 'montserrat' | 'playfair'
   landing_template?: LandingTemplate
   landing_content?: LandingContent
+  booking_settings?: BookingSettings
+}
+
+// Настройки страницы онлайн-записи (/book/:slug)
+export interface BookingSettings {
+  // Оформление
+  theme?:           'elegant' | 'glamour' | 'playful'   // готовая визуальная тема
+  accent_color?:    string                              // hex акцента (#…)
+  bg_style?:        'light' | 'dark' | 'gradient'
+  btn_shape?:       'rounded' | 'pill' | 'square'
+  font_family?:     'inter' | 'playfair' | 'manrope' | 'montserrat'
+  show_cover?:      boolean                              // показывать ли обложку в hero
+  hero_title?:      string                               // заголовок hero (например "Запишись онлайн")
+  hero_subtitle?:   string                               // подзаголовок/слоган
+
+  // Услуги
+  group_by_category?: boolean
+  show_descriptions?: boolean
+  show_service_image?: boolean
+  show_duration?:     boolean
+  multi_select?:      boolean                            // мультивыбор услуг
+  hide_priceless?:    boolean                            // скрывать услуги "По договорённости"
+  service_sort?:      'manual' | 'price_asc' | 'price_desc' | 'name'
+
+  // Календарь и слоты
+  min_lead_hours?:    number                             // мин. часов до записи
+  max_advance_days?:  number                             // на сколько дней вперёд можно записаться
+  slot_step_min?:     15 | 30 | 60                       // шаг слотов
+  show_busy_slots?:   boolean                            // показывать занятые слоты неактивными vs скрывать
+  default_calendar_open?: boolean                        // календарь раскрыт по умолчанию
+
+  // Форма клиента
+  fields_email?:      boolean
+  fields_telegram?:   boolean
+  fields_notes?:      boolean
+  notes_placeholder?: string
+  require_consent?:   boolean                            // галочка с согласием
+  consent_text?:      string                             // текст согласия (markdown)
+  enable_promo?:      boolean                            // включить промокоды
+
+  // После записи
+  thanks_title?:      string
+  thanks_text?:       string
+  show_add_to_calendar?: boolean
+  show_review_form?:     boolean
+  redirect_telegram?:    boolean                          // редиректить в TG-чат после записи
+
+  // Правила и безопасность
+  auto_confirm?:           boolean                       // автоподтверждение записи
+  daily_limit_per_client?: number                        // 0 = без лимита
+  prepay_enabled?:         boolean                       // включить депозит
+  prepay_percent?:         number                        // процент депозита (0-100)
+
+  // Уведомления
+  notify_telegram?:    boolean
+  notify_email?:       boolean
+  remind_hours_before?: 0 | 1 | 2 | 24
+
+  // SEO / шеринг
+  seo_title?:       string
+  seo_description?: string
 }
 
 export interface MasterProduct {

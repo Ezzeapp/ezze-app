@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import dayjs from 'dayjs'
-import { useInventory, useInventoryPage, useCreateInventoryItem, useUpdateInventoryItem, useDeleteInventoryItem } from '@/hooks/useInventory'
+import { useInventory, useInventoryPage, useCreateInventoryItem, useUpdateInventoryItem, useDeleteInventoryItem, useBulkDeleteInventoryItems } from '@/hooks/useInventory'
 import { PaginationBar } from '@/components/shared/PaginationBar'
 import { useInventoryReceipts, useCreateReceipt } from '@/hooks/useInventoryReceipts'
 import { Button } from '@/components/ui/button'
@@ -117,6 +117,7 @@ export function InventoryPage() {
   const create = useCreateInventoryItem()
   const update = useUpdateInventoryItem()
   const del = useDeleteInventoryItem()
+  const bulkDel = useBulkDeleteInventoryItems()
   const createReceipt = useCreateReceipt()
 
   const { data: receipts } = useInventoryReceipts(historyDialogOpen ? receiptItem?.id : undefined)
@@ -276,7 +277,7 @@ export function InventoryPage() {
   const handleDeleteAll = async () => {
     if (!allItems?.length) return
     try {
-      await Promise.all(allItems.map(i => del.mutateAsync(i.id)))
+      await bulkDel.mutateAsync(undefined)
       toast.success(t('inventory.deletedMultiple', { count: allItems.length }))
       setDeleteAllOpen(false)
     } catch {
@@ -882,7 +883,7 @@ export function InventoryPage() {
         title={t('inventory.deleteConfirm')} loading={del.isPending} />
 
       <ConfirmDialog open={deleteAllOpen} onClose={() => setDeleteAllOpen(false)} onConfirm={handleDeleteAll}
-        title={t('inventory.bulkDeleteConfirm', { count: allItems?.length ?? 0 })} loading={del.isPending} />
+        title={t('inventory.bulkDeleteConfirm', { count: allItems?.length ?? 0 })} loading={bulkDel.isPending} />
 
       <ImportProductsDialog open={importOpen} onClose={() => setImportOpen(false)} />
 

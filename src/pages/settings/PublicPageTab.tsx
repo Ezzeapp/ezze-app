@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Globe, Copy, Check, Share2, ExternalLink, QrCode, X,
-  LayoutTemplate, Sparkles, Type, Zap,
+  LayoutTemplate, Sparkles, Type, Zap, Cpu, Heart,
   Image as ImageIcon, MapPin, Link2, ImagePlus, Trash2, Clock,
   ScrollText, Briefcase, User as UserIcon, Camera,
   Instagram, Send, Phone, Mail, Youtube, Music2,
 } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
 import { QRCodeSVG } from 'qrcode.react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -181,7 +182,80 @@ const BEAUTY_TEMPLATES: TemplateOption[] = [
   },
 ]
 
-const DEFAULT_TEMPLATE: Record<string, LandingTemplate> = { cleaning: 'premium', beauty: 'soft' }
+const WORKSHOP_TEMPLATES: TemplateOption[] = [
+  {
+    id: 'pro_tech',
+    label: 'Pro Tech',
+    tagline: 'Тёмный, профессиональный — для сервисных центров',
+    icon: Cpu,
+    preview: (
+      <div className="rounded-lg overflow-hidden h-full" style={{ background: '#0a0e1a' }}>
+        <div className="p-2.5 h-full flex flex-col gap-1.5">
+          <div className="flex items-center gap-1">
+            <div className="h-2 w-2 rounded" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }} />
+            <div className="h-1 w-8 rounded bg-white/20" />
+          </div>
+          <div className="h-2.5 w-3/4 rounded bg-white/85 mt-1" />
+          <div className="h-2.5 w-1/2 rounded" style={{ background: 'linear-gradient(135deg, #60a5fa, #c084fc)' }} />
+          <div className="grid grid-cols-2 gap-1 mt-1">
+            <div className="h-5 rounded-md border border-blue-500/30 bg-blue-500/10" />
+            <div className="h-5 rounded-md border border-blue-500/30 bg-blue-500/10" />
+          </div>
+          <div className="h-3 rounded-md mt-auto" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }} />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'minimal_clean',
+    label: 'Minimal Clean',
+    tagline: 'Светлый, минималистичный — для современных мастерских',
+    icon: Type,
+    preview: (
+      <div className="rounded-lg overflow-hidden h-full bg-zinc-50 border border-zinc-200">
+        <div className="p-2.5 h-full flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <div className="h-1.5 w-8 rounded bg-zinc-900" />
+            <div className="h-2 w-5 rounded-full bg-zinc-900" />
+          </div>
+          <div className="h-2.5 w-full rounded bg-zinc-900 mt-1.5" />
+          <div className="h-2.5 w-3/5 rounded bg-amber-500" />
+          <div className="grid grid-cols-3 gap-0.5 mt-1">
+            <div className="h-4 rounded bg-white border border-zinc-200" />
+            <div className="h-4 rounded bg-white border border-zinc-200" />
+            <div className="h-4 rounded bg-white border border-zinc-200" />
+          </div>
+          <div className="h-3 rounded-full bg-zinc-900 mt-auto" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'local_friendly',
+    label: 'Local Friendly',
+    tagline: 'Тёплый, домашний — для местной мастерской "у мастера"',
+    icon: Heart,
+    preview: (
+      <div className="rounded-lg overflow-hidden h-full bg-stone-50">
+        <div className="p-2.5 h-full flex flex-col gap-1.5">
+          <div className="flex items-center gap-1">
+            <div className="h-2 w-2 rounded-md bg-orange-500" />
+            <div className="h-1 w-8 rounded bg-stone-900" />
+          </div>
+          <div className="h-2.5 w-3/4 rounded bg-stone-900 mt-1" />
+          <div className="h-2.5 w-2/5 rounded italic bg-orange-500" />
+          <div className="grid grid-cols-2 gap-1 mt-1">
+            <div className="h-5 rounded-md bg-amber-100" />
+            <div className="h-5 rounded-md bg-orange-200" />
+          </div>
+          <div className="h-3 rounded-full bg-orange-500 mt-auto" />
+        </div>
+      </div>
+    ),
+  },
+]
+
+const DEFAULT_TEMPLATE: Record<string, LandingTemplate> = { cleaning: 'premium', beauty: 'soft', workshop: 'pro_tech' }
 
 function TikTokIcon({ className }: { className?: string }) {
   return <Music2 className={className} />
@@ -342,9 +416,19 @@ export function PublicPageTab() {
 
   const isCleaning = PRODUCT === 'cleaning'
   const isBeauty = PRODUCT === 'beauty'
-  const templates = isBeauty ? BEAUTY_TEMPLATES : (isCleaning ? CLEANING_TEMPLATES : [])
+  const isWorkshop = PRODUCT === 'workshop'
+  const templates = isBeauty
+    ? BEAUTY_TEMPLATES
+    : isCleaning
+      ? CLEANING_TEMPLATES
+      : isWorkshop
+        ? WORKSHOP_TEMPLATES
+        : []
   const defaultTpl = DEFAULT_TEMPLATE[PRODUCT] ?? 'premium'
   const activeTemplate = pageSettings.landing_template ?? defaultTpl
+  const lc = pageSettings.landing_content ?? {}
+  const patchLandingContent = (patch: Partial<LandingContent>) =>
+    saveLandingContent({ ...lc, ...patch })
 
   return (
     <div className="space-y-4 max-w-2xl">
@@ -424,7 +508,7 @@ export function PublicPageTab() {
       )}
 
       {/* ─── Шаблон лендинга ────────────────────────────────────── */}
-      {(isCleaning || isBeauty) && (
+      {(isCleaning || isBeauty || isWorkshop) && (
         <Card
           title={t('publicPage.landingTemplate', 'Шаблон лендинга')}
           description={t('publicPage.landingTemplateHint', 'Визуальный стиль публичной страницы. Услуги, цены и категории подтягиваются автоматически из раздела «Услуги».')}
@@ -506,6 +590,200 @@ export function PublicPageTab() {
             value={pageSettings.landing_content ?? {}}
             onCommit={saveLandingContent}
           />
+        </Card>
+      )}
+
+      {/* ─── Контент лендинга для workshop ─────────────────────────── */}
+      {isWorkshop && (
+        <Card
+          title="Настройки лендинга"
+          description="Бейджи, числа и счётчики, которые показываются на публичной странице. Услуги и цены подтягиваются автоматически из раздела «Услуги»."
+          icon={LayoutTemplate}
+        >
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Подзаголовок (hero)</Label>
+              <Input
+                placeholder="Профессиональный ремонт техники"
+                defaultValue={lc.business_subtitle ?? ''}
+                onBlur={(e) => e.target.value !== (lc.business_subtitle ?? '') && patchLandingContent({ business_subtitle: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Бейдж в hero</Label>
+              <Input
+                placeholder="Гарантия 6 месяцев"
+                defaultValue={lc.hero_badge ?? ''}
+                onBlur={(e) => e.target.value !== (lc.hero_badge ?? '') && patchLandingContent({ hero_badge: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Гарантия, мес.</Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="6"
+                defaultValue={lc.warranty_months ?? ''}
+                onBlur={(e) => {
+                  const v = e.target.value === '' ? undefined : Number(e.target.value)
+                  if (v !== lc.warranty_months) patchLandingContent({ warranty_months: v })
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Диагностика, мин.</Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="30"
+                defaultValue={lc.diagnostics_minutes ?? ''}
+                onBlur={(e) => {
+                  const v = e.target.value === '' ? undefined : Number(e.target.value)
+                  if (v !== lc.diagnostics_minutes) patchLandingContent({ diagnostics_minutes: v })
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">% успешных</Label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                placeholder="98"
+                defaultValue={lc.success_rate_percent ?? ''}
+                onBlur={(e) => {
+                  const v = e.target.value === '' ? undefined : Number(e.target.value)
+                  if (v !== lc.success_rate_percent) patchLandingContent({ success_rate_percent: v })
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Всего ремонтов</Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="1200"
+                defaultValue={lc.total_repairs ?? ''}
+                onBlur={(e) => {
+                  const v = e.target.value === '' ? undefined : Number(e.target.value)
+                  if (v !== lc.total_repairs) patchLandingContent({ total_repairs: v })
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Лет в работе</Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="5"
+                defaultValue={lc.years_in_business ?? ''}
+                onBlur={(e) => {
+                  const v = e.target.value === '' ? undefined : Number(e.target.value)
+                  if (v !== lc.years_in_business) patchLandingContent({ years_in_business: v })
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Часы работы</Label>
+              <Input
+                placeholder="Пн–Сб 9:00–20:00"
+                defaultValue={lc.working_hours ?? ''}
+                onBlur={(e) => e.target.value !== (lc.working_hours ?? '') && patchLandingContent({ working_hours: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <label className="flex items-center justify-between gap-3 cursor-pointer rounded-lg border p-3 bg-muted/30">
+            <div className="min-w-0">
+              <div className="text-sm font-medium">Бесплатная диагностика</div>
+              <div className="text-[11px] text-muted-foreground">Бейдж «Бесплатная диагностика» в hero и CTA</div>
+            </div>
+            <Switch
+              checked={lc.diagnostics_free ?? true}
+              onCheckedChange={(v) => patchLandingContent({ diagnostics_free: v })}
+            />
+          </label>
+        </Card>
+      )}
+
+      {/* ─── Отзывы (workshop) ───────────────────────────────────── */}
+      {isWorkshop && (
+        <Card
+          title={`Отзывы клиентов (${(lc.reviews ?? []).length}/6)`}
+          description="Показываются на лендинге в отдельной секции. Если оставить пустым — секция не отобразится."
+          icon={ScrollText}
+        >
+          <div className="space-y-3">
+            {(lc.reviews ?? []).map((r, i) => (
+              <div key={i} className="rounded-lg border p-3 space-y-2 bg-background">
+                <div className="flex items-center gap-2">
+                  <Input
+                    className="flex-1"
+                    placeholder="Имя клиента"
+                    defaultValue={r.name}
+                    onBlur={(e) => {
+                      const next = [...(lc.reviews ?? [])]
+                      next[i] = { ...next[i], name: e.target.value }
+                      patchLandingContent({ reviews: next })
+                    }}
+                  />
+                  <select
+                    className="h-9 rounded-md border bg-background px-2 text-sm"
+                    defaultValue={r.rating ?? 5}
+                    onChange={(e) => {
+                      const next = [...(lc.reviews ?? [])]
+                      next[i] = { ...next[i], rating: Number(e.target.value) }
+                      patchLandingContent({ reviews: next })
+                    }}
+                  >
+                    {[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n}★</option>)}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive"
+                    onClick={() => patchLandingContent({ reviews: (lc.reviews ?? []).filter((_, idx) => idx !== i) })}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Textarea
+                  rows={2}
+                  placeholder="Текст отзыва"
+                  defaultValue={r.text}
+                  onBlur={(e) => {
+                    const next = [...(lc.reviews ?? [])]
+                    next[i] = { ...next[i], text: e.target.value }
+                    patchLandingContent({ reviews: next })
+                  }}
+                />
+                <Input
+                  placeholder='Подпись (например, "iPhone 13 · 2 недели назад")'
+                  defaultValue={r.date ?? ''}
+                  onBlur={(e) => {
+                    const next = [...(lc.reviews ?? [])]
+                    next[i] = { ...next[i], date: e.target.value }
+                    patchLandingContent({ reviews: next })
+                  }}
+                />
+              </div>
+            ))}
+            {(lc.reviews ?? []).length < 6 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => patchLandingContent({ reviews: [...(lc.reviews ?? []), { name: '', text: '', rating: 5 }] })}
+              >
+                Добавить отзыв
+              </Button>
+            )}
+          </div>
         </Card>
       )}
 

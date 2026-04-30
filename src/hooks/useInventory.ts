@@ -147,3 +147,44 @@ export function useDeleteInventoryItem() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [INVENTORY_KEY] }),
   })
 }
+
+export function useBulkCreateInventoryItems() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+
+  return useMutation({
+    mutationFn: async (
+      items: Array<Omit<InventoryItem, 'id' | 'master' | 'created' | 'updated' | 'collectionId' | 'collectionName'>>
+    ) => {
+      if (items.length === 0) return 0
+      const payload = items.map(i => ({ ...i, master_id: user!.id }))
+      const CHUNK = 200
+      let inserted = 0
+      for (let i = 0; i < payload.length; i += CHUNK) {
+        const slice = payload.slice(i, i + CHUNK)
+        const { error } = await supabase.from('inventory_items').insert(slice)
+        if (error) throw error
+        inserted += slice.length
+      }
+      return inserted
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [INVENTORY_KEY] }),
+  })
+}
+
+export function useBulkDeleteInventoryItems() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+
+  return useMutation({
+    mutationFn: async (ids?: string[]) => {
+      if (ids && ids.length === 0) return 0
+      let query = supabase.from('inventory_items').delete().eq('master_id', user!.id)
+      if (ids && ids.length > 0) query = query.in('id', ids)
+      const { error } = await query
+      if (error) throw error
+      return ids?.length ?? 0
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [INVENTORY_KEY] }),
+  })
+}

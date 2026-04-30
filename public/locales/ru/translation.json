@@ -661,7 +661,8 @@
     "tabNotifications": "Уведомления",
     "tabIntegrations": "Интеграции",
     "tabAdmin": "Администрирование",
-    "tabPublicPage": "Моя страница"
+    "tabPublicPage": "Моя страница",
+    "tabBooking": "Онлайн-запись"
   },
   "onboarding": {
     "title": "Добро пожаловать в Ezze!",
