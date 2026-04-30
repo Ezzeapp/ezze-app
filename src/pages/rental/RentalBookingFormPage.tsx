@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, Save, Loader2, AlertTriangle, CheckCircle2, ChevronDown, Search, KeyRound,
 } from 'lucide-react'
@@ -70,18 +70,24 @@ export function RentalBookingFormPage() {
   const { id } = useParams<{ id: string }>()
   const isEdit = !!id && id !== 'new'
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const upsert = useUpsertRentalBooking()
   const { data: existing, isLoading: loadingExisting } = useRentalBooking(isEdit ? id : undefined)
   const { data: items = [], isLoading: loadingItems } = useRentalItems()
   const { data: clients = [], isLoading: loadingClients } = useClients()
   const currencySymbol = useCurrencySymbol()
 
-  const [itemId, setItemId]       = useState('')
+  // Pre-fill из query (?itemId=...&start=...&end=...) при создании из календаря
+  const initialItemId = !isEdit ? (searchParams.get('itemId') ?? '') : ''
+  const initialStart  = !isEdit ? (searchParams.get('start') ?? '')  : ''
+  const initialEnd    = !isEdit ? (searchParams.get('end') ?? '')    : ''
+
+  const [itemId, setItemId]       = useState(initialItemId)
   const [clientId, setClientId]   = useState<string>('')
   const [clientSearch, setClientSearch] = useState('')
   const [showClientList, setShowClientList] = useState(false)
-  const [startLocal, setStartLocal] = useState(defaultStart())
-  const [endLocal, setEndLocal]     = useState(defaultEnd(defaultStart()))
+  const [startLocal, setStartLocal] = useState(initialStart ? isoToLocalInput(initialStart) : defaultStart())
+  const [endLocal, setEndLocal]     = useState(initialEnd   ? isoToLocalInput(initialEnd)   : defaultEnd(initialStart ? isoToLocalInput(initialStart) : defaultStart()))
   const [pricingUnit, setPricingUnit] = useState<RentalPricingUnit>('day')
   const [unitPrice, setUnitPrice]   = useState('0')
   const [unitsCount, setUnitsCount] = useState('1')

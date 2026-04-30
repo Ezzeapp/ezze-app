@@ -111,6 +111,7 @@ const FarmReproductionPage = lazy(() => import('@/pages/farm/ReproductionPage').
 const RentalItemsPage     = lazy(() => import('@/pages/rental/RentalItemsPage').then(m => ({ default: m.RentalItemsPage })))
 const RentalBookingsPage  = lazy(() => import('@/pages/rental/RentalBookingsPage').then(m => ({ default: m.RentalBookingsPage })))
 const RentalBookingFormPage = lazy(() => import('@/pages/rental/RentalBookingFormPage').then(m => ({ default: m.RentalBookingFormPage })))
+const RentalAvailabilityPage = lazy(() => import('@/pages/rental/RentalAvailabilityPage').then(m => ({ default: m.RentalAvailabilityPage })))
 
 const router = createBrowserRouter([
   // Public routes
@@ -203,6 +204,7 @@ const router = createBrowserRouter([
         { path: 'rental/bookings',      element: <RentalBookingsPage /> },
         { path: 'rental/bookings/new',  element: <RentalBookingFormPage /> },
         { path: 'rental/bookings/:id',  element: <RentalBookingFormPage /> },
+        { path: 'rental/availability',  element: <RentalAvailabilityPage /> },
       ] : []),
       ...(PRODUCT === 'farm' ? [
         { path: 'farm',                 element: <FarmDashboardPage /> },
