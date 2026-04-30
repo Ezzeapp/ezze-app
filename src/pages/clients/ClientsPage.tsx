@@ -896,24 +896,25 @@ export function ClientsPage() {
   return (
     <div className="space-y-6">
       <div className={`space-y-2 sticky top-0 z-10 bg-background -mt-4 pt-4 lg:-mt-6 lg:pt-6 pb-3 shadow-sm ${PRODUCT === 'cleaning' ? '-mx-[18px] px-[18px]' : '-mx-3 px-3 lg:-mx-6 lg:px-6'}`}>
-        {/* Row 1: title */}
+        {/* Row 1: title + delete-all */}
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-2xl font-semibold text-foreground">{t('nav.clients')}</h1>
           {totalItems > 0 && (
             <Button
               variant="ghost"
-              size="icon"
-              className="h-9 w-9 text-destructive hover:bg-destructive/10 lg:hidden"
+              size="sm"
+              className="h-9 text-destructive hover:bg-destructive/10 hover:text-destructive gap-1.5"
               onClick={() => setDeleteAllOpen(true)}
               aria-label={t('clients.deleteAll', 'Удалить всех')}
               title={t('clients.deleteAll', 'Удалить всех')}
             >
-              <Trash2 className="h-5 w-5" />
+              <Trash2 className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('clients.deleteAll', 'Удалить всех')}</span>
             </Button>
           )}
         </div>
 
-        {/* Bulk action bar */}
+        {/* Bulk action bar (legacy, всё ещё доступно если кто-то вызвал toggleSelect) */}
         {isSomeSelected && (
           <BulkActionBar
             count={selectedIds.size}
@@ -1070,43 +1071,24 @@ export function ClientsPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
-                <th className="p-3 w-10">
-                  <button
-                    type="button"
-                    onClick={toggleSelectAll}
-                    className="flex items-center text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {isAllSelected ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
-                  </button>
-                </th>
                 <th className="w-10"></th>
                 <th className="text-left p-3 font-medium">{t('clients.firstName')}</th>
                 <th className="text-left p-3 font-medium">{t('clients.phone')}</th>
                 <th className="text-left p-3 font-medium hidden md:table-cell">{t('clients.birthday')}</th>
                 <th className="text-left p-3 font-medium hidden md:table-cell">{t('clients.statsVisits')}</th>
                 <th className="text-left p-3 font-medium hidden lg:table-cell">{t('clients.statsLastVisit')}</th>
-                <th className="w-10"></th>
+                <th className="w-24"></th>
               </tr>
             </thead>
             <tbody>
               {items.map((client) => {
-                const isSelected = selectedIds.has(client.id)
                 return (
                   <tr
                     key={client.id}
-                    className={`border-t hover:bg-accent/40 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`}
+                    className="border-t hover:bg-accent/40 transition-colors cursor-pointer"
                     onClick={() => openEdit(client)}
                   >
-                    <td className="p-3 w-10">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); toggleSelect(client.id) }}
-                        className="flex items-center text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        {isSelected ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
-                      </button>
-                    </td>
-                    <td className="py-3 w-10">
+                    <td className="py-3 pl-3 w-10">
                       <Avatar className="h-8 w-8 shrink-0">
                         <AvatarImage src={getAvatarUrl(client) ?? undefined} />
                         <AvatarFallback className="text-xs">
@@ -1149,29 +1131,33 @@ export function ClientsPage() {
                         ? new Date(client.last_visit).toLocaleDateString(i18n.language, { day: '2-digit', month: '2-digit', year: '2-digit' })
                         : '—'}
                     </td>
-                    <td className="p-3 w-10">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setStatsClient(client) }}>
-                            <BarChart2 className="mr-2 h-4 w-4" />{t('clients.viewHistory')}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(client) }}>
-                            <Edit className="mr-2 h-4 w-4" />{t('common.edit')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={(e) => { e.stopPropagation(); setDeleteId(client.id) }}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />{t('common.delete')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    <td className="p-3 w-24">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost" size="icon" className="h-7 w-7"
+                          onClick={(e) => { e.stopPropagation(); setStatsClient(client) }}
+                          aria-label={t('clients.viewHistory')}
+                          title={t('clients.viewHistory')}
+                        >
+                          <BarChart2 className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon" className="h-7 w-7"
+                          onClick={(e) => { e.stopPropagation(); openEdit(client) }}
+                          aria-label={t('common.edit')}
+                          title={t('common.edit')}
+                        >
+                          <Edit className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon" className="h-7 w-7"
+                          onClick={(e) => { e.stopPropagation(); setDeleteId(client.id) }}
+                          aria-label={t('common.delete')}
+                          title={t('common.delete')}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 )

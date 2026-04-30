@@ -500,9 +500,28 @@ function MembersTab({ team, members, membersLoading }: { team: any; members: any
                 onChange={e => setInviteRole(e.target.value as any)}
                 className="h-8 rounded border border-border bg-background px-2 text-sm font-medium focus:outline-none focus:border-primary"
               >
-                <option value="operator">Оператор (POS, заказы)</option>
-                <option value="worker">Сотрудник (только свои заказы)</option>
-                <option value="admin">Админ (управление командой)</option>
+                {PRODUCT === 'cleaning' ? (
+                  <>
+                    <optgroup label="Управление">
+                      <option value="admin">Управляющий (полный контроль команды)</option>
+                      <option value="operator">Приёмщик / Кассир (приём заказов, POS)</option>
+                    </optgroup>
+                    <optgroup label="Производство">
+                      <option value="worker">Чистильщик (свои назначенные позиции)</option>
+                      <option value="worker">Гладильщик (свои назначенные позиции)</option>
+                      <option value="worker">Контролёр качества (свои позиции)</option>
+                    </optgroup>
+                    <optgroup label="Доставка">
+                      <option value="worker">Курьер (вывоз/доставка)</option>
+                    </optgroup>
+                  </>
+                ) : (
+                  <>
+                    <option value="operator">Оператор (POS, заказы)</option>
+                    <option value="worker">Сотрудник (только свои заказы)</option>
+                    <option value="admin">Админ (управление командой)</option>
+                  </>
+                )}
               </select>
             </div>
             <div className="flex items-center gap-2">

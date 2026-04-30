@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { useGlobalServices } from '@/hooks/useGlobalCatalogs'
 
 // ── Keyword-based category suggest (used only as UX hint in AddDialog) ───────
@@ -609,8 +610,8 @@ export function CleaningCatalogTab() {
   const [editingValue, setEditingValue] = useState('')
   const [savingId, setSavingId] = useState<string | null>(null)
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [deletingSelected, setDeletingSelected] = useState(false)
+  const [deletingAll, setDeletingAll] = useState(false)
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false)
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 25
 
@@ -760,43 +761,14 @@ export function CleaningCatalogTab() {
     }
   }
 
-  const handleDeleteSelected = async () => {
-    if (selectedIds.size === 0) return
-    setDeletingSelected(true)
-    const results = await Promise.allSettled(
-      Array.from(selectedIds).map(id => deleteItem.mutateAsync(id))
-    )
+  const handleDeleteAll = async () => {
+    if (items.length === 0) return
+    setDeletingAll(true)
+    const results = await Promise.allSettled(items.map(i => deleteItem.mutateAsync(i.id)))
     const deleted = results.filter(r => r.status === 'fulfilled').length
-    setSelectedIds(new Set())
-    setDeletingSelected(false)
+    setDeletingAll(false)
+    setDeleteAllOpen(false)
     toast.success(`Удалено позиций: ${deleted}`)
-  }
-
-  const allVisibleSelected = filteredItems.length > 0 && filteredItems.every(i => selectedIds.has(i.id))
-
-  const toggleSelectAll = () => {
-    if (allVisibleSelected) {
-      setSelectedIds(prev => {
-        const next = new Set(prev)
-        filteredItems.forEach(i => next.delete(i.id))
-        return next
-      })
-    } else {
-      setSelectedIds(prev => {
-        const next = new Set(prev)
-        filteredItems.forEach(i => next.add(i.id))
-        return next
-      })
-    }
-  }
-
-  const toggleSelectOne = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
   }
 
   if (isLoading) {
@@ -844,17 +816,17 @@ export function CleaningCatalogTab() {
           {filteredItems.length === items.length ? `${items.length} позиций` : `${filteredItems.length} из ${items.length}`}
         </p>
         <div className="flex items-center gap-2 shrink-0 order-3 ml-auto">
-          {selectedIds.size > 0 && (
+          {items.length > 0 && (
             <Button
               size="sm"
-              variant="destructive"
-              onClick={handleDeleteSelected}
-              disabled={deletingSelected}
+              variant="ghost"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setDeleteAllOpen(true)}
+              disabled={deletingAll}
+              title="Удалить все позиции"
             >
-              {deletingSelected
-                ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
-              Удалить ({selectedIds.size})
+              <Trash2 className="h-3.5 w-3.5 sm:mr-1.5" />
+              <span className="hidden sm:inline">Удалить все</span>
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
@@ -919,17 +891,6 @@ export function CleaningCatalogTab() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
-                <th className="w-10 p-3">
-                  <button
-                    onClick={toggleSelectAll}
-                    className={cn(
-                      'h-4 w-4 rounded border flex items-center justify-center transition-colors mx-auto',
-                      allVisibleSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40 hover:border-primary'
-                    )}
-                  >
-                    {allVisibleSelected && <Check className="h-3 w-3 text-primary-foreground" />}
-                  </button>
-                </th>
                 <th className="text-left p-3 font-medium">
                   <button onClick={() => toggleSort('name')} className="flex items-center hover:text-foreground">
                     Название<SortIcon col="name" />
@@ -964,19 +925,6 @@ export function CleaningCatalogTab() {
                       isSaving && 'bg-muted/30'
                     )}
                   >
-                    {/* Checkbox */}
-                    <td className="p-3 w-10">
-                      <button
-                        onClick={e => { e.stopPropagation(); toggleSelectOne(item.id) }}
-                        className={cn(
-                          'h-4 w-4 rounded border flex items-center justify-center transition-colors mx-auto',
-                          selectedIds.has(item.id) ? 'bg-primary border-primary' : 'border-muted-foreground/40 hover:border-primary'
-                        )}
-                      >
-                        {selectedIds.has(item.id) && <Check className="h-3 w-3 text-primary-foreground" />}
-                      </button>
-                    </td>
-
                     {/* Name */}
                     <td className="p-3 max-w-[200px]">
                       <EditCell
@@ -1074,10 +1022,10 @@ export function CleaningCatalogTab() {
                         <button
                           onClick={() => handleDelete(item.id)}
                           disabled={!!deletingId || !!savingId}
-                          className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-30"
+                          className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-30 mx-auto block"
                           title="Удалить"
                         >
-                          <X className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       )}
                     </td>
@@ -1124,6 +1072,14 @@ export function CleaningCatalogTab() {
         open={importOpen}
         onClose={() => setImportOpen(false)}
         maxSortOrder={maxSortOrder}
+      />
+
+      <ConfirmDialog
+        open={deleteAllOpen}
+        onClose={() => setDeleteAllOpen(false)}
+        onConfirm={handleDeleteAll}
+        title={`Удалить все позиции (${items.length})? Действие необратимо.`}
+        loading={deletingAll}
       />
     </div>
   )
