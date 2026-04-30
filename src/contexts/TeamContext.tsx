@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { PRODUCT } from '@/lib/config'
 
 // ── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -137,11 +138,12 @@ async function fetchTeamScope(userId: string, teamOnlyFor: string | null): Promi
     }
   }
 
-  // Case B: user owns a team (берём первую — защита от дублей)
+  // Case B: user owns a team в текущем продукте (изоляция multi-product)
   const { data: ownedRows } = await supabase
     .from('teams')
     .select('id, name, slug, product')
     .eq('owner_id', userId)
+    .eq('product', PRODUCT)
     .order('created_at', { ascending: true })
     .limit(1)
   const ownedTeam = ownedRows?.[0] ?? null
@@ -155,12 +157,13 @@ async function fetchTeamScope(userId: string, teamOnlyFor: string | null): Promi
     }
   }
 
-  // Case C: user is active member (not owner, not team_only_for)
+  // Case C: user is active member чужой команды в текущем продукте
   const { data: membershipRows } = await supabase
     .from('team_members')
-    .select('role, team:teams(id, name, slug, product)')
+    .select('role, team:teams!inner(id, name, slug, product)')
     .eq('user_id', userId)
     .eq('status', 'active')
+    .eq('team.product', PRODUCT)
     .order('joined_at', { ascending: true })
     .limit(1)
   const membership = membershipRows?.[0] ?? null
@@ -191,7 +194,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const teamOnlyFor = (user?.team_only_for ?? null) as string | null
 
   const { data, isLoading: queryLoading } = useQuery({
-    queryKey: ['team_scope', user?.id, teamOnlyFor],
+    queryKey: ['team_scope', user?.id, teamOnlyFor, PRODUCT],
     queryFn: () => fetchTeamScope(user!.id, teamOnlyFor),
     enabled: !!user,
     staleTime: 5 * 60_000,

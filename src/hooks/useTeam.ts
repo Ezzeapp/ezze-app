@@ -22,23 +22,23 @@ export function useMyTeam() {
   const { user } = useAuth()
 
   return useQuery({
-    queryKey: [TEAM_KEY, user?.id],
+    queryKey: [TEAM_KEY, user?.id, PRODUCT],
     queryFn: async (): Promise<MyTeamResult> => {
       if (!user) return { team: null, role: null, isOwner: false, isMember: false }
 
-      // ── 1. ownership: ищем все команды этого owner (для авточистки дублей)
+      // ── 1. ownership: команды текущего продукта (изолируем cleaning/beauty/workshop/...)
       const { data: allOwned, error: ownedErr } = await supabase
         .from('teams')
         .select('*')
         .eq('owner_id', user.id)
+        .eq('product', PRODUCT)
         .order('created_at', { ascending: true })
       if (ownedErr) {
         // eslint-disable-next-line no-console
         console.error('[useMyTeam] owned teams error', ownedErr)
       }
 
-      // Авто-очистка: если у owner накопились дубли (баг старого pattern) —
-      // оставляем самую старую, остальные удаляем + связанные members/invites
+      // Авто-очистка дублей внутри одного продукта
       if (allOwned && allOwned.length > 1) {
         const keep = allOwned[0]
         const dropIds = allOwned.slice(1).map(t => t.id)
@@ -61,12 +61,13 @@ export function useMyTeam() {
         return { team: t, role: 'owner', isOwner: true, isMember: false }
       }
 
-      // ── 2. membership: участник чужой команды
+      // ── 2. membership: участник чужой команды (фильтр по продукту joined-team)
       const { data: membershipRows, error: memErr } = await supabase
         .from('team_members')
-        .select('*, team:teams(*)')
+        .select('*, team:teams!inner(*)')
         .eq('user_id', user.id)
         .eq('status', 'active')
+        .eq('team.product', PRODUCT)
         .order('joined_at', { ascending: true })
         .limit(1)
       if (memErr) {
@@ -173,12 +174,14 @@ export function useCreateTeam() {
 
   return useMutation({
     mutationFn: async (data: { name: string; slug: string; description?: string }) => {
-      // Идемпотентность: если у owner-а уже есть команда — возвращаем её,
-      // вместо INSERT (защита от дублей и ошибок UNIQUE по slug)
+      // Идемпотентность в рамках продукта: если у owner-а уже есть команда
+      // в текущем продукте — возвращаем её (вместо INSERT). Команды в других
+      // продуктах не мешают создать новую.
       const { data: existing } = await supabase
         .from('teams')
         .select('*')
         .eq('owner_id', user!.id)
+        .eq('product', PRODUCT)
         .order('created_at', { ascending: true })
         .limit(1)
       if (existing && existing.length > 0) {
