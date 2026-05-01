@@ -233,10 +233,13 @@ export async function saveProfession(
   profession: string,
   name: string,
 ): Promise<void> {
+  const product = import.meta.env.VITE_PRODUCT || 'beauty'
+
   const { data: existingProfile } = await supabase
     .from('master_profiles')
     .select('booking_slug')
     .eq('user_id', userId)
+    .eq('product', product)
     .maybeSingle()
 
   const slugBase = (name || 'master').trim().toLowerCase().replace(/[^a-z0-9]/g, '') || 'master'
@@ -246,7 +249,7 @@ export async function saveProfession(
   await supabase
     .from('master_profiles')
     .upsert(
-      { user_id: userId, profession, booking_slug, is_public: true },
-      { onConflict: 'user_id' },
+      { user_id: userId, product, profession, booking_slug, is_public: true },
+      { onConflict: 'user_id,product' },
     )
 }

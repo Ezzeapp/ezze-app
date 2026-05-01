@@ -118,11 +118,13 @@ export function RegisterPage() {
             const lsKey = `ezze_onboarded_${sbUser.id}`
             const locallyDone = localStorage.getItem(lsKey) === '1'
 
-            // Проверяем наличие master_profiles (мог быть удалён админом)
+            // Проверяем наличие master_profiles для текущего продукта (мог быть удалён админом)
+            const product = selectedProduct || import.meta.env.VITE_PRODUCT || 'beauty'
             const { data: profile, error: profileErr } = await supabase
               .from('master_profiles')
               .select('display_name, phone, profession')
               .eq('user_id', sbUser.id)
+              .eq('product', product)
               .maybeSingle()
 
             if (!profile) {
@@ -164,8 +166,12 @@ export function RegisterPage() {
   const saveTgProfile = useCallback(async (userId: string, displayName: string, phone: string) => {
     if (!tgId || !userId) return
     try {
+      const product = selectedProduct || import.meta.env.VITE_PRODUCT || 'beauty'
       const { data: existing } = await supabase
-        .from('master_profiles').select('id').eq('user_id', userId).maybeSingle()
+        .from('master_profiles').select('id')
+        .eq('user_id', userId)
+        .eq('product', product)
+        .maybeSingle()
       if (existing) {
         await supabase.from('master_profiles').update({
           tg_chat_id: tgId,
@@ -178,13 +184,13 @@ export function RegisterPage() {
           user_id:      userId,
           tg_chat_id:   tgId,
           telegram:     tgUser?.username ? '@' + tgUser.username : '',
-          product:      selectedProduct || import.meta.env.VITE_PRODUCT || 'beauty',
+          product,
           ...(displayName ? { display_name: displayName } : {}),
           ...(phone       ? { phone }                     : {}),
         })
       }
     } catch { /* non-critical */ }
-  }, [tgId, tgUser])
+  }, [tgId, tgUser, selectedProduct])
 
   // ── Телефон из initData (если уже делился ранее) ─────────────────────────
   useEffect(() => {
