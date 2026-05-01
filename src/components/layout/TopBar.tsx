@@ -106,8 +106,8 @@ export function TopBar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {/* Cleaning/beauty/workshop: профиль объединён с настройками — отдельный пункт не нужен */}
-              {PRODUCT !== 'cleaning' && PRODUCT !== 'beauty' && PRODUCT !== 'workshop' && (
+              {/* Cleaning/beauty/workshop/rental: профиль объединён с настройками — отдельный пункт не нужен */}
+              {PRODUCT !== 'cleaning' && PRODUCT !== 'beauty' && PRODUCT !== 'workshop' && PRODUCT !== 'rental' && (
                 <DropdownMenuItem onClick={() => navigate('/profile')}>
                   <User className="mr-2 h-4 w-4" />
                   {t('nav.profile')}
