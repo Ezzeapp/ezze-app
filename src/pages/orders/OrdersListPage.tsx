@@ -120,7 +120,13 @@ function KanbanView({ orders, symbol, onNavigate, isOverdueMap, isDueTodayMap, t
     const order = orders.find(o => o.id === dragId)
     if (!order || order.status === newStatus) { setDragId(null); setOverCol(null); return }
     try {
-      await supabase.from('cleaning_orders').update({ status: newStatus }).eq('id', dragId)
+      // Product scope в WHERE — defence-in-depth, чтобы drag-drop не мог
+      // случайно затронуть заказ из другого продукта (UUID-collision unlikely
+      // но RLS не дублируем — явный фильтр надёжнее).
+      await supabase.from('cleaning_orders')
+        .update({ status: newStatus })
+        .eq('id', dragId)
+        .eq('product', PRODUCT)
       qc.invalidateQueries({ queryKey: [ORDERS_KEY, 'list'] })
       qc.invalidateQueries({ queryKey: [ORDERS_KEY, 'stats'] })
     } catch { /* ignore */ }

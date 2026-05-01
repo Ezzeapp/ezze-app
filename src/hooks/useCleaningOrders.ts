@@ -283,6 +283,7 @@ export function useCleaningOrders(opts: {
           .from('master_profiles')
           .select('id')
           .eq('user_id', user.id)
+          .eq('product', PRODUCT)
           .maybeSingle()
         if (mp) {
           q = q.eq('assigned_to', mp.id)
@@ -367,7 +368,7 @@ export function useCleaningOrders(opts: {
 
 export function useCleaningOrder(id: string | undefined) {
   return useQuery({
-    queryKey: [ORDERS_KEY, 'detail', id],
+    queryKey: [ORDERS_KEY, 'detail', id, PRODUCT],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('cleaning_orders')
@@ -379,6 +380,7 @@ export function useCleaningOrder(id: string | undefined) {
           items:cleaning_order_items(*)
         `)
         .eq('id', id!)
+        .eq('product', PRODUCT)
         .single()
       if (error) throw error
       return data as CleaningOrder
@@ -513,10 +515,15 @@ export function useDeleteOrder() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
-      // Удалить изделия → историю → заказ
+      // Удалить изделия → историю → заказ.
+      // Defense-in-depth: фильтр по product, чтобы случайно не удалить заказ
+      // другого продукта (RLS team-scoped, но product-scope явный — надёжнее).
       await supabase.from('cleaning_order_items').delete().eq('order_id', id)
       await supabase.from('cleaning_order_history').delete().eq('order_id', id)
-      const { error } = await supabase.from('cleaning_orders').delete().eq('id', id)
+      const { error } = await supabase
+        .from('cleaning_orders').delete()
+        .eq('id', id)
+        .eq('product', PRODUCT)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [ORDERS_KEY] }),
