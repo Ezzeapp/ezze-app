@@ -63,6 +63,7 @@ const ClientCabinetPage = lazy(() => import('@/pages/booking/ClientCabinetPage')
 const ClientRegisterPage = lazy(() => import('@/pages/booking/ClientRegisterPage').then(m => ({ default: m.ClientRegisterPage })))
 const MasterSearchPage = lazy(() => import('@/pages/booking/MasterSearchPage').then(m => ({ default: m.MasterSearchPage })))
 const PublicProfilePage = lazy(() => import('@/pages/public/PublicProfilePage').then(m => ({ default: m.PublicProfilePage })))
+const PublicCleaningOrderPage = lazy(() => import('@/pages/public/cleaning/PublicCleaningOrderPage').then(m => ({ default: m.PublicCleaningOrderPage })))
 const MiniAppLayout = lazy(() => import('@/components/layout/MiniAppLayout').then(m => ({ default: m.MiniAppLayout })))
 const TelegramEntryPage = lazy(() => import('@/pages/tg/TelegramEntryPage').then(m => ({ default: m.TelegramEntryPage })))
 const PhoneSharePage = lazy(() => import('@/pages/tg/PhoneSharePage').then(m => ({ default: m.PhoneSharePage })))
@@ -120,6 +121,7 @@ const router = createBrowserRouter([
   { path: '/book/team/:teamSlug', element: <TeamBookingPage /> },
   { path: '/book/:masterId', element: <PublicBookingPage /> },
   { path: '/p/:slug', element: <PublicProfilePage /> },
+  { path: '/order/:slug', element: <PublicCleaningOrderPage /> },
   { path: '/cancel/:token', element: <CancelBookingPage /> },
   { path: '/join/:code', element: <JoinTeamPage /> },
   { path: '/track/:number', element: PRODUCT === 'cleaning' ? <CleaningTrackPage /> : <WorkshopTrackPage /> },

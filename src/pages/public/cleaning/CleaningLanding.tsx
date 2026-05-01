@@ -16,22 +16,9 @@ interface Props {
   coverUrl: string | null
 }
 
-// Cleaning — order-based, не appointment. Прямого онлайн-форма заказа на публичной
-// странице нет (заказ создаётся менеджером). CTA на лендинге ведём на самый удобный
-// канал связи: WhatsApp → Telegram → tel: → fallback на booking page.
+// Cleaning — order-based. Публичная форма создания заказа: /order/<slug>.
 function buildOrderHref(profile: MasterProfile): string {
-  const phone = (profile.phone || '').replace(/\D/g, '')
-  if (profile.whatsapp || phone) {
-    const wa = (profile.whatsapp || phone).replace(/\D/g, '')
-    if (wa) return `https://wa.me/${wa}`
-  }
-  if (profile.telegram) {
-    const tg = profile.telegram.trim()
-    if (tg.startsWith('http')) return tg
-    return `https://t.me/${tg.replace(/^@/, '')}`
-  }
-  if (phone) return `tel:${phone}`
-  return `${window.location.origin}/book/${profile.booking_slug}`
+  return `${window.location.origin}/order/${profile.booking_slug}`
 }
 
 class LandingErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
