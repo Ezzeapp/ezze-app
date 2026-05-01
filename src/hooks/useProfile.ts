@@ -77,9 +77,19 @@ export function useUpsertProfile() {
         if (error) throw error
         return updated as MasterProfile
       } else {
+        // Генерим booking_slug если в payload его нет — иначе UNIQUE(booking_slug)
+        // не сработает (NULL допускается в UNIQUE), но `/p/<пусто>` отдаст 404.
+        const baseName = (payload.display_name || user!.name || '')
+          .toString().trim().toLowerCase().replace(/[^a-z0-9]/g, '') || 'master'
+        const insertPayload = {
+          ...payload,
+          user_id: user!.id,
+          product: PRODUCT,
+          ...(payload.booking_slug ? {} : { booking_slug: `${baseName}${Math.random().toString(36).slice(2, 7)}` }),
+        }
         const { data: created, error } = await supabase
           .from('master_profiles')
-          .insert({ ...payload, user_id: user!.id, product: PRODUCT })
+          .insert(insertPayload)
           .select()
           .single()
         if (error) throw error
