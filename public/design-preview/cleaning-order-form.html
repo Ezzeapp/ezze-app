@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cleaning · публичная форма заказа — preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+  .lucide { display: inline-block; vertical-align: middle; }
+</style>
+</head>
+<body class="bg-zinc-50 min-h-screen">
+
+<!-- ── Header ────────────────────────────────────────────── -->
+<header class="sticky top-0 z-20 bg-white border-b">
+  <div class="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+    <button class="p-2 -ml-2 rounded-lg hover:bg-zinc-100" title="Назад">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+    </button>
+    <div class="w-9 h-9 rounded-xl bg-zinc-900 grid place-items-center text-white text-sm font-bold">К</div>
+    <div class="flex-1 min-w-0">
+      <div class="font-bold text-sm truncate">Камила · Cleaning Studio</div>
+      <div class="text-xs text-zinc-500">Оформление заказа</div>
+    </div>
+  </div>
+</header>
+
+<div class="max-w-3xl mx-auto px-4 py-5 grid lg:grid-cols-[1fr_320px] gap-5">
+
+  <!-- ── Левая колонка: выбор позиций ── -->
+  <div class="space-y-4">
+
+    <!-- Категории -->
+    <div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+      <button class="shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl border border-zinc-900 bg-zinc-900 text-white text-sm font-medium">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4l-4 4-4-4M4 8l4 4 12-12-4-4M4 8v12h16V8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Одежда
+      </button>
+      <button class="shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 text-sm font-medium">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+        Ковры
+      </button>
+      <button class="shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 text-sm font-medium">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 9V6a2 2 0 00-2-2H6a2 2 0 00-2 2v3M2 11v5a2 2 0 002 2h16a2 2 0 002-2v-5a2 2 0 00-2-2H4a2 2 0 00-2 2zM4 18v2M20 18v2"/></svg>
+        Мебель
+      </button>
+      <button class="shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 text-sm font-medium">
+        Шторы
+      </button>
+      <button class="shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 text-sm font-medium">
+        Обувь
+      </button>
+    </div>
+
+    <!-- Список позиций -->
+    <div class="bg-white rounded-2xl border divide-y">
+      <!-- Item with quantity selector -->
+      <div class="flex items-center gap-3 p-3.5">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium">Рубашка мужская</div>
+          <div class="text-xs text-zinc-500 mt-0.5">25 000 UZS</div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button class="w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 grid place-items-center" title="Уменьшить">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+          </button>
+          <span class="w-7 text-center text-sm font-semibold">2</span>
+          <button class="w-8 h-8 rounded-full bg-zinc-900 hover:bg-zinc-700 text-white grid place-items-center" title="Увеличить">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Item not selected -->
+      <div class="flex items-center gap-3 p-3.5">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium">Платье</div>
+          <div class="text-xs text-zinc-500 mt-0.5">35 000 UZS</div>
+        </div>
+        <button class="rounded-full h-8 px-3 border border-zinc-300 hover:bg-zinc-50 text-xs font-medium flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Добавить
+        </button>
+      </div>
+
+      <div class="flex items-center gap-3 p-3.5">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium">Пальто шерстяное</div>
+          <div class="text-xs text-zinc-500 mt-0.5">75 000 UZS</div>
+        </div>
+        <button class="rounded-full h-8 px-3 border border-zinc-300 hover:bg-zinc-50 text-xs font-medium flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Добавить
+        </button>
+      </div>
+
+      <div class="flex items-center gap-3 p-3.5">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium">Куртка пуховая</div>
+          <div class="text-xs text-zinc-500 mt-0.5">90 000 UZS</div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button class="w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 grid place-items-center">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+          </button>
+          <span class="w-7 text-center text-sm font-semibold">1</span>
+          <button class="w-8 h-8 rounded-full bg-zinc-900 hover:bg-zinc-700 text-white grid place-items-center">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 p-3.5">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium">Брюки</div>
+          <div class="text-xs text-zinc-500 mt-0.5">30 000 UZS</div>
+        </div>
+        <button class="rounded-full h-8 px-3 border border-zinc-300 hover:bg-zinc-50 text-xs font-medium flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Добавить
+        </button>
+      </div>
+
+      <div class="flex items-center gap-3 p-3.5">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium">Юбка</div>
+          <div class="text-xs text-zinc-500 mt-0.5">28 000 UZS</div>
+        </div>
+        <button class="rounded-full h-8 px-3 border border-zinc-300 hover:bg-zinc-50 text-xs font-medium flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Добавить
+        </button>
+      </div>
+
+      <div class="flex items-center gap-3 p-3.5">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium">Костюм</div>
+          <div class="text-xs text-zinc-500 mt-0.5">85 000 UZS</div>
+        </div>
+        <button class="rounded-full h-8 px-3 border border-zinc-300 hover:bg-zinc-50 text-xs font-medium flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Добавить
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Правая колонка: корзина + контакты ── -->
+  <div class="space-y-4 lg:sticky lg:top-20 lg:self-start">
+
+    <!-- Cart -->
+    <div class="bg-white rounded-2xl border p-4">
+      <h3 class="font-bold text-sm mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2l3 7h6l3-7M5 9l1.4 11.2a1 1 0 001 .8h9.2a1 1 0 001-.8L19 9M9 14h6"/></svg>
+        Ваш заказ (3)
+      </h3>
+      <div class="space-y-2">
+        <div class="flex items-center gap-2 text-sm">
+          <div class="flex-1 min-w-0">
+            <div class="truncate">Рубашка мужская</div>
+            <div class="text-xs text-zinc-500">2 × 25 000 UZS</div>
+          </div>
+          <button class="p-1 text-zinc-400 hover:text-red-500" title="Удалить">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg>
+          </button>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <div class="flex-1 min-w-0">
+            <div class="truncate">Куртка пуховая</div>
+            <div class="text-xs text-zinc-500">1 × 90 000 UZS</div>
+          </div>
+          <button class="p-1 text-zinc-400 hover:text-red-500">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg>
+          </button>
+        </div>
+        <div class="border-t pt-2 mt-2 flex justify-between text-sm font-bold">
+          <span>Итого:</span>
+          <span>140 000 UZS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Контакты -->
+    <div class="bg-white rounded-2xl border p-4 space-y-3">
+      <h3 class="font-bold text-sm">Ваши данные</h3>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-medium">Имя</label>
+        <input class="w-full h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400" placeholder="Иван Иванов" />
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-medium flex items-center gap-1.5">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+          Телефон
+        </label>
+        <input type="tel" class="w-full h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400" placeholder="+998 90 123 45 67" />
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-medium flex items-center gap-1.5">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Адрес <span class="text-zinc-400 font-normal">(необязательно)</span>
+        </label>
+        <input class="w-full h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400" placeholder="ул. Амира Темура 12, кв. 5" />
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-medium">Комментарий <span class="text-zinc-400 font-normal">(необязательно)</span></label>
+        <textarea rows="2" class="w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400" placeholder="Удобное время, пожелания…"></textarea>
+      </div>
+
+      <button class="w-full h-11 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-sm transition flex items-center justify-center">
+        Оформить заказ · 140 000 UZS
+      </button>
+
+      <p class="text-[11px] text-zinc-400 text-center">
+        Нажимая кнопку, вы соглашаетесь на обработку персональных данных
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="max-w-3xl mx-auto px-4 py-8 text-center text-xs text-zinc-400">
+  Это <b>preview-макет</b> публичной формы заказа cleaning. Реальный URL: <code>cleaning.ezze.site/order/&lt;slug&gt;</code>
+</footer>
+
+</body>
+</html>

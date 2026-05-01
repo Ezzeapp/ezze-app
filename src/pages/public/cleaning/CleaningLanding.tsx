@@ -16,8 +16,21 @@ interface Props {
   coverUrl: string | null
 }
 
-// Cleaning — order-based. Публичная форма создания заказа: /order/<slug>.
+// Cleaning — order-based. Детальная форма /order/:slug в коде есть, но пока не
+// используется (клиенты химчисток обычно не считают вещи дома по штукам).
+// CTA ведём на самый удобный канал связи: WhatsApp → Telegram → tel:.
 function buildOrderHref(profile: MasterProfile): string {
+  const phone = (profile.phone || '').replace(/\D/g, '')
+  if (profile.whatsapp || phone) {
+    const wa = (profile.whatsapp || phone).replace(/\D/g, '')
+    if (wa) return `https://wa.me/${wa}`
+  }
+  if (profile.telegram) {
+    const tg = profile.telegram.trim()
+    if (tg.startsWith('http')) return tg
+    return `https://t.me/${tg.replace(/^@/, '')}`
+  }
+  if (phone) return `tel:${phone}`
   return `${window.location.origin}/order/${profile.booking_slug}`
 }
 
