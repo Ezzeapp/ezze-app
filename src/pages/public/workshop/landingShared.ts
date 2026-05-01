@@ -47,12 +47,13 @@ export function usePublicWorkshopServices(userId: string | undefined) {
   return useQuery({
     queryKey: ['public-workshop-services', userId],
     queryFn: async (): Promise<WorkshopServiceRow[]> => {
+      // services: FK = master_id, длительность = duration_min, сортировка = "order"
       const { data } = await supabase
         .from('services')
-        .select('id, name, price, duration, description')
-        .eq('user_id', userId!)
+        .select('id, name, price, duration:duration_min, description')
+        .eq('master_id', userId!)
         .eq('is_active', true)
-        .order('order_index', { ascending: true })
+        .order('order', { ascending: true })
         .limit(20)
       return (data ?? []) as WorkshopServiceRow[]
     },

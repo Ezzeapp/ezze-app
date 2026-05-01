@@ -63,7 +63,8 @@ function LandingFallback() {
 export function WorkshopLanding({ profile, avatarUrl, coverUrl }: Props) {
   const { user } = useAuth()
   const { data: devices = [] } = usePublicWorkshopDevices()
-  const { data: services = [] } = usePublicWorkshopServices(profile.user ?? user?.id)
+  const masterId = (profile as any).user_id ?? profile.user ?? user?.id
+  const { data: services = [] } = usePublicWorkshopServices(masterId)
 
   const template: LandingTemplate = profile.page_settings?.landing_template ?? 'pro_tech'
   const bookingUrl = buildBookingUrl(profile.booking_slug)

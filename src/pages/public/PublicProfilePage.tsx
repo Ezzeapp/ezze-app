@@ -13,6 +13,7 @@ import { formatCurrency } from '@/lib/utils'
 import type { MasterProfile, MasterProduct } from '@/types'
 import { CleaningLanding } from './cleaning/CleaningLanding'
 import { BeautyLanding } from './beauty/BeautyLanding'
+import { WorkshopLanding } from './workshop/WorkshopLanding'
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -48,9 +49,9 @@ function usePublicServices(userId: string | undefined) {
       const { data } = await supabase
         .from('services')
         .select('*')
-        .eq('user_id', userId!)
+        .eq('master_id', userId!)
         .eq('is_active', true)
-        .order('order_index', { ascending: true })
+        .order('order', { ascending: true })
         .limit(12)
       return data ?? []
     },
@@ -191,9 +192,11 @@ export function PublicProfilePage() {
   const [showAllServices, setShowAllServices] = useState(false)
 
   const { data: profile, isLoading } = usePublicMasterProfile(slug ?? '')
-  const { data: services = [] } = usePublicServices(profile?.user)
-  const { data: products = [] } = usePublicProducts(profile?.user)
-  const { data: promoCodes = [] } = usePublicPromoCodes(profile?.user)
+  // master_profiles FK column is `user_id` in DB; type still says `user` (legacy alias) — read both safely.
+  const masterId = (profile as any)?.user_id ?? profile?.user
+  const { data: services = [] } = usePublicServices(masterId)
+  const { data: products = [] } = usePublicProducts(masterId)
+  const { data: promoCodes = [] } = usePublicPromoCodes(masterId)
 
   // Loading state
   if (isLoading) {
@@ -249,6 +252,17 @@ export function PublicProfilePage() {
         avatarUrl={avatarUrl}
         coverUrl={coverUrl}
         portfolioUrls={portfolioUrls}
+      />
+    )
+  }
+
+  // Workshop: 3 шаблона (Pro Tech / Minimal Clean / Local Friendly)
+  if (PRODUCT === 'workshop') {
+    return (
+      <WorkshopLanding
+        profile={profile}
+        avatarUrl={avatarUrl}
+        coverUrl={coverUrl}
       />
     )
   }
