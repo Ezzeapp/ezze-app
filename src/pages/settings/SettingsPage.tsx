@@ -180,13 +180,17 @@ export function SettingsPage() {
     { id: 'profile',   label: t('settings.tabProfile'),                        icon: User     },
     { id: 'interface', label: t('settings.tabInterface'),                      icon: Sun      },
     // Расписание / онлайн-запись / публичная страница не применимы к workshop (приёмка)
-    // и rental (аренда объектов вместо записи к мастеру)
-    ...(PRODUCT !== 'workshop' && PRODUCT !== 'rental' ? [
+    // и rental (аренда объектов вместо записи к мастеру).
+    // Cleaning — order-based: «Онлайн-запись» (appointment-based) не применимо,
+    // но «Расписание» и «Моя страница» нужны (working hours + публичный лендинг).
+    ...(PRODUCT !== 'workshop' && PRODUCT !== 'rental' && PRODUCT !== 'cleaning' ? [
       { id: 'schedule' as Tab, label: t('nav.schedule'),                           icon: Clock  },
       { id: 'public'   as Tab, label: t('settings.tabPublicPage', 'Моя страница'), icon: Layout },
       { id: 'booking'  as Tab, label: t('settings.tabBooking', 'Онлайн-запись'),   icon: CalendarCheck },
     ] : []),
     ...(PRODUCT === 'cleaning' ? [
+      { id: 'schedule' as Tab, label: t('nav.schedule'),                           icon: Clock  },
+      { id: 'public'   as Tab, label: t('settings.tabPublicPage', 'Моя страница'), icon: Layout },
       { id: 'order_types' as Tab, label: 'Типы заказов', icon: Layers },
       { id: 'receipt' as Tab, label: 'Квитанция', icon: FileText },
     ] : []),
