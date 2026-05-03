@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
 import { toast } from '@/components/shared/Toaster'
-import { useCreateOrder, type OrderType, useCleaningEnabledOrderTypes, getOrderTypeIcon } from '@/hooks/useCleaningOrders'
+import { useCreateOrder, type OrderType, useCleaningEnabledOrderTypes, getOrderTypeIcon, isItemAvailableForOrderType } from '@/hooks/useCleaningOrders'
 import { useCleaningItemTypes } from '@/hooks/useCleaningItemTypes'
 import { useClientsPaged } from '@/hooks/useClients'
 import { useQuery } from '@tanstack/react-query'
@@ -224,13 +224,10 @@ export function OrderFormPage() {
     ))
   }
 
-  // Фильтрация типов по категории
-  const filteredTypes = itemTypes.filter(t => {
-    if (orderType === 'carpet') return t.name.toLowerCase().includes('кв.м') || t.name.toLowerCase().includes('ковёр') || t.name.toLowerCase().includes('ковр')
-    if (orderType === 'furniture') return ['диван','кресло','матрас','пуф'].some(k => t.name.toLowerCase().includes(k))
-    // clothing: всё что не ковры и не мебель
-    return !t.name.toLowerCase().includes('кв.м') && !['диван','кресло','матрас','пуф'].some(k => t.name.toLowerCase().includes(k))
-  })
+  // Фильтрация типов по category из БД (а не угадыванию по названию).
+  // Раньше keyword-фильтр пропускал импортированные позиции — например ковёр
+  // «Палас детский Premium» не попадал в carpet, потому что без слова «ковр».
+  const filteredTypes = itemTypes.filter(t => isItemAvailableForOrderType(t.category, orderType))
 
   async function handleSubmit() {
     const validItems = items.filter(i => i.item_type_name.trim())

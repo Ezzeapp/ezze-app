@@ -241,6 +241,14 @@ export function OrderDnDPage() {
       toast.error(`Максимум ${MAX_PHOTOS_PER_ITEM} фото на позицию`)
       return
     }
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('Файл слишком большой (макс. 20 МБ)')
+      return
+    }
+    if (!file.type.startsWith('image/')) {
+      toast.error('Можно загружать только изображения')
+      return
+    }
     setPhotoUploading(true)
     try {
       const compressed = await compressDefect(file)

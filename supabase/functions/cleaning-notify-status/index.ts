@@ -45,10 +45,11 @@ function pickText(tpl: any, lang: Lang): string | null {
   return tpl?.text || null
 }
 
-async function sendTg(chatId: string, text: string) {
-  if (!chatId || !text || !BOT_TOKEN) return
+async function sendTg(chatId: string, text: string): Promise<{ ok: boolean; error?: string }> {
+  if (!chatId || !text) return { ok: false, error: 'missing_chat_or_text' }
+  if (!BOT_TOKEN)        return { ok: false, error: 'no_bot_token' }
   try {
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -59,8 +60,15 @@ async function sendTg(chatId: string, text: string) {
       }),
       signal: AbortSignal.timeout(8000),
     })
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      console.error('sendTg HTTP', res.status, body)
+      return { ok: false, error: `tg_${res.status}` }
+    }
+    return { ok: true }
   } catch (err) {
     console.error('sendTg error:', err)
+    return { ok: false, error: String(err) }
   }
 }
 
@@ -168,9 +176,11 @@ serve(async (req) => {
       track_url: `https://cleaning.ezze.site/track/${order.number}`,
     })
 
-    await sendTg(tgChatId, text)
+    // Не глотаем ошибки TG: иначе оператор не узнает, что уведомление не дошло.
+    const tgRes = await sendTg(tgChatId, text)
 
-    return new Response(JSON.stringify({ sent: true, lang }), {
+    return new Response(JSON.stringify({ sent: tgRes.ok, lang, error: tgRes.error }), {
+      status: tgRes.ok ? 200 : 502,
       headers: { ...CORS, 'Content-Type': 'application/json' },
     })
   } catch (err) {

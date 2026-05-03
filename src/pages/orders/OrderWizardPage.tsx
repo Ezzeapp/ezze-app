@@ -211,6 +211,16 @@ export function OrderWizardPage() {
       toast.error(`Максимум ${MAX_PHOTOS_PER_ITEM} фото на позицию`)
       return
     }
+    // Без size/type проверки compressDefect может ОЧЕНЬ долго жевать большой файл,
+    // а HEIC/PDF и подавно не сожмёт — упадёт уже при upload.
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('Файл слишком большой (макс. 20 МБ)')
+      return
+    }
+    if (!file.type.startsWith('image/')) {
+      toast.error('Можно загружать только изображения')
+      return
+    }
     setPhotoUploadingKey(key)
     try {
       const compressed = await compressDefect(file)

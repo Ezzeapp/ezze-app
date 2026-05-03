@@ -450,6 +450,15 @@ export function useCreateOrder() {
         .rpc('generate_cleaning_order_number', { p_product: PRODUCT })
       if (numErr) throw numErr
 
+      // Платёж рассчитываем сразу: иначе DB ставит DEFAULT 'unpaid' и заказ
+      // с полной предоплатой висит в плашке «не оплачено» до первого UPDATE.
+      const prepaidAmt = payload.prepaid_amount ?? 0
+      const totalAmt = payload.total_amount ?? 0
+      const initialPayStatus: PaymentStatus =
+        prepaidAmt >= totalAmt && totalAmt > 0 ? 'paid'
+        : prepaidAmt > 0 ? 'partial'
+        : 'unpaid'
+
       const { data: order, error: orderErr } = await supabase
         .from('cleaning_orders')
         .insert({
@@ -459,8 +468,10 @@ export function useCreateOrder() {
           client_id:      payload.client_id ?? null,
           accepted_by:    payload.accepted_by ?? null,
           assigned_to:    payload.assigned_to ?? null,
-          prepaid_amount: payload.prepaid_amount ?? 0,
-          total_amount:   payload.total_amount ?? 0,
+          prepaid_amount: prepaidAmt,
+          total_amount:   totalAmt,
+          paid_amount:    prepaidAmt,
+          payment_status: initialPayStatus,
           ready_date:     payload.ready_date ?? null,
           notes:             payload.notes ?? null,
           tags:              payload.tags ?? [],
