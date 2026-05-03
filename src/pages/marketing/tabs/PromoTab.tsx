@@ -56,12 +56,12 @@ function formatDateInput(v: string): string {
 }
 
 export function PromoTab() {
+  // Хуки идут ДО любого условного return — иначе при смене hasPromos
+  // (feature flag дозагружается асинхронно) React видит разное число
+  // хуков между рендерами и паникует.
   const hasPromos = useFeature('promo_codes')
   const { data: codes, isLoading } = usePromoCodes()
   const { t } = useTranslation()
-
-  if (!hasPromos) return <Navigate to="/billing" replace />
-
   const create = useCreatePromoCode()
   const update = useUpdatePromoCode()
   const remove = useDeletePromoCode()
@@ -82,6 +82,9 @@ export function PromoTab() {
     const expired = codes.filter(p => p.valid_until && p.valid_until < today).length
     return { total: codes.length, active, totalUses, inactive: codes.length - active, expired }
   }, [codes])
+
+  // Условный return — только после всех хуков (Rules of Hooks).
+  if (!hasPromos) return <Navigate to="/billing" replace />
 
   const handleCreate = async () => {
     if (!form.code || !form.discount_value) {
