@@ -615,7 +615,13 @@ function OrdersListMain() {
     try {
       await supabase.from('cleaning_order_items').delete().in('order_id', ids)
       await supabase.from('cleaning_order_history').delete().in('order_id', ids)
-      const { error } = await supabase.from('cleaning_orders').delete().in('id', ids)
+      // Defense-in-depth: фильтр по product как в useDeleteOrder. Если в orders
+      // случайно протекут id чужого продукта (race в useCleaningOrders), не
+      // снесём чужие заказы.
+      const { error } = await supabase
+        .from('cleaning_orders').delete()
+        .in('id', ids)
+        .eq('product', PRODUCT)
       if (error) throw error
       qc.invalidateQueries({ queryKey: [ORDERS_KEY] })
       toast.success(t('orders.deletedMultiple', { count: ids.length }))

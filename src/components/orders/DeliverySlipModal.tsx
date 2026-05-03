@@ -29,21 +29,29 @@ function num(n: number): string {
   return n.toLocaleString('ru')
 }
 
+// XSS-фикс: всё user-input оборачиваем перед интерполяцией в HTML.
+// Имя/адрес/notes клиента приходят в т.ч. из публичной формы /order/:slug.
+function escapeHtml(s: unknown): string {
+  if (s == null) return ''
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string))
+}
+
 function buildSlipHtml(
   data: DeliverySlipData,
   config: ReceiptConfig,
   symbol: string,
 ): string {
   const rem = data.total_amount - data.prepaid_amount
+  const e = escapeHtml
   const clientName = data.client ? [data.client.first_name, data.client.last_name].filter(Boolean).join(' ') : '—'
   const phone = data.client?.phone ?? ''
   const itemRows = data.items.map((it, i) => `
     <tr>
       <td style="padding:4px;border-bottom:1px dashed #ccc;vertical-align:top;">${i + 1}</td>
       <td style="padding:4px;border-bottom:1px dashed #ccc;">
-        ${it.item_type_name}
-        ${(it.color || it.brand) ? `<div style="color:#666;font-size:11px;">${[it.color, it.brand].filter(Boolean).join(', ')}</div>` : ''}
-        ${it.defects ? `<div style="color:#888;font-size:11px;">Дефекты: ${it.defects}</div>` : ''}
+        ${e(it.item_type_name)}
+        ${(it.color || it.brand) ? `<div style="color:#666;font-size:11px;">${e([it.color, it.brand].filter(Boolean).join(', '))}</div>` : ''}
+        ${it.defects ? `<div style="color:#888;font-size:11px;">Дефекты: ${e(it.defects)}</div>` : ''}
       </td>
       <td style="padding:4px;border-bottom:1px dashed #ccc;text-align:center;">☐</td>
     </tr>
@@ -54,8 +62,8 @@ function buildSlipHtml(
       <!-- Шапка -->
       <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px;">
         <div>
-          ${config.company_name ? `<div style="font-weight:bold;font-size:16px;">${config.company_name}</div>` : ''}
-          ${config.company_phone ? `<div style="font-size:12px;color:#555;">${config.company_phone}</div>` : ''}
+          ${config.company_name ? `<div style="font-weight:bold;font-size:16px;">${e(config.company_name)}</div>` : ''}
+          ${config.company_phone ? `<div style="font-size:12px;color:#555;">${e(config.company_phone)}</div>` : ''}
         </div>
         <div style="text-align:right;">
           <div style="font-weight:bold;font-size:18px;">НАКЛАДНАЯ</div>
@@ -65,9 +73,9 @@ function buildSlipHtml(
 
       <!-- Номер, дата, метка -->
       <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:10px;">
-        <span>Заказ: <b>№ ${data.number}</b></span>
+        <span>Заказ: <b>№ ${e(data.number)}</b></span>
         <span>Оформлен: ${dayjs(data.created_at).format('DD.MM.YYYY HH:mm')}</span>
-        ${label ? `<span style="color:#666;font-size:11px;">${label}</span>` : ''}
+        ${label ? `<span style="color:#666;font-size:11px;">${e(label)}</span>` : ''}
       </div>
 
       <!-- Даты забора / доставки (крупно) -->
@@ -88,22 +96,22 @@ function buildSlipHtml(
       <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:14px;">
         <tr>
           <td style="padding:6px 4px;width:110px;color:#555;">Клиент:</td>
-          <td style="padding:6px 4px;font-weight:bold;">${clientName}</td>
+          <td style="padding:6px 4px;font-weight:bold;">${e(clientName)}</td>
         </tr>
         ${phone ? `
           <tr>
             <td style="padding:6px 4px;color:#555;">Телефон:</td>
-            <td style="padding:6px 4px;font-weight:bold;font-size:16px;">${phone}</td>
+            <td style="padding:6px 4px;font-weight:bold;font-size:16px;">${e(phone)}</td>
           </tr>` : ''}
         ${data.visit_address ? `
           <tr>
             <td style="padding:6px 4px;color:#555;vertical-align:top;">Адрес:</td>
-            <td style="padding:6px 4px;font-weight:bold;font-size:15px;">${data.visit_address}</td>
+            <td style="padding:6px 4px;font-weight:bold;font-size:15px;">${e(data.visit_address)}</td>
           </tr>` : ''}
         ${data.notes ? `
           <tr>
             <td style="padding:6px 4px;color:#555;vertical-align:top;">Примечание:</td>
-            <td style="padding:6px 4px;font-style:italic;">${data.notes}</td>
+            <td style="padding:6px 4px;font-style:italic;">${e(data.notes)}</td>
           </tr>` : ''}
       </table>
 
@@ -151,7 +159,7 @@ function buildSlipHtml(
 
       ${config.footer_text ? `
         <div style="text-align:center;border-top:1px dashed #ccc;padding-top:6px;margin-top:14px;font-size:11px;color:#555;">
-          ${config.footer_text}
+          ${e(config.footer_text)}
         </div>` : ''}
     </div>`
 

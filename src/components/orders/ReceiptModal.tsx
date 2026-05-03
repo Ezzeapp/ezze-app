@@ -77,18 +77,22 @@ function buildReceiptCopyHtml(
 ): string {
   const narrow = format === '80mm'
   const rem = data.total_amount - data.prepaid_amount
+  // XSS-фикс: всё user-input оборачиваем в escapeHtml. Имя клиента приходит
+  // в т.ч. из публичной формы /order/:slug — без e() клиент `<script>...`
+  // выполнил бы код в окне печати оператора.
+  const e = (v: unknown): string => v == null ? '' : escapeHtml(String(v))
 
   const itemRows = data.items.map((it, i) => `
     <tr>
       <td style="padding:3px 2px;vertical-align:top;">${i + 1}</td>
       <td style="padding:3px 2px;">
-        ${it.item_type_name}
+        ${e(it.item_type_name)}
         ${config.show_item_details && (it.color || it.brand)
-          ? `<div style="color:#666;font-size:10px;">${[it.color, it.brand].filter(Boolean).join(', ')}</div>` : ''}
+          ? `<div style="color:#666;font-size:10px;">${e([it.color, it.brand].filter(Boolean).join(', '))}</div>` : ''}
         ${config.show_item_details && it.area_m2
-          ? `<div style="color:#666;font-size:10px;">${it.width_m}×${it.length_m} м = ${Number(it.area_m2).toFixed(2)} м²</div>` : ''}
+          ? `<div style="color:#666;font-size:10px;">${e(it.width_m)}×${e(it.length_m)} м = ${Number(it.area_m2).toFixed(2)} м²</div>` : ''}
         ${config.show_item_details && it.defects
-          ? `<div style="color:#888;font-size:10px;">Дефекты: ${it.defects}</div>` : ''}
+          ? `<div style="color:#888;font-size:10px;">Дефекты: ${e(it.defects)}</div>` : ''}
       </td>
       <td style="text-align:right;padding:3px 2px;white-space:nowrap;">${num(it.price)} ${symbol}</td>
       <td style="text-align:right;padding:3px 2px;white-space:nowrap;">${it.ready_date ? dayjs(it.ready_date).format('DD.MM') : '—'}</td>
@@ -106,21 +110,21 @@ function buildReceiptCopyHtml(
       <!-- Шапка -->
       <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;">
         ${config.company_name
-          ? `<div style="font-weight:bold;font-size:${narrow ? '14px' : '18px'};margin-bottom:2px;">${config.company_name}</div>` : ''}
-        ${config.company_address ? `<div>${config.company_address}</div>` : ''}
-        ${config.company_phone ? `<div>${config.company_phone}</div>` : ''}
+          ? `<div style="font-weight:bold;font-size:${narrow ? '14px' : '18px'};margin-bottom:2px;">${e(config.company_name)}</div>` : ''}
+        ${config.company_address ? `<div>${e(config.company_address)}</div>` : ''}
+        ${config.company_phone ? `<div>${e(config.company_phone)}</div>` : ''}
       </div>
 
       <!-- Номер и дата -->
       <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:${narrow ? '12px' : '15px'};margin-bottom:4px;">
-        <span>КВИТАНЦИЯ № ${data.number}</span>
+        <span>КВИТАНЦИЯ № ${e(data.number)}</span>
         <span>${dayjs(data.created_at).format('DD.MM.YYYY')}</span>
       </div>
       ${data.client
-        ? `<div style="margin-bottom:4px;">Клиент: <b>${[data.client.first_name, data.client.last_name].filter(Boolean).join(' ')}</b>${data.client.phone ? ' · ' + data.client.phone : ''}</div>`
+        ? `<div style="margin-bottom:4px;">Клиент: <b>${e([data.client.first_name, data.client.last_name].filter(Boolean).join(' '))}</b>${data.client.phone ? ' · ' + e(data.client.phone) : ''}</div>`
         : ''}
       ${data.notes
-        ? `<div style="font-style:italic;color:#555;font-size:10px;margin-bottom:4px;">Примечание: ${data.notes}</div>`
+        ? `<div style="font-style:italic;color:#555;font-size:10px;margin-bottom:4px;">Примечание: ${e(data.notes)}</div>`
         : ''}
 
       <!-- Таблица изделий -->
@@ -144,19 +148,19 @@ function buildReceiptCopyHtml(
           </div>` : ''}
         ${data.surcharge_amount && data.surcharge_amount > 0 ? `
           <div style="display:flex;justify-content:space-between;margin-bottom:2px;color:#b91c1c;">
-            <span>${data.surcharge_label || 'Надбавка'}</span><span>+ ${num(data.surcharge_amount)} ${symbol}</span>
+            <span>${e(data.surcharge_label || 'Надбавка')}</span><span>+ ${num(data.surcharge_amount)} ${symbol}</span>
           </div>` : ''}
         ${data.delivery_fee && data.delivery_fee > 0 ? `
           <div style="display:flex;justify-content:space-between;margin-bottom:2px;color:#7c3aed;">
-            <span>${data.delivery_label || 'Доставка'}</span><span>+ ${num(data.delivery_fee)} ${symbol}</span>
+            <span>${e(data.delivery_label || 'Доставка')}</span><span>+ ${num(data.delivery_fee)} ${symbol}</span>
           </div>` : ''}
         ${data.discount_amount && data.discount_amount > 0 ? `
           <div style="display:flex;justify-content:space-between;margin-bottom:2px;color:#059669;">
-            <span>${data.discount_label || 'Скидка'}</span><span>− ${num(data.discount_amount)} ${symbol}</span>
+            <span>${e(data.discount_label || 'Скидка')}</span><span>− ${num(data.discount_amount)} ${symbol}</span>
           </div>` : ''}
         ${data.promo_amount && data.promo_amount > 0 ? `
           <div style="display:flex;justify-content:space-between;margin-bottom:2px;color:#2563eb;">
-            <span>Промокод ${data.promo_code || ''}</span><span>− ${num(data.promo_amount)} ${symbol}</span>
+            <span>Промокод ${e(data.promo_code || '')}</span><span>− ${num(data.promo_amount)} ${symbol}</span>
           </div>` : ''}
       </div>
 
@@ -209,11 +213,11 @@ function buildReceiptCopyHtml(
         </div>
         ${data.tags && data.tags.length > 0 ? `
           <div style="margin-top:6px;font-size:${narrow ? '9px' : '11px'};color:#555;">
-            ${data.tags.map(t => `<span style="display:inline-block;border:1px solid #ccc;border-radius:3px;padding:0 4px;margin:1px;">${t}</span>`).join('')}
+            ${data.tags.map(t => `<span style="display:inline-block;border:1px solid #ccc;border-radius:3px;padding:0 4px;margin:1px;">${e(t)}</span>`).join('')}
           </div>` : ''}
         ${data.visit_address ? `
           <div style="margin-top:6px;font-size:${narrow ? '9px' : '11px'};color:#555;">
-            <strong>Адрес:</strong> ${data.visit_address}
+            <strong>Адрес:</strong> ${e(data.visit_address)}
           </div>` : ''}
       </div>
 
@@ -224,7 +228,7 @@ function buildReceiptCopyHtml(
       </div>
 
       <!-- Метка копии -->
-      ${copyLabel ? `<div style="text-align:center;color:#666;font-size:10px;margin-bottom:4px;">${copyLabel}</div>` : ''}
+      ${copyLabel ? `<div style="text-align:center;color:#666;font-size:10px;margin-bottom:4px;">${e(copyLabel)}</div>` : ''}
 
       <!-- Условия приёмки -->
       ${config.terms_text
@@ -239,7 +243,7 @@ function buildReceiptCopyHtml(
 
       <!-- Нижний колонтитул -->
       ${config.footer_text
-        ? `<div style="text-align:center;border-top:1px dashed #ccc;padding-top:6px;font-size:11px;color:#555;">${config.footer_text}</div>`
+        ? `<div style="text-align:center;border-top:1px dashed #ccc;padding-top:6px;font-size:11px;color:#555;">${e(config.footer_text)}</div>`
         : ''}
     </div>
   `
