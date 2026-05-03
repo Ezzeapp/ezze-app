@@ -506,7 +506,13 @@ export function useCreateOrder() {
             team_id: teamScope.effectiveTeamId ?? null,
             created_by: user?.id ?? null,
           })))
-        if (itemsErr) throw itemsErr
+        if (itemsErr) {
+          // Откатываем пустой заказ — иначе оператор увидит ошибку, создаст
+          // снова и получит дубль-сирот в БД (без позиций).
+          // Edge-функция cleaning-public-order-create делает то же самое.
+          await supabase.from('cleaning_orders').delete().eq('id', order.id)
+          throw itemsErr
+        }
       }
 
       // Notify client: новый заказ принят (status='received')
