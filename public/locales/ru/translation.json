@@ -2323,6 +2323,7 @@
   "cleaning": {
     "nav": {
       "delivery": "Доставка",
+      "supplies": "Расходники",
       "reports": "Отчёты"
     },
     "stats": {

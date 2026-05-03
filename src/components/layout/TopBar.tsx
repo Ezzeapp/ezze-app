@@ -15,6 +15,7 @@ import {
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { GlobalSearch } from '@/components/shared/GlobalSearch'
+import { getFileUrl } from '@/lib/storage'
 
 export function TopBar() {
   const { t } = useTranslation()
@@ -93,7 +94,7 @@ export function TopBar() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full hidden lg:flex">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.avatar ? `http://127.0.0.1:8090/api/files/users/${user.id}/${user.avatar}?thumb=100x100` : undefined} />
+                  <AvatarImage src={user?.avatar ? getFileUrl('avatars', user.avatar) : undefined} />
                   <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
               </Button>

@@ -2321,6 +2321,7 @@
   "cleaning": {
     "nav": {
       "delivery": "Delivery",
+      "supplies": "Supplies",
       "reports": "Reports"
     },
     "stats": {
