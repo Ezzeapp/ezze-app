@@ -2321,6 +2321,10 @@
     }
   },
   "cleaning": {
+    "nav": {
+      "delivery": "Доставка",
+      "reports": "Отчёты"
+    },
     "stats": {
       "title": "Статистика",
       "revenue": "Выручка",

@@ -2319,6 +2319,10 @@
     }
   },
   "cleaning": {
+    "nav": {
+      "delivery": "Delivery",
+      "reports": "Reports"
+    },
     "stats": {
       "title": "Statistics",
       "revenue": "Revenue",

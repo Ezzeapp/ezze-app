@@ -169,6 +169,9 @@ serve(async (req) => {
         accepted_by:    master.id,
         total_amount:   total,
         notes:          payload.client.notes || null,
+        // Адрес заказа — нужен для раздела «Доставка», иначе теряется
+        // (раньше попадал только в TG-уведомление мастеру).
+        visit_address:  payload.client.address || null,
         team_id:        teamId,
         created_by:     master.user_id,
         status:         'received',

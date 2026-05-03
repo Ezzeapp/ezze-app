@@ -82,10 +82,15 @@ export function CleaningTrackPage() {
     setNotFound(false)
     setOrder(null)
     try {
+      // Поиск нечувствителен к регистру: клиент мог переписать «КВ-0001» как «кв-0001».
+      // Берём первый матч на случай совпадений между продуктами (не должно быть, но guard).
       const { data } = await supabase
         .from('cleaning_orders')
         .select('id, number, status, order_type, total_amount, paid_amount, prepaid_amount, payment_status, ready_date, created_at, notes, payment_method, payment_provider, surcharge_amount, promo_code, promo_amount, items:cleaning_order_items(id, item_type_name, price, status, ready_date)')
-        .eq('number', trimmed)
+        .ilike('number', trimmed)
+        .eq('product', 'cleaning')
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle()
       if (data) setOrder(data as TrackOrder)
       else setNotFound(true)

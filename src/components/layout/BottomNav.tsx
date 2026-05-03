@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard, CalendarDays, Users, MoreHorizontal,
   Package, User, Settings, ShieldCheck, X, UsersRound, ChevronRight, LogOut, CreditCard, LifeBuoy,
-  ClipboardList, Wrench, Tag, Gift,
+  ClipboardList, Wrench, Tag, Gift, Truck, FileText,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -34,6 +34,9 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
   const items = [
     showProfile && { icon: User,        label: t('nav.profile'),    to: '/profile',   highlight: false },
     canServices && { icon: ServiceIcon, label: t('nav.services'),   to: '/services',  highlight: false },
+    // Cleaning: Доставка и Отчёты живут только в /delivery и /reports — без них пункты меню недоступны.
+    PRODUCT === 'cleaning' && { icon: Truck,    label: t('cleaning.nav.delivery', 'Доставка'), to: '/delivery', highlight: false },
+    PRODUCT === 'cleaning' && { icon: FileText, label: t('cleaning.nav.reports',  'Отчёты'),   to: '/reports',  highlight: false },
     showPromoLoyalty && canPromo    && { icon: Tag,  label: t('marketing.tabPromo'),   to: '/promo',   highlight: false },
     showPromoLoyalty && canLoyalty  && { icon: Gift, label: t('marketing.tabLoyalty'), to: '/loyalty', highlight: false },
     showInventory && hasInventory && canInventory && { icon: Package,    label: t('nav.inventory'), to: '/inventory', highlight: false },

@@ -594,6 +594,15 @@ export function POSPage() {
     const file = e.target.files?.[0]
     if (!file) return
     e.target.value = ''
+    // Лимит на фото дефекта — без него можно загрузить 100MB видео и положить аплоад.
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Файл слишком большой (макс. 10 МБ)')
+      return
+    }
+    if (!file.type.startsWith('image/')) {
+      toast.error('Можно загружать только изображения')
+      return
+    }
     setPhotoUploading(itemKey)
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
