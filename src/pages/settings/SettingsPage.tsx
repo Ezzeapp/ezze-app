@@ -30,6 +30,7 @@ import { ExamRoomsSettingsTab } from './ExamRoomsSettingsTab'
 import { WorkshopItemTypesSettingsTab } from './WorkshopItemTypesSettingsTab'
 import { WorkshopNotificationTemplatesTab } from './WorkshopNotificationTemplatesTab'
 import { WorkshopReceiptTemplateTab } from './WorkshopReceiptTemplateTab'
+import { CleaningNotificationTemplatesTab } from './CleaningNotificationTemplatesTab'
 import { MinimalProfileTab } from './MinimalProfileTab'
 import { PRODUCT } from '@/lib/config'
 
@@ -75,7 +76,7 @@ const TIMEZONES = [
   { value: 'UTC', label: 'UTC (UTC+0)' },
 ]
 
-type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'booking' | 'receipt' | 'order_types' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config' | 'exam_rooms' | 'workshop_types' | 'workshop_notifications' | 'workshop_receipt'
+type Tab = 'profile' | 'interface' | 'schedule' | 'public' | 'booking' | 'receipt' | 'order_types' | 'cleaning_notifications' | 'visit_templates' | 'lab_catalog' | 'wards_config' | 'or_config' | 'diet_config' | 'exam_rooms' | 'workshop_types' | 'workshop_notifications' | 'workshop_receipt'
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -193,6 +194,7 @@ export function SettingsPage() {
       { id: 'public'   as Tab, label: t('settings.tabPublicPage', 'Моя страница'), icon: Layout },
       { id: 'order_types' as Tab, label: 'Типы заказов', icon: Layers },
       { id: 'receipt' as Tab, label: 'Квитанция', icon: FileText },
+      { id: 'cleaning_notifications' as Tab, label: 'Уведомления', icon: FileText },
     ] : []),
     ...(PRODUCT === 'workshop' ? [
       { id: 'public' as Tab, label: t('settings.tabPublicPage', 'Моя страница'), icon: Layout },
@@ -305,6 +307,9 @@ export function SettingsPage() {
 
       {/* ── Квитанция ── */}
       {tab === 'receipt' && <ReceiptSettingsTab />}
+
+      {/* ── Уведомления (только cleaning) ── */}
+      {tab === 'cleaning_notifications' && <CleaningNotificationTemplatesTab />}
 
       {/* ── Типы устройств (только workshop) ── */}
       {tab === 'workshop_types' && <WorkshopItemTypesSettingsTab />}
