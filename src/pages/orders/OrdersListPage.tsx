@@ -39,6 +39,7 @@ import { formatCurrency } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useTeamScope } from '@/contexts/TeamContext'
 import dayjs from 'dayjs'
 import { cn } from '@/lib/utils'
 
@@ -227,7 +228,8 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, onMessage, onPrint,
   orders: CleaningOrder[]
   symbol: string
   onNavigate: (id: string) => void
-  onDelete: (id: string) => void
+  /** undefined у worker — кнопка удаления скрывается в строках */
+  onDelete?: (id: string) => void
   onMessage: (id: string) => void
   onPrint: (id: string) => void
   isOverdueMap: Record<string, boolean>
@@ -371,13 +373,15 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, onMessage, onPrint,
                       >
                         <Printer className="h-3.5 w-3.5" />
                       </button>
-                      <button
-                        onClick={e => { e.stopPropagation(); onDelete(order.id) }}
-                        className="p-1.5 rounded text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        title="Удалить"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      {onDelete && (
+                        <button
+                          onClick={e => { e.stopPropagation(); onDelete(order.id) }}
+                          className="p-1.5 rounded text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          title="Удалить"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -510,6 +514,12 @@ function OrdersListMain() {
   const [deleteAllOpen,  setDeleteAllOpen]  = useState(false)
   const [messageOrderId, setMessageOrderId] = useState<string | null>(null)
   const [massMessage,    setMassMessage]    = useState(false)
+
+  const teamScope = useTeamScope()
+  // Worker не имеет права удалять заказы (RLS из 065 разрешает DELETE
+  // только owner/admin команды). Скрываем кнопки в UI — иначе тап даёт
+  // toast «Ошибка удаления».
+  const canDelete = teamScope.role !== 'worker'
   const [printOrderId,   setPrintOrderId]   = useState<string | null>(null)
   const [printData,      setPrintData]      = useState<ReceiptData | null>(null)
   const [viewMode,       setViewMode]       = useState<'table' | 'kanban' | 'delivery'>('table')
@@ -739,7 +749,7 @@ function OrdersListMain() {
                   </DropdownMenuItem>
                 </>
               )}
-              {orders.length > 0 && (
+              {orders.length > 0 && canDelete && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -950,7 +960,7 @@ function OrdersListMain() {
                 orders={orders}
                 symbol={symbol}
                 onNavigate={id => navigate(`/orders/${id}`)}
-                onDelete={id => setDeleteId(id)}
+                onDelete={canDelete ? (id => setDeleteId(id)) : undefined}
                 onMessage={id => setMessageOrderId(id)}
                 onPrint={id => setPrintOrderId(id)}
                 isOverdueMap={isOverdueMap}
@@ -976,13 +986,15 @@ function OrdersListMain() {
                     : 'border-l-4 border-l-transparent'
                   )}
                 >
-                  <button
-                    onClick={e => { e.stopPropagation(); setDeleteId(order.id) }}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 z-10"
-                    title={t('orders.confirmDelete')}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {canDelete && (
+                    <button
+                      onClick={e => { e.stopPropagation(); setDeleteId(order.id) }}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 z-10"
+                      title={t('orders.confirmDelete')}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                   <button
                     onClick={() => navigate(`/orders/${order.id}`)}
                     className="w-full text-left p-4 hover:bg-accent/50 transition-colors rounded-xl pr-10"

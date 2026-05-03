@@ -30,6 +30,7 @@ import {
 import { OrderStatusBadge, PaymentStatusBadge, STATUS_CONFIG } from '@/components/orders/OrderStatusBadge'
 import { IssueItemsDialog } from '@/components/orders/IssueItemsDialog'
 import { useClientsPaged } from '@/hooks/useClients'
+import { useTeamScope } from '@/contexts/TeamContext'
 import { formatCurrency } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import type { OrderStatus, CleaningOrderItem } from '@/hooks/useCleaningOrders'
@@ -211,6 +212,10 @@ export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const symbol = useCurrencySymbol()
+  const teamScope = useTeamScope()
+  // Worker не может удалять заказы (RLS из 065 + бизнес-логика).
+  // Прячем кнопку, иначе тап → toast «Ошибка удаления» — плохой UX.
+  const canDeleteOrder = teamScope.role !== 'worker'
 
   const { data: order, isLoading } = useCleaningOrder(id)
   const { mutateAsync: updateStatus,       isPending: updatingStatus  } = useUpdateOrderStatus()
@@ -452,15 +457,17 @@ export function OrderDetailPage() {
               <span className="hidden sm:inline">Накладная</span>
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-destructive hidden sm:inline-flex"
-            onClick={() => setDeleteConfirm(true)}
-            title="Удалить заказ"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {canDeleteOrder && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-destructive hidden sm:inline-flex"
+              onClick={() => setDeleteConfirm(true)}
+              title="Удалить заказ"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
