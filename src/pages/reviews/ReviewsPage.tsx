@@ -25,11 +25,10 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export function ReviewsPage() {
+  // Все хуки до условного return — Rules of Hooks.
   const hasReviews = useFeature('reviews')
   const { data: reviews, isLoading } = useReviews()
   const { t } = useTranslation()
-
-  if (!hasReviews) return <Navigate to="/billing" replace />
   const toggleVisibility = useToggleReviewVisibility()
   const deleteReview = useDeleteReview()
 
@@ -44,6 +43,8 @@ export function ReviewsPage() {
     }))
     return { avg: avg.toFixed(1), visible, hidden, dist, total: reviews.length }
   }, [reviews])
+
+  if (!hasReviews) return <Navigate to="/billing" replace />
 
   return (
     <div className="space-y-6">

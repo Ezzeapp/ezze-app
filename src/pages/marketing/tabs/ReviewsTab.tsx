@@ -26,13 +26,13 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export function ReviewsTab() {
+  // Все хуки до условного return — иначе при асинхронной загрузке feature
+  // flag число хуков между рендерами меняется и React паникует.
   const hasReviews = useFeature('reviews')
   const { data: reviews, isLoading } = useReviews()
   const toggleVisibility = useToggleReviewVisibility()
   const deleteReview = useDeleteReview()
   const { t } = useTranslation()
-
-  if (!hasReviews) return <Navigate to="/billing" replace />
 
   const stats = useMemo(() => {
     if (!reviews || reviews.length === 0) return null
@@ -45,6 +45,8 @@ export function ReviewsTab() {
     }))
     return { avg: avg.toFixed(1), visible, hidden, dist, total: reviews.length }
   }, [reviews])
+
+  if (!hasReviews) return <Navigate to="/billing" replace />
 
   return (
     <div className="space-y-6">
