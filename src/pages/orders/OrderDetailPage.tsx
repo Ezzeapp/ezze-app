@@ -343,6 +343,7 @@ export function OrderDetailPage() {
     }
   }
 
+  const [removeItemId, setRemoveItemId] = useState<string | null>(null)
   async function handleRemoveItem(itemId: string) {
     if (!order) return
     try {
@@ -760,7 +761,7 @@ export function OrderDetailPage() {
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button
-                          onClick={() => handleRemoveItem(item.id)}
+                          onClick={() => setRemoveItemId(item.id)}
                           className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-destructive"
                           title="Удалить изделие"
                         >
@@ -933,6 +934,39 @@ export function OrderDetailPage() {
         </div>
 
       </div>
+
+      {/* Подтверждение удаления изделия — без него случайный тап на мобиле
+          сносит изделие вместе с фото и историей. */}
+      {removeItemId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setRemoveItemId(null)}>
+          <div className="bg-background rounded-2xl shadow-2xl p-6 w-72 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-center">
+              <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <Trash2 className="h-6 w-6 text-red-600" />
+              </div>
+            </div>
+            <div className="text-center space-y-1">
+              <p className="font-semibold">Удалить изделие?</p>
+              <p className="text-sm text-muted-foreground">Фото и сумма заказа пересчитаются.</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" size="sm" onClick={() => setRemoveItemId(null)}>Отмена</Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                size="sm"
+                onClick={() => {
+                  const id = removeItemId
+                  setRemoveItemId(null)
+                  if (id) handleRemoveItem(id)
+                }}
+              >
+                Удалить
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Диалог подтверждения удаления заказа */}
       {deleteConfirm && (
