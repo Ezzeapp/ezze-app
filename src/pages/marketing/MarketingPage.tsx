@@ -27,10 +27,8 @@ export function MarketingPage() {
 
   // Старые ссылки ?tab=promo / ?tab=loyalty переезжают на отдельные страницы
   const rawTabParam = searchParams.get('tab')
-  if (rawTabParam === 'promo')   return <Navigate to="/promo" replace />
-  if (rawTabParam === 'loyalty') return <Navigate to="/loyalty" replace />
 
-  const rawTab = searchParams.get('tab') as MarketingTab | null
+  const rawTab = rawTabParam as MarketingTab | null
   const activeTab: MarketingTab = rawTab && validTabs.includes(rawTab) ? rawTab : DEFAULT_TAB
 
   // Если tab не задан — добавляем default
@@ -39,6 +37,12 @@ export function MarketingPage() {
       setSearchParams({ tab: DEFAULT_TAB }, { replace: true })
     }
   }, [rawTab]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Условные return — ПОСЛЕ всех хуков (Rules of Hooks). Раньше проверка
+  // promo/loyalty стояла до useEffect, и при смене tab между значениями
+  // React паниковал «Rendered fewer hooks than during the previous render».
+  if (rawTabParam === 'promo')   return <Navigate to="/promo" replace />
+  if (rawTabParam === 'loyalty') return <Navigate to="/loyalty" replace />
 
   const allTabs: { id: MarketingTab; label: string; icon: React.ElementType }[] = [
     { id: 'broadcasts', label: t('marketing.tabBroadcasts'), icon: Send  },
