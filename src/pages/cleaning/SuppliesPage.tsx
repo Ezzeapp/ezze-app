@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { toast } from '@/components/shared/Toaster'
 import { cn, formatCurrency } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTeamScope } from '@/contexts/TeamContext'
 import { useFeature } from '@/hooks/useFeatureFlags'
 import { useSuppliesCategories } from '@/hooks/useSuppliesCategories'
 import dayjs from 'dayjs'
@@ -30,15 +31,22 @@ interface Supply {
 
 
 function useSupplies() {
+  const teamScope = useTeamScope()
   return useQuery({
-    queryKey: ['cleaning_supplies'],
+    queryKey: ['cleaning_supplies', teamScope.effectiveTeamId],
     queryFn: async () => {
-      const { data } = await supabase
+      // Team scoping симметрично cleaning_orders. Иначе расходники одного
+      // мастера видны другому (как было до миграции 089).
+      let q = supabase
         .from('cleaning_supplies')
         .select('*')
         .eq('product', 'cleaning')
         .order('category')
         .order('name')
+      if (teamScope.effectiveTeamId) {
+        q = q.or(`team_id.eq.${teamScope.effectiveTeamId},team_id.is.null`)
+      }
+      const { data } = await q
       return (data ?? []) as Supply[]
     },
   })
@@ -47,6 +55,7 @@ function useSupplies() {
 export function SuppliesPage() {
   const hasAccess = useFeature('supplies')
   const { user } = useAuth()
+  const teamScope = useTeamScope()
   const qc = useQueryClient()
   const { data: supplies = [], isLoading } = useSupplies()
   const { data: rawCategories = [] } = useSuppliesCategories()
@@ -92,7 +101,12 @@ export function SuppliesPage() {
         const { error } = await supabase.from('cleaning_supplies').update(row).eq('id', editId)
         if (error) throw error
       } else {
-        const { error } = await supabase.from('cleaning_supplies').insert(row)
+        // team_id и created_by — обязательны для team-scoped RLS из миграции 089.
+        const { error } = await supabase.from('cleaning_supplies').insert({
+          ...row,
+          team_id:    teamScope.effectiveTeamId ?? null,
+          created_by: user?.id ?? null,
+        })
         if (error) throw error
       }
     },
@@ -116,7 +130,9 @@ export function SuppliesPage() {
       await supabase.from('cleaning_supplies').update({ quantity: newQty }).eq('id', id)
       await supabase.from('cleaning_supply_log').insert({
         supply_id: id, change_type: type, quantity: Math.abs(delta),
-        note: type === 'in' ? 'Приход' : 'Расход', created_by: user?.id,
+        note: type === 'in' ? 'Приход' : 'Расход',
+        created_by: user?.id,
+        team_id: teamScope.effectiveTeamId ?? null,
       })
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['cleaning_supplies'] }),
