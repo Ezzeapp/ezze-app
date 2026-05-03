@@ -306,6 +306,13 @@ export function OrderDetailPage() {
       toast.error('Введите корректную сумму')
       return
     }
+    // Защита от переплаты: paid_amount не должен превышать total_amount,
+    // иначе долг становится отрицательным и плашки в списке врут.
+    const remaining = order.total_amount - order.paid_amount
+    if (amount > remaining + 0.01) {
+      toast.error(`Сумма больше остатка (${formatCurrency(remaining)} ${symbol})`)
+      return
+    }
     try {
       await acceptPayment({ id: order.id, amount })
       toast.success(`Оплата ${formatCurrency(amount)} ${symbol} принята`)

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { toast } from '@/components/shared/Toaster'
 import { cn, formatCurrency } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
@@ -57,6 +58,7 @@ export function SuppliesPage() {
   const [catFilter, setCatFilter] = useState('all')
   const [addOpen, setAddOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
+  const [deleteCandidate, setDeleteCandidate] = useState<Supply | null>(null)
 
   // Form
   const [fname, setFname] = useState('')
@@ -214,7 +216,7 @@ export function SuppliesPage() {
                     <button onClick={() => openEdit(s)} className="h-8 w-8 rounded-lg border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Редактировать">
                       <Package className="h-3.5 w-3.5" />
                     </button>
-                    <button onClick={() => deleteMut.mutate(s.id)} className="h-8 w-8 rounded-lg border flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors" title="Удалить">
+                    <button onClick={() => setDeleteCandidate(s)} className="h-8 w-8 rounded-lg border flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors" title="Удалить">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -224,6 +226,19 @@ export function SuppliesPage() {
           })}
         </div>
       )}
+
+      {/* Confirm delete — без подтверждения легко снести материал случайным тапом */}
+      <ConfirmDialog
+        open={!!deleteCandidate}
+        onClose={() => setDeleteCandidate(null)}
+        onConfirm={() => {
+          if (deleteCandidate) deleteMut.mutate(deleteCandidate.id)
+          setDeleteCandidate(null)
+        }}
+        title={deleteCandidate ? `Удалить «${deleteCandidate.name}»?` : ''}
+        description="Действие необратимо. История прихода/расхода сохранится в логе."
+        loading={deleteMut.isPending}
+      />
 
       {/* Add/Edit modal */}
       {addOpen && (

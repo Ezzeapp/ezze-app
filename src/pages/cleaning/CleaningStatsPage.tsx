@@ -7,6 +7,7 @@ import {
 } from 'recharts'
 import { supabase } from '@/lib/supabase'
 import { PRODUCT } from '@/lib/config'
+import { useTeamScope } from '@/contexts/TeamContext'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -273,6 +274,7 @@ function OrdersTab({ orders: allOrders, symbol }: { orders: OrderRow[]; symbol: 
 export function CleaningStatsPage() {
   const { t } = useTranslation()
   const symbol = useCurrencySymbol()
+  const teamScope = useTeamScope()
 
   const [activeTab, setActiveTab] = useState<StatTab>('overview')
   const [days, setDays] = useState(30)
@@ -306,15 +308,21 @@ export function CleaningStatsPage() {
   // ── Queries ──────────────────────────────────────────────────────────────────
 
   const { data: ordersData, isLoading: loadingOrders } = useQuery({
-    queryKey: ['cleaning_stats', 'orders_v2', qKey, PRODUCT],
+    queryKey: ['cleaning_stats', 'orders_v2', qKey, PRODUCT, teamScope.effectiveTeamId, teamScope.role],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Team scoping симметрично useCleaningOrders — иначе worker видит цифры
+      // всей команды, а не свои/команды legacy.
+      let q = supabase
         .from('cleaning_orders')
         .select('id, number, status, payment_status, payment_method, total_amount, paid_amount, created_at, order_type, client_id, client:clients(id, first_name, last_name, phone)')
         .eq('product', PRODUCT)
         .gte('created_at', since)
         .lte('created_at', until)
         .order('created_at', { ascending: false })
+      if (teamScope.effectiveTeamId) {
+        q = q.or(`team_id.eq.${teamScope.effectiveTeamId},team_id.is.null`)
+      }
+      const { data, error } = await q
       if (error) throw error
       return (data ?? []) as unknown as OrderRow[]
     },
@@ -322,14 +330,19 @@ export function CleaningStatsPage() {
   })
 
   const { data: itemsData, isLoading: loadingItems } = useQuery({
-    queryKey: ['cleaning_stats', 'items', qKey, PRODUCT],
+    queryKey: ['cleaning_stats', 'items', qKey, PRODUCT, teamScope.effectiveTeamId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from('cleaning_order_items')
-        .select('item_type_name, order:cleaning_orders!inner(product, created_at, status)')
+        .select('item_type_name, order:cleaning_orders!inner(product, created_at, status, team_id)')
         .eq('order.product', PRODUCT)
         .gte('order.created_at', since)
         .lte('order.created_at', until)
+      if (teamScope.effectiveTeamId) {
+        // Фильтр по embedded order.team_id — синтаксис PostgREST для !inner.
+        q = q.or(`team_id.eq.${teamScope.effectiveTeamId},team_id.is.null`, { foreignTable: 'order' })
+      }
+      const { data, error } = await q
       if (error) throw error
       return (data ?? []) as { item_type_name: string }[]
     },
