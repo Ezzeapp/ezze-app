@@ -2315,7 +2315,10 @@
       "payment": "Payment",
       "amount": "Amount",
       "paid": "Paid",
-      "date": "Date / Due"
+      "debt": "Debt",
+      "discount": "Disc/Surch",
+      "date": "Date / Due",
+      "actions": "Actions"
     }
   },
   "cleaning": {

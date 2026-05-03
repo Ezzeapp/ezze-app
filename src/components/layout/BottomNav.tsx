@@ -34,10 +34,8 @@ function MoreMenu({ onClose, ServiceIcon }: { onClose: () => void; ServiceIcon: 
   const items = [
     showProfile && { icon: User,        label: t('nav.profile'),    to: '/profile',   highlight: false },
     canServices && { icon: ServiceIcon, label: t('nav.services'),   to: '/services',  highlight: false },
-    // Cleaning: Доставка/Расходники/Отчёты живут только тут — без них пункты меню недоступны.
-    PRODUCT === 'cleaning' && { icon: Truck,    label: t('cleaning.nav.delivery', 'Доставка'),   to: '/delivery', highlight: false },
-    PRODUCT === 'cleaning' && { icon: Droplets, label: t('cleaning.nav.supplies', 'Расходники'), to: '/supplies', highlight: false },
-    PRODUCT === 'cleaning' && { icon: FileText, label: t('cleaning.nav.reports',  'Отчёты'),     to: '/reports',  highlight: false },
+    // Cleaning: Доставка/Расходники/Отчёты намеренно скрыты — функционал
+    // оптимизирован/отложен. Роуты в App.tsx остаются для прямых ссылок.
     showPromoLoyalty && canPromo    && { icon: Tag,  label: t('marketing.tabPromo'),   to: '/promo',   highlight: false },
     showPromoLoyalty && canLoyalty  && { icon: Gift, label: t('marketing.tabLoyalty'), to: '/loyalty', highlight: false },
     showInventory && hasInventory && canInventory && { icon: Package,    label: t('nav.inventory'), to: '/inventory', highlight: false },

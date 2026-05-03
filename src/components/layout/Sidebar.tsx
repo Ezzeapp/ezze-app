@@ -117,9 +117,8 @@ export const Sidebar = memo(function Sidebar({ onClose, mobile }: SidebarProps) 
         )}
         {PRODUCT === 'cleaning' ? (<>
           <SidebarNavItem icon={ClipboardList} iconColor="dark:text-indigo-400" label={t('nav.orders')} to="/orders" onClick={onClose} />
-          <SidebarNavItem icon={Truck}    iconColor="dark:text-emerald-400" label={t('cleaning.nav.delivery', 'Доставка')} to="/delivery" onClick={onClose} />
-          <SidebarNavItem icon={Droplets} iconColor="dark:text-cyan-400"    label={t('cleaning.nav.supplies', 'Расходники')} to="/supplies" onClick={onClose} />
-          <SidebarNavItem icon={FileText} iconColor="dark:text-amber-400"   label={t('cleaning.nav.reports', 'Отчёты')}   to="/reports"  onClick={onClose} />
+          {/* Доставка/Расходники/Отчёты намеренно скрыты из меню — функционал
+              оптимизирован/откложен. Роуты в App.tsx остаются для прямых ссылок. */}
         </>) : PRODUCT === 'workshop' ? (
           <SidebarNavItem icon={Wrench} iconColor="dark:text-indigo-400" label={t('workshop.nav.orders', 'Заказы в ремонт')} to="/orders" onClick={onClose} />
         ) : PRODUCT === 'rental' ? (
