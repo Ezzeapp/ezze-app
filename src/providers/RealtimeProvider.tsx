@@ -27,6 +27,25 @@ export function RealtimeSync() {
         qc.invalidateQueries({ queryKey: ['admin_reports'] })
       })
 
+      // ── Cleaning заказы ─────────────────────────────────────────────────────
+      // Без realtime команда не видит заказы соратников, пока не F5: статус
+      // сменился, заказ создан — не отражается в /orders, /stats, OpsModule.
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cleaning_orders' }, () => {
+        qc.invalidateQueries({ queryKey: ['cleaning_orders'] })
+        qc.invalidateQueries({ queryKey: ['cleaning_stats'] })
+        qc.invalidateQueries({ queryKey: ['cleaning_delivery'] })
+        qc.invalidateQueries({ queryKey: ['cleaning_reports'] })
+        qc.invalidateQueries({ queryKey: ['cleaning_reports_all'] })
+        qc.invalidateQueries({ queryKey: ['cleaning_client_stats'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cleaning_order_items' }, () => {
+        qc.invalidateQueries({ queryKey: ['cleaning_orders'] })
+        qc.invalidateQueries({ queryKey: ['cleaning_stats'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cleaning_supplies' }, () => {
+        qc.invalidateQueries({ queryKey: ['cleaning_supplies'] })
+      })
+
       // ── Клиенты мастеров ────────────────────────────────────────────────────
       .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {
         qc.invalidateQueries({ queryKey: ['clients'] })

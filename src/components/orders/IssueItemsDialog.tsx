@@ -47,11 +47,17 @@ export function IssueItemsDialog({ order, open, onClose }: IssueItemsDialogProps
       toast.error('Выберите хотя бы одно изделие')
       return
     }
+    const pay = parseFloat(payAmount) || 0
+    // Защита от переплаты — близнец fix-а в OrderDetailPage.handleConfirmPayment.
+    if (pay > remaining + 0.01) {
+      toast.error(`Сумма больше остатка (${formatCurrency(remaining)} ${symbol})`)
+      return
+    }
     try {
       await issueItems({
         orderId: order.id,
         itemIds: [...selected],
-        payAmount: parseFloat(payAmount) || 0,
+        payAmount: pay,
       })
       toast.success('Изделия выданы')
       onClose()
