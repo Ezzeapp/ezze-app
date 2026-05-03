@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Percent, X, Loader2 } from 'lucide-react'
+import { Percent, X, Loader2, AlertTriangle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/shared/Toaster'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { formatCurrency } from '@/lib/utils'
 import { useCleaningItemTypes, useUpsertItemType } from '@/hooks/useCleaningItemTypes'
 import { CleaningCatalogTab } from './CleaningCatalogTab'
@@ -14,6 +15,7 @@ export function CleaningServicesPage() {
   const [priceModalOpen, setPriceModalOpen] = useState(false)
   const [pricePercent, setPricePercent] = useState('')
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false)
+  const [confirmApply, setConfirmApply] = useState(false)
 
   const { data: itemTypes = [] } = useCleaningItemTypes()
   const upsertItemType = useUpsertItemType()
@@ -24,22 +26,32 @@ export function CleaningServicesPage() {
     setIsUpdatingPrices(true)
     try {
       const multiplier = 1 + pct / 100
-      for (const item of itemTypes) {
-        const newPrice = Math.max(0, Math.round(item.default_price * multiplier))
-        await upsertItemType.mutateAsync({
-          id: item.id,
-          name: item.name,
-          default_price: newPrice,
-          default_days: item.default_days,
-          sort_order: item.sort_order,
-          product: item.product,
-        })
+      // Параллельно через allSettled — одна упавшая позиция не блокирует
+      // остальные. Раньше for+await прерывал цикл на первой ошибке и оставлял
+      // каталог в полу-обновлённом состоянии.
+      const results = await Promise.allSettled(
+        itemTypes.map(item =>
+          upsertItemType.mutateAsync({
+            id: item.id,
+            name: item.name,
+            default_price: Math.max(0, Math.round(item.default_price * multiplier)),
+            default_days: item.default_days,
+            sort_order: item.sort_order,
+            product: item.product,
+          })
+        )
+      )
+      const ok = results.filter(r => r.status === 'fulfilled').length
+      const fail = results.length - ok
+      if (fail === 0) {
+        toast.success(`Цены обновлены на ${pct > 0 ? '+' : ''}${pct}% (${ok})`)
+      } else if (ok > 0) {
+        toast.error(`Обновлено ${ok}, не удалось ${fail}`)
+      } else {
+        toast.error('Не удалось обновить цены')
       }
-      toast.success(`Цены обновлены на ${pct > 0 ? '+' : ''}${pct}%`)
       setPriceModalOpen(false)
       setPricePercent('')
-    } catch {
-      toast.error('Ошибка обновления цен')
     } finally {
       setIsUpdatingPrices(false)
     }
@@ -63,6 +75,22 @@ export function CleaningServicesPage() {
 
       {/* Catalog */}
       <CleaningCatalogTab />
+
+      {/* Подтверждение перед применением — без него -90 вместо -9 уронит каталог */}
+      <ConfirmDialog
+        open={confirmApply}
+        onClose={() => setConfirmApply(false)}
+        onConfirm={() => {
+          setConfirmApply(false)
+          handleMassPriceChange()
+        }}
+        title={(() => {
+          const pct = parseFloat(pricePercent)
+          return `Изменить цены ${itemTypes.length} позиций на ${pct > 0 ? '+' : ''}${pct}%?`
+        })()}
+        description="Цены применятся ко ВСЕМ позициям каталога. Это нельзя отменить одной кнопкой."
+        loading={isUpdatingPrices}
+      />
 
       {/* Mass price change modal */}
       {priceModalOpen && (
@@ -109,7 +137,7 @@ export function CleaningServicesPage() {
                 className="flex-1"
                 size="sm"
                 disabled={!pricePercent || isUpdatingPrices}
-                onClick={handleMassPriceChange}
+                onClick={() => setConfirmApply(true)}
               >
                 {isUpdatingPrices && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
                 Применить

@@ -244,7 +244,13 @@ export function ClientCabinetPage() {
     setTheme(next); setThemeState(next)
   }
 
-  const openBooking = (slug: string) => {
+  const openBooking = (slug: string, kind?: OrderKind) => {
+    // Cleaning/workshop — order-based, страница записи /book/ к ним не относится:
+    // ведём на лендинг мастера (там CTA на WhatsApp/TG/публичную форму).
+    if (kind === 'cleaning' || kind === 'workshop') {
+      navigate(`/p/${slug}`)
+      return
+    }
     const params = new URLSearchParams()
     if (telegramId)    params.set('tg_id',    telegramId)
     if (userName)      params.set('tg_name',  userName)
@@ -367,7 +373,7 @@ export function ClientCabinetPage() {
                   <OrderCard
                     key={`${o.kind}-${o.id}`}
                     order={o}
-                    onBookAgain={o.booking_slug ? () => openBooking(o.booking_slug!) : undefined}
+                    onBookAgain={o.booking_slug ? () => openBooking(o.booking_slug!, o.kind) : undefined}
                     onCancel={o.cancel_token ? () => navigate(`/cancel/${o.cancel_token}`) : undefined}
                     onTrack={o.number ? () => navigate(`/track/${o.number}`) : undefined}
                     onApprove={o.approval_token ? () => navigate(`/approve/${o.approval_token}`) : undefined}
@@ -384,7 +390,7 @@ export function ClientCabinetPage() {
                   <OrderCard
                     key={`${o.kind}-${o.id}`}
                     order={o}
-                    onBookAgain={o.booking_slug ? () => openBooking(o.booking_slug!) : undefined}
+                    onBookAgain={o.booking_slug ? () => openBooking(o.booking_slug!, o.kind) : undefined}
                   />
                 ))}
               </section>
