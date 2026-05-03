@@ -45,6 +45,12 @@ export function RealtimeSync() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cleaning_supplies' }, () => {
         qc.invalidateQueries({ queryKey: ['cleaning_supplies'] })
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cleaning_loyalty' }, () => {
+        // recalc_cleaning_loyalty() меняет tier/discount после оплаты заказа.
+        // Без realtime карточка клиента в /clients показывает старый tier
+        // до F5.
+        qc.invalidateQueries({ queryKey: ['cleaning_loyalty'] })
+      })
 
       // ── Клиенты мастеров ────────────────────────────────────────────────────
       .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {

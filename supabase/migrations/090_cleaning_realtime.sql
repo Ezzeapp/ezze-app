@@ -9,3 +9,4 @@
 ALTER PUBLICATION supabase_realtime ADD TABLE public.cleaning_orders;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.cleaning_order_items;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.cleaning_supplies;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.cleaning_loyalty;

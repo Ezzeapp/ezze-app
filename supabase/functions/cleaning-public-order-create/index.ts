@@ -121,6 +121,9 @@ serve(async (req) => {
       .eq('phone', phoneNorm)
       .maybeSingle()
 
+    // Флажок: создан ли клиент именно этим запросом — для rollback ниже,
+    // если order/items упадут, не сносим существующего клиента с историей.
+    let clientCreatedHere = false
     if (!client) {
       const nameParts = payload.client.name.trim().split(/\s+/)
       const firstName = nameParts[0] || payload.client.name
@@ -143,6 +146,7 @@ serve(async (req) => {
         })
       }
       client = newClient
+      clientCreatedHere = true
     }
 
     // 4. Сгенерировать номер заказа
@@ -181,6 +185,11 @@ serve(async (req) => {
       .select('id, number')
       .single()
     if (oErr || !order) {
+      // Best-effort cleanup: если клиент только что создан этим запросом,
+      // удаляем — иначе остаются orphan-клиенты без заказов.
+      if (clientCreatedHere && client?.id) {
+        await sb.from('clients').delete().eq('id', client.id).eq('master_id', master.user_id)
+      }
       return new Response(JSON.stringify({ error: 'Failed to create order', detail: oErr?.message }), {
         status: 500,
         headers: { ...CORS, 'Content-Type': 'application/json' },
@@ -205,8 +214,12 @@ serve(async (req) => {
     }))
     const { error: iErr } = await sb.from('cleaning_order_items').insert(itemRows)
     if (iErr) {
-      // Откатить заказ — items не вставились
+      // Откатить заказ — items не вставились. Также откатываем нового
+      // клиента, чтобы не остались orphan-записи.
       await sb.from('cleaning_orders').delete().eq('id', order.id)
+      if (clientCreatedHere && client?.id) {
+        await sb.from('clients').delete().eq('id', client.id).eq('master_id', master.user_id)
+      }
       return new Response(JSON.stringify({ error: 'Failed to add items', detail: iErr.message }), {
         status: 500,
         headers: { ...CORS, 'Content-Type': 'application/json' },
