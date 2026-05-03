@@ -9,8 +9,10 @@ import { supabase } from '@/lib/supabase'
  * Маппинг: cleaning_item_types.category ← global_services.order_type,
  *          subcategory ← global_services.category.
  *
- * Идемпотентен: upsert по (product, name) — повторный вызов не дублирует, но
- * сбросит default_price=0 у существующих строк (см. memory/project_cleaning_auto_import.md).
+ * Идемпотентность: используем `ignoreDuplicates: true` — на конфликте по
+ * (product, name) ничего не делаем. Раньше был DO UPDATE и повторный вызов
+ * (например, при повторном логине через TG в catch alreadyExists в
+ * RegisterPage) сбрасывал уже проставленные мастером цены обратно в 0.
  *
  * Возвращает количество записей в payload (не количество фактически вставленных,
  * т.к. PostgREST upsert не возвращает upsertedCount).
@@ -38,7 +40,7 @@ export async function autoImportCleaningCatalog(): Promise<number> {
 
   const { error: iErr } = await supabase
     .from('cleaning_item_types')
-    .upsert(records, { onConflict: 'product,name' })
+    .upsert(records, { onConflict: 'product,name', ignoreDuplicates: true })
 
   if (iErr) return 0
   return records.length
