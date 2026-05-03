@@ -10,6 +10,7 @@ import {
 import type { CleaningOrderTypeConfig } from '@/hooks/useCleaningOrders'
 import { useCleaningDefaults, useUpdateCleaningDefaults } from '@/hooks/useCleaningDefaults'
 import { toast } from '@/components/shared/Toaster'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { cn } from '@/lib/utils'
 import { Truck } from 'lucide-react'
 import { useEffect } from 'react'
@@ -29,6 +30,7 @@ export function OrderTypesSettingsTab() {
   const [newLabel, setNewLabel] = useState('')
   const [newIcon, setNewIcon] = useState('Package')
   const [deletingSlug, setDeletingSlug] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<CleaningOrderTypeConfig | null>(null)
 
   const toggle = async (slug: string) => {
     const type = allTypes.find(t => t.slug === slug)
@@ -134,7 +136,7 @@ export function OrderTypesSettingsTab() {
                   disabled={update.isPending || isDeleting}
                 />
                 <button
-                  onClick={() => handleDelete(type.slug)}
+                  onClick={() => setConfirmDelete(type)}
                   disabled={update.isPending || isDeleting}
                   className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-30 p-1"
                   title="Удалить тип"
@@ -196,6 +198,18 @@ export function OrderTypesSettingsTab() {
         )}
       </CardContent>
     </Card>
+
+    <ConfirmDialog
+      open={!!confirmDelete}
+      onClose={() => setConfirmDelete(null)}
+      onConfirm={() => {
+        if (confirmDelete) handleDelete(confirmDelete.slug)
+        setConfirmDelete(null)
+      }}
+      title={confirmDelete ? `Удалить тип «${confirmDelete.label}»?` : ''}
+      description="Уже созданные заказы с этим типом останутся, но новые принять с ним не получится."
+      loading={update.isPending}
+    />
     </div>
   )
 }

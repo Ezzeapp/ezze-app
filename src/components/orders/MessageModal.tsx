@@ -9,6 +9,7 @@ import { PRODUCT } from '@/lib/config'
 import { toast } from '@/components/shared/Toaster'
 import { cn, formatCurrency } from '@/lib/utils'
 import { useCurrencySymbol } from '@/hooks/useCurrency'
+import { useTeamScope } from '@/contexts/TeamContext'
 import { QUICK_TEMPLATES, VARIABLES, COLOR_CLASSES, substituteVars } from '@/lib/messageTemplates'
 import type { LucideIcon } from 'lucide-react'
 
@@ -49,23 +50,30 @@ export function MessageModal({ orderId, initialMode, onClose }: MessageModalProp
   const [orders, setOrders] = useState<RecipientOrder[]>([])
   const [history, setHistory] = useState<Array<{ created_at: string; text: string }>>([])
   const symbol = useCurrencySymbol()
+  const teamScope = useTeamScope()
 
   // ── Загрузка списка заказов (для expanded) ──
   useEffect(() => {
     let cancelled = false
     async function load() {
-      const { data } = await supabase
+      // Team scoping: иначе worker видит заказы соратников и может разослать
+      // массовое сообщение клиентам, к которым доступа не имеет.
+      let q = supabase
         .from('cleaning_orders')
         .select('id, number, status, total_amount, paid_amount, ready_date, visit_address, client:clients(id, first_name, last_name, tg_chat_id, phone)')
         .eq('product', PRODUCT)
         .not('status', 'in', '("cancelled","paid")')
         .order('created_at', { ascending: false })
         .limit(200)
+      if (teamScope.effectiveTeamId) {
+        q = q.or(`team_id.eq.${teamScope.effectiveTeamId},team_id.is.null`)
+      }
+      const { data } = await q
       if (!cancelled) setOrders((data ?? []) as unknown as RecipientOrder[])
     }
     load()
     return () => { cancelled = true }
-  }, [])
+  }, [teamScope.effectiveTeamId])
 
   // ── Загрузка истории сообщений (для compact) ──
   useEffect(() => {
@@ -267,8 +275,9 @@ export function MessageModal({ orderId, initialMode, onClose }: MessageModalProp
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 )}
+                title="Заметки к смене статуса заказа — не лог отправленных сообщений"
               >
-                <History className="h-3.5 w-3.5" /> История
+                <History className="h-3.5 w-3.5" /> История заказа
               </button>
             )}
           </div>
@@ -327,14 +336,18 @@ export function MessageModal({ orderId, initialMode, onClose }: MessageModalProp
 
           {mode === 'compact' && tab === 'history' && (
             <div className="p-5 space-y-2 overflow-y-auto">
+              <p className="text-[11px] text-muted-foreground italic">
+                Заметки оператора при смене статуса заказа. Лог отправленных
+                клиенту сообщений пока не ведётся.
+              </p>
               {history.length === 0 ? (
                 <div className="text-center text-sm text-muted-foreground py-8">
-                  История сообщений пуста
+                  Заметок к этому заказу пока нет
                 </div>
               ) : history.map((h, i) => (
                 <div key={i} className="border rounded-lg p-3 space-y-1">
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-semibold text-foreground">Уведомление</span>
+                    <span className="font-semibold text-foreground">Заметка</span>
                     <span className="text-muted-foreground">
                       {new Date(h.created_at).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}
                     </span>
