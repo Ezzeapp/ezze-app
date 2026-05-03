@@ -60,7 +60,12 @@ export function useFormDraft<T>(key: string, opts: { maxAgeHours?: number; debou
     setRestored(null)
   }
 
+  // dismiss — пользователь нажал «Начать заново» в баннере восстановления.
+  // Раньше удалялся только UI-баннер, а localStorage оставался — баннер
+  // появлялся снова после F5. Теперь чистим хранилище тоже.
   function dismiss() {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    try { localStorage.removeItem(key) } catch { /* ignore */ }
     setRestored(null)
   }
 
