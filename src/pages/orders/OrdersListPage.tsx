@@ -270,15 +270,15 @@ function OrdersTable({ orders, symbol, onNavigate, onDelete, onMessage, onPrint,
                 </button>
               </th>
               <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.paid')}</th>
-              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Долг</th>
-              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Скидка/Надб.</th>
+              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.debt')}</th>
+              <th className="text-right px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{t('orders.col.discount')}</th>
               <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">
                 <button className={thBtn} onClick={() => onSort('deadline')}>
                   {t('orders.col.date')}
                   <SortIndicator active={deadlineActive || dateActive} asc={sortBy === 'oldest' || sortBy === 'deadline_asc'} />
                 </button>
               </th>
-              <th className="px-2 py-2.5 w-28 text-right text-muted-foreground font-medium">{t('orders.col.actions') ?? 'Действия'}</th>
+              <th className="px-2 py-2.5 w-28 text-right text-muted-foreground font-medium">{t('orders.col.actions')}</th>
             </tr>
           </thead>
           <tbody>
